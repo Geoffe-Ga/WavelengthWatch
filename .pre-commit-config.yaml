@@ -1,0 +1,49 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.11.2
+    hooks:
+      - id: mypy
+        args: [--config-file, mypy.ini]
+        additional_dependencies: [pydantic, types-requests]
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: check-yaml
+      - id: check-json
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: detect-private-key
+
+  - repo: local
+    hooks:
+      - id: swiftformat
+        name: SwiftFormat
+        entry: swiftformat
+        language: system
+        types_or: [swift]
+        args: [--lint]
+      - id: backend-tests
+        name: backend tests (on push)
+        entry: bash
+        language: system
+        pass_filenames: false
+        files: ^(backend/|tests/backend/)
+        stages: [pre-push]
+        args:
+          - -lc
+          - |
+            set -euo pipefail
+            if [ ! -d ".venv" ]; then python3 -m venv .venv; fi
+            source .venv/bin/activate
+            python -m pip install --upgrade pip
+            pip install -r backend/requirements.txt
+            if [ -f backend/requirements-dev.txt ]; then pip install -r backend/requirements-dev.txt; fi
+            pytest -q
