@@ -7,14 +7,14 @@ WavelengthWatch is a watchOS-only app that brings the Archetypal Wavelength to y
 ## Features
 
 - **Watch-Only App (SwiftUI)**: Built in Xcode 16.4, runs natively on watchOS 11.6.1 (Apple Watch Series 9).
-- **Horizontal Scrolling UI**: Swipe through the phases of the Archetypal Wavelength with a continuous background image to keep the flow.
-- **Phase Details**: Tap a phase to see “medicinal” and “toxic” expressions, plus tailored self-care strategies.
+- **Horizontal Scrolling UI**: Swipe through the self-care strategies corresponding to the phases of the Archetypal Wavelength.
+- **Phase Details**: Tap a phase to see “medicinal” and “toxic” expressions.
 - **Baseline Offline Data**: Core dataset (stages, phases, expressions, strategies) is bundled as JSON in the app, so the watch works instantly without a network.
 - **Optional Refresh**: When background time is available, the app fetches the latest JSON from the backend or static hosting, ensuring freshness without breaking offline reliability.
 - **FastAPI Backend**: A lightweight Python service (in `backend/app.py`) serves JSON mappings and static assets. The backend reads simple JSON files (converted from CSV during development) and can be deployed directly or fronted by S3/CloudFront for static hosting.
 - **CI and Pre-commit**:
   - GitHub Actions workflow builds the watch app on a simulator, runs SwiftLint/SwiftFormat checks, and validates backend tests.
-  - Pre-commit hooks enforce linting and formatting for both Swift (via Mint, SwiftLint, SwiftFormat) and Python (via Black, Ruff, etc. in the backend).
+  - Pre-commit hooks enforce linting and formatting for both Swift (via Mint, SwiftLint, SwiftFormat) and Python (via Mypy, Ruff, etc. in the backend).
 
 ## Repository Structure
 ```aiignore
