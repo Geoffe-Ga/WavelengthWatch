@@ -1,0 +1,671 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		676DA3B12E7204A500C63894 /* WavelengthWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 676DA3B02E7204A500C63894 /* WavelengthWatch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		676DA3B22E7204A500C63894 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 676DA3A42E7204A500C63894 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 676DA3AF2E7204A500C63894;
+			remoteInfo = "WavelengthWatch Watch App";
+		};
+		676DA3C02E7204A600C63894 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 676DA3A42E7204A500C63894 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 676DA3AF2E7204A500C63894;
+			remoteInfo = "WavelengthWatch Watch App";
+		};
+		676DA3CA2E7204A600C63894 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 676DA3A42E7204A500C63894 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 676DA3AF2E7204A500C63894;
+			remoteInfo = "WavelengthWatch Watch App";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		676DA3D62E7204A600C63894 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				676DA3B12E7204A500C63894 /* WavelengthWatch Watch App.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		676DA3AA2E7204A500C63894 /* WavelengthWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WavelengthWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		676DA3B02E7204A500C63894 /* WavelengthWatch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "WavelengthWatch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		676DA3BF2E7204A600C63894 /* WavelengthWatch Watch AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "WavelengthWatch Watch AppTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		676DA3C92E7204A600C63894 /* WavelengthWatch Watch AppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "WavelengthWatch Watch AppUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		676DA3B42E7204A500C63894 /* WavelengthWatch Watch App */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "WavelengthWatch Watch App";
+			sourceTree = "<group>";
+		};
+		676DA3C22E7204A600C63894 /* WavelengthWatch Watch AppTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "WavelengthWatch Watch AppTests";
+			sourceTree = "<group>";
+		};
+		676DA3CC2E7204A600C63894 /* WavelengthWatch Watch AppUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "WavelengthWatch Watch AppUITests";
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		676DA3AD2E7204A500C63894 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		676DA3BC2E7204A600C63894 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		676DA3C62E7204A600C63894 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		676DA3A32E7204A500C63894 = {
+			isa = PBXGroup;
+			children = (
+				676DA3B42E7204A500C63894 /* WavelengthWatch Watch App */,
+				676DA3C22E7204A600C63894 /* WavelengthWatch Watch AppTests */,
+				676DA3CC2E7204A600C63894 /* WavelengthWatch Watch AppUITests */,
+				676DA3AB2E7204A500C63894 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		676DA3AB2E7204A500C63894 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				676DA3AA2E7204A500C63894 /* WavelengthWatch.app */,
+				676DA3B02E7204A500C63894 /* WavelengthWatch Watch App.app */,
+				676DA3BF2E7204A600C63894 /* WavelengthWatch Watch AppTests.xctest */,
+				676DA3C92E7204A600C63894 /* WavelengthWatch Watch AppUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		676DA3A92E7204A500C63894 /* WavelengthWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 676DA3D72E7204A600C63894 /* Build configuration list for PBXNativeTarget "WavelengthWatch" */;
+			buildPhases = (
+				676DA3A82E7204A500C63894 /* Resources */,
+				676DA3D62E7204A600C63894 /* Embed Watch Content */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				676DA3B32E7204A500C63894 /* PBXTargetDependency */,
+			);
+			name = WavelengthWatch;
+			packageProductDependencies = (
+			);
+			productName = WavelengthWatch;
+			productReference = 676DA3AA2E7204A500C63894 /* WavelengthWatch.app */;
+			productType = "com.apple.product-type.application.watchapp2-container";
+		};
+		676DA3AF2E7204A500C63894 /* WavelengthWatch Watch App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 676DA3D32E7204A600C63894 /* Build configuration list for PBXNativeTarget "WavelengthWatch Watch App" */;
+			buildPhases = (
+				676DA3AC2E7204A500C63894 /* Sources */,
+				676DA3AD2E7204A500C63894 /* Frameworks */,
+				676DA3AE2E7204A500C63894 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				676DA3B42E7204A500C63894 /* WavelengthWatch Watch App */,
+			);
+			name = "WavelengthWatch Watch App";
+			packageProductDependencies = (
+			);
+			productName = "WavelengthWatch Watch App";
+			productReference = 676DA3B02E7204A500C63894 /* WavelengthWatch Watch App.app */;
+			productType = "com.apple.product-type.application";
+		};
+		676DA3BE2E7204A600C63894 /* WavelengthWatch Watch AppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 676DA3DA2E7204A600C63894 /* Build configuration list for PBXNativeTarget "WavelengthWatch Watch AppTests" */;
+			buildPhases = (
+				676DA3BB2E7204A600C63894 /* Sources */,
+				676DA3BC2E7204A600C63894 /* Frameworks */,
+				676DA3BD2E7204A600C63894 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				676DA3C12E7204A600C63894 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				676DA3C22E7204A600C63894 /* WavelengthWatch Watch AppTests */,
+			);
+			name = "WavelengthWatch Watch AppTests";
+			packageProductDependencies = (
+			);
+			productName = "WavelengthWatch Watch AppTests";
+			productReference = 676DA3BF2E7204A600C63894 /* WavelengthWatch Watch AppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		676DA3C82E7204A600C63894 /* WavelengthWatch Watch AppUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 676DA3DD2E7204A600C63894 /* Build configuration list for PBXNativeTarget "WavelengthWatch Watch AppUITests" */;
+			buildPhases = (
+				676DA3C52E7204A600C63894 /* Sources */,
+				676DA3C62E7204A600C63894 /* Frameworks */,
+				676DA3C72E7204A600C63894 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				676DA3CB2E7204A600C63894 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				676DA3CC2E7204A600C63894 /* WavelengthWatch Watch AppUITests */,
+			);
+			name = "WavelengthWatch Watch AppUITests";
+			packageProductDependencies = (
+			);
+			productName = "WavelengthWatch Watch AppUITests";
+			productReference = 676DA3C92E7204A600C63894 /* WavelengthWatch Watch AppUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		676DA3A42E7204A500C63894 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1640;
+				LastUpgradeCheck = 1640;
+				TargetAttributes = {
+					676DA3A92E7204A500C63894 = {
+						CreatedOnToolsVersion = 16.4;
+					};
+					676DA3AF2E7204A500C63894 = {
+						CreatedOnToolsVersion = 16.4;
+					};
+					676DA3BE2E7204A600C63894 = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = 676DA3AF2E7204A500C63894;
+					};
+					676DA3C82E7204A600C63894 = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = 676DA3AF2E7204A500C63894;
+					};
+				};
+			};
+			buildConfigurationList = 676DA3A72E7204A500C63894 /* Build configuration list for PBXProject "WavelengthWatch" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 676DA3A32E7204A500C63894;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 676DA3AB2E7204A500C63894 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				676DA3A92E7204A500C63894 /* WavelengthWatch */,
+				676DA3AF2E7204A500C63894 /* WavelengthWatch Watch App */,
+				676DA3BE2E7204A600C63894 /* WavelengthWatch Watch AppTests */,
+				676DA3C82E7204A600C63894 /* WavelengthWatch Watch AppUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		676DA3A82E7204A500C63894 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		676DA3AE2E7204A500C63894 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		676DA3BD2E7204A600C63894 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		676DA3C72E7204A600C63894 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		676DA3AC2E7204A500C63894 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		676DA3BB2E7204A600C63894 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		676DA3C52E7204A600C63894 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		676DA3B32E7204A500C63894 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 676DA3AF2E7204A500C63894 /* WavelengthWatch Watch App */;
+			targetProxy = 676DA3B22E7204A500C63894 /* PBXContainerItemProxy */;
+		};
+		676DA3C12E7204A600C63894 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 676DA3AF2E7204A500C63894 /* WavelengthWatch Watch App */;
+			targetProxy = 676DA3C02E7204A600C63894 /* PBXContainerItemProxy */;
+		};
+		676DA3CB2E7204A600C63894 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 676DA3AF2E7204A500C63894 /* WavelengthWatch Watch App */;
+			targetProxy = 676DA3CA2E7204A600C63894 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		676DA3D12E7204A600C63894 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 4YP4K7RFL9;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		676DA3D22E7204A600C63894 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 4YP4K7RFL9;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		676DA3D42E7204A600C63894 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4YP4K7RFL9;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = WavelengthWatch;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKWatchOnly = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = guru.aptitude.WavelengthWatch.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 11.5;
+			};
+			name = Debug;
+		};
+		676DA3D52E7204A600C63894 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4YP4K7RFL9;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = WavelengthWatch;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKWatchOnly = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = guru.aptitude.WavelengthWatch.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 11.5;
+			};
+			name = Release;
+		};
+		676DA3D82E7204A600C63894 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4YP4K7RFL9;
+				INFOPLIST_KEY_CFBundleDisplayName = WavelengthWatch;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = guru.aptitude.WavelengthWatch;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		676DA3D92E7204A600C63894 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4YP4K7RFL9;
+				INFOPLIST_KEY_CFBundleDisplayName = WavelengthWatch;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = guru.aptitude.WavelengthWatch;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		676DA3DB2E7204A600C63894 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4YP4K7RFL9;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "guru.aptitude.WavelengthWatch-Watch-AppTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/WavelengthWatch Watch App.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/WavelengthWatch Watch App";
+				WATCHOS_DEPLOYMENT_TARGET = 11.5;
+			};
+			name = Debug;
+		};
+		676DA3DC2E7204A600C63894 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4YP4K7RFL9;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "guru.aptitude.WavelengthWatch-Watch-AppTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/WavelengthWatch Watch App.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/WavelengthWatch Watch App";
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 11.5;
+			};
+			name = Release;
+		};
+		676DA3DE2E7204A600C63894 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4YP4K7RFL9;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "guru.aptitude.WavelengthWatch-Watch-AppUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_TARGET_NAME = "WavelengthWatch Watch App";
+				WATCHOS_DEPLOYMENT_TARGET = 11.5;
+			};
+			name = Debug;
+		};
+		676DA3DF2E7204A600C63894 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4YP4K7RFL9;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "guru.aptitude.WavelengthWatch-Watch-AppUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_TARGET_NAME = "WavelengthWatch Watch App";
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 11.5;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		676DA3A72E7204A500C63894 /* Build configuration list for PBXProject "WavelengthWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				676DA3D12E7204A600C63894 /* Debug */,
+				676DA3D22E7204A600C63894 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		676DA3D32E7204A600C63894 /* Build configuration list for PBXNativeTarget "WavelengthWatch Watch App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				676DA3D42E7204A600C63894 /* Debug */,
+				676DA3D52E7204A600C63894 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		676DA3D72E7204A600C63894 /* Build configuration list for PBXNativeTarget "WavelengthWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				676DA3D82E7204A600C63894 /* Debug */,
+				676DA3D92E7204A600C63894 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		676DA3DA2E7204A600C63894 /* Build configuration list for PBXNativeTarget "WavelengthWatch Watch AppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				676DA3DB2E7204A600C63894 /* Debug */,
+				676DA3DC2E7204A600C63894 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		676DA3DD2E7204A600C63894 /* Build configuration list for PBXNativeTarget "WavelengthWatch Watch AppUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				676DA3DE2E7204A600C63894 /* Debug */,
+				676DA3DF2E7204A600C63894 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 676DA3A42E7204A500C63894 /* Project object */;
+}

@@ -139,7 +139,9 @@ def read_curriculum_csv(path: Path) -> dict[tuple[str, str], dict[str, str]]:
         med_col = find_col(reader.fieldnames, "medicinal")
         tox_col = find_col(reader.fieldnames, "toxic")
 
-        for i, row in enumerate(reader, start=2):  # 2 = account for header row at 1
+        for i, row in enumerate(
+            reader, start=2
+        ):  # 2 = account for header row at 1
             stage = normalize_stage(row.get(stage_col, ""))
             phase = normalize_phase(row.get(phase_col, ""))
             medicinal = (row.get(med_col, "") or "").strip()
@@ -203,9 +205,13 @@ def read_strategies_csv(path: Path) -> dict[tuple[str, str], list[str]]:
                     out[(stage, phase)].append(p)
 
             if stage not in CANONICAL_STAGES:
-                warn(f"Non-canonical stage '{stage}' in strategies (line {i}).")
+                warn(
+                    f"Non-canonical stage '{stage}' in strategies (line {i})."
+                )
             if phase not in CANONICAL_PHASES:
-                warn(f"Non-canonical phase '{phase}' in strategies (line {i}).")
+                warn(
+                    f"Non-canonical phase '{phase}' in strategies (line {i})."
+                )
 
     total = sum(len(v) for v in out.values())
     info(
@@ -256,14 +262,20 @@ def merge_to_nested(
     # Merge strategies; create nodes if missing (warn)
     for (stage, phase), strategies in strategies_map.items():
         if stage not in nested:
-            warn(f"Strategy references unknown stage '{stage}'. Creating placeholder.")
+            warn(
+                f"Strategy references unknown stage '{stage}'. Creating placeholder."
+            )
             nested[stage] = {}
         if phase not in nested[stage]:
             warn(
                 f"Strategy references unknown phase '{stage}/{phase}'. "
                 "Creating placeholder with empty medicinal/toxic."
             )
-            nested[stage][phase] = {"medicinal": "", "toxic": "", "strategies": []}
+            nested[stage][phase] = {
+                "medicinal": "",
+                "toxic": "",
+                "strategies": [],
+            }
         # De-duplicate while preserving order
         seen = set(nested[stage][phase]["strategies"])
         for s in strategies:
@@ -373,12 +385,16 @@ def main() -> None:
 
     # Write outputs
     write_json(data_dir / args.out_curriculum, combined)
-    write_json(data_dir / args.out_strategies, extract_strategies_view(combined))
+    write_json(
+        data_dir / args.out_strategies, extract_strategies_view(combined)
+    )
 
     # Simple summary
     num_pairs = sum(len(phases) for phases in combined.values())
     num_strats = sum(
-        len(phases[p]["strategies"]) for phases in combined.values() for p in phases
+        len(phases[p]["strategies"])
+        for phases in combined.values()
+        for p in phases
     )
     info(
         f"Done. Stages: {len(combined)}; Stage/Phase pairs: {num_pairs}; Total strategies: {num_strats}"

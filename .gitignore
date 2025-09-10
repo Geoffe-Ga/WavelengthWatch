@@ -1,0 +1,32 @@
+# macOS
+.DS_Store
+
+# Xcode / Swift
+DerivedData/
+build/
+*.xcuserstate
+*.xccheckout
+*.xcscmblueprint
+*.xcworkspace/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+
+# Swift Package Manager
+.swiftpm/
+.build/
+
+# Fastlane (if you add it later)
+fastlane/report.xml
+fastlane/test_output/
+
+# Logs
+*.log
+
+# idea
+.idea/*
+
+# prompts
+prompts/
+
+# Pycache
+*/__pycache__/*

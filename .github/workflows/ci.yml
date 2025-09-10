@@ -1,4 +1,73 @@
-name: ci.yml
+name: CI
+
 on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ "**" ]
+
+permissions:
+  contents: read
 
 jobs:
+  backend:
+    name: Backend (FastAPI) - lint, type-check, test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          if [ -f backend/requirements-dev.txt ]; then pip install -r backend/requirements-dev.txt; fi
+
+      - name: Lint & Type-check
+        run: |
+          source .venv/bin/activate
+          ruff check backend tests/backend
+          mypy --config-file mypy.ini
+
+      - name: Run tests
+        run: |
+          source .venv/bin/activate
+          pytest -q
+
+  frontend:
+    name: Frontend (watchOS) - format & build
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode 16.4
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "16.4"
+
+      - name: Install SwiftFormat
+        run: brew install swiftformat
+
+      - name: SwiftFormat check
+        run: swiftformat --lint frontend
+
+      - name: Build watchOS app (no codesign)
+        env:
+          NSUnbufferedIO: "YES"
+        run: |
+          set -eo pipefail
+          xcodebuild             -project frontend/WavelengthWatch/WavelengthWatch.xcodeproj             -scheme "WavelengthWatch Watch App"             -destination "generic/platform=watchOS Simulator"             -configuration Debug             CODE_SIGNING_ALLOWED=NO             build
