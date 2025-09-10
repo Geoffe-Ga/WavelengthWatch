@@ -48,4 +48,4 @@ pre-commit install --install-hooks
 echo "✅ Dev environment ready.
 - Format Swift: swiftformat frontend
 - Run backend:   uvicorn backend.app:app --reload
-- Test backend:  pytest -q
+- Test backend:  pytest -q"
