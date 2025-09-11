@@ -33,7 +33,9 @@ import csv
 import json
 import sys
 from collections import OrderedDict, defaultdict
+from collections.abc import Sequence
 from pathlib import Path
+from typing import TypedDict
 
 # Canonical keys (lowercase snake_case)
 CANONICAL_STAGES = {
@@ -94,7 +96,15 @@ def info(msg: str) -> None:
     print(f"[INFO] {msg}", file=sys.stderr)
 
 
-def find_col(row_keys: list[str], target: str) -> str:
+class PhasePayload(TypedDict):
+    """Structure stored for each (stage, phase) pair."""
+
+    medicinal: str
+    toxic: str
+    strategies: list[str]
+
+
+def find_col(row_keys: Sequence[str], target: str) -> str:
     """
     Find the actual CSV column name matching 'target' (case/space-insensitive).
     Returns the exact key present in the CSV header or raises KeyError.
@@ -234,7 +244,7 @@ def split_maybe(s: str) -> list[str]:
 def merge_to_nested(
     curriculum_map: dict[tuple[str, str], dict[str, str]],
     strategies_map: dict[tuple[str, str], list[str]],
-) -> dict[str, dict[str, dict[str, object]]]:
+) -> dict[str, dict[str, PhasePayload]]:
     """
     Returns nested dict:
       {
@@ -248,16 +258,17 @@ def merge_to_nested(
       }
     Stages and phases are sorted for stable output.
     """
-    nested: dict[str, dict[str, dict[str, object]]] = {}
+    nested: dict[str, dict[str, PhasePayload]] = {}
 
     # Prime with curriculum entries
     for (stage, phase), vals in curriculum_map.items():
-        nested.setdefault(stage, {})
-        nested[stage][phase] = {
-            "medicinal": vals.get("medicinal", ""),
-            "toxic": vals.get("toxic", ""),
-            "strategies": [],
-        }
+        if stage not in nested:
+            nested[stage] = {}
+        nested[stage][phase] = PhasePayload(
+            medicinal=vals.get("medicinal", ""),
+            toxic=vals.get("toxic", ""),
+            strategies=[],
+        )
 
     # Merge strategies; create nodes if missing (warn)
     for (stage, phase), strategies in strategies_map.items():
@@ -271,11 +282,11 @@ def merge_to_nested(
                 f"Strategy references unknown phase '{stage}/{phase}'. "
                 "Creating placeholder with empty medicinal/toxic."
             )
-            nested[stage][phase] = {
-                "medicinal": "",
-                "toxic": "",
-                "strategies": [],
-            }
+            nested[stage][phase] = PhasePayload(
+                medicinal="",
+                toxic="",
+                strategies=[],
+            )
         # De-duplicate while preserving order
         seen = set(nested[stage][phase]["strategies"])
         for s in strategies:
@@ -295,7 +306,7 @@ def merge_to_nested(
         ]
         return (order.index(p) if p in order else len(order), p)
 
-    ordered: dict[str, dict[str, dict[str, object]]] = OrderedDict()
+    ordered: dict[str, dict[str, PhasePayload]] = OrderedDict()
     for stage in sorted(
         nested.keys(),
         key=lambda s: (
@@ -322,7 +333,7 @@ def write_json(path: Path, obj: object) -> None:
 
 
 def extract_strategies_view(
-    nested: dict[str, dict[str, dict[str, object]]],
+    nested: dict[str, dict[str, PhasePayload]],
 ) -> dict[str, dict[str, list[str]]]:
     """
     Produce {stage: {phase: [strategy...]}} from the combined nested view.
@@ -331,7 +342,7 @@ def extract_strategies_view(
     for stage, phases in nested.items():
         out[stage] = {}
         for phase, payload in phases.items():
-            out[stage][phase] = list(payload.get("strategies", []))
+            out[stage][phase] = list(payload["strategies"])
     return out
 
 
