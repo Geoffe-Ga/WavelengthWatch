@@ -1,8 +1,22 @@
-[
-  {
-    "stage": "Beige",
-    "phase": "Restoration",
-    "medicinal": true,
-    "toxic": false
+{
+  "Beige": {
+    "Rising": {
+      "Prescription": "Commitment",
+      "Overdose": "Overcommitment"
+    },
+    "Peaking": {
+      "Prescription": "Diligence",
+      "Overdose": "Thriving"
+    },
+    "Restoration": {
+      "Prescription": "Next Habit",
+      "Overdose": "New Plan"
+    }
+  },
+  "Purple": {
+    "Rising": {
+      "Prescription": "Inspiration",
+      "Overdose": "Grandiosity"
+    }
   }
-]
+}

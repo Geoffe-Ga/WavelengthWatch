@@ -1,7 +1,32 @@
-[
-  {
-    "id": "breath-3",
-    "title": "Three breaths",
-    "phase": "Restoration"
-  }
-]
+{
+  "Rising": [
+    {"color": "Green", "strategy": "One"},
+    {"color": "Red", "strategy": "Two"},
+    {"color": "Teal", "strategy": "Three"}
+  ],
+  "Peaking": [
+    {"color": "Orange", "strategy": "Four"},
+    {"color": "Purple", "strategy": "Five"},
+    {"color": "Blue", "strategy": "Six"}
+  ],
+  "Withdrawal": [
+    {"color": "Red", "strategy": "Eight"},
+    {"color": "Yellow", "strategy": "Seven"},
+    {"color": "Beige", "strategy": "Nine"}
+  ],
+  "Diminishing": [
+    {"color": "Blue", "strategy": "Ten"},
+    {"color": "Orange", "strategy": "Eleven"},
+    {"color": "Purple", "strategy": "Twelve"}
+  ],
+  "Bottoming Out": [
+    {"color": "Green", "strategy": "Thirteen"},
+    {"color": "Beige", "strategy": "Fourteen"},
+    {"color": "Red", "strategy": "Fifteen"}
+  ],
+  "Restoration": [
+    {"color": "Teal", "strategy": "Sixteen"},
+    {"color": "Yellow", "strategy": "Seventeen"},
+    {"color": "Blue", "strategy": "Eighteen"}
+  ]
+}
