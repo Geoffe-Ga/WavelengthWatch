@@ -191,6 +191,30 @@ struct StrategyListView: View {
   }
 }
 
+struct PhasePageView: View {
+  let phase: Phase
+  let header: LayerHeader?
+  let strategies: [Strategy]
+
+  var body: some View {
+    VStack {
+      if let header {
+        Text(header.title)
+          .font(.headline)
+        Text(header.subtitle)
+          .font(.subheadline)
+      }
+      NavigationLink(destination: StrategyListView(phase: phase, strategies: strategies)) {
+        Text(phase.rawValue)
+          .font(.title2)
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
+      }
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+  }
+}
+
 struct ContentView: View {
   @State private var selection = 0
   private let phases = Phase.allCases
@@ -204,20 +228,8 @@ struct ContentView: View {
         ForEach(0 ..< (phases.count + 1), id: \.self) { index in
           let phase = phases[index % phases.count]
           let header = headers[currentLayer]
-          NavigationLink(destination: StrategyListView(phase: phase, strategies: data[phase] ?? [])) {
-            VStack {
-              if let header {
-                Text(header.title)
-                  .font(.headline)
-                Text(header.subtitle)
-                  .font(.subheadline)
-              }
-              Text(phase.rawValue)
-                .font(.title2)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-          }
-          .tag(index)
+          PhasePageView(phase: phase, header: header, strategies: data[phase] ?? [])
+            .tag(index)
         }
       }
       .tabViewStyle(.page)
