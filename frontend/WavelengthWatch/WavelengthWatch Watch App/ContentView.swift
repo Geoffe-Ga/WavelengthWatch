@@ -18,6 +18,16 @@ struct LayerHeader: Decodable {
   let subtitle: String
 }
 
+struct CurriculumEntry: Decodable {
+  let medicine: String
+  let toxic: String
+
+  private enum CodingKeys: String, CodingKey {
+    case medicine = "Medicine"
+    case toxic = "Toxic"
+  }
+}
+
 enum Phase: String, CaseIterable, Identifiable {
   case Rising
   case Peaking
@@ -171,6 +181,116 @@ enum HeaderData {
   """#
 }
 
+enum CurriculumData {
+  static func load() -> [String: [Phase: CurriculumEntry]] {
+    let data = Data(curriculumJSON.utf8)
+    let decoded =
+      try? JSONDecoder().decode([String: [String: CurriculumEntry]].self, from: data)
+    var result: [String: [Phase: CurriculumEntry]] = [:]
+    for (layer, phases) in decoded ?? [:] {
+      var phaseMap: [Phase: CurriculumEntry] = [:]
+      for (phaseName, entry) in phases {
+        if let phase = Phase(rawValue: phaseName) {
+          phaseMap[phase] = entry
+        }
+      }
+      result[layer] = phaseMap
+    }
+    return result
+  }
+
+  // Embedded dataset mirrors backend/data/curriculum.json.
+  // This keeps the watch app self-contained for the MVP.
+  private static let curriculumJSON = #"""
+  {
+    "Beige": {
+      "Rising": {"Medicine": "Commitment", "Toxic": "Overcommitment"},
+      "Peaking": {"Medicine": "Diligence", "Toxic": "Thriving"},
+      "Withdrawal": {"Medicine": "Steadiness", "Toxic": "Burnout"},
+      "Diminishing": {"Medicine": "Security", "Toxic": "Grasping"},
+      "Bottoming Out": {"Medicine": "Planning", "Toxic": "Overwhelm"},
+      "Restoration": {"Medicine": "Next Habit", "Toxic": "New Plan"}
+    },
+    "Purple": {
+      "Rising": {"Medicine": "Inspiration", "Toxic": "Grandiosity"},
+      "Peaking": {"Medicine": "Joy", "Toxic": "Ecstasy"},
+      "Withdrawal": {"Medicine": "Introspectivity", "Toxic": "Anxiety"},
+      "Diminishing": {"Medicine": "Tranquility", "Toxic": "Self-Doubt"},
+      "Bottoming Out": {"Medicine": "Convalescence", "Toxic": "Self-Loathing"},
+      "Restoration": {"Medicine": "Recuperation", "Toxic": "Selfishness"}
+    },
+    "Red": {
+      "Rising": {"Medicine": "Leading", "Toxic": "Dominating"},
+      "Peaking": {"Medicine": "Power-With", "Toxic": "Power-Over"},
+      "Withdrawal": {"Medicine": "Stepping Back", "Toxic": "Crumbling"},
+      "Diminishing": {"Medicine": "Self-Acceptance", "Toxic": "Shame"},
+      "Bottoming Out": {"Medicine": "Following", "Toxic": "Subjugation"},
+      "Restoration": {"Medicine": "Assembling", "Toxic": "Revenge"}
+    },
+    "Blue": {
+      "Rising": {"Medicine": "Ambition", "Toxic": "Voraciousness"},
+      "Peaking": {"Medicine": "Attunement", "Toxic": "Leprosy"},
+      "Withdrawal": {"Medicine": "Discernment", "Toxic": "Self-Medication"},
+      "Diminishing": {"Medicine": "Conviction", "Toxic": "Rage"},
+      "Bottoming Out": {"Medicine": "Surrender", "Toxic": "Misery"},
+      "Restoration": {"Medicine": "Catharsis", "Toxic": "Self-Repression"}
+    },
+    "Orange": {
+      "Rising": {"Medicine": "Hypothesize", "Toxic": "Assert"},
+      "Peaking": {"Medicine": "Experiment", "Toxic": "Crusade"},
+      "Withdrawal": {"Medicine": "Collect Data", "Toxic": "Overlook Details"},
+      "Diminishing": {"Medicine": "Analyze", "Toxic": "Force it"},
+      "Bottoming Out": {"Medicine": "Synthesize", "Toxic": "Fail"},
+      "Restoration": {"Medicine": "Question", "Toxic": "Presume"}
+    },
+    "Green": {
+      "Rising": {"Medicine": "Connection", "Toxic": "Oversharing"},
+      "Peaking": {"Medicine": "Belonging", "Toxic": "Megalomania"},
+      "Withdrawal": {"Medicine": "Retirement", "Toxic": "Social Anxiety"},
+      "Diminishing": {"Medicine": "Unwinding", "Toxic": "Alienation"},
+      "Bottoming Out": {"Medicine": "Repose", "Toxic": "Isolation"},
+      "Restoration": {"Medicine": "Vulnerability", "Toxic": "Bitterness"}
+    },
+    "Yellow": {
+      "Rising": {"Medicine": "Rebellion", "Toxic": "Mischief"},
+      "Peaking": {"Medicine": "Anarchy", "Toxic": "Chaos"},
+      "Withdrawal": {"Medicine": "Organize", "Toxic": "Discord"},
+      "Diminishing": {"Medicine": "Establish", "Toxic": "Confusion"},
+      "Bottoming Out": {"Medicine": "Order", "Toxic": "Bureaucracy"},
+      "Restoration": {"Medicine": "Disintegrate", "Toxic": "The Aftermath"}
+    },
+    "Teal": {
+      "Rising": {"Medicine": "Epiphany", "Toxic": "Delusion"},
+      "Peaking": {"Medicine": "Gnosis", "Toxic": "Psychosis"},
+      "Withdrawal": {"Medicine": "Receptivity", "Toxic": "Paranoia"},
+      "Diminishing": {"Medicine": "Absorption", "Toxic": "Horror"},
+      "Bottoming Out": {"Medicine": "Metabolism", "Toxic": "Despair"},
+      "Restoration": {"Medicine": "Pattern-Seeking", "Toxic": "Belief Salience"}
+    },
+    "Ultraviolet": {
+      "Rising": {
+        "Medicine": "Unification of Mind",
+        "Toxic": "Worldly Desire"
+      },
+      "Peaking": {"Medicine": "Jhana", "Toxic": "Bliss Addiction"},
+      "Withdrawal": {
+        "Medicine": "Metta and Meditative Joy",
+        "Toxic": "Agitation Due to Worry or Remorse"
+      },
+      "Diminishing": {
+        "Medicine": "Sustained Attention",
+        "Toxic": "Doubt"
+      },
+      "Bottoming Out": {"Medicine": "Pleasure", "Toxic": "Aversion"},
+      "Restoration": {
+        "Medicine": "Directed Attention",
+        "Toxic": "Laziness or Lethargy"
+      }
+    }
+  }
+  """#
+}
+
 extension Color {
   init(stage: String) {
     switch stage {
@@ -186,6 +306,26 @@ extension Color {
     case "Clear Light": self = .white
     default: self = .gray
     }
+  }
+}
+
+enum PhaseContent {
+  case strategies([Strategy])
+  case curriculum(CurriculumEntry)
+}
+
+struct CurriculumDetailView: View {
+  let phase: Phase
+  let entry: CurriculumEntry
+  let color: Color
+
+  var body: some View {
+    VStack {
+      Text("Medicine: \(entry.medicine)")
+      Text("Toxic: \(entry.toxic)")
+    }
+    .foregroundColor(color)
+    .navigationTitle(phase.rawValue)
   }
 }
 
@@ -205,7 +345,8 @@ struct StrategyListView: View {
 struct PhasePageView: View {
   let phase: Phase
   let header: LayerHeader?
-  let strategies: [Strategy]
+  let content: PhaseContent
+  let color: Color
 
   var body: some View {
     VStack {
@@ -215,40 +356,93 @@ struct PhasePageView: View {
         Text(header.subtitle)
           .font(.subheadline)
       }
-      NavigationLink(destination: StrategyListView(phase: phase, strategies: strategies)) {
+      NavigationLink(destination: destinationView) {
         Text(phase.rawValue)
           .font(.title2)
           .frame(maxWidth: .infinity, maxHeight: .infinity)
       }
+      .tint(color)
       .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
   }
+
+  @ViewBuilder private var destinationView: some View {
+    switch content {
+    case let .strategies(strategies):
+      StrategyListView(phase: phase, strategies: strategies)
+    case let .curriculum(entry):
+      CurriculumDetailView(phase: phase, entry: entry, color: color)
+    }
+  }
+}
+
+struct LayerView: View {
+  let layer: String
+  let header: LayerHeader?
+  let strategiesData: [Phase: [Strategy]]
+  let curriculum: [Phase: CurriculumEntry]
+
+  @State private var selection = 0
+  private let phases = Phase.allCases
+
+  var body: some View {
+    TabView(selection: $selection) {
+      ForEach(0 ..< (phases.count + 1), id: \.self) { index in
+        let phase = phases[index % phases.count]
+        let content: PhaseContent = if layer == "Strategies" {
+          .strategies(strategiesData[phase] ?? [])
+        } else if let entry = curriculum[phase] {
+          .curriculum(entry)
+        } else {
+          .curriculum(CurriculumEntry(medicine: "", toxic: ""))
+        }
+        PhasePageView(
+          phase: phase,
+          header: header,
+          content: content,
+          color: Color(stage: layer)
+        )
+        .tag(index)
+      }
+    }
+    .tabViewStyle(.page)
+    .onChange(of: selection) { newValue in
+      if newValue == phases.count {
+        selection = 0
+      }
+    }
+  }
 }
 
 struct ContentView: View {
-  @State private var selection = 0
-  private let phases = Phase.allCases
-  private let data = StrategyData.load()
+  @State private var layerSelection = 0
+  private let layers = [
+    "Strategies", "Beige", "Purple", "Red", "Blue", "Orange", "Green", "Yellow", "Teal",
+    "Ultraviolet",
+  ]
+  private let strategies = StrategyData.load()
   private let headers = HeaderData.load()
-  private let currentLayer = "Strategies"
+  private let curriculum = CurriculumData.load()
 
   var body: some View {
     NavigationStack {
-      TabView(selection: $selection) {
-        ForEach(0 ..< (phases.count + 1), id: \.self) { index in
-          let phase = phases[index % phases.count]
-          let header = headers[currentLayer]
-          PhasePageView(phase: phase, header: header, strategies: data[phase] ?? [])
-            .tag(index)
+      TabView(selection: $layerSelection) {
+        ForEach(0 ..< layers.count, id: \.self) { index in
+          let layer = layers[index]
+          LayerView(
+            layer: layer,
+            header: headers[layer],
+            strategiesData: strategies,
+            curriculum: curriculum[layer] ?? [:]
+          )
+          .tag(index)
+          .rotationEffect(.degrees(90))
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
       }
       .tabViewStyle(.page)
-      .onChange(of: selection) { newValue in
-        if newValue == phases.count {
-          selection = 0
-        }
-      }
+      .rotationEffect(.degrees(-90))
     }
   }
 }
