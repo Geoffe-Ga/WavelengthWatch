@@ -147,6 +147,7 @@
 			buildPhases = (
 				676DA3AC2E7204A500C63894 /* Sources */,
 				676DA3AD2E7204A500C63894 /* Frameworks */,
+				672C7DEF2E74E2950077457E /* ShellScript */,
 				676DA3AE2E7204A500C63894 /* Resources */,
 			);
 			buildRules = (
@@ -287,6 +288,32 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		672C7DEF2E74E2950077457E /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/../../backend/data/a-w-curriculum.csv\n",
+				"$(SRCROOT)/../../backend/data/a-w-strategies.csv",
+				"$(SRCROOT)/../../backend/data/a-w-headers.csv",
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/WavelengthWatch Watch App/Resources/a-w-curriculum.json",
+				"$(SRCROOT)/WavelengthWatch Watch App/Resources/a-w-strategies.json",
+				"$(SRCROOT)/WavelengthWatch Watch App/Resources/a-w-headers.json",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Use the existing convert_csv_to_json.sh script\nPROJECT_ROOT=\"$SRCROOT/../..\"\nSCRIPT_PATH=\"$PROJECT_ROOT/scripts/convert_csv_to_json.sh\"\n\n# Run the conversion script\n\"$SCRIPT_PATH\"\n\n# Copy the generated JSON files to Resources for bundling\nRESOURCES_DIR=\"$SRCROOT/WavelengthWatch Watch App/Resources\"\nmkdir -p \"$RESOURCES_DIR\"\ncp \"$PROJECT_ROOT/backend/data/prod/\"*.json \"$RESOURCES_DIR/\"\necho \"📁 JSON files copied to Resources directory\"\n\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		676DA3AC2E7204A500C63894 /* Sources */ = {
