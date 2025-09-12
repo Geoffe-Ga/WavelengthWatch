@@ -1,236 +1,236 @@
 {
   "Beige": {
     "Rising": {
-      "Prescription": "Commitment",
-      "Overdose": "Overcommitment"
+      "Medicine": "Commitment",
+      "Toxic": "Overcommitment"
     },
     "Peaking": {
-      "Prescription": "Diligence",
-      "Overdose": "Thriving"
+      "Medicine": "Diligence",
+      "Toxic": "Thriving"
     },
     "Withdrawal": {
-      "Prescription": "Steadiness",
-      "Overdose": "Burnout"
+      "Medicine": "Steadiness",
+      "Toxic": "Burnout"
     },
     "Diminishing": {
-      "Prescription": "Security",
-      "Overdose": "Grasping"
+      "Medicine": "Security",
+      "Toxic": "Grasping"
     },
     "Bottoming Out": {
-      "Prescription": "Planning",
-      "Overdose": "Overwhelm"
+      "Medicine": "Planning",
+      "Toxic": "Overwhelm"
     },
     "Restoration": {
-      "Prescription": "Next Habit",
-      "Overdose": "New Plan"
+      "Medicine": "Next Habit",
+      "Toxic": "New Plan"
     }
   },
   "Purple": {
     "Rising": {
-      "Prescription": "Inspiration",
-      "Overdose": "Grandiosity"
+      "Medicine": "Inspiration",
+      "Toxic": "Grandiosity"
     },
     "Peaking": {
-      "Prescription": "Joy",
-      "Overdose": "Ecstasy"
+      "Medicine": "Joy",
+      "Toxic": "Ecstasy"
     },
     "Withdrawal": {
-      "Prescription": "Introspectivity",
-      "Overdose": "Anxiety"
+      "Medicine": "Introspectivity",
+      "Toxic": "Anxiety"
     },
     "Diminishing": {
-      "Prescription": "Tranquility",
-      "Overdose": "Self-Doubt"
+      "Medicine": "Tranquility",
+      "Toxic": "Self-Doubt"
     },
     "Bottoming Out": {
-      "Prescription": "Convalescence",
-      "Overdose": "Self-Loathing"
+      "Medicine": "Convalescence",
+      "Toxic": "Self-Loathing"
     },
     "Restoration": {
-      "Prescription": "Recuperation",
-      "Overdose": "Selfishness"
+      "Medicine": "Recuperation",
+      "Toxic": "Selfishness"
     }
   },
   "Red": {
     "Rising": {
-      "Prescription": "Leading",
-      "Overdose": "Dominating"
+      "Medicine": "Leading",
+      "Toxic": "Dominating"
     },
     "Peaking": {
-      "Prescription": "Power-With",
-      "Overdose": "Power-Over"
+      "Medicine": "Power-With",
+      "Toxic": "Power-Over"
     },
     "Withdrawal": {
-      "Prescription": "Stepping Back",
-      "Overdose": "Crumbling"
+      "Medicine": "Stepping Back",
+      "Toxic": "Crumbling"
     },
     "Diminishing": {
-      "Prescription": "Self-Acceptance",
-      "Overdose": "Shame"
+      "Medicine": "Self-Acceptance",
+      "Toxic": "Shame"
     },
     "Bottoming Out": {
-      "Prescription": "Following",
-      "Overdose": "Subjugation"
+      "Medicine": "Following",
+      "Toxic": "Subjugation"
     },
     "Restoration": {
-      "Prescription": "Assembling",
-      "Overdose": "Revenge"
+      "Medicine": "Assembling",
+      "Toxic": "Revenge"
     }
   },
   "Blue": {
     "Rising": {
-      "Prescription": "Ambition",
-      "Overdose": "Voraciousness"
+      "Medicine": "Ambition",
+      "Toxic": "Voraciousness"
     },
     "Peaking": {
-      "Prescription": "Attunement",
-      "Overdose": "Leprosy"
+      "Medicine": "Attunement",
+      "Toxic": "Leprosy"
     },
     "Withdrawal": {
-      "Prescription": "Discernment",
-      "Overdose": "Self-Medication"
+      "Medicine": "Discernment",
+      "Toxic": "Self-Medication"
     },
     "Diminishing": {
-      "Prescription": "Conviction",
-      "Overdose": "Rage"
+      "Medicine": "Conviction",
+      "Toxic": "Rage"
     },
     "Bottoming Out": {
-      "Prescription": "Surrender",
-      "Overdose": "Misery"
+      "Medicine": "Surrender",
+      "Toxic": "Misery"
     },
     "Restoration": {
-      "Prescription": "Catharsis",
-      "Overdose": "Self-Repression"
+      "Medicine": "Catharsis",
+      "Toxic": "Self-Repression"
     }
   },
   "Orange": {
     "Rising": {
-      "Prescription": "Hypothesize",
-      "Overdose": "Assert"
+      "Medicine": "Hypothesize",
+      "Toxic": "Assert"
     },
     "Peaking": {
-      "Prescription": "Experiment",
-      "Overdose": "Crusade"
+      "Medicine": "Experiment",
+      "Toxic": "Crusade"
     },
     "Withdrawal": {
-      "Prescription": "Collect Data",
-      "Overdose": "Overlook Details"
+      "Medicine": "Collect Data",
+      "Toxic": "Overlook Details"
     },
     "Diminishing": {
-      "Prescription": "Analyze",
-      "Overdose": "Force it"
+      "Medicine": "Analyze",
+      "Toxic": "Force it"
     },
     "Bottoming Out": {
-      "Prescription": "Synthesize",
-      "Overdose": "Fail"
+      "Medicine": "Synthesize",
+      "Toxic": "Fail"
     },
     "Restoration": {
-      "Prescription": "Question",
-      "Overdose": "Presume"
+      "Medicine": "Question",
+      "Toxic": "Presume"
     }
   },
   "Green": {
     "Rising": {
-      "Prescription": "Connection",
-      "Overdose": "Oversharing"
+      "Medicine": "Connection",
+      "Toxic": "Oversharing"
     },
     "Peaking": {
-      "Prescription": "Belonging",
-      "Overdose": "Megalomania"
+      "Medicine": "Belonging",
+      "Toxic": "Megalomania"
     },
     "Withdrawal": {
-      "Prescription": "Retirement",
-      "Overdose": "Social Anxiety"
+      "Medicine": "Retirement",
+      "Toxic": "Social Anxiety"
     },
     "Diminishing": {
-      "Prescription": "Unwinding",
-      "Overdose": "Alienation"
+      "Medicine": "Unwinding",
+      "Toxic": "Alienation"
     },
     "Bottoming Out": {
-      "Prescription": "Repose",
-      "Overdose": "Isolation"
+      "Medicine": "Repose",
+      "Toxic": "Isolation"
     },
     "Restoration": {
-      "Prescription": "Vulnerability",
-      "Overdose": "Bitterness"
+      "Medicine": "Vulnerability",
+      "Toxic": "Bitterness"
     }
   },
   "Yellow": {
     "Rising": {
-      "Prescription": "Rebellion",
-      "Overdose": "Mischief"
+      "Medicine": "Rebellion",
+      "Toxic": "Mischief"
     },
     "Peaking": {
-      "Prescription": "Anarchy",
-      "Overdose": "Chaos"
+      "Medicine": "Anarchy",
+      "Toxic": "Chaos"
     },
     "Withdrawal": {
-      "Prescription": "Organize",
-      "Overdose": "Discord"
+      "Medicine": "Organize",
+      "Toxic": "Discord"
     },
     "Diminishing": {
-      "Prescription": "Establish",
-      "Overdose": "Confusion"
+      "Medicine": "Establish",
+      "Toxic": "Confusion"
     },
     "Bottoming Out": {
-      "Prescription": "Order",
-      "Overdose": "Bureaucracy"
+      "Medicine": "Order",
+      "Toxic": "Bureaucracy"
     },
     "Restoration": {
-      "Prescription": "Disintegrate",
-      "Overdose": "The Aftermath"
+      "Medicine": "Disintegrate",
+      "Toxic": "The Aftermath"
     }
   },
   "Teal": {
     "Rising": {
-      "Prescription": "Epiphany",
-      "Overdose": "Delusion"
+      "Medicine": "Epiphany",
+      "Toxic": "Delusion"
     },
     "Peaking": {
-      "Prescription": "Gnosis",
-      "Overdose": "Psychosis"
+      "Medicine": "Gnosis",
+      "Toxic": "Psychosis"
     },
     "Withdrawal": {
-      "Prescription": "Receptivity",
-      "Overdose": "Paranoia"
+      "Medicine": "Receptivity",
+      "Toxic": "Paranoia"
     },
     "Diminishing": {
-      "Prescription": "Absorption",
-      "Overdose": "Horror"
+      "Medicine": "Absorption",
+      "Toxic": "Horror"
     },
     "Bottoming Out": {
-      "Prescription": "Metabolism",
-      "Overdose": "Despair"
+      "Medicine": "Metabolism",
+      "Toxic": "Despair"
     },
     "Restoration": {
-      "Prescription": "Pattern-Seeking",
-      "Overdose": "Belief Salience"
+      "Medicine": "Pattern-Seeking",
+      "Toxic": "Belief Salience"
     }
   },
   "Ultraviolet": {
     "Rising": {
-      "Prescription": "Unification of Mind",
-      "Overdose": "Worldly Desire"
+      "Medicine": "Unification of Mind",
+      "Toxic": "Worldly Desire"
     },
     "Peaking": {
-      "Prescription": "Jhana",
-      "Overdose": "Bliss Addiction"
+      "Medicine": "Jhana",
+      "Toxic": "Bliss Addiction"
     },
     "Withdrawal": {
-      "Prescription": "Metta and Meditative Joy",
-      "Overdose": "Agitation Due to Worry or Remorse"
+      "Medicine": "Metta and Meditative Joy",
+      "Toxic": "Agitation Due to Worry or Remorse"
     },
     "Diminishing": {
-      "Prescription": "Sustained Attention",
-      "Overdose": "Doubt"
+      "Medicine": "Sustained Attention",
+      "Toxic": "Doubt"
     },
     "Bottoming Out": {
-      "Prescription": "Pleasure",
-      "Overdose": "Aversion"
+      "Medicine": "Pleasure",
+      "Toxic": "Aversion"
     },
     "Restoration": {
-      "Prescription": "Directed Attention",
-      "Overdose": "Laziness or Lethargy"
+      "Medicine": "Directed Attention",
+      "Toxic": "Laziness or Lethargy"
     }
   }
 }

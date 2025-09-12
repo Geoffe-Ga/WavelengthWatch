@@ -87,6 +87,44 @@
       "strategy": "Meditation Retreats"
     }
   ],
+  "Withdrawal": [
+    {
+      "color": "Beige",
+      "strategy": "Eating Something Grounding"
+    },
+    {
+      "color": "Blue",
+      "strategy": "Spending Time in Crowded Places"
+    },
+    {
+      "color": "Blue",
+      "strategy": "I Belong Here Ritual"
+    },
+    {
+      "color": "Blue",
+      "strategy": "Clairsentient Practice with Loved Ones"
+    },
+    {
+      "color": "Orange",
+      "strategy": "Intense Exercise"
+    },
+    {
+      "color": "Orange",
+      "strategy": "Pranayama (4/7/8)"
+    },
+    {
+      "color": "Orange",
+      "strategy": "Pranayama (Box Breathing)"
+    },
+    {
+      "color": "Beige",
+      "strategy": "5-4-3-2-1 Technique"
+    },
+    {
+      "color": "Yellow",
+      "strategy": "Anti-Anxiety Meds"
+    }
+  ],
   "Diminishing": [
     {
       "color": "Purple",

@@ -48,14 +48,14 @@ def _convert_curriculum(
         dosage = row.get("dosage", "").strip().lower()
         stage = row.get("stage", "").strip().title()
         stage_map = result.setdefault(stage, {})
-        key = "Prescription" if dosage.startswith("med") else "Overdose"
+        key = "Medicine" if dosage.startswith("med") else "Toxic"
         for ph in phases:
             value = row.get(ph, "").strip()
             if not value:
                 continue
             phase = ph.strip().title()
             payload = stage_map.setdefault(
-                phase, {"Prescription": "", "Overdose": ""}
+                phase, {"Medicine": "", "Toxic": ""}
             )
             payload[key] = value
     ordered: dict[str, dict[str, dict[str, str]]] = {}
