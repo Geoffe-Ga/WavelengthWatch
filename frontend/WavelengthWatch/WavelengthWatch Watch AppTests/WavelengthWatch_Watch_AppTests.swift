@@ -18,4 +18,10 @@ struct StrategyParsingTests {
     let data = StrategyData.load()
     #expect(data[.Withdrawal]?.isEmpty == true)
   }
+
+  @Test func parsesLayerHeader() throws {
+    let headers = HeaderData.load()
+    let strategiesHeader = headers["Strategies"]
+    #expect(strategiesHeader?.subtitle == "(For Surfing)")
+  }
 }

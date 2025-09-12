@@ -13,6 +13,11 @@ struct Strategy: Identifiable, Decodable {
   var id: String { strategy }
 }
 
+struct LayerHeader: Decodable {
+  let title: String
+  let subtitle: String
+}
+
 enum Phase: String, CaseIterable, Identifiable {
   case Rising
   case Peaking
@@ -96,6 +101,65 @@ enum StrategyData {
   """#
 }
 
+enum HeaderData {
+  static func load() -> [String: LayerHeader] {
+    let data = Data(headersJSON.utf8)
+    let decoded = try? JSONDecoder().decode([String: LayerHeader].self, from: data)
+    return decoded ?? [:]
+  }
+
+  // Embedded dataset mirrors backend/data/headers.json.
+  // This keeps the watch app self-contained for the MVP.
+  private static let headersJSON = #"""
+  {
+    "Beige": {
+      "title": "INHABIT",
+      "subtitle": "(Do)"
+    },
+    "Purple": {
+      "title": "INHABIT",
+      "subtitle": "(Feel)"
+    },
+    "Red": {
+      "title": "EXPRESS",
+      "subtitle": "(Do)"
+    },
+    "Blue": {
+      "title": "EXPRESS",
+      "subtitle": "(Feel)"
+    },
+    "Orange": {
+      "title": "COLLABORATE",
+      "subtitle": "(Do)"
+    },
+    "Green": {
+      "title": "COLLABORATE",
+      "subtitle": "(Feel)"
+    },
+    "Yellow": {
+      "title": "INTEGRATE",
+      "subtitle": "(Do)"
+    },
+    "Teal": {
+      "title": "INTEGRATE",
+      "subtitle": "(Feel)"
+    },
+    "Ultraviolet": {
+      "title": "ABSORB",
+      "subtitle": "(Do/Feel)"
+    },
+    "Clear Light": {
+      "title": "BE",
+      "subtitle": "(Neither/Both)"
+    },
+    "Strategies": {
+      "title": "Self-Care Strategies",
+      "subtitle": "(For Surfing)"
+    }
+  }
+  """#
+}
+
 extension Color {
   init(stage: String) {
     switch stage {
@@ -131,16 +195,27 @@ struct ContentView: View {
   @State private var selection = 0
   private let phases = Phase.allCases
   private let data = StrategyData.load()
+  private let headers = HeaderData.load()
+  private let currentLayer = "Strategies"
 
   var body: some View {
     NavigationStack {
       TabView(selection: $selection) {
         ForEach(0 ..< (phases.count + 1), id: \.self) { index in
           let phase = phases[index % phases.count]
+          let header = headers[currentLayer]
           NavigationLink(destination: StrategyListView(phase: phase, strategies: data[phase] ?? [])) {
-            Text(phase.rawValue)
-              .font(.title2)
-              .frame(maxWidth: .infinity, maxHeight: .infinity)
+            VStack {
+              if let header {
+                Text(header.title)
+                  .font(.headline)
+                Text(header.subtitle)
+                  .font(.subheadline)
+              }
+              Text(phase.rawValue)
+                .font(.title2)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
           }
           .tag(index)
         }
