@@ -29,4 +29,4 @@ fastlane/test_output/
 prompts/
 
 # Pycache
-*/__pycache__/*
+**/__pycache__/*
