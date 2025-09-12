@@ -7,7 +7,7 @@ import Foundation
 /// extra page on either end so the user can move from the first phase
 /// to the last (and vice‑versa) without interruption. These helpers
 /// manage the bookkeeping for that behaviour.
-struct PhaseNavigator {
+enum PhaseNavigator {
   /// Returns a selection value confined to the valid range of pages.
   ///
   /// - Parameters:
@@ -18,11 +18,11 @@ struct PhaseNavigator {
   /// - Returns: A selection in the range `1...phaseCount`.
   static func adjustedSelection(_ selection: Int, phaseCount: Int) -> Int {
     if selection == 0 {
-      return phaseCount
+      phaseCount
     } else if selection == phaseCount + 1 {
-      return 1
+      1
     } else {
-      return selection
+      selection
     }
   }
 
@@ -34,4 +34,3 @@ struct PhaseNavigator {
     (selection - 1 + phaseCount) % phaseCount
   }
 }
-
