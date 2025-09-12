@@ -71,7 +71,7 @@ jobs:
           xcodebuild \
             -project frontend/WavelengthWatch/WavelengthWatch.xcodeproj \
             -scheme "WavelengthWatch Watch App" \
-            -destination "generic/platform=watchOS" \
+            -destination "generic/platform=watchOS Simulator" \
             -configuration Debug \
             CODE_SIGNING_ALLOWED=NO \
             build
