@@ -2,8 +2,8 @@
 """Utility to convert A-W CSV files into JSON.
 
 The script accepts a single CSV file. It inspects the header to determine
-whether the input represents curriculum data or self-care strategies and
-writes the corresponding JSON structure.
+whether the input represents curriculum data, self-care strategies, or
+layer headers and writes the corresponding JSON structure.
 
 Usage
 -----
@@ -34,6 +34,8 @@ def _detect(headers: Iterable[str]) -> str:
         return "curriculum"
     if {"strategy", "phase"}.issubset(lowered):
         return "strategies"
+    if {"level", "title"}.issubset(lowered):
+        return "headers"
     raise ValueError(f"Unrecognised CSV format with headers: {headers}")
 
 
@@ -87,6 +89,18 @@ def _convert_strategies(
     return {ph: result[ph] for ph in PHASE_ORDER if result.get(ph)}
 
 
+def _convert_headers(rows: list[dict[str, str]]) -> dict[str, dict[str, str]]:
+    result: dict[str, dict[str, str]] = {}
+    for row in rows:
+        level = row.get("level", "").strip().title()
+        title = row.get("title", "").strip()
+        subtitle = row.get("subtitle", "").strip()
+        if not level or not title:
+            continue
+        result[level] = {"title": title, "subtitle": subtitle}
+    return result
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Convert A-W CSV to JSON")
     parser.add_argument("csv_file", type=Path, help="Input CSV file")
@@ -105,6 +119,14 @@ def main() -> None:
         out_path.parent.mkdir(parents=True, exist_ok=True)
         with out_path.open("w", encoding="utf-8") as fh:
             json.dump(data, fh, ensure_ascii=False, indent=2)
+            fh.write("\n")
+    elif kind == "headers":
+        header_data = _convert_headers(rows)
+        default_out = args.csv_file.with_name("headers.json")
+        out_path = args.out or default_out
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        with out_path.open("w", encoding="utf-8") as fh:
+            json.dump(header_data, fh, ensure_ascii=False, indent=2)
             fh.write("\n")
     else:
         strat_data = _convert_strategies(rows)

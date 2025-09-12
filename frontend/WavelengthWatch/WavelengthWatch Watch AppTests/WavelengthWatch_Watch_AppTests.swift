@@ -19,3 +19,11 @@ struct StrategyParsingTests {
     #expect(data[.Withdrawal]?.isEmpty == true)
   }
 }
+
+struct HeaderParsingTests {
+  @Test func parsesStrategiesHeader() {
+    let headers = HeaderData.load()
+    #expect(headers["Strategies"]?.title == "Self-Care Strategies")
+    #expect(headers["Blue"]?.subtitle == "(Feel)")
+  }
+}
