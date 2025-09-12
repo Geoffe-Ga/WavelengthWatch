@@ -70,4 +70,10 @@ jobs:
           NSUnbufferedIO: "YES"
         run: |
           set -eo pipefail
-          xcodebuild             -project frontend/WavelengthWatch/WavelengthWatch.xcodeproj             -scheme "WavelengthWatch Watch App"             -destination "generic/platform=watchOS Simulator"             -configuration Debug             CODE_SIGNING_ALLOWED=NO             build
+          xcodebuild \
+            -project frontend/WavelengthWatch/WavelengthWatch.xcodeproj \
+            -scheme "WavelengthWatch Watch App" \
+            -destination "generic/platform=watchOS" \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO \
+            build
