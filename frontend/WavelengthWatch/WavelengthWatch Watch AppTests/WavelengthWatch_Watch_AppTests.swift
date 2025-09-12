@@ -8,8 +8,14 @@
 import Testing
 @testable import WavelengthWatch_Watch_App
 
-struct WavelengthWatch_Watch_AppTests {
-  @Test func example() async throws {
-    // Write your test here and use APIs like `#expect(...)` to check expected conditions.
+struct StrategyParsingTests {
+  @Test func parsesRisingFirstStrategy() throws {
+    let data = StrategyData.load()
+    #expect(data[.Rising]?.first?.strategy == "Cold Shower")
+  }
+
+  @Test func handlesMissingWithdrawal() {
+    let data = StrategyData.load()
+    #expect(data[.Withdrawal]?.isEmpty == true)
   }
 }
