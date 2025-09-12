@@ -174,7 +174,7 @@ enum HeaderData {
       "subtitle": "(Neither/Both)"
     },
     "Strategies": {
-      "title": "Self-Care Strategies",
+      "title": "SELF-CARE",
       "subtitle": "(For Surfing)"
     }
   }
@@ -320,12 +320,88 @@ struct CurriculumDetailView: View {
   let color: Color
 
   var body: some View {
-    VStack {
-      Text("Medicine: \(entry.medicine)")
-      Text("Toxic: \(entry.toxic)")
+    ScrollView {
+      VStack(spacing: 16) {
+        Text(phase.rawValue)
+          .font(.title2)
+          .fontWeight(.thin)
+          .foregroundColor(.white)
+          .padding(.top, 8)
+
+        VStack(spacing: 20) {
+          // Medicine Card
+          VStack(alignment: .leading, spacing: 8) {
+            Text("MEDICINE")
+              .font(.caption)
+              .fontWeight(.medium)
+              .foregroundColor(.white.opacity(0.7))
+              .tracking(1.5)
+
+            Text(entry.medicine)
+              .font(.body)
+              .fontWeight(.medium)
+              .foregroundColor(color)
+          }
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .padding(.horizontal, 16)
+          .padding(.vertical, 12)
+          .background(
+            RoundedRectangle(cornerRadius: 12)
+              .fill(
+                LinearGradient(
+                  gradient: Gradient(colors: [color.opacity(0.3), color.opacity(0.1)]),
+                  startPoint: .topLeading,
+                  endPoint: .bottomTrailing
+                )
+              )
+              .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                  .stroke(color.opacity(0.5), lineWidth: 0.5)
+              )
+          )
+
+          // Toxic Card
+          VStack(alignment: .leading, spacing: 8) {
+            Text("TOXIC")
+              .font(.caption)
+              .fontWeight(.medium)
+              .foregroundColor(.white.opacity(0.7))
+              .tracking(1.5)
+
+            Text(entry.toxic)
+              .font(.body)
+              .fontWeight(.medium)
+              .foregroundColor(.red.opacity(0.9))
+          }
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .padding(.horizontal, 16)
+          .padding(.vertical, 12)
+          .background(
+            RoundedRectangle(cornerRadius: 12)
+              .fill(
+                LinearGradient(
+                  gradient: Gradient(colors: [Color.red.opacity(0.3), Color.red.opacity(0.1)]),
+                  startPoint: .topLeading,
+                  endPoint: .bottomTrailing
+                )
+              )
+              .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                  .stroke(Color.red.opacity(0.5), lineWidth: 0.5)
+              )
+          )
+        }
+        .padding(.horizontal, 8)
+      }
+      .padding(.vertical, 16)
     }
-    .foregroundColor(color)
-    .navigationTitle(phase.rawValue)
+    .background(
+      LinearGradient(
+        gradient: Gradient(colors: [Color.black, Color.black.opacity(0.8)]),
+        startPoint: .top,
+        endPoint: .bottom
+      )
+    )
   }
 }
 
@@ -334,11 +410,61 @@ struct StrategyListView: View {
   let strategies: [Strategy]
 
   var body: some View {
-    List(strategies) { item in
-      Text(item.strategy)
-        .foregroundColor(Color(stage: item.color))
+    ScrollView {
+      VStack(spacing: 4) {
+        Text(phase.rawValue)
+          .font(.title2)
+          .fontWeight(.thin)
+          .foregroundColor(.white)
+          .padding(.top, 8)
+          .padding(.bottom, 12)
+
+        LazyVStack(spacing: 8) {
+          ForEach(strategies) { item in
+            HStack {
+              Circle()
+                .fill(Color(stage: item.color))
+                .frame(width: 6, height: 6)
+                .shadow(color: Color(stage: item.color), radius: 2, x: 0, y: 0)
+
+              Text(item.strategy)
+                .font(.body)
+                .fontWeight(.regular)
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(
+              RoundedRectangle(cornerRadius: 8)
+                .fill(
+                  LinearGradient(
+                    gradient: Gradient(colors: [
+                      Color(stage: item.color).opacity(0.25),
+                      Color(stage: item.color).opacity(0.08),
+                    ]),
+                    startPoint: .leading,
+                    endPoint: .trailing
+                  )
+                )
+                .overlay(
+                  RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color(stage: item.color).opacity(0.35), lineWidth: 0.5)
+                )
+            )
+          }
+        }
+        .padding(.horizontal, 8)
+      }
+      .padding(.vertical, 16)
     }
-    .navigationTitle(phase.rawValue)
+    .background(
+      LinearGradient(
+        gradient: Gradient(colors: [Color.black, Color.black.opacity(0.8)]),
+        startPoint: .top,
+        endPoint: .bottom
+      )
+    )
   }
 }
 
@@ -349,22 +475,109 @@ struct PhasePageView: View {
   let color: Color
 
   var body: some View {
-    VStack {
-      if let header {
-        Text(header.title)
-          .font(.headline)
-        Text(header.subtitle)
-          .font(.subheadline)
+    GeometryReader { geometry in
+      VStack(spacing: 0) {
+        // Header section
+        if let header {
+          VStack(spacing: 4) {
+            Text(header.title)
+              .font(.caption)
+              .fontWeight(.semibold)
+              .foregroundColor(.white.opacity(0.9))
+              .tracking(2.0)
+              .multilineTextAlignment(.center)
+
+            Text(header.subtitle)
+              .font(.caption2)
+              .fontWeight(.regular)
+              .foregroundColor(.white.opacity(0.6))
+              .tracking(1.0)
+              .multilineTextAlignment(.center)
+          }
+          .padding(.top, 12)
+          .padding(.bottom, 8)
+        }
+
+        Spacer()
+
+        // Main phase button
+        NavigationLink(destination: destinationView) {
+          VStack(spacing: 6) {
+            Text(phase.rawValue)
+              .font(.title3)
+              .fontWeight(.medium)
+              .foregroundColor(.white)
+              .multilineTextAlignment(.center)
+              .shadow(color: color.opacity(0.5), radius: 4, x: 0, y: 2)
+
+            // Subtle indicator
+            RoundedRectangle(cornerRadius: 2)
+              .fill(color)
+              .frame(width: 24, height: 2)
+              .shadow(color: color, radius: 3, x: 0, y: 0)
+          }
+          .frame(maxWidth: .infinity)
+          .frame(height: geometry.size.height * 0.6)
+          .background(
+            RoundedRectangle(cornerRadius: 16)
+              .fill(
+                RadialGradient(
+                  gradient: Gradient(colors: [
+                    color.opacity(0.35),
+                    color.opacity(0.15),
+                    Color.clear,
+                  ]),
+                  center: .center,
+                  startRadius: 20,
+                  endRadius: 80
+                )
+              )
+              .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                  .stroke(
+                    LinearGradient(
+                      gradient: Gradient(colors: [
+                        color.opacity(0.6),
+                        color.opacity(0.2),
+                      ]),
+                      startPoint: .topLeading,
+                      endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                  )
+              )
+          )
+          .scaleEffect(0.95)
+        }
+        .buttonStyle(PlainButtonStyle())
+
+        Spacer()
       }
-      NavigationLink(destination: destinationView) {
-        Text(phase.rawValue)
-          .font(.title2)
-          .frame(maxWidth: .infinity, maxHeight: .infinity)
-      }
-      .tint(color)
       .frame(maxWidth: .infinity, maxHeight: .infinity)
+      .background(
+        LinearGradient(
+          gradient: Gradient(colors: [
+            Color.black.opacity(0.9),
+            Color.black.opacity(0.7),
+            Color.black,
+          ]),
+          startPoint: .top,
+          endPoint: .bottom
+        )
+        .overlay(
+          // Subtle mystical overlay
+          RadialGradient(
+            gradient: Gradient(colors: [
+              color.opacity(0.08),
+              Color.clear,
+            ]),
+            center: .center,
+            startRadius: 50,
+            endRadius: 150
+          )
+        )
+      )
     }
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
   }
 
   @ViewBuilder private var destinationView: some View {
@@ -384,32 +597,103 @@ struct LayerView: View {
   let curriculum: [Phase: CurriculumEntry]
 
   @State private var selection = 0
+  @State private var showPageIndicator = false
+  @State private var hideIndicatorTask: Task<Void, Never>?
   private let phases = Phase.allCases
 
+  private func getPhaseContent(for phase: Phase) -> PhaseContent {
+    if layer == "Strategies" {
+      .strategies(strategiesData[phase] ?? [])
+    } else if let entry = curriculum[phase] {
+      .curriculum(entry)
+    } else {
+      .curriculum(CurriculumEntry(medicine: "", toxic: ""))
+    }
+  }
+
   var body: some View {
-    TabView(selection: $selection) {
-      ForEach(0 ..< (phases.count + 1), id: \.self) { index in
-        let phase = phases[index % phases.count]
-        let content: PhaseContent = if layer == "Strategies" {
-          .strategies(strategiesData[phase] ?? [])
-        } else if let entry = curriculum[phase] {
-          .curriculum(entry)
-        } else {
-          .curriculum(CurriculumEntry(medicine: "", toxic: ""))
+    ZStack {
+      TabView(selection: $selection) {
+        ForEach(0 ..< (phases.count + 1), id: \.self) { index in
+          let phase = phases[index % phases.count]
+          let content = getPhaseContent(for: phase)
+          PhasePageView(
+            phase: phase,
+            header: header,
+            content: content,
+            color: Color(stage: layer)
+          )
+          .tag(index)
         }
-        PhasePageView(
-          phase: phase,
-          header: header,
-          content: content,
-          color: Color(stage: layer)
-        )
-        .tag(index)
+      }
+      .tabViewStyle(.page(indexDisplayMode: .never))
+      .onChange(of: selection) { newValue in
+        if newValue == phases.count {
+          selection = 0
+        }
+
+        // Show indicator when scrolling
+        withAnimation(.easeIn(duration: 0.2)) {
+          showPageIndicator = true
+        }
+
+        // Cancel previous hide task
+        hideIndicatorTask?.cancel()
+
+        // Hide after delay
+        hideIndicatorTask = Task {
+          try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
+          if !Task.isCancelled {
+            withAnimation(.easeOut(duration: 0.3)) {
+              showPageIndicator = false
+            }
+          }
+        }
+      }
+
+      // Custom horizontal page indicator
+      if showPageIndicator {
+        GeometryReader { geometry in
+          HStack(spacing: 4) {
+            ForEach(0 ..< phases.count, id: \.self) { index in
+              let isSelected = index == (selection % phases.count)
+              Circle()
+                .fill(isSelected ? Color.white : Color.white.opacity(0.3))
+                .frame(
+                  width: isSelected ? 6 : 4,
+                  height: isSelected ? 6 : 4
+                )
+                .animation(.easeInOut(duration: 0.2), value: selection)
+            }
+          }
+          .padding(.horizontal, 8)
+          .padding(.vertical, 4)
+          .background(
+            Capsule()
+              .fill(Color.black.opacity(0.6))
+              .overlay(
+                Capsule()
+                  .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
+              )
+          )
+          .position(x: geometry.size.width / 2, y: geometry.size.height - 8)
+        }
+        .transition(.opacity)
       }
     }
-    .tabViewStyle(.page)
-    .onChange(of: selection) { newValue in
-      if newValue == phases.count {
-        selection = 0
+    .onAppear {
+      // Show indicator briefly on appear
+      withAnimation(.easeIn(duration: 0.2)) {
+        showPageIndicator = true
+      }
+
+      hideIndicatorTask = Task {
+        try? await Task.sleep(nanoseconds: 2_000_000_000)
+        if !Task.isCancelled {
+          withAnimation(.easeOut(duration: 0.3)) {
+            showPageIndicator = false
+          }
+        }
       }
     }
   }
@@ -417,6 +701,8 @@ struct LayerView: View {
 
 struct ContentView: View {
   @State private var layerSelection = 0
+  @State private var showLayerIndicator = false
+  @State private var hideIndicatorTask: Task<Void, Never>?
   private let layers = [
     "Strategies", "Beige", "Purple", "Red", "Blue", "Orange", "Green", "Yellow", "Teal",
     "Ultraviolet",
@@ -427,22 +713,100 @@ struct ContentView: View {
 
   var body: some View {
     NavigationStack {
-      TabView(selection: $layerSelection) {
-        ForEach(0 ..< layers.count, id: \.self) { index in
-          let layer = layers[index]
-          LayerView(
-            layer: layer,
-            header: headers[layer],
-            strategiesData: strategies,
-            curriculum: curriculum[layer] ?? [:]
-          )
-          .tag(index)
-          .rotationEffect(.degrees(90))
-          .frame(maxWidth: .infinity, maxHeight: .infinity)
+      ZStack {
+        TabView(selection: $layerSelection) {
+          ForEach(0 ..< layers.count, id: \.self) { index in
+            let layer = layers[index]
+            LayerView(
+              layer: layer,
+              header: headers[layer],
+              strategiesData: strategies,
+              curriculum: curriculum[layer] ?? [:]
+            )
+            .tag(index)
+            .rotationEffect(.degrees(90))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+          }
+        }
+        .tabViewStyle(.page(indexDisplayMode: .never))
+        .rotationEffect(.degrees(-90))
+        .onChange(of: layerSelection) { _ in
+          // Show indicator when scrolling
+          withAnimation(.easeIn(duration: 0.2)) {
+            showLayerIndicator = true
+          }
+
+          // Cancel previous hide task
+          hideIndicatorTask?.cancel()
+
+          // Hide after delay
+          hideIndicatorTask = Task {
+            try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
+            if !Task.isCancelled {
+              withAnimation(.easeOut(duration: 0.3)) {
+                showLayerIndicator = false
+              }
+            }
+          }
+        }
+
+        // Custom vertical scroll bar indicator
+        if showLayerIndicator {
+          GeometryReader { geometry in
+            VStack {
+              Spacer()
+              HStack {
+                Spacer()
+                ZStack(alignment: .top) {
+                  // Background track
+                  Capsule()
+                    .fill(Color.white.opacity(0.1))
+                    .frame(width: 4, height: geometry.size.height * 0.4)
+
+                  // Progress indicator with layer color
+                  Capsule()
+                    .fill(
+                      LinearGradient(
+                        gradient: Gradient(colors: [
+                          Color(stage: layers[layerSelection]),
+                          Color(stage: layers[layerSelection]).opacity(0.6),
+                        ]),
+                        startPoint: .top,
+                        endPoint: .bottom
+                      )
+                    )
+                    .frame(width: 6, height: max(20, (geometry.size.height * 0.4) / CGFloat(layers.count)))
+                    .overlay(
+                      Capsule()
+                        .stroke(Color.white.opacity(0.3), lineWidth: 0.5)
+                    )
+                    .shadow(color: Color(stage: layers[layerSelection]), radius: 3, x: 0, y: 0)
+                    .offset(y: CGFloat(layers.count - 1 - layerSelection) * ((geometry.size.height * 0.4 - 20) / CGFloat(layers.count - 1)))
+                    .animation(.interactiveSpring(response: 0.3, dampingFraction: 0.7), value: layerSelection)
+                }
+                .padding(.trailing, 6)
+              }
+              Spacer()
+            }
+          }
+          .transition(.opacity)
         }
       }
-      .tabViewStyle(.page)
-      .rotationEffect(.degrees(-90))
+      .onAppear {
+        // Show indicator briefly on appear
+        withAnimation(.easeIn(duration: 0.2)) {
+          showLayerIndicator = true
+        }
+
+        hideIndicatorTask = Task {
+          try? await Task.sleep(nanoseconds: 2_000_000_000)
+          if !Task.isCancelled {
+            withAnimation(.easeOut(duration: 0.3)) {
+              showLayerIndicator = false
+            }
+          }
+        }
+      }
     }
   }
 }
