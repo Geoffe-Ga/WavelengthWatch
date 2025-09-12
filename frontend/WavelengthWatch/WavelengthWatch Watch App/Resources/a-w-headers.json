@@ -1,0 +1,46 @@
+{
+  "Beige": {
+    "title": "INHABIT",
+    "subtitle": "(Do)"
+  },
+  "Purple": {
+    "title": "INHABIT",
+    "subtitle": "(Feel)"
+  },
+  "Red": {
+    "title": "EXPRESS",
+    "subtitle": "(Do)"
+  },
+  "Blue": {
+    "title": "EXPRESS",
+    "subtitle": "(Feel)"
+  },
+  "Orange": {
+    "title": "COLLABORATE",
+    "subtitle": "(Do)"
+  },
+  "Green": {
+    "title": "COLLABORATE",
+    "subtitle": "(Feel)"
+  },
+  "Yellow": {
+    "title": "INTEGRATE",
+    "subtitle": "(Do)"
+  },
+  "Teal": {
+    "title": "INTEGRATE",
+    "subtitle": "(Feel)"
+  },
+  "Ultraviolet": {
+    "title": "ABSORB",
+    "subtitle": "(Do/Feel)"
+  },
+  "Clear Light": {
+    "title": "BE",
+    "subtitle": "(Neither/Both)"
+  },
+  "Strategies": {
+    "title": "SELF-CARE",
+    "subtitle": "(For Surfing)"
+  }
+}
