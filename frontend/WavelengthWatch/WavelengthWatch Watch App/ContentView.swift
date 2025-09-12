@@ -595,8 +595,9 @@ struct LayerView: View {
   let header: LayerHeader?
   let strategiesData: [Phase: [Strategy]]
   let curriculum: [Phase: CurriculumEntry]
-
-  @State private var selection = 0
+  /// Binding to the globally selected phase so that phase choice
+  /// persists across color layers.
+  @Binding var selection: Int
   @State private var showPageIndicator = false
   @State private var hideIndicatorTask: Task<Void, Never>?
   private let phases = Phase.allCases
@@ -614,8 +615,8 @@ struct LayerView: View {
   var body: some View {
     ZStack {
       TabView(selection: $selection) {
-        ForEach(0 ..< (phases.count + 1), id: \.self) { index in
-          let phase = phases[index % phases.count]
+        ForEach(0 ..< (phases.count + 2), id: \.self) { index in
+          let phase = phases[(index + phases.count - 1) % phases.count]
           let content = getPhaseContent(for: phase)
           PhasePageView(
             phase: phase,
@@ -628,8 +629,9 @@ struct LayerView: View {
       }
       .tabViewStyle(.page(indexDisplayMode: .never))
       .onChange(of: selection) { newValue in
-        if newValue == phases.count {
-          selection = 0
+        let adjusted = PhaseNavigator.adjustedSelection(newValue, phaseCount: phases.count)
+        if adjusted != newValue {
+          selection = adjusted
         }
 
         // Show indicator when scrolling
@@ -656,7 +658,8 @@ struct LayerView: View {
         GeometryReader { geometry in
           HStack(spacing: 4) {
             ForEach(0 ..< phases.count, id: \.self) { index in
-              let isSelected = index == (selection % phases.count)
+              let selectedIndex = PhaseNavigator.normalizedIndex(selection, phaseCount: phases.count)
+              let isSelected = index == selectedIndex
               Circle()
                 .fill(isSelected ? Color.white : Color.white.opacity(0.3))
                 .frame(
@@ -701,6 +704,9 @@ struct LayerView: View {
 
 struct ContentView: View {
   @State private var layerSelection = 0
+  /// Shared phase selection so swiping between layers retains the
+  /// current phase.
+  @State private var phaseSelection = 1
   @State private var showLayerIndicator = false
   @State private var hideIndicatorTask: Task<Void, Never>?
   private let layers = [
@@ -721,7 +727,8 @@ struct ContentView: View {
               layer: layer,
               header: headers[layer],
               strategiesData: strategies,
-              curriculum: curriculum[layer] ?? [:]
+              curriculum: curriculum[layer] ?? [:],
+              selection: $phaseSelection
             )
             .tag(index)
             .rotationEffect(.degrees(90))
