@@ -1,8 +1,236 @@
-[
-  {
-    "stage": "Beige",
-    "phase": "Restoration",
-    "medicinal": true,
-    "toxic": false
+{
+  "Beige": {
+    "Rising": {
+      "Prescription": "Commitment",
+      "Overdose": "Overcommitment"
+    },
+    "Peaking": {
+      "Prescription": "Diligence",
+      "Overdose": "Thriving"
+    },
+    "Withdrawal": {
+      "Prescription": "Steadiness",
+      "Overdose": "Burnout"
+    },
+    "Diminishing": {
+      "Prescription": "Security",
+      "Overdose": "Grasping"
+    },
+    "Bottoming Out": {
+      "Prescription": "Planning",
+      "Overdose": "Overwhelm"
+    },
+    "Restoration": {
+      "Prescription": "Next Habit",
+      "Overdose": "New Plan"
+    }
+  },
+  "Purple": {
+    "Rising": {
+      "Prescription": "Inspiration",
+      "Overdose": "Grandiosity"
+    },
+    "Peaking": {
+      "Prescription": "Joy",
+      "Overdose": "Ecstasy"
+    },
+    "Withdrawal": {
+      "Prescription": "Introspectivity",
+      "Overdose": "Anxiety"
+    },
+    "Diminishing": {
+      "Prescription": "Tranquility",
+      "Overdose": "Self-Doubt"
+    },
+    "Bottoming Out": {
+      "Prescription": "Convalescence",
+      "Overdose": "Self-Loathing"
+    },
+    "Restoration": {
+      "Prescription": "Recuperation",
+      "Overdose": "Selfishness"
+    }
+  },
+  "Red": {
+    "Rising": {
+      "Prescription": "Leading",
+      "Overdose": "Dominating"
+    },
+    "Peaking": {
+      "Prescription": "Power-With",
+      "Overdose": "Power-Over"
+    },
+    "Withdrawal": {
+      "Prescription": "Stepping Back",
+      "Overdose": "Crumbling"
+    },
+    "Diminishing": {
+      "Prescription": "Self-Acceptance",
+      "Overdose": "Shame"
+    },
+    "Bottoming Out": {
+      "Prescription": "Following",
+      "Overdose": "Subjugation"
+    },
+    "Restoration": {
+      "Prescription": "Assembling",
+      "Overdose": "Revenge"
+    }
+  },
+  "Blue": {
+    "Rising": {
+      "Prescription": "Ambition",
+      "Overdose": "Voraciousness"
+    },
+    "Peaking": {
+      "Prescription": "Attunement",
+      "Overdose": "Leprosy"
+    },
+    "Withdrawal": {
+      "Prescription": "Discernment",
+      "Overdose": "Self-Medication"
+    },
+    "Diminishing": {
+      "Prescription": "Conviction",
+      "Overdose": "Rage"
+    },
+    "Bottoming Out": {
+      "Prescription": "Surrender",
+      "Overdose": "Misery"
+    },
+    "Restoration": {
+      "Prescription": "Catharsis",
+      "Overdose": "Self-Repression"
+    }
+  },
+  "Orange": {
+    "Rising": {
+      "Prescription": "Hypothesize",
+      "Overdose": "Assert"
+    },
+    "Peaking": {
+      "Prescription": "Experiment",
+      "Overdose": "Crusade"
+    },
+    "Withdrawal": {
+      "Prescription": "Collect Data",
+      "Overdose": "Overlook Details"
+    },
+    "Diminishing": {
+      "Prescription": "Analyze",
+      "Overdose": "Force it"
+    },
+    "Bottoming Out": {
+      "Prescription": "Synthesize",
+      "Overdose": "Fail"
+    },
+    "Restoration": {
+      "Prescription": "Question",
+      "Overdose": "Presume"
+    }
+  },
+  "Green": {
+    "Rising": {
+      "Prescription": "Connection",
+      "Overdose": "Oversharing"
+    },
+    "Peaking": {
+      "Prescription": "Belonging",
+      "Overdose": "Megalomania"
+    },
+    "Withdrawal": {
+      "Prescription": "Retirement",
+      "Overdose": "Social Anxiety"
+    },
+    "Diminishing": {
+      "Prescription": "Unwinding",
+      "Overdose": "Alienation"
+    },
+    "Bottoming Out": {
+      "Prescription": "Repose",
+      "Overdose": "Isolation"
+    },
+    "Restoration": {
+      "Prescription": "Vulnerability",
+      "Overdose": "Bitterness"
+    }
+  },
+  "Yellow": {
+    "Rising": {
+      "Prescription": "Rebellion",
+      "Overdose": "Mischief"
+    },
+    "Peaking": {
+      "Prescription": "Anarchy",
+      "Overdose": "Chaos"
+    },
+    "Withdrawal": {
+      "Prescription": "Organize",
+      "Overdose": "Discord"
+    },
+    "Diminishing": {
+      "Prescription": "Establish",
+      "Overdose": "Confusion"
+    },
+    "Bottoming Out": {
+      "Prescription": "Order",
+      "Overdose": "Bureaucracy"
+    },
+    "Restoration": {
+      "Prescription": "Disintegrate",
+      "Overdose": "The Aftermath"
+    }
+  },
+  "Teal": {
+    "Rising": {
+      "Prescription": "Epiphany",
+      "Overdose": "Delusion"
+    },
+    "Peaking": {
+      "Prescription": "Gnosis",
+      "Overdose": "Psychosis"
+    },
+    "Withdrawal": {
+      "Prescription": "Receptivity",
+      "Overdose": "Paranoia"
+    },
+    "Diminishing": {
+      "Prescription": "Absorption",
+      "Overdose": "Horror"
+    },
+    "Bottoming Out": {
+      "Prescription": "Metabolism",
+      "Overdose": "Despair"
+    },
+    "Restoration": {
+      "Prescription": "Pattern-Seeking",
+      "Overdose": "Belief Salience"
+    }
+  },
+  "Ultraviolet": {
+    "Rising": {
+      "Prescription": "Unification of Mind",
+      "Overdose": "Worldly Desire"
+    },
+    "Peaking": {
+      "Prescription": "Jhana",
+      "Overdose": "Bliss Addiction"
+    },
+    "Withdrawal": {
+      "Prescription": "Metta and Meditative Joy",
+      "Overdose": "Agitation Due to Worry or Remorse"
+    },
+    "Diminishing": {
+      "Prescription": "Sustained Attention",
+      "Overdose": "Doubt"
+    },
+    "Bottoming Out": {
+      "Prescription": "Pleasure",
+      "Overdose": "Aversion"
+    },
+    "Restoration": {
+      "Prescription": "Directed Attention",
+      "Overdose": "Laziness or Lethargy"
+    }
   }
-]
+}

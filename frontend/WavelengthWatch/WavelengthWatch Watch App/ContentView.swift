@@ -7,15 +7,151 @@
 
 import SwiftUI
 
-struct ContentView: View {
-  var body: some View {
-    VStack {
-      Image(systemName: "globe")
-        .imageScale(.large)
-        .foregroundStyle(.tint)
-      Text("woot, world!")
+struct Strategy: Identifiable, Decodable {
+  let color: String
+  let strategy: String
+  var id: String { strategy }
+}
+
+enum Phase: String, CaseIterable, Identifiable {
+  case Rising
+  case Peaking
+  case Withdrawal
+  case Diminishing
+  case BottomingOut = "Bottoming Out"
+  case Restoration
+
+  var id: String { rawValue }
+}
+
+enum StrategyData {
+  static func load() -> [Phase: [Strategy]] {
+    let data = Data(strategiesJSON.utf8)
+    let decoded = try? JSONDecoder().decode([String: [Strategy]].self, from: data)
+    var result: [Phase: [Strategy]] = [:]
+    for phase in Phase.allCases {
+      result[phase] = decoded?[phase.rawValue] ?? []
     }
-    .padding()
+    return result
+  }
+
+  // Embedded dataset mirrors backend/data/strategies.json.
+  // This keeps the watch app self-contained for the MVP.
+  private static let strategiesJSON = #"""
+  {
+    "Rising": [
+      {"color": "Beige", "strategy": "Cold Shower"},
+      {"color": "Purple", "strategy": "Clairaudient Practice"},
+      {"color": "Purple", "strategy": "Divination"},
+      {"color": "Purple", "strategy": "Dog Walkin Shamanism"},
+      {"color": "Blue", "strategy": "Empathizing with Others"},
+      {"color": "Blue", "strategy": "Metta Meditation"},
+      {"color": "Blue", "strategy": "Dad Time"},
+      {"color": "Orange", "strategy": "Pranayama (Wim Hof)"},
+      {"color": "Orange", "strategy": "Eating Something Tasty"},
+      {"color": "Orange", "strategy": "Pranayama (Alternate Nostril)"},
+      {"color": "Green", "strategy": "Yoga"},
+      {"color": "Green", "strategy": "Creative Writing"},
+      {"color": "Green", "strategy": "Making Music"},
+      {"color": "Teal", "strategy": "Meditation Micro-Retreats"}
+    ],
+    "Peaking": [
+      {"color": "Red", "strategy": "Confidence Practice"},
+      {"color": "Blue", "strategy": "Socializing"},
+      {"color": "Blue", "strategy": "Compassion Practice"},
+      {"color": "Yellow", "strategy": "Samatha Vipassana"},
+      {"color": "Yellow", "strategy": "Kombucha"},
+      {"color": "Teal", "strategy": "Magick"},
+      {"color": "Ultraviolet", "strategy": "Meditation Retreats"}
+    ],
+    "Diminishing": [
+      {"color": "Purple", "strategy": "Long Drives"},
+      {"color": "Purple", "strategy": "Hot Beverages"},
+      {"color": "Red", "strategy": "Walking"},
+      {"color": "Green", "strategy": "Journaling"},
+      {"color": "Green", "strategy": "Cleaning"}
+    ],
+    "Bottoming Out": [
+      {"color": "Beige", "strategy": "Readjusting posture"},
+      {"color": "Beige", "strategy": "Getting Comfy"},
+      {"color": "Beige", "strategy": "Drinking Water"},
+      {"color": "Purple", "strategy": "Listening to Music"},
+      {"color": "Red", "strategy": "Pranayama (Lion's Breath)"},
+      {"color": "Orange", "strategy": "Learning"},
+      {"color": "Teal", "strategy": "Baby Waterfall Conventions"}
+    ],
+    "Restoration": [
+      {"color": "Beige", "strategy": "One Pushup / One Squat"},
+      {"color": "Beige", "strategy": "Wash face"},
+      {"color": "Purple", "strategy": "Kirtan"},
+      {"color": "Purple", "strategy": "Taking a Bath"},
+      {"color": "Purple", "strategy": "Getting Some Sunshine"},
+      {"color": "Red", "strategy": "Somatic Meditation"},
+      {"color": "Red", "strategy": "Biking"},
+      {"color": "Red", "strategy": "Jogging"},
+      {"color": "Red", "strategy": "Dancing"},
+      {"color": "Blue", "strategy": "Husband Time"}
+    ]
+  }
+  """#
+}
+
+extension Color {
+  init(stage: String) {
+    switch stage {
+    case "Beige": self = .brown
+    case "Purple": self = .purple
+    case "Red": self = .red
+    case "Blue": self = .blue
+    case "Orange": self = .orange
+    case "Green": self = .green
+    case "Yellow": self = .yellow
+    case "Teal": self = .teal
+    case "Ultraviolet": self = .indigo
+    case "Clear Light": self = .white
+    default: self = .gray
+    }
+  }
+}
+
+struct StrategyListView: View {
+  let phase: Phase
+  let strategies: [Strategy]
+
+  var body: some View {
+    List(strategies) { item in
+      Text(item.strategy)
+        .foregroundColor(Color(stage: item.color))
+    }
+    .navigationTitle(phase.rawValue)
+  }
+}
+
+struct ContentView: View {
+  @State private var selection = 0
+  private let phases = Phase.allCases
+  private let data = StrategyData.load()
+
+  var body: some View {
+    NavigationStack {
+      TabView(selection: $selection) {
+        ForEach(0 ..< (phases.count + 1), id: \.self) { index in
+          let phase = phases[index % phases.count]
+          NavigationLink(destination: StrategyListView(phase: phase, strategies: data[phase] ?? [])) {
+            Text(phase.rawValue)
+              .font(.title2)
+              .frame(maxWidth: .infinity, maxHeight: .infinity)
+          }
+          .tag(index)
+        }
+      }
+      .tabViewStyle(.page)
+      .onChange(of: selection) { newValue in
+        if newValue == phases.count {
+          selection = 0
+        }
+      }
+    }
   }
 }
 
