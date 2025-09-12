@@ -390,13 +390,12 @@ struct LayerView: View {
     TabView(selection: $selection) {
       ForEach(0 ..< (phases.count + 1), id: \.self) { index in
         let phase = phases[index % phases.count]
-        let content: PhaseContent
-        if layer == "Strategies" {
-          content = .strategies(strategiesData[phase] ?? [])
+        let content: PhaseContent = if layer == "Strategies" {
+          .strategies(strategiesData[phase] ?? [])
         } else if let entry = curriculum[phase] {
-          content = .curriculum(entry)
+          .curriculum(entry)
         } else {
-          content = .curriculum(CurriculumEntry(medicine: "", toxic: ""))
+          .curriculum(CurriculumEntry(medicine: "", toxic: ""))
         }
         PhasePageView(
           phase: phase,
