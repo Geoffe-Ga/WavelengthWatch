@@ -781,7 +781,7 @@ struct ContentView: View {
                         .stroke(Color.white.opacity(0.3), lineWidth: 0.5)
                     )
                     .shadow(color: Color(stage: layers[layerSelection]), radius: 3, x: 0, y: 0)
-                    .offset(y: CGFloat(layerSelection) * ((geometry.size.height * 0.4 - 20) / CGFloat(layers.count - 1)))
+                    .offset(y: CGFloat(layers.count - 1 - layerSelection) * ((geometry.size.height * 0.4 - 20) / CGFloat(layers.count - 1)))
                     .animation(.interactiveSpring(response: 0.3, dampingFraction: 0.7), value: layerSelection)
                 }
                 .padding(.trailing, 6)
