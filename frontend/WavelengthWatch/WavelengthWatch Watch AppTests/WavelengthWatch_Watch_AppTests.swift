@@ -24,4 +24,10 @@ struct StrategyParsingTests {
     let strategiesHeader = headers["Strategies"]
     #expect(strategiesHeader?.subtitle == "(For Surfing)")
   }
+
+  @Test func parsesCurriculumEntry() throws {
+    let curriculum = CurriculumData.load()
+    let entry = curriculum["Beige"]?[.Rising]
+    #expect(entry?.medicine == "Commitment")
+  }
 }
