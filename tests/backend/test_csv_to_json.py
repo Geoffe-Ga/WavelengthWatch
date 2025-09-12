@@ -41,3 +41,11 @@ def test_strategies_conversion(tmp_path: Path) -> None:
         s["strategy"] == "Kirtan" and s["color"] == "Purple"
         for s in data["Restoration"]
     )
+
+
+def test_headers_conversion(tmp_path: Path) -> None:
+    output = tmp_path / "headers.json"
+    run_script("a-w-headers.csv", output)
+    data = json.loads(output.read_text())
+    assert data["Beige"]["title"] == "INHABIT"
+    assert data["Strategies"]["subtitle"] == "(For Surfing)"

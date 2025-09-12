@@ -14,8 +14,14 @@ struct StrategyParsingTests {
     #expect(data[.Rising]?.first?.strategy == "Cold Shower")
   }
 
-  @Test func handlesMissingWithdrawal() {
+  @Test func parsesWithdrawalFirstStrategy() throws {
     let data = StrategyData.load()
-    #expect(data[.Withdrawal]?.isEmpty == true)
+    #expect(data[.Withdrawal]?.first?.strategy == "Eating Something Grounding")
+  }
+
+  @Test func parsesLayerHeader() throws {
+    let headers = HeaderData.load()
+    let strategiesHeader = headers["Strategies"]
+    #expect(strategiesHeader?.subtitle == "(For Surfing)")
   }
 }
