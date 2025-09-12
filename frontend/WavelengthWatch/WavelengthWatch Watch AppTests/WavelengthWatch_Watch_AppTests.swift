@@ -31,3 +31,24 @@ struct StrategyParsingTests {
     #expect(entry?.medicine == "Commitment")
   }
 }
+
+struct PhaseNavigatorTests {
+  @Test func wrapsFromFirstToLast() throws {
+    let adjusted = PhaseNavigator.adjustedSelection(0, phaseCount: Phase.allCases.count)
+    #expect(adjusted == Phase.allCases.count)
+  }
+
+  @Test func wrapsFromLastToFirst() throws {
+    let count = Phase.allCases.count
+    let adjusted = PhaseNavigator.adjustedSelection(count + 1, phaseCount: count)
+    #expect(adjusted == 1)
+  }
+
+  @Test func normalizesSelection() throws {
+    let count = Phase.allCases.count
+    let index = PhaseNavigator.normalizedIndex(1, phaseCount: count)
+    #expect(index == 0)
+    let last = PhaseNavigator.normalizedIndex(count, phaseCount: count)
+    #expect(last == count - 1)
+  }
+}
