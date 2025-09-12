@@ -24,9 +24,9 @@ def test_curriculum_conversion(tmp_path: Path) -> None:
     output = tmp_path / "curriculum.json"
     run_script("a-w-curriculum.csv", output)
     data = json.loads(output.read_text())
-    assert data["Beige"]["Rising"]["Prescription"] == "Commitment"
-    assert data["Beige"]["Rising"]["Overdose"] == "Overcommitment"
-    assert data["Purple"]["Restoration"]["Prescription"] == "Recuperation"
+    assert data["Beige"]["Rising"]["Medicine"] == "Commitment"
+    assert data["Beige"]["Rising"]["Toxic"] == "Overcommitment"
+    assert data["Purple"]["Restoration"]["Medicine"] == "Recuperation"
 
 
 def test_strategies_conversion(tmp_path: Path) -> None:
