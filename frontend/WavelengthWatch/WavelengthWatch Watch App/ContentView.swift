@@ -241,32 +241,30 @@ struct PhasePageView: View {
   let color: Color
 
   var body: some View {
-    GeometryReader { geometry in
-      VStack(spacing: 0) {
-        // Header section
-        if let header {
-          VStack(spacing: 4) {
-            Text(header.title)
-              .font(.caption)
-              .fontWeight(.semibold)
-              .foregroundColor(.white.opacity(0.9))
-              .tracking(2.0)
-              .multilineTextAlignment(.center)
+    VStack(spacing: 0) {
+      // Header section
+      if let header {
+        VStack(spacing: 4) {
+          Text(header.title)
+            .font(.caption)
+            .fontWeight(.semibold)
+            .foregroundColor(.white.opacity(0.9))
+            .tracking(2.0)
+            .multilineTextAlignment(.center)
 
-            Text(header.subtitle)
-              .font(.caption2)
-              .fontWeight(.regular)
-              .foregroundColor(.white.opacity(0.6))
-              .tracking(1.0)
-              .multilineTextAlignment(.center)
-          }
-          .padding(.top, 12)
-          .padding(.bottom, 8)
+          Text(header.subtitle)
+            .font(.caption2)
+            .fontWeight(.regular)
+            .foregroundColor(.white.opacity(0.6))
+            .tracking(1.0)
+            .multilineTextAlignment(.center)
         }
+        .padding(.top, 12)
+        .padding(.bottom, 8)
+      }
 
-        Spacer()
-
-        // Main phase button
+      // Main phase button fills remaining space
+      VStack {
         NavigationLink(destination: destinationView) {
           VStack(spacing: 6) {
             Text(phase.rawValue)
@@ -282,8 +280,7 @@ struct PhasePageView: View {
               .frame(width: 24, height: 2)
               .shadow(color: color, radius: 3, x: 0, y: 0)
           }
-          .frame(maxWidth: .infinity)
-          .frame(height: geometry.size.height * 0.6)
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
           .background(
             RoundedRectangle(cornerRadius: 16)
               .fill(
@@ -316,34 +313,34 @@ struct PhasePageView: View {
           .scaleEffect(0.95)
         }
         .buttonStyle(PlainButtonStyle())
-
-        Spacer()
       }
-      .frame(maxWidth: .infinity, maxHeight: .infinity)
-      .background(
-        LinearGradient(
+      .frame(maxHeight: .infinity)
+      .padding(.vertical, 8)
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .background(
+      LinearGradient(
+        gradient: Gradient(colors: [
+          Color.black.opacity(0.9),
+          Color.black.opacity(0.7),
+          Color.black,
+        ]),
+        startPoint: .top,
+        endPoint: .bottom
+      )
+      .overlay(
+        // Subtle mystical overlay
+        RadialGradient(
           gradient: Gradient(colors: [
-            Color.black.opacity(0.9),
-            Color.black.opacity(0.7),
-            Color.black,
+            color.opacity(0.08),
+            Color.clear,
           ]),
-          startPoint: .top,
-          endPoint: .bottom
-        )
-        .overlay(
-          // Subtle mystical overlay
-          RadialGradient(
-            gradient: Gradient(colors: [
-              color.opacity(0.08),
-              Color.clear,
-            ]),
-            center: .center,
-            startRadius: 50,
-            endRadius: 150
-          )
+          center: .center,
+          startRadius: 50,
+          endRadius: 150
         )
       )
-    }
+    )
   }
 
   @ViewBuilder private var destinationView: some View {
@@ -379,74 +376,70 @@ struct LayerView: View {
   }
 
   var body: some View {
-    ZStack {
-      TabView(selection: $selection) {
-        ForEach(0 ..< (phases.count + 2), id: \.self) { index in
-          let phase = phases[(index + phases.count - 1) % phases.count]
-          let content = getPhaseContent(for: phase)
-          PhasePageView(
-            phase: phase,
-            header: header,
-            content: content,
-            color: Color(stage: layer)
-          )
-          .tag(index)
-        }
+    TabView(selection: $selection) {
+      ForEach(0 ..< (phases.count + 2), id: \.self) { index in
+        let phase = phases[(index + phases.count - 1) % phases.count]
+        let content = getPhaseContent(for: phase)
+        PhasePageView(
+          phase: phase,
+          header: header,
+          content: content,
+          color: Color(stage: layer)
+        )
+        .tag(index)
       }
-      .tabViewStyle(.page(indexDisplayMode: .never))
-      .onChange(of: selection) { newValue in
-        let adjusted = PhaseNavigator.adjustedSelection(newValue, phaseCount: phases.count)
-        if adjusted != newValue {
-          selection = adjusted
-        }
+    }
+    .tabViewStyle(.page(indexDisplayMode: .never))
+    .onChange(of: selection) { newValue in
+      let adjusted = PhaseNavigator.adjustedSelection(newValue, phaseCount: phases.count)
+      if adjusted != newValue {
+        selection = adjusted
+      }
 
-        // Show indicator when scrolling
-        withAnimation(.easeIn(duration: 0.2)) {
-          showPageIndicator = true
-        }
+      // Show indicator when scrolling
+      withAnimation(.easeIn(duration: 0.2)) {
+        showPageIndicator = true
+      }
 
-        // Cancel previous hide task
-        hideIndicatorTask?.cancel()
+      // Cancel previous hide task
+      hideIndicatorTask?.cancel()
 
-        // Hide after delay
-        hideIndicatorTask = Task {
-          try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
-          if !Task.isCancelled {
-            withAnimation(.easeOut(duration: 0.3)) {
-              showPageIndicator = false
-            }
+      // Hide after delay
+      hideIndicatorTask = Task {
+        try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
+        if !Task.isCancelled {
+          withAnimation(.easeOut(duration: 0.3)) {
+            showPageIndicator = false
           }
         }
       }
-
-      // Custom horizontal page indicator
+    }
+    .overlay(alignment: .bottom) {
       if showPageIndicator {
-        GeometryReader { geometry in
-          HStack(spacing: 4) {
-            ForEach(0 ..< phases.count, id: \.self) { index in
-              let selectedIndex = PhaseNavigator.normalizedIndex(selection, phaseCount: phases.count)
-              let isSelected = index == selectedIndex
-              Circle()
-                .fill(isSelected ? Color.white : Color.white.opacity(0.3))
-                .frame(
-                  width: isSelected ? 6 : 4,
-                  height: isSelected ? 6 : 4
-                )
-                .animation(.easeInOut(duration: 0.2), value: selection)
-            }
-          }
-          .padding(.horizontal, 8)
-          .padding(.vertical, 4)
-          .background(
-            Capsule()
-              .fill(Color.black.opacity(0.6))
-              .overlay(
-                Capsule()
-                  .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
+        HStack(spacing: 4) {
+          ForEach(0 ..< phases.count, id: \.self) { index in
+            let selectedIndex = PhaseNavigator.normalizedIndex(selection, phaseCount: phases.count)
+            let isSelected = index == selectedIndex
+            Circle()
+              .fill(isSelected ? Color.white : Color.white.opacity(0.3))
+              .frame(
+                width: isSelected ? 6 : 4,
+                height: isSelected ? 6 : 4
               )
-          )
-          .position(x: geometry.size.width / 2, y: geometry.size.height - 8)
+              .animation(.easeInOut(duration: 0.2), value: selection)
+          }
         }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(
+          Capsule()
+            .fill(Color.black.opacity(0.6))
+            .overlay(
+              Capsule()
+                .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
+            )
+        )
+        .padding(.bottom, 8)
         .transition(.opacity)
       }
     }
