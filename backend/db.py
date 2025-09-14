@@ -6,6 +6,11 @@ from pathlib import Path
 
 from sqlmodel import Session, SQLModel, create_engine
 
+# Import models so that SQLModel is aware of them before table creation.
+# The imported module is not used directly but ensures that metadata
+# includes all model definitions when `init_db` is called.
+from . import models  # noqa: F401
+
 # Database location
 DATABASE_FILE = Path(__file__).with_name("database.db")
 DATABASE_URL = f"sqlite:///{DATABASE_FILE}"
