@@ -59,6 +59,12 @@ class SelfCareLogCreate(SQLModel):
     timestamp: datetime
 
 
+class SelfCareLogRead(SelfCareLogCreate):
+    """Schema for reading ``SelfCareLog`` records."""
+
+    id: int
+
+
 class JournalEntry(SQLModel, table=True):
     """Represents a journaling session."""
 
@@ -103,6 +109,7 @@ __all__ = [
     "JournalEntryCreate",
     "EntryDetailCreate",
     "SelfCareLogCreate",
+    "SelfCareLogRead",
     "EntryDetailInput",
     "JournalEntryCreateWithDetails",
     "JournalEntryRead",

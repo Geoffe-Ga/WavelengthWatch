@@ -17,6 +17,9 @@ from .models import (
     JournalEntry,
     JournalEntryCreateWithDetails,
     JournalEntryRead,
+    SelfCareLog,
+    SelfCareLogCreate,
+    SelfCareLogRead,
 )
 
 SessionDep = Annotated[Session, Depends(get_session_dep)]
@@ -77,6 +80,66 @@ def curriculum() -> Any:
 def strategies() -> Any:
     # Returns the JSON list of self-care strategies.
     return _load_json("strategies.json")
+
+
+@app.post("/self-care", response_model=SelfCareLogRead, status_code=201)
+def create_self_care(
+    payload: SelfCareLogCreate,
+    session: SessionDep,
+    _rate_limit: None = Depends(rate_limit),
+) -> SelfCareLog:
+    """Create a self-care log linked to a journal entry."""
+    journal = session.get(JournalEntry, payload.journal_id)
+    if journal is None:
+        raise HTTPException(status_code=404, detail="Journal entry not found")
+    timestamp = payload.timestamp
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=UTC)
+    else:
+        timestamp = timestamp.astimezone(UTC)
+    timestamp = timestamp.replace(tzinfo=None)
+    log = SelfCareLog(
+        journal_id=payload.journal_id,
+        strategy=payload.strategy,
+        timestamp=timestamp,
+    )
+    session.add(log)
+    session.commit()
+    session.refresh(log)
+    return log
+
+
+@app.get("/self-care", response_model=list[SelfCareLogRead])
+def list_self_care(
+    session: SessionDep,
+    journal_id: int | None = None,
+    start: datetime | None = None,
+    end: datetime | None = None,
+    limit: int = Query(100, ge=1, le=1000),
+    offset: int = Query(0, ge=0),
+) -> list[SelfCareLog]:
+    """Return self-care logs filtered by journal or date range."""
+    statement = select(SelfCareLog).order_by(
+        SelfCareLog.timestamp.desc()  # type: ignore[attr-defined]
+    )
+    if journal_id is not None:
+        statement = statement.where(SelfCareLog.journal_id == journal_id)
+    if start is not None:
+        if start.tzinfo is None:
+            start = start.replace(tzinfo=UTC)
+        else:
+            start = start.astimezone(UTC)
+        start = start.replace(tzinfo=None)
+        statement = statement.where(SelfCareLog.timestamp >= start)
+    if end is not None:
+        if end.tzinfo is None:
+            end = end.replace(tzinfo=UTC)
+        else:
+            end = end.astimezone(UTC)
+        end = end.replace(tzinfo=None)
+        statement = statement.where(SelfCareLog.timestamp <= end)
+    result = session.exec(statement.offset(offset).limit(limit))
+    return list(result)
 
 
 @app.post("/journal", response_model=JournalEntryRead, status_code=201)
