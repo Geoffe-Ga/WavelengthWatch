@@ -27,3 +27,6 @@ fastlane/test_output/
 
 # Pycache
 **/__pycache__/*
+
+# db
+backend/database.db

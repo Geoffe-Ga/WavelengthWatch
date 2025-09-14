@@ -11,7 +11,12 @@ repos:
     hooks:
       - id: mypy
         args: [--config-file, mypy.ini]
-        additional_dependencies: [pydantic, types-requests]
+        additional_dependencies:
+          - "pydantic"
+          - "types-requests"
+          - "sqlalchemy>2.0"
+          - "pydantic[mypy]"
+          - "sqlmodel>=0.0.24"
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
