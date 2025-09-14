@@ -29,6 +29,27 @@ class EntryDetailCreate(SQLModel):
     position: int
 
 
+class SelfCareLog(SQLModel, table=True):
+    """Record of a self-care strategy linked to a journal entry."""
+
+    id: int | None = Field(default=None, primary_key=True)
+    journal_id: int | None = Field(
+        default=None, foreign_key="journalentry.id"
+    )
+    strategy: str
+    timestamp: datetime
+
+    journal: "JournalEntry" = Relationship(back_populates="self_care_logs")
+
+
+class SelfCareLogCreate(SQLModel):
+    """Pydantic schema for creating ``SelfCareLog`` records."""
+
+    journal_id: int
+    strategy: str
+    timestamp: datetime
+
+
 class JournalEntry(SQLModel, table=True):
     """Represents a journaling session."""
 
@@ -37,6 +58,10 @@ class JournalEntry(SQLModel, table=True):
     initiated_by: str
 
     details: list[EntryDetail] = Relationship(
+        back_populates="journal",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    )
+    self_care_logs: list[SelfCareLog] = Relationship(
         back_populates="journal",
         sa_relationship_kwargs={"cascade": "all, delete-orphan"},
     )
@@ -52,11 +77,14 @@ class JournalEntryCreate(SQLModel):
 __all__ = [
     "JournalEntry",
     "EntryDetail",
+    "SelfCareLog",
     "JournalEntryCreate",
     "EntryDetailCreate",
+    "SelfCareLogCreate",
 ]
 
 
 # Resolve forward references for Pydantic/SQLModel.
 JournalEntry.model_rebuild()
 EntryDetail.model_rebuild()
+SelfCareLog.model_rebuild()
