@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
@@ -24,7 +25,7 @@ def fixture_client(tmp_path, monkeypatch) -> TestClient:
     return TestClient(app)
 
 
-def _sample_payload(ts: datetime) -> dict[str, object]:
+def _sample_payload(ts: datetime) -> dict[str, Any]:
     return {
         "timestamp": ts.isoformat(),
         "initiated_by": "tester",
@@ -42,6 +43,29 @@ def test_create_journal_entry_with_details(client: TestClient) -> None:
     assert data["initiated_by"] == "tester"
     assert len(data["details"]) == 1
     assert data["details"][0]["stage"] == 1
+
+
+def test_create_journal_empty_details(client: TestClient) -> None:
+    ts = datetime(2024, 1, 1, 12, 0, 0)
+    payload = {
+        "timestamp": ts.isoformat(),
+        "initiated_by": "tester",
+        "details": [],
+    }
+    response = client.post("/journal", json=payload)
+    assert response.status_code == 201
+    assert response.json()["details"] == []
+
+
+def test_create_journal_multiple_details(client: TestClient) -> None:
+    ts = datetime(2024, 1, 1, 12, 0, 0)
+    payload = _sample_payload(ts)
+    payload["details"].append(
+        {"stage": 2, "phase": 2, "dosage": 2.0, "position": 2}
+    )
+    response = client.post("/journal", json=payload)
+    assert response.status_code == 201
+    assert len(response.json()["details"]) == 2
 
 
 def test_create_journal_validation_error(client: TestClient) -> None:
@@ -65,3 +89,18 @@ def test_list_journal_filtered_by_date(client: TestClient) -> None:
     data = response.json()
     assert len(data) == 1
     assert data[0]["timestamp"].startswith("2024-02-01")
+
+
+def test_list_journal_boundary_dates(client: TestClient) -> None:
+    ts = datetime(2024, 1, 1, 12, 0, 0)
+    client.post("/journal", json=_sample_payload(ts))
+    params = {"start": ts.isoformat(), "end": ts.isoformat()}
+    response = client.get("/journal", params=params)
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+
+
+def test_list_journal_invalid_date_format(client: TestClient) -> None:
+    response = client.get("/journal", params={"start": "not-a-date"})
+    assert response.status_code == 422

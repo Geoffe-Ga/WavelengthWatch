@@ -45,7 +45,7 @@ class SelfCareLog(SQLModel, table=True):
     journal_id: int | None = Field(
         default=None, foreign_key="journalentry.id"
     )
-    strategy: str
+    strategy: str = Field(max_length=100)
     timestamp: datetime
 
     journal: "JournalEntry" = Relationship(back_populates="self_care_logs")
@@ -55,7 +55,7 @@ class SelfCareLogCreate(SQLModel):
     """Pydantic schema for creating ``SelfCareLog`` records."""
 
     journal_id: int
-    strategy: str
+    strategy: str = Field(max_length=100)
     timestamp: datetime
 
 
@@ -64,7 +64,7 @@ class JournalEntry(SQLModel, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
     timestamp: datetime
-    initiated_by: str
+    initiated_by: str = Field(max_length=100)
 
     details: list[EntryDetail] = Relationship(
         back_populates="journal",
@@ -80,7 +80,7 @@ class JournalEntryCreate(SQLModel):
     """Pydantic schema for creating ``JournalEntry`` records."""
 
     timestamp: datetime
-    initiated_by: str
+    initiated_by: str = Field(max_length=100)
 
 
 class JournalEntryCreateWithDetails(JournalEntryCreate):
