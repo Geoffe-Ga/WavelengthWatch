@@ -7,7 +7,7 @@ from sqlmodel import create_engine, select
 
 import backend.db as db_module
 from backend.db import get_session, init_db
-from backend.models import EntryDetail, JournalEntry
+from backend.models import EntryDetail, JournalEntry, SelfCareLog
 
 
 @pytest.fixture(name="setup_db")
@@ -23,7 +23,7 @@ def fixture_setup_db(tmp_path, monkeypatch):
 
 
 def _create_sample_entry() -> int:
-    """Helper to persist a journal entry with two details.
+    """Persist a sample entry with detail and self-care log.
 
     Returns the primary key of the created ``JournalEntry``.
     """
@@ -39,6 +39,12 @@ def _create_sample_entry() -> int:
         entry.details.append(
             EntryDetail(stage=2, phase=2, dosage=2.0, position=2)
         )
+        entry.self_care_logs.append(
+            SelfCareLog(
+                strategy="deep breathing",
+                timestamp=datetime(2024, 1, 1, 12, 30, 0),
+            )
+        )
         session.add(entry)
         session.commit()
         return entry.id  # type: ignore[return-value]
@@ -52,9 +58,11 @@ def test_models_persist_and_relate(setup_db):
         assert loaded is not None
         assert len(loaded.details) == 2
         assert {d.position for d in loaded.details} == {1, 2}
+        assert len(loaded.self_care_logs) == 1
+        assert loaded.self_care_logs[0].strategy == "deep breathing"
 
 
-def test_cascade_delete_removes_details(setup_db):
+def test_cascade_delete_removes_related_records(setup_db):
     entry_id = _create_sample_entry()
 
     with get_session() as session:
@@ -64,5 +72,7 @@ def test_cascade_delete_removes_details(setup_db):
         session.commit()
 
     with get_session() as session:
-        remaining = session.exec(select(EntryDetail)).all()
-        assert remaining == []
+        remaining_details = session.exec(select(EntryDetail)).all()
+        remaining_logs = session.exec(select(SelfCareLog)).all()
+        assert remaining_details == []
+        assert remaining_logs == []
