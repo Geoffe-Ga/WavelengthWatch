@@ -29,3 +29,9 @@ def get_session() -> Iterator[Session]:
     """Yield a database session scoped to a context manager."""
     with Session(engine) as session:
         yield session
+
+
+def get_session_dep() -> Iterator[Session]:
+    """FastAPI dependency that yields a database session."""
+    with get_session() as session:
+        yield session
