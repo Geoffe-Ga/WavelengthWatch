@@ -29,6 +29,15 @@ class EntryDetailCreate(SQLModel):
     position: int
 
 
+class EntryDetailInput(SQLModel):
+    """Input schema for nested detail creation via the API."""
+
+    stage: int
+    phase: int
+    dosage: float
+    position: int
+
+
 class SelfCareLog(SQLModel, table=True):
     """Record of a self-care strategy linked to a journal entry."""
 
@@ -74,6 +83,19 @@ class JournalEntryCreate(SQLModel):
     initiated_by: str
 
 
+class JournalEntryCreateWithDetails(JournalEntryCreate):
+    """Schema for creating entries with nested detail records."""
+
+    details: list[EntryDetailInput]
+
+
+class JournalEntryRead(JournalEntryCreate):
+    """Schema for reading ``JournalEntry`` records with details."""
+
+    id: int
+    details: list[EntryDetail] = []
+
+
 __all__ = [
     "JournalEntry",
     "EntryDetail",
@@ -81,6 +103,9 @@ __all__ = [
     "JournalEntryCreate",
     "EntryDetailCreate",
     "SelfCareLogCreate",
+    "EntryDetailInput",
+    "JournalEntryCreateWithDetails",
+    "JournalEntryRead",
 ]
 
 
