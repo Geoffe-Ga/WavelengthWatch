@@ -62,25 +62,7 @@ Agents working on this project must abide by the following operating principles:
 
     - Checking network requests for accurate backend interaction
 
-6. **MVP Scope Discipline**
-
-  - Do not introduce:
-
-    - Authentication
-
-    - Push notifications
-
-    - On-device data persistence
-
-    - Multiple language support
-
-    - Backend data storage
-
-    Unless explicitly requested.
-
-*This is a read-only, ephemeral, tap-to-interact MVP. Stay light.*
-
-7. **Respect the Archetypal Wavelength**
+6. **Respect the Archetypal Wavelength**
 
   - Restoration leads to Rising.
 
