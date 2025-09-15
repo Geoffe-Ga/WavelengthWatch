@@ -2,6 +2,7 @@
 
 from datetime import datetime
 
+from sqlalchemy import Index
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -49,6 +50,10 @@ class SelfCareLog(SQLModel, table=True):
     timestamp: datetime
 
     journal: "JournalEntry" = Relationship(back_populates="self_care_logs")
+
+    __table_args__ = (
+        Index("ix_selfcarelog_journal_timestamp", "journal_id", "timestamp"),
+    )
 
 
 class SelfCareLogCreate(SQLModel):
