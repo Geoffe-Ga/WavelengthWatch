@@ -39,6 +39,29 @@ class EntryDetailInput(SQLModel):
     position: int
 
 
+class SelfCareStrategy(SQLModel, table=True):
+    """Catalog of available self-care strategies."""
+
+    id: int | None = Field(default=None, primary_key=True)
+    color: str = Field(max_length=100)
+    strategy: str = Field(max_length=100)
+
+    logs: list["SelfCareLog"] = Relationship(back_populates="strategy")
+
+
+class SelfCareStrategyCreate(SQLModel):
+    """Schema for creating ``SelfCareStrategy`` records."""
+
+    color: str = Field(max_length=100)
+    strategy: str = Field(max_length=100)
+
+
+class SelfCareStrategyRead(SelfCareStrategyCreate):
+    """Schema for reading ``SelfCareStrategy`` records."""
+
+    id: int
+
+
 class SelfCareLog(SQLModel, table=True):
     """Record of a self-care strategy linked to a journal entry."""
 
@@ -46,10 +69,13 @@ class SelfCareLog(SQLModel, table=True):
     journal_id: int | None = Field(
         default=None, foreign_key="journalentry.id"
     )
-    strategy: str = Field(max_length=100)
+    strategy_id: int | None = Field(
+        default=None, foreign_key="selfcarestrategy.id"
+    )
     timestamp: datetime
 
     journal: "JournalEntry" = Relationship(back_populates="self_care_logs")
+    strategy: SelfCareStrategy | None = Relationship(back_populates="logs")
 
     __table_args__ = (
         Index("ix_selfcarelog_journal_timestamp", "journal_id", "timestamp"),
@@ -60,7 +86,7 @@ class SelfCareLogCreate(SQLModel):
     """Pydantic schema for creating ``SelfCareLog`` records."""
 
     journal_id: int
-    strategy: str = Field(max_length=100)
+    strategy_id: int
     timestamp: datetime
 
 
@@ -111,10 +137,13 @@ __all__ = [
     "JournalEntry",
     "EntryDetail",
     "SelfCareLog",
+    "SelfCareStrategy",
     "JournalEntryCreate",
     "EntryDetailCreate",
     "SelfCareLogCreate",
     "SelfCareLogRead",
+    "SelfCareStrategyCreate",
+    "SelfCareStrategyRead",
     "EntryDetailInput",
     "JournalEntryCreateWithDetails",
     "JournalEntryRead",
@@ -125,3 +154,4 @@ __all__ = [
 JournalEntry.model_rebuild()
 EntryDetail.model_rebuild()
 SelfCareLog.model_rebuild()
+SelfCareStrategy.model_rebuild()

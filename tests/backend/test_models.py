@@ -7,7 +7,12 @@ from sqlmodel import create_engine, select
 
 import backend.db as db_module
 from backend.db import get_session, init_db
-from backend.models import EntryDetail, JournalEntry, SelfCareLog
+from backend.models import (
+    EntryDetail,
+    JournalEntry,
+    SelfCareLog,
+    SelfCareStrategy,
+)
 
 
 @pytest.fixture(name="setup_db")
@@ -22,13 +27,18 @@ def fixture_setup_db(tmp_path, monkeypatch):
     init_db()
 
 
-def _create_sample_entry() -> int:
+def _create_sample_entry() -> tuple[int, int]:
     """Persist a sample entry with detail and self-care log.
 
-    Returns the primary key of the created ``JournalEntry``.
+    Returns the primary keys of the created ``JournalEntry`` and
+    ``SelfCareStrategy``.
     """
 
     with get_session() as session:
+        strategy = SelfCareStrategy(color="Blue", strategy="deep breathing")
+        session.add(strategy)
+        session.commit()
+
         entry = JournalEntry(
             timestamp=datetime(2024, 1, 1, 12, 0, 0),
             initiated_by="tester",
@@ -41,17 +51,17 @@ def _create_sample_entry() -> int:
         )
         entry.self_care_logs.append(
             SelfCareLog(
-                strategy="deep breathing",
+                strategy_id=strategy.id,  # type: ignore[arg-type]
                 timestamp=datetime(2024, 1, 1, 12, 30, 0),
             )
         )
         session.add(entry)
         session.commit()
-        return entry.id  # type: ignore[return-value]
+        return entry.id, strategy.id  # type: ignore[return-value]
 
 
 def test_models_persist_and_relate(setup_db):
-    entry_id = _create_sample_entry()
+    entry_id, strategy_id = _create_sample_entry()
 
     with get_session() as session:
         loaded = session.get(JournalEntry, entry_id)
@@ -59,11 +69,12 @@ def test_models_persist_and_relate(setup_db):
         assert len(loaded.details) == 2
         assert {d.position for d in loaded.details} == {1, 2}
         assert len(loaded.self_care_logs) == 1
-        assert loaded.self_care_logs[0].strategy == "deep breathing"
+        assert loaded.self_care_logs[0].strategy_id == strategy_id
+        assert loaded.self_care_logs[0].strategy.strategy == "deep breathing"
 
 
 def test_cascade_delete_removes_related_records(setup_db):
-    entry_id = _create_sample_entry()
+    entry_id, strategy_id = _create_sample_entry()
 
     with get_session() as session:
         entry = session.get(JournalEntry, entry_id)
@@ -74,5 +85,9 @@ def test_cascade_delete_removes_related_records(setup_db):
     with get_session() as session:
         remaining_details = session.exec(select(EntryDetail)).all()
         remaining_logs = session.exec(select(SelfCareLog)).all()
+        remaining_strategies = session.exec(select(SelfCareStrategy)).all()
         assert remaining_details == []
         assert remaining_logs == []
+        # Strategies are global and should not be deleted when logs are removed
+        assert len(remaining_strategies) == 1
+        assert remaining_strategies[0].id == strategy_id

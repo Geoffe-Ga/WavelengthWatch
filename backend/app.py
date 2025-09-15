@@ -21,6 +21,9 @@ from .models import (
     SelfCareLog,
     SelfCareLogCreate,
     SelfCareLogRead,
+    SelfCareStrategy,
+    SelfCareStrategyCreate,
+    SelfCareStrategyRead,
 )
 from .utils import to_utc_naive
 
@@ -78,10 +81,27 @@ def curriculum() -> Any:
     return _load_json("curriculum.json")
 
 
-@app.get("/strategies")
-def strategies() -> Any:
-    # Returns the JSON list of self-care strategies.
-    return _load_json("strategies.json")
+@app.get("/strategies", response_model=list[SelfCareStrategyRead])
+def list_strategies(session: SessionDep) -> list[SelfCareStrategy]:
+    """Return all available self-care strategies."""
+    result = session.exec(select(SelfCareStrategy))
+    return list(result)
+
+
+@app.post("/strategies", response_model=SelfCareStrategyRead, status_code=201)
+def create_strategy(
+    payload: SelfCareStrategyCreate,
+    session: SessionDep,
+    _rate_limit: None = Depends(rate_limit),
+) -> SelfCareStrategy:
+    """Add a new self-care strategy to the catalog."""
+    strategy = SelfCareStrategy(
+        color=payload.color, strategy=payload.strategy
+    )
+    session.add(strategy)
+    session.commit()
+    session.refresh(strategy)
+    return strategy
 
 
 @app.post("/self-care", response_model=SelfCareLogRead, status_code=201)
@@ -95,9 +115,13 @@ def create_self_care(
     if journal is None:
         raise HTTPException(status_code=404, detail="Journal entry not found")
     timestamp = to_utc_naive(payload.timestamp)
+    strategy = session.get(SelfCareStrategy, payload.strategy_id)
+    if strategy is None:
+        raise HTTPException(status_code=404, detail="Strategy not found")
+
     log = SelfCareLog(
         journal_id=payload.journal_id,
-        strategy=payload.strategy,
+        strategy_id=payload.strategy_id,
         timestamp=timestamp,
     )
     session.add(log)

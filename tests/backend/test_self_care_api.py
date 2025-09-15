@@ -35,24 +35,33 @@ def _create_journal(client: TestClient, ts: datetime) -> int:
     return resp.json()["id"]
 
 
+def _create_strategy(client: TestClient, name: str) -> int:
+    payload = {"color": "Blue", "strategy": name}
+    resp = client.post("/strategies", json=payload)
+    assert resp.status_code == 201
+    return resp.json()["id"]
+
+
 def test_create_self_care_log(client: TestClient) -> None:
     journal_id = _create_journal(client, datetime(2024, 1, 1, 12, 0, 0))
+    strategy_id = _create_strategy(client, "drink water")
     payload = {
         "journal_id": journal_id,
-        "strategy": "drink water",
+        "strategy_id": strategy_id,
         "timestamp": datetime(2024, 1, 1, 12, 30, 0).isoformat(),
     }
     resp = client.post("/self-care", json=payload)
     assert resp.status_code == 201
     data = resp.json()
     assert data["journal_id"] == journal_id
-    assert data["strategy"] == "drink water"
+    assert data["strategy_id"] == strategy_id
 
 
 def test_create_self_care_missing_journal(client: TestClient) -> None:
+    strategy_id = _create_strategy(client, "sleep")
     payload = {
         "journal_id": 999,
-        "strategy": "sleep",
+        "strategy_id": strategy_id,
         "timestamp": datetime(2024, 1, 1, 12, 0, 0).isoformat(),
     }
     resp = client.post("/self-care", json=payload)
@@ -62,20 +71,25 @@ def test_create_self_care_missing_journal(client: TestClient) -> None:
 def test_list_self_care_by_journal(client: TestClient) -> None:
     journal_id = _create_journal(client, datetime(2024, 1, 1, 12, 0, 0))
     other_id = _create_journal(client, datetime(2024, 1, 2, 12, 0, 0))
+    strategies = {
+        "hydrate": _create_strategy(client, "hydrate"),
+        "rest": _create_strategy(client, "rest"),
+        "walk": _create_strategy(client, "walk"),
+    }
     logs = [
         {
             "journal_id": journal_id,
-            "strategy": "hydrate",
+            "strategy_id": strategies["hydrate"],
             "timestamp": datetime(2024, 1, 1, 13, 0, 0).isoformat(),
         },
         {
             "journal_id": journal_id,
-            "strategy": "rest",
+            "strategy_id": strategies["rest"],
             "timestamp": datetime(2024, 1, 1, 14, 0, 0).isoformat(),
         },
         {
             "journal_id": other_id,
-            "strategy": "walk",
+            "strategy_id": strategies["walk"],
             "timestamp": datetime(2024, 1, 2, 13, 0, 0).isoformat(),
         },
     ]
@@ -91,15 +105,19 @@ def test_list_self_care_by_journal(client: TestClient) -> None:
 
 def test_list_self_care_by_date(client: TestClient) -> None:
     journal_id = _create_journal(client, datetime(2024, 1, 1, 12, 0, 0))
+    strategies = {
+        "hydrate": _create_strategy(client, "hydrate"),
+        "rest": _create_strategy(client, "rest"),
+    }
     logs = [
         {
             "journal_id": journal_id,
-            "strategy": "hydrate",
+            "strategy_id": strategies["hydrate"],
             "timestamp": datetime(2024, 1, 1, 13, 0, 0).isoformat(),
         },
         {
             "journal_id": journal_id,
-            "strategy": "rest",
+            "strategy_id": strategies["rest"],
             "timestamp": datetime(2024, 1, 5, 13, 0, 0).isoformat(),
         },
     ]
@@ -114,15 +132,18 @@ def test_list_self_care_by_date(client: TestClient) -> None:
     assert resp.status_code == 200
     data = resp.json()
     assert len(data) == 1
-    assert data[0]["strategy"] == "rest"
+    assert data[0]["strategy_id"] == strategies["rest"]
 
 
 def test_timezone_handling(client: TestClient) -> None:
     """Ensure timezone-aware inputs are normalized to UTC."""
-    journal_id = _create_journal(client, datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC))
+    journal_id = _create_journal(
+        client, datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC)
+    )
+    strategy_id = _create_strategy(client, "stretch")
     payload = {
         "journal_id": journal_id,
-        "strategy": "stretch",
+        "strategy_id": strategy_id,
         "timestamp": "2024-01-01T14:00:00+02:00",
     }
     assert client.post("/self-care", json=payload).status_code == 201
@@ -142,10 +163,12 @@ def test_self_care_pagination(client: TestClient) -> None:
     """Verify limit and offset parameters."""
     journal_id = _create_journal(client, datetime(2024, 1, 1, 12, 0, 0))
     base = datetime(2024, 1, 1, 10, 0, 0)
+    strategy_ids: list[int] = []
     for i in range(3):
+        strategy_ids.append(_create_strategy(client, f"s{i}"))
         payload = {
             "journal_id": journal_id,
-            "strategy": f"s{i}",
+            "strategy_id": strategy_ids[i],
             "timestamp": (base + timedelta(days=i)).isoformat(),
         }
         assert client.post("/self-care", json=payload).status_code == 201
@@ -154,7 +177,7 @@ def test_self_care_pagination(client: TestClient) -> None:
     assert resp.status_code == 200
     data = resp.json()
     assert len(data) == 1
-    assert data[0]["strategy"] == "s1"
+    assert data[0]["strategy_id"] == strategy_ids[1]
 
 
 def test_date_filter_boundaries(client: TestClient) -> None:
@@ -165,10 +188,12 @@ def test_date_filter_boundaries(client: TestClient) -> None:
         datetime(2024, 1, 2, 13, 0, 0),
         datetime(2024, 1, 3, 13, 0, 0),
     ]
+    strategy_ids: list[int] = []
     for i, ts in enumerate(times):
+        strategy_ids.append(_create_strategy(client, f"t{i}"))
         payload = {
             "journal_id": journal_id,
-            "strategy": f"t{i}",
+            "strategy_id": strategy_ids[i],
             "timestamp": ts.isoformat(),
         }
         assert client.post("/self-care", json=payload).status_code == 201
@@ -180,15 +205,19 @@ def test_date_filter_boundaries(client: TestClient) -> None:
     resp = client.get("/self-care", params=params)
     assert resp.status_code == 200
     data = resp.json()
-    assert [item["strategy"] for item in data] == ["t1", "t0"]
+    assert [item["strategy_id"] for item in data] == [
+        strategy_ids[1],
+        strategy_ids[0],
+    ]
 
 
 def test_invalid_data(client: TestClient) -> None:
     """Invalid journal id and timestamp should be rejected."""
     journal_id = _create_journal(client, datetime(2024, 1, 1, 12, 0, 0))
+    strategy_id = _create_strategy(client, "oops")
     bad_payload = {
         "journal_id": journal_id,
-        "strategy": "oops",
+        "strategy_id": strategy_id,
         "timestamp": "not-a-timestamp",
     }
     resp = client.post("/self-care", json=bad_payload)
@@ -196,7 +225,7 @@ def test_invalid_data(client: TestClient) -> None:
 
     neg_payload = {
         "journal_id": -1,
-        "strategy": "bad",
+        "strategy_id": strategy_id,
         "timestamp": datetime(2024, 1, 1, 12, 0, 0).isoformat(),
     }
     resp = client.post("/self-care", json=neg_payload)
