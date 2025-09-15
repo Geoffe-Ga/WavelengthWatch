@@ -4,6 +4,8 @@
 
 WavelengthWatch is a watchOS-only app that brings the Archetypal Wavelength to your wrist. You can horizontally scroll through the six phases of the Wavelength, each phase offering a pocket-sized guide to its “medicinal” and “toxic” expressions. Tap on a phase to reveal a quick box of wisdom and self-care strategies, then swipe to the next when you’re ready. The goal is maximum uptime on your personal Apple Watch: even offline, the guidance is bundled into the app, and when connectivity is available, background refresh pulls the latest updates.
 
+_Status_: The project has not yet been deployed to production. An eventual App Store launch is planned, so formal database migrations are not currently required.
+
 ## Features
 
 - **Watch-Only App (SwiftUI)**: Built in Xcode 16.4, runs natively on watchOS 11.6.1 (Apple Watch Series 9).
@@ -11,7 +13,7 @@ WavelengthWatch is a watchOS-only app that brings the Archetypal Wavelength to y
 - **Phase Details**: Tap a phase to see “medicinal” and “toxic” expressions.
 - **Baseline Offline Data**: Core dataset (stages, phases, expressions, strategies) is bundled as JSON in the app, so the watch works instantly without a network.
 - **Optional Refresh**: When background time is available, the app fetches the latest JSON from the backend or static hosting, ensuring freshness without breaking offline reliability.
-- **FastAPI Backend**: A lightweight Python service (in `backend/app.py`) serves JSON mappings and static assets. The backend reads simple JSON files (converted from CSV during development) and can be deployed directly or fronted by S3/CloudFront for static hosting.
+- **FastAPI Backend**: A lightweight Python service (in `backend/app.py`) serves JSON mappings and static assets. Curriculum data is read from JSON files, while self-care strategies now live in a SQLite table (`SelfCareStrategy`) seeded from the legacy CSV/JSON sources.
 - **CI and Pre-commit**:
   - GitHub Actions workflow builds the watch app on a simulator, runs SwiftLint/SwiftFormat checks, and validates backend tests.
   - Pre-commit hooks enforce linting and formatting for both Swift (via Mint, SwiftLint, SwiftFormat) and Python (via Mypy, Ruff, etc. in the backend).

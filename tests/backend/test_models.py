@@ -7,7 +7,12 @@ from sqlmodel import create_engine, select
 
 import backend.db as db_module
 from backend.db import get_session, init_db
-from backend.models import EntryDetail, JournalEntry, SelfCareLog
+from backend.models import (
+    EntryDetail,
+    JournalEntry,
+    SelfCareLog,
+    SelfCareStrategy,
+)
 
 
 @pytest.fixture(name="setup_db")
@@ -29,6 +34,14 @@ def _create_sample_entry() -> int:
     """
 
     with get_session() as session:
+        strategy = SelfCareStrategy(
+            color="Beige",
+            strategy="Test Strategy A",
+            phase="Restoration",
+        )
+        session.add(strategy)
+        session.commit()
+        session.refresh(strategy)
         entry = JournalEntry(
             timestamp=datetime(2024, 1, 1, 12, 0, 0),
             initiated_by="tester",
@@ -41,7 +54,7 @@ def _create_sample_entry() -> int:
         )
         entry.self_care_logs.append(
             SelfCareLog(
-                strategy="deep breathing",
+                strategy_id=strategy.id,
                 timestamp=datetime(2024, 1, 1, 12, 30, 0),
             )
         )
@@ -59,7 +72,23 @@ def test_models_persist_and_relate(setup_db):
         assert len(loaded.details) == 2
         assert {d.position for d in loaded.details} == {1, 2}
         assert len(loaded.self_care_logs) == 1
-        assert loaded.self_care_logs[0].strategy == "deep breathing"
+        assert loaded.self_care_logs[0].strategy_id == loaded.self_care_logs[0].strategy_ref.id
+        assert loaded.self_care_logs[0].strategy == "Test Strategy A"
+
+
+def test_strategy_survives_entry_deletion(setup_db):
+    entry_id = _create_sample_entry()
+
+    with get_session() as session:
+        entry = session.get(JournalEntry, entry_id)
+        assert entry is not None
+        strategy_id = entry.self_care_logs[0].strategy_id
+        session.delete(entry)
+        session.commit()
+
+    with get_session() as session:
+        strategy = session.get(SelfCareStrategy, strategy_id)
+        assert strategy is not None
 
 
 def test_cascade_delete_removes_related_records(setup_db):

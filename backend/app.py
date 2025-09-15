@@ -13,6 +13,7 @@ from sqlalchemy.sql import ColumnElement
 from sqlmodel import Session, select
 
 from .db import get_session_dep
+from .constants import PHASE_ORDER
 from .models import (
     EntryDetail,
     JournalEntry,
@@ -21,6 +22,9 @@ from .models import (
     SelfCareLog,
     SelfCareLogCreate,
     SelfCareLogRead,
+    SelfCareStrategy,
+    SelfCareStrategyCreate,
+    SelfCareStrategyRead,
 )
 from .utils import to_utc_naive
 
@@ -28,6 +32,8 @@ SessionDep = Annotated[Session, Depends(get_session_dep)]
 
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
+
+_PHASE_PRIORITY = {phase: index for index, phase in enumerate(PHASE_ORDER)}
 
 # Simple in-memory rate limiting: allow `RATE_LIMIT` requests per `RATE_PERIOD`
 RATE_LIMIT = 100
@@ -79,9 +85,69 @@ def curriculum() -> Any:
 
 
 @app.get("/strategies")
-def strategies() -> Any:
-    # Returns the JSON list of self-care strategies.
-    return _load_json("strategies.json")
+def strategies(session: SessionDep) -> dict[str, list[dict[str, str]]]:
+    """Return strategies grouped by phase, mirroring the legacy JSON format."""
+
+    statement = select(SelfCareStrategy)
+    strategies = list(session.exec(statement))
+    strategies.sort(
+        key=lambda item: (
+            _PHASE_PRIORITY.get(item.phase, len(_PHASE_PRIORITY)),
+            item.id or 0,
+        )
+    )
+
+    payload: dict[str, list[dict[str, str]]] = {}
+    for record in strategies:
+        payload.setdefault(record.phase, []).append(
+            {"color": record.color, "strategy": record.strategy}
+        )
+    return payload
+
+
+@app.get("/strategies/index", response_model=list[SelfCareStrategyRead])
+def strategies_index(
+    session: SessionDep,
+    phase: str | None = None,
+) -> list[SelfCareStrategy]:
+    """Return all strategies with identifiers for administrative use."""
+
+    statement = select(SelfCareStrategy)
+    if phase is not None:
+        statement = statement.where(SelfCareStrategy.phase == phase)
+    records = list(session.exec(statement))
+    records.sort(
+        key=lambda item: (
+            _PHASE_PRIORITY.get(item.phase, len(_PHASE_PRIORITY)),
+            item.id or 0,
+        )
+    )
+    return records
+
+
+@app.post("/strategies", response_model=SelfCareStrategyRead, status_code=201)
+def create_strategy(
+    payload: SelfCareStrategyCreate,
+    session: SessionDep,
+    _rate_limit: None = Depends(rate_limit),
+) -> SelfCareStrategy:
+    """Insert a new self-care strategy entry."""
+
+    existing = session.exec(
+        select(SelfCareStrategy).where(SelfCareStrategy.strategy == payload.strategy)
+    ).first()
+    if existing is not None:
+        raise HTTPException(status_code=409, detail="Strategy already exists")
+
+    record = SelfCareStrategy(
+        color=payload.color,
+        strategy=payload.strategy,
+        phase=payload.phase,
+    )
+    session.add(record)
+    session.commit()
+    session.refresh(record)
+    return record
 
 
 @app.post("/self-care", response_model=SelfCareLogRead, status_code=201)
@@ -94,15 +160,32 @@ def create_self_care(
     journal = session.get(JournalEntry, payload.journal_id)
     if journal is None:
         raise HTTPException(status_code=404, detail="Journal entry not found")
+    strategy_obj: SelfCareStrategy | None = None
+    if payload.strategy_id is not None:
+        strategy_obj = session.get(SelfCareStrategy, payload.strategy_id)
+        if strategy_obj is None:
+            raise HTTPException(status_code=404, detail="Strategy not found")
+    else:
+        strategy_name = payload.strategy.strip() if payload.strategy else None
+        if not strategy_name:
+            raise HTTPException(status_code=422, detail="Strategy identifier required")
+        strategy_obj = session.exec(
+            select(SelfCareStrategy).where(
+                SelfCareStrategy.strategy == strategy_name
+            )
+        ).first()
+        if strategy_obj is None:
+            raise HTTPException(status_code=404, detail="Strategy not found")
+
     timestamp = to_utc_naive(payload.timestamp)
     log = SelfCareLog(
         journal_id=payload.journal_id,
-        strategy=payload.strategy,
+        strategy_id=cast(int, strategy_obj.id),
         timestamp=timestamp,
     )
     session.add(log)
     session.commit()
-    session.refresh(log)
+    session.refresh(log, attribute_names=["strategy_ref"])
     return log
 
 
@@ -117,8 +200,10 @@ def list_self_care(
     _rate_limit: None = Depends(rate_limit),
 ) -> list[SelfCareLog]:
     """Return self-care logs filtered by journal or date range."""
-    statement = select(SelfCareLog).order_by(
-        cast(ColumnElement, SelfCareLog.timestamp).desc()
+    statement = (
+        select(SelfCareLog)
+        .options(selectinload(SelfCareLog.strategy_ref))
+        .order_by(cast(ColumnElement, SelfCareLog.timestamp).desc())
     )
     if journal_id is not None:
         statement = statement.where(SelfCareLog.journal_id == journal_id)

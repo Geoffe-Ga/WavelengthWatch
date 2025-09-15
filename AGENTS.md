@@ -6,6 +6,8 @@ To set up the full development environment, run:
 bash dev-setup.sh
 ```
 
+**Deployment status**: WavelengthWatch has not yet been deployed to production. The team plans to ship to the App Store in the future, so schema migrations are not currently required.
+
 Agents working on this project must abide by the following operating principles:
 
 1. **Test-Driven Development (TDD) Is Required**
