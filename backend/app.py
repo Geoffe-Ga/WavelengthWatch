@@ -81,9 +81,22 @@ def curriculum() -> Any:
     return _load_json("curriculum.json")
 
 
-@app.get("/strategies", response_model=list[SelfCareStrategyRead])
-def list_strategies(session: SessionDep) -> list[SelfCareStrategy]:
-    """Return all available self-care strategies."""
+@app.get(
+    "/strategies",
+    response_model=list[SelfCareStrategyRead]
+    | dict[str, list[dict[str, str]]],
+)
+def list_strategies(
+    session: SessionDep, raw: bool = False
+) -> list[SelfCareStrategy] | dict[str, list[dict[str, str]]]:
+    """Return all available self-care strategies.
+
+    Setting ``raw`` to ``True`` returns the legacy JSON structure used by the
+    original watchOS client. This maintains backward compatibility while the
+    frontend transitions to the structured database-backed format.
+    """
+    if raw:
+        return _load_json("strategies.json")
     result = session.exec(select(SelfCareStrategy))
     return list(result)
 

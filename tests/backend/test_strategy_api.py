@@ -37,6 +37,15 @@ def test_create_and_list_strategies(client: TestClient) -> None:
     assert items[0]["strategy"] == "Drink Water"
 
 
+def test_list_strategies_raw(client: TestClient) -> None:
+    resp = client.get("/strategies", params={"raw": True})
+    assert resp.status_code == 200
+    data = resp.json()
+    # legacy format should include phase keys like "Rising"
+    assert "Rising" in data
+    assert isinstance(data["Rising"], list)
+
+
 def test_strategy_validation(client: TestClient) -> None:
     payload = {"color": "B" * 101, "strategy": "A"}
     resp = client.post("/strategies", json=payload)

@@ -8,9 +8,17 @@
 import SwiftUI
 
 struct Strategy: Identifiable, Decodable {
+  private let strategyId: Int?
   let color: String
   let strategy: String
-  var id: String { strategy }
+
+  var id: Int { strategyId ?? strategy.hashValue }
+
+  private enum CodingKeys: String, CodingKey {
+    case strategyId = "id"
+    case color
+    case strategy
+  }
 }
 
 struct LayerHeader: Decodable {
