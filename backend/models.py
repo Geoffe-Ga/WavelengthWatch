@@ -15,7 +15,10 @@ class SelfCareStrategy(SQLModel, table=True):
     strategy: str = Field(max_length=200, unique=True)
     phase: str = Field(max_length=100)
 
-    self_care_logs: list["SelfCareLog"] = Relationship(back_populates="strategy_ref")
+    self_care_logs: list["SelfCareLog"] = Relationship(
+        back_populates="strategy_ref",
+        sa_relationship_kwargs={"lazy": "selectin"},
+    )
 
     __table_args__ = (
         Index("ix_selfcarestrategy_phase", "phase"),
@@ -82,7 +85,10 @@ class SelfCareLog(SQLModel, table=True):
     timestamp: datetime
 
     journal: "JournalEntry" = Relationship(back_populates="self_care_logs")
-    strategy_ref: SelfCareStrategy | None = Relationship(back_populates="self_care_logs")
+    strategy_ref: SelfCareStrategy | None = Relationship(
+        back_populates="self_care_logs",
+        sa_relationship_kwargs={"lazy": "selectin"},
+    )
 
     __table_args__ = (
         Index("ix_selfcarelog_journal_timestamp", "journal_id", "timestamp"),
@@ -136,7 +142,10 @@ class JournalEntry(SQLModel, table=True):
     )
     self_care_logs: list[SelfCareLog] = Relationship(
         back_populates="journal",
-        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan",
+            "lazy": "selectin",
+        },
     )
 
 

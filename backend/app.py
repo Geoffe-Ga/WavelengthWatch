@@ -12,8 +12,8 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.sql import ColumnElement
 from sqlmodel import Session, select
 
-from .db import get_session_dep
 from .constants import PHASE_ORDER
+from .db import get_session_dep
 from .models import (
     EntryDetail,
     JournalEntry,
@@ -34,6 +34,12 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 
 _PHASE_PRIORITY = {phase: index for index, phase in enumerate(PHASE_ORDER)}
+
+
+def _self_care_log_query():
+    """Base select statement for ``SelfCareLog`` with eager strategy loading."""
+
+    return select(SelfCareLog).options(selectinload(SelfCareLog.strategy_ref))
 
 # Simple in-memory rate limiting: allow `RATE_LIMIT` requests per `RATE_PERIOD`
 RATE_LIMIT = 100
@@ -144,8 +150,12 @@ def create_strategy(
         strategy=payload.strategy,
         phase=payload.phase,
     )
-    session.add(record)
-    session.commit()
+    try:
+        session.add(record)
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
     session.refresh(record)
     return record
 
@@ -183,10 +193,16 @@ def create_self_care(
         strategy_id=cast(int, strategy_obj.id),
         timestamp=timestamp,
     )
-    session.add(log)
-    session.commit()
-    session.refresh(log, attribute_names=["strategy_ref"])
-    return log
+    try:
+        session.add(log)
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    if log.id is None:
+        raise RuntimeError("Failed to persist self-care log")
+    statement = _self_care_log_query().where(SelfCareLog.id == log.id)
+    return session.exec(statement).one()
 
 
 @app.get("/self-care", response_model=list[SelfCareLogRead])
@@ -200,10 +216,8 @@ def list_self_care(
     _rate_limit: None = Depends(rate_limit),
 ) -> list[SelfCareLog]:
     """Return self-care logs filtered by journal or date range."""
-    statement = (
-        select(SelfCareLog)
-        .options(selectinload(SelfCareLog.strategy_ref))
-        .order_by(cast(ColumnElement, SelfCareLog.timestamp).desc())
+    statement = _self_care_log_query().order_by(
+        cast(ColumnElement, SelfCareLog.timestamp).desc()
     )
     if journal_id is not None:
         statement = statement.where(SelfCareLog.journal_id == journal_id)

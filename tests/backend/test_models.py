@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 
 import pytest
-from sqlmodel import create_engine, select
+from sqlmodel import SQLModel, create_engine, select
 
 import backend.db as db_module
 from backend.db import get_session, init_db
@@ -25,6 +25,13 @@ def fixture_setup_db(tmp_path, monkeypatch):
     engine = create_engine(db_module.DATABASE_URL, echo=False)
     monkeypatch.setattr(db_module, "engine", engine)
     init_db()
+    try:
+        yield
+    finally:
+        SQLModel.metadata.drop_all(engine)
+        engine.dispose()
+        if test_db.exists():
+            test_db.unlink()
 
 
 def _create_sample_entry() -> int:
