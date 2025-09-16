@@ -1,0 +1,38 @@
+[project]
+name = "wavelengthwatch-fastapi"
+version = "0.1.0"
+description = "FastAPI service for WavelengthWatch curriculum data"
+requires-python = ">=3.11"
+authors = [{name = "WavelengthWatch Bots"}]
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "sqlmodel",
+    "pydantic",
+    "python-dotenv",
+    "httpx",
+    "pytest",
+    "pytest-asyncio",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff",
+    "mypy",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+strict_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+show_error_codes = true
+pretty = true

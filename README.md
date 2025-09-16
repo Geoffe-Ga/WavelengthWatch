@@ -1,62 +1,96 @@
-# WavelengthWatch
+# WavelengthWatch FastAPI Service
 
-## Overview
+This project exposes the WavelengthWatch reference data and journal entries through a
+FastAPI + SQLModel application backed by SQLite (configurable via `DATABASE_URL`).
+Reference tables (layers, phases, curriculum, strategies) are seeded from CSV fixtures
+at startup, along with sample journal entries. The `journal` resource is designed to
+scale with runtime usage while the other tables act as curated reference data.
 
-WavelengthWatch is a watchOS-only app that brings the Archetypal Wavelength to your wrist. You can horizontally scroll through the six phases of the Wavelength, each phase offering a pocket-sized guide to its “medicinal” and “toxic” expressions. Tap on a phase to reveal a quick box of wisdom and self-care strategies, then swipe to the next when you’re ready. The goal is maximum uptime on your personal Apple Watch: even offline, the guidance is bundled into the app, and when connectivity is available, background refresh pulls the latest updates.
+## Project Layout
 
-_Status_: The project has not yet been deployed to production. An eventual App Store launch is planned, so formal database migrations are not currently required.
-
-## Features
-
-- **Watch-Only App (SwiftUI)**: Built in Xcode 16.4, runs natively on watchOS 11.6.1 (Apple Watch Series 9).
-- **Horizontal Scrolling UI**: Swipe through the self-care strategies corresponding to the phases of the Archetypal Wavelength.
-- **Phase Details**: Tap a phase to see “medicinal” and “toxic” expressions.
-- **Baseline Offline Data**: Core dataset (stages, phases, expressions, strategies) is bundled as JSON in the app, so the watch works instantly without a network.
-- **Optional Refresh**: When background time is available, the app fetches the latest JSON from the backend or static hosting, ensuring freshness without breaking offline reliability.
-- **FastAPI Backend**: A lightweight Python service (in `backend/app.py`) serves JSON mappings and static assets. Curriculum data is read from JSON files, while self-care strategies now live in a SQLite table (`SelfCareStrategy`) seeded from the legacy CSV/JSON sources.
-- **CI and Pre-commit**:
-  - GitHub Actions workflow builds the watch app on a simulator, runs SwiftLint/SwiftFormat checks, and validates backend tests.
-  - Pre-commit hooks enforce linting and formatting for both Swift (via Mint, SwiftLint, SwiftFormat) and Python (via Mypy, Ruff, etc. in the backend).
-
-## Repository Structure
-```aiignore
-WavelengthWatch/
-├── frontend/ # watchOS SwiftUI app
-│ └── WavelengthWatch/ # Xcode project + assets
-│
-├── backend/ # FastAPI service
-│ ├── app.py # FastAPI entrypoint
-│ ├── data/
-│ │ ├── curriculum.json # stage/phase + medicinal/toxic
-│ │ ├── strategies.json # self-care strategies
-│ │ └── images/ # optional static images
-│ └── requirements.txt
-│
-├── tests/ # shared test root
-│ ├── backend/ # pytest for FastAPI
-│ └── frontend/ # Swift XCTest / Swift Testing (lives in Xcode)
-│
-├── .github/workflows/ci.yml # CI pipeline
-├── .pre-commit-config.yaml # pre-commit hooks
-└── AGENTS.md # Guardrails for AI Agents in pair programming
 ```
-## Getting Started
+app/
+  main.py           # FastAPI instantiation and router registration
+  database.py       # Engine creation and session dependency
+  models.py         # SQLModel ORM tables and relationships
+  schemas.py        # Pydantic/SQLModel DTOs
+  routers/          # CRUD routers for each resource
+  seed_data.py      # CSV constants and seeding helpers
+  utils.py          # Datetime helpers
+pyproject.toml      # Dependencies and tooling configuration
+README.md           # This file
+tests/test_journal.py  # Happy-path CRUD test for journal entries
+```
 
-### Frontend (watchOS)
-1. Open `frontend/watch-frontend/WavelengthWatch.xcodeproj` in Xcode 16.4.
-2. Select your Apple Watch (or simulator) as the run destination.
-3. Press ▶ to build and run.
+## Requirements
 
-### Backend (FastAPI)
-1. Install dependencies:
-   ```bash
-   cd backend
-   pip install -r requirements.txt
+* Python 3.11+
+* Poetry or pip for dependency management
 
-2. Run locally:
+Install dependencies with pip:
+
 ```bash
-uvicorn app:app --reload
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .[dev]
 ```
 
-3. Visit http://127.0.0.1:8000/curriculum
- to see the JSON served.
+## Running the API
+
+```bash
+export DATABASE_URL="sqlite:///./app.db"  # optional, defaults to this value
+python -m uvicorn app.main:app --reload
+```
+
+On startup the application will create tables (if needed) and seed the database from the
+embedded CSV fixtures. The known values for `curriculum.dosage` are `Medicinal` and `Toxic`.
+
+## Example Requests
+
+List layers:
+
+```bash
+curl http://localhost:8000/layers
+```
+
+Create a new journal entry:
+
+```bash
+curl -X POST http://localhost:8000/journal \
+  -H 'Content-Type: application/json' \
+  -d '{
+        "created_at": "2025-10-01T12:00:00Z",
+        "user_id": 42,
+        "curriculum_id": 1,
+        "secondary_curriculum_id": 2,
+        "strategy_id": 1
+      }'
+```
+
+Filter curriculum by stage and dosage:
+
+```bash
+curl "http://localhost:8000/curriculum?stage_id=1&dosage=Medicinal"
+```
+
+Retrieve a single strategy:
+
+```bash
+curl http://localhost:8000/strategies/1
+```
+
+Delete a journal entry:
+
+```bash
+curl -X DELETE http://localhost:8000/journal/1
+```
+
+A health check is exposed at `GET /health`.
+
+## Testing
+
+Run the automated tests (which exercise seeding and CRUD for journal entries):
+
+```bash
+pytest
+```
