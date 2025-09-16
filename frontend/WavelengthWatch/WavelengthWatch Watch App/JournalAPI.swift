@@ -16,26 +16,26 @@ struct JournalAPI {
     var errorDescription: String? {
       switch self {
       case .encodingFailed:
-        return "We couldn't prepare your journal entry."
+        "We couldn't prepare your journal entry."
       case .invalidResponse:
-        return "The server returned something unexpected."
-      case .requestFailed(let statusCode):
-        return "The server responded with status code \(statusCode)."
+        "The server returned something unexpected."
+      case let .requestFailed(statusCode):
+        "The server responded with status code \(statusCode)."
       case .transportError:
-        return "We couldn't reach the server."
+        "We couldn't reach the server."
       }
     }
 
     var failureReason: String? {
       switch self {
-      case .encodingFailed(let underlying):
-        return underlying.localizedDescription
-      case .transportError(let underlying):
-        return underlying.localizedDescription
+      case let .encodingFailed(underlying):
+        underlying.localizedDescription
+      case let .transportError(underlying):
+        underlying.localizedDescription
       case .invalidResponse:
-        return "The response was not an HTTP response."
+        "The response was not an HTTP response."
       case .requestFailed:
-        return "The request finished with a non-success status code."
+        "The request finished with a non-success status code."
       }
     }
   }
@@ -83,7 +83,7 @@ struct JournalAPI {
         throw JournalAPIError.invalidResponse
       }
 
-      guard (200..<300).contains(httpResponse.statusCode) else {
+      guard (200 ..< 300).contains(httpResponse.statusCode) else {
         throw JournalAPIError.requestFailed(statusCode: httpResponse.statusCode)
       }
 

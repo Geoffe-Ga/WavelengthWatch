@@ -114,7 +114,7 @@ struct JournalAPITests {
     }
 
     switch error {
-    case .requestFailed(let statusCode):
+    case let .requestFailed(statusCode):
       #expect(statusCode == 500)
     default:
       #expect(false)
