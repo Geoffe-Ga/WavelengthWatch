@@ -1,115 +1,105 @@
-"""Database models and Pydantic schemas for journaling."""
+"""SQLModel table definitions for WavelengthWatch."""
 
 from datetime import datetime
+from enum import Enum
 
 from sqlmodel import Field, Relationship, SQLModel
 
 
-class EntryDetail(SQLModel, table=True):
-    """Detail row tied to a :class:`JournalEntry`."""
+class DosageEnum(str, Enum):
+    """Dosage type for curriculum entries."""
 
-    journal_id: int | None = Field(
-        default=None, foreign_key="journalentry.id", primary_key=True
+    MEDICINAL = "Medicinal"
+    TOXIC = "Toxic"
+
+
+class Layer(SQLModel, table=True):
+    """Layer/Stage reference data."""
+
+    id: int = Field(primary_key=True)
+    color: str
+    title: str
+    subtitle: str
+
+    # Relationships
+    curriculum_items: list["Curriculum"] = Relationship(
+        back_populates="layer"
     )
-    stage: int
-    phase: int
-    dosage: float
-    position: int = Field(primary_key=True)
-
-    journal: "JournalEntry" = Relationship(back_populates="details")
+    strategies: list["Strategy"] = Relationship(back_populates="layer")
 
 
-class EntryDetailCreate(SQLModel):
-    """Pydantic schema for creating ``EntryDetail`` records."""
+class Phase(SQLModel, table=True):
+    """Phase reference data."""
 
-    journal_id: int
-    stage: int
-    phase: int
-    dosage: float
-    position: int
+    id: int = Field(primary_key=True)
+    name: str
 
-
-class EntryDetailInput(SQLModel):
-    """Input schema for nested detail creation via the API."""
-
-    stage: int
-    phase: int
-    dosage: float
-    position: int
-
-
-class SelfCareLog(SQLModel, table=True):
-    """Record of a self-care strategy linked to a journal entry."""
-
-    id: int | None = Field(default=None, primary_key=True)
-    journal_id: int | None = Field(
-        default=None, foreign_key="journalentry.id"
+    # Relationships
+    curriculum_items: list["Curriculum"] = Relationship(
+        back_populates="phase"
     )
-    strategy: str = Field(max_length=100)
-    timestamp: datetime
-
-    journal: "JournalEntry" = Relationship(back_populates="self_care_logs")
+    strategies: list["Strategy"] = Relationship(back_populates="phase")
 
 
-class SelfCareLogCreate(SQLModel):
-    """Pydantic schema for creating ``SelfCareLog`` records."""
+class Curriculum(SQLModel, table=True):
+    """Curriculum reference data with layer/phase combinations."""
 
-    journal_id: int
-    strategy: str = Field(max_length=100)
-    timestamp: datetime
+    id: int = Field(primary_key=True)
+    layer_id: int = Field(foreign_key="layer.id")
+    phase_id: int = Field(foreign_key="phase.id")
+    dosage: DosageEnum
+    expression: str
 
-
-class JournalEntry(SQLModel, table=True):
-    """Represents a journaling session."""
-
-    id: int | None = Field(default=None, primary_key=True)
-    timestamp: datetime
-    initiated_by: str = Field(max_length=100)
-
-    details: list[EntryDetail] = Relationship(
-        back_populates="journal",
-        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    # Relationships
+    layer: Layer = Relationship(back_populates="curriculum_items")
+    phase: Phase = Relationship(back_populates="curriculum_items")
+    journal_entries: list["Journal"] = Relationship(
+        back_populates="curriculum",
+        sa_relationship_kwargs={"foreign_keys": "Journal.curriculum_id"},
     )
-    self_care_logs: list[SelfCareLog] = Relationship(
-        back_populates="journal",
-        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    secondary_journal_entries: list["Journal"] = Relationship(
+        back_populates="secondary_curriculum",
+        sa_relationship_kwargs={
+            "foreign_keys": "Journal.secondary_curriculum_id"
+        },
     )
 
 
-class JournalEntryCreate(SQLModel):
-    """Pydantic schema for creating ``JournalEntry`` records."""
+class Strategy(SQLModel, table=True):
+    """Self-care strategy reference data."""
 
-    timestamp: datetime
-    initiated_by: str = Field(max_length=100)
+    id: int = Field(primary_key=True)
+    strategy: str
+    layer_id: int = Field(foreign_key="layer.id")
+    phase_id: int = Field(foreign_key="phase.id")
 
-
-class JournalEntryCreateWithDetails(JournalEntryCreate):
-    """Schema for creating entries with nested detail records."""
-
-    details: list[EntryDetailInput]
-
-
-class JournalEntryRead(JournalEntryCreate):
-    """Schema for reading ``JournalEntry`` records with details."""
-
-    id: int
-    details: list[EntryDetail] = []
+    # Relationships
+    layer: Layer = Relationship(back_populates="strategies")
+    phase: Phase = Relationship(back_populates="strategies")
+    journal_entries: list["Journal"] = Relationship(back_populates="strategy")
 
 
-__all__ = [
-    "JournalEntry",
-    "EntryDetail",
-    "SelfCareLog",
-    "JournalEntryCreate",
-    "EntryDetailCreate",
-    "SelfCareLogCreate",
-    "EntryDetailInput",
-    "JournalEntryCreateWithDetails",
-    "JournalEntryRead",
-]
+class Journal(SQLModel, table=True):
+    """Journal entry tracking user interactions."""
 
+    id: int = Field(primary_key=True)
+    created_at: datetime
+    user_id: int  # No users table in current scope
+    curriculum_id: int = Field(foreign_key="curriculum.id")
+    secondary_curriculum_id: int | None = Field(
+        default=None, foreign_key="curriculum.id"
+    )
+    strategy_id: int | None = Field(default=None, foreign_key="strategy.id")
 
-# Resolve forward references for Pydantic/SQLModel.
-JournalEntry.model_rebuild()
-EntryDetail.model_rebuild()
-SelfCareLog.model_rebuild()
+    # Relationships
+    curriculum: Curriculum = Relationship(
+        back_populates="journal_entries",
+        sa_relationship_kwargs={"foreign_keys": "Journal.curriculum_id"},
+    )
+    secondary_curriculum: Curriculum | None = Relationship(
+        back_populates="secondary_journal_entries",
+        sa_relationship_kwargs={
+            "foreign_keys": "Journal.secondary_curriculum_id"
+        },
+    )
+    strategy: Strategy | None = Relationship(back_populates="journal_entries")
