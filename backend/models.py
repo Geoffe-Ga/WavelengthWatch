@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import ConfigDict, model_validator
+from pydantic import model_validator
 from sqlalchemy import Index
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -35,8 +35,6 @@ class SelfCareStrategyCreate(SQLModel):
 
 class SelfCareStrategyRead(SelfCareStrategyCreate):
     """Schema for reading :class:`SelfCareStrategy` records."""
-
-    model_config = ConfigDict(from_attributes=True)
 
     id: int
 
@@ -119,8 +117,6 @@ class SelfCareLogCreate(SQLModel):
 
 class SelfCareLogRead(SQLModel):
     """Schema for reading ``SelfCareLog`` records."""
-
-    model_config = ConfigDict(from_attributes=True)
 
     id: int
     journal_id: int
