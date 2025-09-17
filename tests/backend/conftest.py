@@ -1,37 +1,32 @@
-"""Shared backend test fixtures."""
+"""Shared backend test fixtures for the FastAPI service."""
 
 from __future__ import annotations
 
 from collections.abc import Iterator
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlmodel import SQLModel, create_engine
 
-import backend.db as db_module
-from backend.db import init_db
+from backend import database
+from backend.app import create_application
 
 
 @pytest.fixture()
-def client(tmp_path_factory: pytest.TempPathFactory, monkeypatch) -> Iterator[TestClient]:
-    """Provide an API client backed by an isolated SQLite database."""
+def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
+    """Yield an API client backed by an isolated SQLite database."""
 
-    db_dir = tmp_path_factory.mktemp("db")
-    test_db = db_dir / "test.db"
-    monkeypatch.setattr(db_module, "DATABASE_FILE", test_db)
-    monkeypatch.setattr(db_module, "DATABASE_URL", f"sqlite:///{test_db}")
-    engine = create_engine(db_module.DATABASE_URL, echo=False)
-    monkeypatch.setattr(db_module, "engine", engine)
-    init_db()
+    db_path = tmp_path / "app.db"
+    database_url = f"sqlite:///{db_path}"
+    monkeypatch.setenv("DATABASE_URL", database_url)
 
-    from backend.app import app
+    engine = database.configure_engine(database_url)
 
-    api_client = TestClient(app)
-    try:
+    app = create_application()
+
+    with TestClient(app) as api_client:
         yield api_client
-    finally:
-        api_client.close()
-        SQLModel.metadata.drop_all(engine)
-        engine.dispose()
-        if test_db.exists():
-            test_db.unlink()
+
+    engine.dispose()
+    if db_path.exists():
+        db_path.unlink()

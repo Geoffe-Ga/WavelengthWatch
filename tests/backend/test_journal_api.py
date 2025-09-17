@@ -1,87 +1,61 @@
+"""Tests for journal endpoints."""
+
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Any
 
-from fastapi.testclient import TestClient
+def test_journal_filtering(client) -> None:
+    response = client.get("/journal", params={"user_id": 1})
+    assert response.status_code == 200
+    entries = response.json()
+    assert len(entries) == 2
+    for entry in entries:
+        assert entry["user_id"] == 1
+        assert entry["curriculum"]["layer"]["title"]
 
-
-def _sample_payload(ts: datetime) -> dict[str, Any]:
-    return {
-        "timestamp": ts.isoformat(),
-        "initiated_by": "tester",
-        "details": [
-            {"stage": 1, "phase": 1, "dosage": 1.0, "position": 1},
-        ],
-    }
-
-
-def test_create_journal_entry_with_details(client: TestClient) -> None:
-    payload = _sample_payload(datetime(2024, 1, 1, 12, 0, 0))
-    response = client.post("/journal", json=payload)
-    assert response.status_code == 201
-    data = response.json()
-    assert data["initiated_by"] == "tester"
-    assert len(data["details"]) == 1
-    assert data["details"][0]["stage"] == 1
-
-
-def test_create_journal_empty_details(client: TestClient) -> None:
-    ts = datetime(2024, 1, 1, 12, 0, 0)
-    payload = {
-        "timestamp": ts.isoformat(),
-        "initiated_by": "tester",
-        "details": [],
-    }
-    response = client.post("/journal", json=payload)
-    assert response.status_code == 201
-    assert response.json()["details"] == []
-
-
-def test_create_journal_multiple_details(client: TestClient) -> None:
-    ts = datetime(2024, 1, 1, 12, 0, 0)
-    payload = _sample_payload(ts)
-    payload["details"].append(
-        {"stage": 2, "phase": 2, "dosage": 2.0, "position": 2}
+    range_response = client.get(
+        "/journal",
+        params={
+            "from": "2025-09-14T00:00:00Z",
+            "to": "2025-09-15T23:59:59Z",
+        },
     )
-    response = client.post("/journal", json=payload)
-    assert response.status_code == 201
-    assert len(response.json()["details"]) == 2
+    assert range_response.status_code == 200
+    ranged_entries = range_response.json()
+    assert {item["id"] for item in ranged_entries} == {2, 3}
 
 
-def test_create_journal_validation_error(client: TestClient) -> None:
-    payload = {"timestamp": datetime(2024, 1, 1).isoformat(), "details": []}
-    response = client.post("/journal", json=payload)
-    assert response.status_code == 422
-
-
-def test_list_journal_filtered_by_date(client: TestClient) -> None:
-    early = datetime(2024, 1, 1, 12, 0, 0)
-    late = datetime(2024, 2, 1, 12, 0, 0)
-    client.post("/journal", json=_sample_payload(early))
-    client.post("/journal", json=_sample_payload(late))
-
-    params = {
-        "start": datetime(2024, 1, 15).isoformat(),
-        "end": datetime(2024, 3, 1).isoformat(),
+def test_journal_crud(client) -> None:
+    create_payload = {
+        "created_at": "2025-09-16T12:00:00Z",
+        "user_id": 99,
+        "curriculum_id": 1,
+        "secondary_curriculum_id": 2,
+        "strategy_id": 1,
     }
-    response = client.get("/journal", params=params)
-    assert response.status_code == 200
-    data = response.json()
-    assert len(data) == 1
-    assert data[0]["timestamp"].startswith("2024-02-01")
+    created = client.post("/journal", json=create_payload)
+    assert created.status_code == 201
+    body = created.json()
+    journal_id = body["id"]
+    assert body["strategy"]["id"] == 1
 
+    detail = client.get(f"/journal/{journal_id}")
+    assert detail.status_code == 200
+    assert detail.json()["curriculum"]["id"] == 1
 
-def test_list_journal_boundary_dates(client: TestClient) -> None:
-    ts = datetime(2024, 1, 1, 12, 0, 0)
-    client.post("/journal", json=_sample_payload(ts))
-    params = {"start": ts.isoformat(), "end": ts.isoformat()}
-    response = client.get("/journal", params=params)
-    assert response.status_code == 200
-    data = response.json()
-    assert len(data) == 1
+    update_payload = {
+        "strategy_id": None,
+        "secondary_curriculum_id": None,
+        "user_id": 98,
+    }
+    updated = client.put(f"/journal/{journal_id}", json=update_payload)
+    assert updated.status_code == 200
+    updated_body = updated.json()
+    assert updated_body["user_id"] == 98
+    assert updated_body["strategy"] is None
+    assert updated_body["secondary_curriculum"] is None
 
+    delete_response = client.delete(f"/journal/{journal_id}")
+    assert delete_response.status_code == 204
 
-def test_list_journal_invalid_date_format(client: TestClient) -> None:
-    response = client.get("/journal", params={"start": "not-a-date"})
-    assert response.status_code == 422
+    missing = client.get(f"/journal/{journal_id}")
+    assert missing.status_code == 404
