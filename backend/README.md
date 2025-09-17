@@ -38,6 +38,11 @@ python -m backend.tools.seed_data
 
 (Ensure the environment variable `DATABASE_URL` is set before running the script to target a specific database.)
 
+## Configuration
+
+- `APP_ENV` controls environment-specific behavior and defaults to `development`.
+- `CORS_ALLOWED_ORIGINS` should be a comma-separated list of allowed origins. It is required when `APP_ENV=production`; otherwise the API falls back to localhost defaults for development.
+
 ## Health Check
 
 ```bash
