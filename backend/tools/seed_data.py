@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import csv
-from datetime import datetime, timezone
+from collections.abc import Iterable
+from datetime import UTC, datetime
 from io import StringIO
-from typing import Iterable
 
-from sqlmodel import SQLModel, Session, select
+from sqlmodel import Session, SQLModel, select
 
 from ..models import Curriculum, Dosage, Journal, Layer, Phase, Strategy
 
@@ -278,7 +278,7 @@ def _parse_optional_int(value: str) -> int | None:
 def _load_journal() -> list[Journal]:
     records: list[Journal] = []
     for row in _iter_rows(JOURNAL_CSV):
-        created_at = datetime.fromisoformat(row["created_at"].replace("Z", "+00:00")).astimezone(timezone.utc)
+        created_at = datetime.fromisoformat(row["created_at"].replace("Z", "+00:00")).astimezone(UTC)
         records.append(
             Journal(
                 id=int(row["id"]),

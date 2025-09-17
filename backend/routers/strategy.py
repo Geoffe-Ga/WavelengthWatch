@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import List
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import joinedload
@@ -11,6 +11,8 @@ from sqlmodel import Session, select
 from ..database import get_session
 from ..models import Layer, Phase, Strategy
 from ..schemas import StrategyCreate, StrategyRead, StrategyUpdate
+
+SessionDep = Annotated[Session, Depends(get_session)]
 
 router = APIRouter(prefix="/strategy", tags=["strategy"])
 
@@ -42,15 +44,15 @@ def _validate_references(session: Session, layer_id: int, phase_id: int) -> None
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid phase_id")
 
 
-@router.get("/", response_model=List[StrategyRead])
+@router.get("/", response_model=list[StrategyRead])
 def list_strategies(
     *,
-    session: Session = Depends(get_session),
-    limit: int = Query(100, ge=1, le=1000),
-    offset: int = Query(0, ge=0),
-    layer_id: int | None = Query(default=None),
-    phase_id: int | None = Query(default=None),
-) -> List[StrategyRead]:
+    session: SessionDep,
+    limit: Annotated[int, Query(ge=1, le=1000)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    layer_id: Annotated[int | None, Query()] = None,
+    phase_id: Annotated[int | None, Query()] = None,
+) -> list[StrategyRead]:
     statement = _base_query()
     if layer_id is not None:
         statement = statement.where(Strategy.layer_id == layer_id)
@@ -62,12 +64,12 @@ def list_strategies(
 
 
 @router.get("/{strategy_id}", response_model=StrategyRead)
-def get_strategy(strategy_id: int, session: Session = Depends(get_session)) -> StrategyRead:
+def get_strategy(strategy_id: int, session: SessionDep) -> StrategyRead:
     return _serialize_strategy(_get_strategy_or_404(strategy_id, session))
 
 
 @router.post("/", response_model=StrategyRead, status_code=status.HTTP_201_CREATED)
-def create_strategy(payload: StrategyCreate, session: Session = Depends(get_session)) -> StrategyRead:
+def create_strategy(payload: StrategyCreate, session: SessionDep) -> StrategyRead:
     _validate_references(session, payload.layer_id, payload.phase_id)
     strategy = Strategy(**payload.model_dump())
     session.add(strategy)
@@ -77,9 +79,7 @@ def create_strategy(payload: StrategyCreate, session: Session = Depends(get_sess
 
 
 @router.put("/{strategy_id}", response_model=StrategyRead)
-def update_strategy(
-    *, strategy_id: int, payload: StrategyUpdate, session: Session = Depends(get_session)
-) -> StrategyRead:
+def update_strategy(*, strategy_id: int, payload: StrategyUpdate, session: SessionDep) -> StrategyRead:
     strategy = _get_strategy_or_404(strategy_id, session)
     data = payload.model_dump(exclude_unset=True)
     if "layer_id" in data or "phase_id" in data:
@@ -94,7 +94,7 @@ def update_strategy(
 
 
 @router.delete("/{strategy_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_strategy(strategy_id: int, session: Session = Depends(get_session)) -> Response:
+def delete_strategy(strategy_id: int, session: SessionDep) -> Response:
     strategy = _get_strategy_or_404(strategy_id, session)
     session.delete(strategy)
     session.commit()

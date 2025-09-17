@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import joinedload
@@ -12,6 +12,8 @@ from sqlmodel import Session, select
 from ..database import get_session
 from ..models import Curriculum, Journal, Strategy
 from ..schemas import JournalCreate, JournalRead, JournalUpdate
+
+SessionDep = Annotated[Session, Depends(get_session)]
 
 router = APIRouter(prefix="/journal", tags=["journal"])
 
@@ -61,17 +63,17 @@ def _validate_references(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid strategy_id")
 
 
-@router.get("/", response_model=List[JournalRead])
+@router.get("/", response_model=list[JournalRead])
 def list_journal_entries(
     *,
-    session: Session = Depends(get_session),
-    limit: int = Query(100, ge=1, le=1000),
-    offset: int = Query(0, ge=0),
-    user_id: int | None = Query(default=None),
-    strategy_id: int | None = Query(default=None),
-    from_: datetime | None = Query(default=None, alias="from"),
-    to: datetime | None = Query(default=None),
-) -> List[JournalRead]:
+    session: SessionDep,
+    limit: Annotated[int, Query(ge=1, le=1000)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    user_id: Annotated[int | None, Query()] = None,
+    strategy_id: Annotated[int | None, Query()] = None,
+    from_: Annotated[datetime | None, Query(alias="from")] = None,
+    to: Annotated[datetime | None, Query()] = None,
+) -> list[JournalRead]:
     statement = _base_query()
     if user_id is not None:
         statement = statement.where(Journal.user_id == user_id)
@@ -87,12 +89,12 @@ def list_journal_entries(
 
 
 @router.get("/{journal_id}", response_model=JournalRead)
-def get_journal(journal_id: int, session: Session = Depends(get_session)) -> JournalRead:
+def get_journal(journal_id: int, session: SessionDep) -> JournalRead:
     return _serialize_journal(_get_journal_or_404(journal_id, session))
 
 
 @router.post("/", response_model=JournalRead, status_code=status.HTTP_201_CREATED)
-def create_journal(payload: JournalCreate, session: Session = Depends(get_session)) -> JournalRead:
+def create_journal(payload: JournalCreate, session: SessionDep) -> JournalRead:
     _validate_references(
         session,
         curriculum_id=payload.curriculum_id,
@@ -106,9 +108,7 @@ def create_journal(payload: JournalCreate, session: Session = Depends(get_sessio
 
 
 @router.put("/{journal_id}", response_model=JournalRead)
-def update_journal(
-    *, journal_id: int, payload: JournalUpdate, session: Session = Depends(get_session)
-) -> JournalRead:
+def update_journal(*, journal_id: int, payload: JournalUpdate, session: SessionDep) -> JournalRead:
     journal = _get_journal_or_404(journal_id, session)
     data = payload.model_dump(exclude_unset=True)
     if data:
@@ -129,7 +129,7 @@ def update_journal(
 
 
 @router.delete("/{journal_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_journal(journal_id: int, session: Session = Depends(get_session)) -> Response:
+def delete_journal(journal_id: int, session: SessionDep) -> Response:
     journal = _get_journal_or_404(journal_id, session)
     session.delete(journal)
     session.commit()

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import List
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlmodel import Session, select
@@ -10,6 +10,8 @@ from sqlmodel import Session, select
 from ..database import get_session
 from ..models import Phase
 from ..schemas import PhaseCreate, PhaseRead, PhaseUpdate
+
+SessionDep = Annotated[Session, Depends(get_session)]
 
 router = APIRouter(prefix="/phase", tags=["phase"])
 
@@ -25,22 +27,25 @@ def _get_phase_or_404(phase_id: int, session: Session) -> Phase:
     return phase
 
 
-@router.get("/", response_model=List[PhaseRead])
+@router.get("/", response_model=list[PhaseRead])
 def list_phases(
-    *, session: Session = Depends(get_session), limit: int = Query(100, ge=1, le=1000), offset: int = Query(0, ge=0)
-) -> List[PhaseRead]:
+    *,
+    session: SessionDep,
+    limit: Annotated[int, Query(ge=1, le=1000)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> list[PhaseRead]:
     statement = select(Phase).order_by(Phase.id).offset(offset).limit(limit)
     phases = session.exec(statement).all()
     return [_serialize_phase(phase) for phase in phases]
 
 
 @router.get("/{phase_id}", response_model=PhaseRead)
-def get_phase(phase_id: int, session: Session = Depends(get_session)) -> PhaseRead:
+def get_phase(phase_id: int, session: SessionDep) -> PhaseRead:
     return _serialize_phase(_get_phase_or_404(phase_id, session))
 
 
 @router.post("/", response_model=PhaseRead, status_code=status.HTTP_201_CREATED)
-def create_phase(payload: PhaseCreate, session: Session = Depends(get_session)) -> PhaseRead:
+def create_phase(payload: PhaseCreate, session: SessionDep) -> PhaseRead:
     # Reference data writes are allowed but are typically rare in production.
     phase = Phase(**payload.model_dump())
     session.add(phase)
@@ -50,9 +55,7 @@ def create_phase(payload: PhaseCreate, session: Session = Depends(get_session)) 
 
 
 @router.put("/{phase_id}", response_model=PhaseRead)
-def update_phase(
-    *, phase_id: int, payload: PhaseUpdate, session: Session = Depends(get_session)
-) -> PhaseRead:
+def update_phase(*, phase_id: int, payload: PhaseUpdate, session: SessionDep) -> PhaseRead:
     phase = _get_phase_or_404(phase_id, session)
     for key, value in payload.model_dump(exclude_unset=True).items():
         setattr(phase, key, value)
@@ -63,7 +66,7 @@ def update_phase(
 
 
 @router.delete("/{phase_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_phase(phase_id: int, session: Session = Depends(get_session)) -> Response:
+def delete_phase(phase_id: int, session: SessionDep) -> Response:
     phase = _get_phase_or_404(phase_id, session)
     session.delete(phase)
     session.commit()

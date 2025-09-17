@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import List
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import joinedload
@@ -11,6 +11,8 @@ from sqlmodel import Session, select
 from ..database import get_session
 from ..models import Curriculum, Dosage, Layer, Phase
 from ..schemas import CurriculumCreate, CurriculumRead, CurriculumUpdate
+
+SessionDep = Annotated[Session, Depends(get_session)]
 
 router = APIRouter(prefix="/curriculum", tags=["curriculum"])
 
@@ -42,16 +44,16 @@ def _validate_references(session: Session, layer_id: int, phase_id: int) -> None
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid phase_id")
 
 
-@router.get("/", response_model=List[CurriculumRead])
+@router.get("/", response_model=list[CurriculumRead])
 def list_curriculum(
     *,
-    session: Session = Depends(get_session),
-    limit: int = Query(100, ge=1, le=1000),
-    offset: int = Query(0, ge=0),
-    layer_id: int | None = Query(default=None),
-    phase_id: int | None = Query(default=None),
-    dosage: Dosage | None = Query(default=None),
-) -> List[CurriculumRead]:
+    session: SessionDep,
+    limit: Annotated[int, Query(ge=1, le=1000)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    layer_id: Annotated[int | None, Query()] = None,
+    phase_id: Annotated[int | None, Query()] = None,
+    dosage: Annotated[Dosage | None, Query()] = None,
+) -> list[CurriculumRead]:
     statement = _base_query()
     if layer_id is not None:
         statement = statement.where(Curriculum.layer_id == layer_id)
@@ -65,12 +67,12 @@ def list_curriculum(
 
 
 @router.get("/{curriculum_id}", response_model=CurriculumRead)
-def get_curriculum(curriculum_id: int, session: Session = Depends(get_session)) -> CurriculumRead:
+def get_curriculum(curriculum_id: int, session: SessionDep) -> CurriculumRead:
     return _serialize_curriculum(_get_curriculum_or_404(curriculum_id, session))
 
 
 @router.post("/", response_model=CurriculumRead, status_code=status.HTTP_201_CREATED)
-def create_curriculum(payload: CurriculumCreate, session: Session = Depends(get_session)) -> CurriculumRead:
+def create_curriculum(payload: CurriculumCreate, session: SessionDep) -> CurriculumRead:
     # Reference data writes are infrequent but supported for administrative tooling.
     _validate_references(session, payload.layer_id, payload.phase_id)
     curriculum = Curriculum(**payload.model_dump())
@@ -81,9 +83,7 @@ def create_curriculum(payload: CurriculumCreate, session: Session = Depends(get_
 
 
 @router.put("/{curriculum_id}", response_model=CurriculumRead)
-def update_curriculum(
-    *, curriculum_id: int, payload: CurriculumUpdate, session: Session = Depends(get_session)
-) -> CurriculumRead:
+def update_curriculum(*, curriculum_id: int, payload: CurriculumUpdate, session: SessionDep) -> CurriculumRead:
     curriculum = _get_curriculum_or_404(curriculum_id, session)
     data = payload.model_dump(exclude_unset=True)
     if "layer_id" in data or "phase_id" in data:
@@ -98,7 +98,7 @@ def update_curriculum(
 
 
 @router.delete("/{curriculum_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_curriculum(curriculum_id: int, session: Session = Depends(get_session)) -> Response:
+def delete_curriculum(curriculum_id: int, session: SessionDep) -> Response:
     curriculum = _get_curriculum_or_404(curriculum_id, session)
     session.delete(curriculum)
     session.commit()

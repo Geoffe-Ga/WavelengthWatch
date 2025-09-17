@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import List
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlmodel import Session, select
@@ -10,6 +10,8 @@ from sqlmodel import Session, select
 from ..database import get_session
 from ..models import Layer
 from ..schemas import LayerCreate, LayerRead, LayerUpdate
+
+SessionDep = Annotated[Session, Depends(get_session)]
 
 router = APIRouter(prefix="/layer", tags=["layer"])
 
@@ -25,25 +27,25 @@ def _get_layer_or_404(layer_id: int, session: Session) -> Layer:
     return layer
 
 
-@router.get("/", response_model=List[LayerRead])
+@router.get("/", response_model=list[LayerRead])
 def list_layers(
     *,
-    session: Session = Depends(get_session),
-    limit: int = Query(100, ge=1, le=1000),
-    offset: int = Query(0, ge=0),
-) -> List[LayerRead]:
+    session: SessionDep,
+    limit: Annotated[int, Query(ge=1, le=1000)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> list[LayerRead]:
     statement = select(Layer).order_by(Layer.id).offset(offset).limit(limit)
     layers = session.exec(statement).all()
     return [_serialize_layer(layer) for layer in layers]
 
 
 @router.get("/{layer_id}", response_model=LayerRead)
-def get_layer(layer_id: int, session: Session = Depends(get_session)) -> LayerRead:
+def get_layer(layer_id: int, session: SessionDep) -> LayerRead:
     return _serialize_layer(_get_layer_or_404(layer_id, session))
 
 
 @router.post("/", response_model=LayerRead, status_code=status.HTTP_201_CREATED)
-def create_layer(payload: LayerCreate, session: Session = Depends(get_session)) -> LayerRead:
+def create_layer(payload: LayerCreate, session: SessionDep) -> LayerRead:
     # Reference data writes are allowed but typically performed during initial setup.
     layer = Layer(**payload.model_dump())
     session.add(layer)
@@ -53,9 +55,7 @@ def create_layer(payload: LayerCreate, session: Session = Depends(get_session)) 
 
 
 @router.put("/{layer_id}", response_model=LayerRead)
-def update_layer(
-    *, layer_id: int, payload: LayerUpdate, session: Session = Depends(get_session)
-) -> LayerRead:
+def update_layer(*, layer_id: int, payload: LayerUpdate, session: SessionDep) -> LayerRead:
     layer = _get_layer_or_404(layer_id, session)
     for key, value in payload.model_dump(exclude_unset=True).items():
         setattr(layer, key, value)
@@ -66,7 +66,7 @@ def update_layer(
 
 
 @router.delete("/{layer_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_layer(layer_id: int, session: Session = Depends(get_session)) -> Response:
+def delete_layer(layer_id: int, session: SessionDep) -> Response:
     layer = _get_layer_or_404(layer_id, session)
     session.delete(layer)
     session.commit()

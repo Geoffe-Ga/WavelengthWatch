@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from pydantic import ConfigDict, field_validator
 from sqlmodel import Field, SQLModel
@@ -18,8 +18,8 @@ def _coerce_datetime(value: datetime | str | None) -> datetime | None:
     if isinstance(value, str):
         value = datetime.fromisoformat(value.replace("Z", "+00:00"))
     if value.tzinfo is None:
-        value = value.replace(tzinfo=timezone.utc)
-    return value.astimezone(timezone.utc)
+        value = value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
 
 
 class LayerBase(SQLModel):
@@ -113,7 +113,7 @@ class StrategyRead(StrategyBase):
 
 
 class JournalBase(SQLModel):
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     user_id: int
     curriculum_id: int
     secondary_curriculum_id: int | None = None
