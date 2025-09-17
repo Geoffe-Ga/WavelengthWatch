@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from sqlalchemy.sql.elements import ColumnElement
 from sqlmodel import Session, select
 
 from ..database import get_session
@@ -34,7 +35,12 @@ def list_phases(
     limit: Annotated[int, Query(ge=1, le=1000)] = 100,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> list[PhaseRead]:
-    statement = select(Phase).order_by(Phase.id).offset(offset).limit(limit)
+    statement = (
+        select(Phase)
+        .order_by(cast(ColumnElement[int], Phase.id))
+        .offset(offset)
+        .limit(limit)
+    )
     phases = session.exec(statement).all()
     return [_serialize_phase(phase) for phase in phases]
 

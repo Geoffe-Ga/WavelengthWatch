@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import joinedload
+from sqlalchemy.sql.elements import ColumnElement
 from sqlmodel import Session, select
 
 from ..database import get_session
@@ -25,7 +26,7 @@ def _base_query():
     return (
         select(Strategy)
         .options(joinedload(Strategy.layer), joinedload(Strategy.phase))
-        .order_by(Strategy.id)
+        .order_by(cast(ColumnElement[int], Strategy.id))
     )
 
 
@@ -42,6 +43,13 @@ def _validate_references(session: Session, layer_id: int, phase_id: int) -> None
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid layer_id")
     if session.get(Phase, phase_id) is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid phase_id")
+
+
+def _ensure_strategy_id(strategy: Strategy) -> int:
+    strategy_id = strategy.id
+    if strategy_id is None:
+        raise RuntimeError("Persisted strategy is missing a primary key")
+    return strategy_id
 
 
 @router.get("/", response_model=list[StrategyRead])
@@ -75,7 +83,8 @@ def create_strategy(payload: StrategyCreate, session: SessionDep) -> StrategyRea
     session.add(strategy)
     session.commit()
     session.refresh(strategy)
-    return _serialize_strategy(_get_strategy_or_404(strategy.id, session))
+    strategy_id = _ensure_strategy_id(strategy)
+    return _serialize_strategy(_get_strategy_or_404(strategy_id, session))
 
 
 @router.put("/{strategy_id}", response_model=StrategyRead)
@@ -90,7 +99,8 @@ def update_strategy(*, strategy_id: int, payload: StrategyUpdate, session: Sessi
         setattr(strategy, key, value)
     session.add(strategy)
     session.commit()
-    return _serialize_strategy(_get_strategy_or_404(strategy.id, session))
+    strategy_id = _ensure_strategy_id(strategy)
+    return _serialize_strategy(_get_strategy_or_404(strategy_id, session))
 
 
 @router.delete("/{strategy_id}", status_code=status.HTTP_204_NO_CONTENT)

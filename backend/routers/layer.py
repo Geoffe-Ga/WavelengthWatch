@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from sqlalchemy.sql.elements import ColumnElement
 from sqlmodel import Session, select
 
 from ..database import get_session
@@ -34,7 +35,12 @@ def list_layers(
     limit: Annotated[int, Query(ge=1, le=1000)] = 100,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> list[LayerRead]:
-    statement = select(Layer).order_by(Layer.id).offset(offset).limit(limit)
+    statement = (
+        select(Layer)
+        .order_by(cast(ColumnElement[int], Layer.id))
+        .offset(offset)
+        .limit(limit)
+    )
     layers = session.exec(statement).all()
     return [_serialize_layer(layer) for layer in layers]
 

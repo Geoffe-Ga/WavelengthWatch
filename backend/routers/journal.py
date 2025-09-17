@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import joinedload
+from sqlalchemy.sql.elements import ColumnElement
 from sqlmodel import Session, select
 
 from ..database import get_session
@@ -33,7 +34,7 @@ def _base_query():
             joinedload(Journal.strategy).joinedload(Strategy.layer),
             joinedload(Journal.strategy).joinedload(Strategy.phase),
         )
-        .order_by(Journal.created_at.desc(), Journal.id)
+        .order_by(Journal.created_at.desc(), cast(ColumnElement[int], Journal.id))
     )
 
 
@@ -61,6 +62,13 @@ def _validate_references(
         )
     if strategy_id is not None and session.get(Strategy, strategy_id) is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid strategy_id")
+
+
+def _ensure_journal_id(journal: Journal) -> int:
+    journal_id = journal.id
+    if journal_id is None:
+        raise RuntimeError("Persisted journal entry is missing a primary key")
+    return journal_id
 
 
 @router.get("/", response_model=list[JournalRead])
@@ -104,7 +112,9 @@ def create_journal(payload: JournalCreate, session: SessionDep) -> JournalRead:
     journal = Journal(**payload.model_dump())
     session.add(journal)
     session.commit()
-    return _serialize_journal(_get_journal_or_404(journal.id, session))
+    session.refresh(journal)
+    journal_id = _ensure_journal_id(journal)
+    return _serialize_journal(_get_journal_or_404(journal_id, session))
 
 
 @router.put("/{journal_id}", response_model=JournalRead)
@@ -125,7 +135,9 @@ def update_journal(*, journal_id: int, payload: JournalUpdate, session: SessionD
             setattr(journal, key, value)
         session.add(journal)
         session.commit()
-    return _serialize_journal(_get_journal_or_404(journal.id, session))
+        session.refresh(journal)
+    journal_id = _ensure_journal_id(journal)
+    return _serialize_journal(_get_journal_or_404(journal_id, session))
 
 
 @router.delete("/{journal_id}", status_code=status.HTTP_204_NO_CONTENT)

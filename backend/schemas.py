@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from pydantic import ConfigDict, field_validator
+from pydantic import field_validator
 from sqlmodel import Field, SQLModel
 
 from .models import Dosage
@@ -41,8 +41,6 @@ class LayerUpdate(SQLModel):
 class LayerRead(LayerBase):
     id: int
 
-    model_config = ConfigDict(from_attributes=True)
-
 
 class PhaseBase(SQLModel):
     name: str
@@ -58,8 +56,6 @@ class PhaseUpdate(SQLModel):
 
 class PhaseRead(PhaseBase):
     id: int
-
-    model_config = ConfigDict(from_attributes=True)
 
 
 class CurriculumBase(SQLModel):
@@ -85,8 +81,6 @@ class CurriculumRead(CurriculumBase):
     layer: LayerRead | None = None
     phase: PhaseRead | None = None
 
-    model_config = ConfigDict(from_attributes=True)
-
 
 class StrategyBase(SQLModel):
     strategy: str
@@ -108,8 +102,6 @@ class StrategyRead(StrategyBase):
     id: int
     layer: LayerRead | None = None
     phase: PhaseRead | None = None
-
-    model_config = ConfigDict(from_attributes=True)
 
 
 class JournalBase(SQLModel):
@@ -150,5 +142,3 @@ class JournalRead(JournalBase):
     curriculum: CurriculumRead | None = None
     secondary_curriculum: CurriculumRead | None = None
     strategy: StrategyRead | None = None
-
-    model_config = ConfigDict(from_attributes=True)

@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import joinedload
+from sqlalchemy.sql.elements import ColumnElement
 from sqlmodel import Session, select
 
 from ..database import get_session
@@ -25,7 +26,7 @@ def _base_query():
     return (
         select(Curriculum)
         .options(joinedload(Curriculum.layer), joinedload(Curriculum.phase))
-        .order_by(Curriculum.id)
+        .order_by(cast(ColumnElement[int], Curriculum.id))
     )
 
 
@@ -42,6 +43,13 @@ def _validate_references(session: Session, layer_id: int, phase_id: int) -> None
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid layer_id")
     if session.get(Phase, phase_id) is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid phase_id")
+
+
+def _ensure_curriculum_id(curriculum: Curriculum) -> int:
+    curriculum_id = curriculum.id
+    if curriculum_id is None:
+        raise RuntimeError("Persisted curriculum is missing a primary key")
+    return curriculum_id
 
 
 @router.get("/", response_model=list[CurriculumRead])
@@ -79,7 +87,8 @@ def create_curriculum(payload: CurriculumCreate, session: SessionDep) -> Curricu
     session.add(curriculum)
     session.commit()
     session.refresh(curriculum)
-    return _serialize_curriculum(_get_curriculum_or_404(curriculum.id, session))
+    curriculum_id = _ensure_curriculum_id(curriculum)
+    return _serialize_curriculum(_get_curriculum_or_404(curriculum_id, session))
 
 
 @router.put("/{curriculum_id}", response_model=CurriculumRead)
@@ -94,7 +103,8 @@ def update_curriculum(*, curriculum_id: int, payload: CurriculumUpdate, session:
         setattr(curriculum, key, value)
     session.add(curriculum)
     session.commit()
-    return _serialize_curriculum(_get_curriculum_or_404(curriculum.id, session))
+    curriculum_id = _ensure_curriculum_id(curriculum)
+    return _serialize_curriculum(_get_curriculum_or_404(curriculum_id, session))
 
 
 @router.delete("/{curriculum_id}", status_code=status.HTTP_204_NO_CONTENT)

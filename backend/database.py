@@ -40,7 +40,8 @@ def configure_engine(url: str | None = None) -> Engine:
     """Reconfigure the global engine, useful for tests."""
 
     global engine, DATABASE_URL
-    target_url = url or os.getenv(_DATABASE_URL_ENV, "sqlite:///./app.db")
+    env_url = os.getenv(_DATABASE_URL_ENV, "sqlite:///./app.db")
+    target_url = url if url is not None else env_url
     if engine is not None:
         engine.dispose()
     engine = _create_engine(target_url)
