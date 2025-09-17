@@ -1,0 +1,19 @@
+[project]
+name = "wavelengthwatch-backend"
+version = "0.1.0"
+description = "Backend service for WavelengthWatch"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "sqlmodel",
+    "pydantic",
+    "python-dotenv",
+    "httpx",
+    "pytest",
+    "pytest-asyncio",
+]
+
+[build-system]
+requires = ["setuptools>=65", "wheel"]
+build-backend = "setuptools.build_meta"

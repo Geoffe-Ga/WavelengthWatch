@@ -1,283 +1,51 @@
+"""FastAPI application entrypoint."""
+
 from __future__ import annotations
 
-import json
-from collections import defaultdict, deque
-from datetime import UTC, datetime, timedelta
-from pathlib import Path
-from typing import Annotated, Any, cast
+from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import selectinload
-from sqlalchemy.sql import ColumnElement
-from sqlmodel import Session, select
+from sqlmodel import Session
 
-from .constants import PHASE_ORDER
-from .db import get_session_dep
-from .models import (
-    EntryDetail,
-    JournalEntry,
-    JournalEntryCreateWithDetails,
-    JournalEntryRead,
-    SelfCareLog,
-    SelfCareLogCreate,
-    SelfCareLogRead,
-    SelfCareStrategy,
-    SelfCareStrategyCreate,
-    SelfCareStrategyRead,
-)
-from .utils import to_utc_naive
-
-SessionDep = Annotated[Session, Depends(get_session_dep)]
-
-BASE_DIR = Path(__file__).resolve().parent
-DATA_DIR = BASE_DIR / "data"
-
-_PHASE_PRIORITY = {phase: index for index, phase in enumerate(PHASE_ORDER)}
+from . import database
+from .routers import curriculum, journal, layer, phase, strategy
+from .tools.seed_data import seed_database
 
 
-def _self_care_log_query():
-    """Base select statement for ``SelfCareLog`` with eager strategy loading."""
+def create_application() -> FastAPI:
+    """Configure and return the FastAPI application."""
 
-    return select(SelfCareLog).options(selectinload(SelfCareLog.strategy_ref))
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):  # pragma: no cover - exercised via startup events
+        database.create_db_and_tables()
+        with Session(database.engine) as session:
+            seed_database(session)
+        yield
 
-# Simple in-memory rate limiting: allow `RATE_LIMIT` requests per `RATE_PERIOD`
-RATE_LIMIT = 100
-RATE_PERIOD = timedelta(minutes=1)
-_request_times: dict[str, deque[datetime]] = defaultdict(deque)
+    application = FastAPI(title="WavelengthWatch API", version="1.0.0", lifespan=lifespan)
 
-
-def rate_limit(request: Request) -> None:
-    """Naive IP-based rate limiter."""
-    now = datetime.now(UTC)
-    ip = request.client.host if request.client else "unknown"
-    times = _request_times[ip]
-    while times and now - times[0] > RATE_PERIOD:
-        times.popleft()
-    if len(times) >= RATE_LIMIT:
-        raise HTTPException(status_code=429, detail="Too many requests")
-    times.append(now)
-
-
-def _load_json(filename: str) -> Any:
-    path = DATA_DIR / filename
-    if not path.exists():
-        return [] if filename.endswith(".json") else None
-    with path.open("r", encoding="utf-8") as f:
-        return json.load(f)
-
-
-app = FastAPI(title="WavelengthWatch Backend", version="0.1.0")
-
-# CORS: allow local dev + simulator to fetch JSON
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-@app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
-
-
-@app.get("/curriculum")
-def curriculum() -> Any:
-    # Returns the JSON list describing stages/phases and medicinal/toxic flags.
-    return _load_json("curriculum.json")
-
-
-@app.get("/strategies")
-def strategies(session: SessionDep) -> dict[str, list[dict[str, str]]]:
-    """Return strategies grouped by phase, mirroring the legacy JSON format."""
-
-    statement = select(SelfCareStrategy)
-    strategies = list(session.exec(statement))
-    strategies.sort(
-        key=lambda item: (
-            _PHASE_PRIORITY.get(item.phase, len(_PHASE_PRIORITY)),
-            item.id or 0,
-        )
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
 
-    payload: dict[str, list[dict[str, str]]] = {}
-    for record in strategies:
-        payload.setdefault(record.phase, []).append(
-            {"color": record.color, "strategy": record.strategy}
-        )
-    return payload
+    application.include_router(layer.router)
+    application.include_router(phase.router)
+    application.include_router(curriculum.router)
+    application.include_router(strategy.router)
+    application.include_router(journal.router)
+
+    @application.get("/health", tags=["health"])
+    def healthcheck() -> dict[str, str]:
+        return {"status": "ok"}
+
+    return application
 
 
-@app.get("/strategies/index", response_model=list[SelfCareStrategyRead])
-def strategies_index(
-    session: SessionDep,
-    phase: str | None = None,
-) -> list[SelfCareStrategy]:
-    """Return all strategies with identifiers for administrative use."""
+app = create_application()
 
-    statement = select(SelfCareStrategy)
-    if phase is not None:
-        statement = statement.where(SelfCareStrategy.phase == phase)
-    records = list(session.exec(statement))
-    records.sort(
-        key=lambda item: (
-            _PHASE_PRIORITY.get(item.phase, len(_PHASE_PRIORITY)),
-            item.id or 0,
-        )
-    )
-    return records
-
-
-@app.post("/strategies", response_model=SelfCareStrategyRead, status_code=201)
-def create_strategy(
-    payload: SelfCareStrategyCreate,
-    session: SessionDep,
-    _rate_limit: None = Depends(rate_limit),
-) -> SelfCareStrategy:
-    """Insert a new self-care strategy entry."""
-
-    existing = session.exec(
-        select(SelfCareStrategy).where(SelfCareStrategy.strategy == payload.strategy)
-    ).first()
-    if existing is not None:
-        raise HTTPException(status_code=409, detail="Strategy already exists")
-
-    record = SelfCareStrategy(
-        color=payload.color,
-        strategy=payload.strategy,
-        phase=payload.phase,
-    )
-    try:
-        session.add(record)
-        session.commit()
-    except Exception:
-        session.rollback()
-        raise
-    session.refresh(record)
-    return record
-
-
-@app.post("/self-care", response_model=SelfCareLogRead, status_code=201)
-def create_self_care(
-    payload: SelfCareLogCreate,
-    session: SessionDep,
-    _rate_limit: None = Depends(rate_limit),
-) -> SelfCareLog:
-    """Create a self-care log linked to a journal entry."""
-    journal = session.get(JournalEntry, payload.journal_id)
-    if journal is None:
-        raise HTTPException(status_code=404, detail="Journal entry not found")
-    strategy_obj: SelfCareStrategy | None = None
-    if payload.strategy_id is not None:
-        strategy_obj = session.get(SelfCareStrategy, payload.strategy_id)
-        if strategy_obj is None:
-            raise HTTPException(status_code=404, detail="Strategy not found")
-    else:
-        strategy_name = payload.strategy.strip() if payload.strategy else None
-        if not strategy_name:
-            raise HTTPException(status_code=422, detail="Strategy identifier required")
-        strategy_obj = session.exec(
-            select(SelfCareStrategy).where(
-                SelfCareStrategy.strategy == strategy_name
-            )
-        ).first()
-        if strategy_obj is None:
-            raise HTTPException(status_code=404, detail="Strategy not found")
-
-    timestamp = to_utc_naive(payload.timestamp)
-    log = SelfCareLog(
-        journal_id=payload.journal_id,
-        strategy_id=cast(int, strategy_obj.id),
-        timestamp=timestamp,
-    )
-    try:
-        session.add(log)
-        session.commit()
-    except Exception:
-        session.rollback()
-        raise
-    if log.id is None:
-        raise RuntimeError("Failed to persist self-care log")
-    statement = _self_care_log_query().where(SelfCareLog.id == log.id)
-    return session.exec(statement).one()
-
-
-@app.get("/self-care", response_model=list[SelfCareLogRead])
-def list_self_care(
-    session: SessionDep,
-    journal_id: int | None = None,
-    start: datetime | None = None,
-    end: datetime | None = None,
-    limit: int = Query(100, ge=1, le=1000),
-    offset: int = Query(0, ge=0),
-    _rate_limit: None = Depends(rate_limit),
-) -> list[SelfCareLog]:
-    """Return self-care logs filtered by journal or date range."""
-    statement = _self_care_log_query().order_by(
-        cast(ColumnElement, SelfCareLog.timestamp).desc()
-    )
-    if journal_id is not None:
-        statement = statement.where(SelfCareLog.journal_id == journal_id)
-    if start is not None:
-        start = to_utc_naive(start)
-        statement = statement.where(SelfCareLog.timestamp >= start)
-    if end is not None:
-        end = to_utc_naive(end)
-        statement = statement.where(SelfCareLog.timestamp <= end)
-    result = session.exec(statement.offset(offset).limit(limit))
-    return list(result)
-
-
-@app.post("/journal", response_model=JournalEntryRead, status_code=201)
-def create_journal(
-    payload: JournalEntryCreateWithDetails,
-    session: SessionDep,
-    _rate_limit: None = Depends(rate_limit),
-) -> JournalEntry:
-    """Create a journal entry with nested combo details."""
-    timestamp = to_utc_naive(payload.timestamp)
-    entry = JournalEntry(
-        timestamp=timestamp,
-        initiated_by=payload.initiated_by,
-    )
-    for detail in payload.details:
-        entry.details.append(
-            EntryDetail(
-                stage=detail.stage,
-                phase=detail.phase,
-                dosage=detail.dosage,
-                position=detail.position,
-            )
-        )
-    session.add(entry)
-    session.commit()
-    session.refresh(entry)
-    _: list[EntryDetail] = entry.details  # load details before session closes
-    return entry
-
-
-@app.get("/journal", response_model=list[JournalEntryRead])
-def list_journal(
-    session: SessionDep,
-    start: datetime | None = None,
-    end: datetime | None = None,
-    limit: int = Query(100, ge=1, le=1000),
-    offset: int = Query(0, ge=0),
-) -> list[JournalEntry]:
-    """Return journal entries optionally filtered by a date range."""
-    statement = (
-        select(JournalEntry)
-        .options(selectinload(JournalEntry.details))  # type: ignore[arg-type]
-        .order_by(cast(ColumnElement, JournalEntry.timestamp).desc())
-    )
-    if start is not None:
-        start = to_utc_naive(start)
-        statement = statement.where(JournalEntry.timestamp >= start)
-    if end is not None:
-        end = to_utc_naive(end)
-        statement = statement.where(JournalEntry.timestamp <= end)
-    result = session.exec(statement.offset(offset).limit(limit))
-    return list(result)
+__all__ = ["app", "create_application"]
