@@ -1,0 +1,4 @@
+id,created_at,user_id,curriculum_id,secondary_curriculum_id,strategy_id
+1,2025-09-13T12:34:00.000Z,1,10,11,17
+2,2025-09-14T10:34:00.000Z,2,24,19,NULL
+3,2025-09-15T18:34:00.000Z,1,101,5,10
