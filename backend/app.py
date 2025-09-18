@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session
 
 from . import database
-from .routers import curriculum, journal, layer, phase, strategy
+from .routers import catalog, curriculum, journal, layer, phase, strategy
 from .tools.seed_data import seed_database
 
 DEFAULT_DEV_CORS_ORIGINS: list[str] = [
@@ -63,6 +63,7 @@ def create_application() -> FastAPI:
         allow_headers=["*"],
     )
 
+    application.include_router(catalog.router)
     application.include_router(layer.router)
     application.include_router(phase.router)
     application.include_router(curriculum.router)

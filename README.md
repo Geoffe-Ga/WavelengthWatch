@@ -6,14 +6,11 @@ WavelengthWatch is a watchOS-only app that brings the Archetypal Wavelength to y
 
 _Status_: The project has not yet been deployed to production. An eventual App Store launch is planned, so formal database migrations are not currently required.
 
-## Features
-
 - **Watch-Only App (SwiftUI)**: Built in Xcode 16.4, runs natively on watchOS 11.6.1 (Apple Watch Series 9).
-- **Horizontal Scrolling UI**: Swipe through the self-care strategies corresponding to the phases of the Archetypal Wavelength.
-- **Phase Details**: Tap a phase to see “medicinal” and “toxic” expressions.
-- **Baseline Offline Data**: Core dataset (stages, phases, expressions, strategies) is bundled as JSON in the app, so the watch works instantly without a network.
-- **Optional Refresh**: When background time is available, the app fetches the latest JSON from the backend or static hosting, ensuring freshness without breaking offline reliability.
-- **FastAPI Backend**: A lightweight Python service (in `backend/app.py`) serves JSON mappings and static assets. Curriculum data is read from JSON files, while self-care strategies now live in a SQLite table (`SelfCareStrategy`) seeded from the legacy CSV/JSON sources.
+- **Dynamic Curriculum Catalog**: The watch loads the `/catalog` endpoint, which delivers joined layer/phase/strategy data (with IDs) and caches it locally for 24 hours.
+- **Journaling Support**: When a user records how they feel, the watch posts real curriculum and strategy identifiers to the backend journal endpoint.
+- **Offline-first Caching**: Cached catalog responses are stored on disk and surfaced immediately when the network is unavailable; stale caches are refreshed in the background.
+- **FastAPI Backend**: A lightweight Python service (`backend/app.py`) exposes CRUD endpoints plus the new aggregated catalog feed with appropriate cache headers.
 - **CI and Pre-commit**:
   - GitHub Actions workflow builds the watch app on a simulator, runs SwiftLint/SwiftFormat checks, and validates backend tests.
   - Pre-commit hooks enforce linting and formatting for both Swift (via Mint, SwiftLint, SwiftFormat) and Python (via Mypy, Ruff, etc. in the backend).
@@ -40,6 +37,16 @@ WavelengthWatch/
 ├── .pre-commit-config.yaml # pre-commit hooks
 └── AGENTS.md # Guardrails for AI Agents in pair programming
 ```
+## Configuring the Watch API Base URL
+
+The watch app resolves its networking configuration from `Resources/APIConfiguration.plist` inside the watch target. The plist contains an `API_BASE_URL` key that defaults to `https://example.com` so the bundle always builds.
+
+- **Simulator / local development**: duplicate the `Debug` configuration or edit the plist entry so it points at your tunnel or `http://127.0.0.1:8000` (remember to expose it via ngrok if you need to hit a device).
+- **Release builds / TestFlight**: override the same key in Xcode’s Build Settings (`Info.plist Values`) or provide an environment-specific plist per configuration.
+- The `AppConfiguration` helper reads the key at runtime; if the plist is missing or empty, the app gracefully falls back to the placeholder URL.
+
+When the backend changes environment (e.g., staging vs. production), check in a plist update so other developers inherit the same defaults.
+
 ## Getting Started
 
 ### Frontend (watchOS)
