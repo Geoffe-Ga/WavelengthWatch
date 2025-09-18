@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 
 protocol CatalogRemoteServicing {
   func fetchCatalog() async throws -> CatalogResponseModel
@@ -14,6 +15,10 @@ protocol CatalogRepositoryProtocol {
   func cachedCatalog() -> CatalogResponseModel?
   func loadCatalog(forceRefresh: Bool) async throws -> CatalogResponseModel
   func refreshCatalog() async throws -> CatalogResponseModel
+}
+
+protocol CatalogRepositoryLogging {
+  func cacheDecodingFailed(_ error: Error)
 }
 
 struct CatalogAPIService: CatalogRemoteServicing {
@@ -67,6 +72,7 @@ final class CatalogRepository: CatalogRepositoryProtocol {
   private let decoder: JSONDecoder
   private let encoder: JSONEncoder
   private let cacheTTL: TimeInterval
+  private let logger: CatalogRepositoryLogging
 
   init(
     remote: CatalogRemoteServicing,
@@ -74,7 +80,8 @@ final class CatalogRepository: CatalogRepositoryProtocol {
     dateProvider: @escaping () -> Date = Date.init,
     decoder: JSONDecoder = JSONDecoder(),
     encoder: JSONEncoder = JSONEncoder(),
-    cacheTTL: TimeInterval = 60 * 60 * 24
+    cacheTTL: TimeInterval = 60 * 60 * 24,
+    logger: CatalogRepositoryLogging = DefaultCatalogRepositoryLogger()
   ) {
     self.remote = remote
     self.cache = cache
@@ -84,6 +91,7 @@ final class CatalogRepository: CatalogRepositoryProtocol {
     self.decoder.dateDecodingStrategy = .iso8601
     self.encoder.dateEncodingStrategy = .iso8601
     self.cacheTTL = cacheTTL
+    self.logger = logger
   }
 
   private func readEnvelope() -> CatalogCacheEnvelope? {
@@ -93,6 +101,7 @@ final class CatalogRepository: CatalogRepositoryProtocol {
       }
       return try decoder.decode(CatalogCacheEnvelope.self, from: data)
     } catch {
+      logger.cacheDecodingFailed(error)
       try? cache.removeCatalogData()
       return nil
     }
@@ -125,5 +134,13 @@ final class CatalogRepository: CatalogRepositoryProtocol {
     let catalog = try await remote.fetchCatalog()
     try? writeEnvelope(catalog)
     return catalog
+  }
+}
+
+struct DefaultCatalogRepositoryLogger: CatalogRepositoryLogging {
+  private static let logger = Logger(subsystem: "com.wavelengthwatch.watch", category: "CatalogRepository")
+
+  func cacheDecodingFailed(_ error: Error) {
+    DefaultCatalogRepositoryLogger.logger.error("Failed to decode catalog cache: \(error.localizedDescription, privacy: .public)")
   }
 }

@@ -4,6 +4,12 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
+from sqlmodel import Session, delete
+
+from backend import database
+from backend.models import Curriculum, Journal, Layer, Phase, Strategy
+from backend.tools.seed_data import seed_database
+
 PHASE_ORDER = [
     "Rising",
     "Peaking",
@@ -12,6 +18,8 @@ PHASE_ORDER = [
     "Bottoming Out",
     "Restoration",
 ]
+
+EXPECTED_LAYER_COUNT = 11
 
 
 def _flatten(entries: Iterable[dict[str, object]]) -> set[int]:
@@ -27,7 +35,7 @@ def test_catalog_returns_joined_dataset(client) -> None:
 
     assert payload["phase_order"] == PHASE_ORDER
     layers = payload["layers"]
-    assert len(layers) == 11
+    assert len(layers) == EXPECTED_LAYER_COUNT
 
     beige = next(layer for layer in layers if layer["id"] == 1)
     assert beige["color"] == "Beige"
@@ -75,3 +83,22 @@ def test_catalog_identifiers_can_be_used_for_journaling(client) -> None:
     assert created_body["curriculum"]["id"] == curriculum_id
     assert created_body["secondary_curriculum"]["id"] == toxic_id
     assert created_body["strategy"]["id"] == strategy_id
+
+
+def test_catalog_returns_empty_payload_when_database_cleared(client) -> None:
+    """The endpoint should gracefully handle an empty catalog."""
+
+    with Session(database.engine) as session:
+        session.exec(delete(Journal))
+        session.exec(delete(Strategy))
+        session.exec(delete(Curriculum))
+        session.exec(delete(Layer))
+        session.exec(delete(Phase))
+        session.commit()
+
+    response = client.get("/catalog")
+    assert response.status_code == 200
+    assert response.json() == {"phase_order": [], "layers": []}
+
+    with Session(database.engine) as session:
+        seed_database(session)

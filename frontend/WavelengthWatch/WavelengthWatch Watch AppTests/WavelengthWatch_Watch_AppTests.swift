@@ -50,13 +50,15 @@ struct CatalogRepositoryTests {
     remote: CatalogRemoteStub,
     cache: CatalogCacheStub,
     now: @escaping () -> Date,
-    ttl: TimeInterval = 60 * 60 * 24
+    ttl: TimeInterval = 60 * 60 * 24,
+    logger: CatalogRepositoryLogging = CatalogRepositoryLoggerSpy()
   ) -> CatalogRepository {
     CatalogRepository(
       remote: remote,
       cache: cache,
       dateProvider: now,
-      cacheTTL: ttl
+      cacheTTL: ttl,
+      logger: logger
     )
   }
 
@@ -94,12 +96,53 @@ struct CatalogRepositoryTests {
     let remote = CatalogRemoteStub(response: SampleData.catalog)
     let cache = CatalogCacheStub()
     cache.storedData = Data("invalid".utf8)
-    let repository = makeRepository(remote: remote, cache: cache, now: { Date() })
+    let logger = CatalogRepositoryLoggerSpy()
+    let repository = makeRepository(remote: remote, cache: cache, now: { Date() }, logger: logger)
 
     let catalog = try await repository.loadCatalog()
     #expect(catalog == SampleData.catalog)
     #expect(remote.fetchCount == 1)
     #expect(cache.storedData != nil)
+    #expect(cache.removeCount == 1)
+    #expect(logger.errors.count == 1)
+  }
+
+  @Test func propagatesNetworkFailures() async {
+    enum StubError: Error { case transport }
+    let cache = CatalogCacheStub()
+    cache.storedData = nil
+    let repository = CatalogRepository(
+      remote: FailingRemoteStub(error: StubError.transport),
+      cache: cache,
+      dateProvider: { Date() }
+    )
+
+    do {
+      _ = try await repository.loadCatalog(forceRefresh: true)
+      #expect(Bool(false))
+    } catch {
+      #expect(error is StubError)
+    }
+  }
+}
+
+final class CatalogRepositoryLoggerSpy: CatalogRepositoryLogging {
+  private(set) var errors: [Error] = []
+
+  func cacheDecodingFailed(_ error: Error) {
+    errors.append(error)
+  }
+}
+
+final class FailingRemoteStub: CatalogRemoteServicing {
+  let error: Error
+
+  init(error: Error) {
+    self.error = error
+  }
+
+  func fetchCatalog() async throws -> CatalogResponseModel {
+    throw error
   }
 }
 

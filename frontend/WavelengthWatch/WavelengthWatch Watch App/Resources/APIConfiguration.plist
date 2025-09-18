@@ -3,6 +3,6 @@
 <plist version="1.0">
 <dict>
     <key>API_BASE_URL</key>
-    <string>https://example.com</string>
+    <string>https://api.not-configured.local</string>
 </dict>
 </plist>

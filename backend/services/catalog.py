@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import cast
 
+from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.elements import ColumnElement
 from sqlmodel import Session, select
 
@@ -17,107 +18,115 @@ from ..schemas_catalog import (
 )
 
 
+class CatalogDataError(RuntimeError):
+    """Raised when reference catalog records lack required identifiers."""
+
+
 def _require_identifier(entity: str, value: int | None) -> int:
     """Ensure primary keys are present in seeded reference data."""
 
     if value is None:
-        msg = f"{entity} rows must have an identifier"
-        raise ValueError(msg)
+        msg = f"{entity} rows must have a persisted identifier"
+        raise CatalogDataError(msg)
     return value
 
 
 def build_catalog(session: Session) -> CatalogResponse:
     """Load all catalog data and aggregate it for API consumers."""
 
-    phase_rows = [
+    phase_template = [
         (
             _require_identifier("Phase", phase.id),
-            phase,
+            phase.name,
         )
         for phase in session.exec(
             select(Phase).order_by(cast(ColumnElement[int], Phase.id))
         ).all()
     ]
-    phase_order = [phase.name for _, phase in phase_rows]
-    phase_index = {phase_id: index for index, (phase_id, _) in enumerate(phase_rows)}
+    phase_order = [name for _, name in phase_template]
+    phase_index = {phase_id: index for index, (phase_id, _) in enumerate(phase_template)}
 
-    layer_rows = [
-        (
-            _require_identifier("Layer", layer.id),
-            layer,
-        )
-        for layer in session.exec(
-            select(Layer).order_by(cast(ColumnElement[int], Layer.id))
-        ).all()
-    ]
-
-    layer_map: dict[int, CatalogLayer] = {}
-    for layer_id, layer_record in layer_rows:
-        layer_map[layer_id] = CatalogLayer(
-            id=layer_id,
-            color=layer_record.color,
-            title=layer_record.title,
-            subtitle=layer_record.subtitle,
-            phases=[
-                CatalogPhase(
-                    id=phase_id,
-                    name=phase.name,
-                    medicinal=[],
-                    toxic=[],
-                    strategies=[],
-                )
-                for phase_id, phase in phase_rows
-            ],
-        )
-
-    curriculum_rows = session.exec(
-        select(Curriculum).order_by(
-            cast(ColumnElement[int], Curriculum.layer_id),
-            cast(ColumnElement[int], Curriculum.phase_id),
-            cast(ColumnElement[int], Curriculum.id),
-        )
-    ).all()
-    for row in curriculum_rows:
-        catalog_layer = layer_map.get(row.layer_id)
-        if catalog_layer is None:
-            continue
-        index = phase_index.get(row.phase_id)
-        if index is None:
-            continue
-        target_phase = catalog_layer.phases[index]
-        entry = CatalogCurriculumEntry(
-            id=_require_identifier("Curriculum", row.id),
-            dosage=row.dosage,
-            expression=row.expression,
-        )
-        if row.dosage == Dosage.MEDICINAL:
-            target_phase.medicinal.append(entry)
-        else:
-            target_phase.toxic.append(entry)
-
-    strategy_rows = session.exec(
-        select(Strategy).order_by(
-            cast(ColumnElement[int], Strategy.layer_id),
-            cast(ColumnElement[int], Strategy.phase_id),
-            cast(ColumnElement[int], Strategy.id),
-        )
-    ).all()
-    for strategy in strategy_rows:
-        catalog_layer = layer_map.get(strategy.layer_id)
-        if catalog_layer is None:
-            continue
-        index = phase_index.get(strategy.phase_id)
-        if index is None:
-            continue
-        catalog_layer.phases[index].strategies.append(
-            CatalogStrategy(
-                id=_require_identifier("Strategy", strategy.id),
-                strategy=strategy.strategy,
+    layers = (
+        session.exec(
+            select(Layer)
+            .options(
+                selectinload(Layer.curriculum_items).selectinload(Curriculum.phase),
+                selectinload(Layer.strategies).selectinload(Strategy.phase),
             )
+            .order_by(cast(ColumnElement[int], Layer.id))
+        )
+        .unique()
+        .all()
+    )
+
+    ordered_layers: list[CatalogLayer] = []
+    for layer in layers:
+        layer_id = _require_identifier("Layer", layer.id)
+        catalog_phases = [
+            CatalogPhase(
+                id=phase_id,
+                name=name,
+                medicinal=[],
+                toxic=[],
+                strategies=[],
+            )
+            for phase_id, name in phase_template
+        ]
+        catalog_layer = CatalogLayer(
+            id=layer_id,
+            color=layer.color,
+            title=layer.title,
+            subtitle=layer.subtitle,
+            phases=catalog_phases,
         )
 
-    ordered_layers = [layer_map[layer_id] for layer_id, _ in layer_rows]
+        for curriculum in sorted(
+            layer.curriculum_items,
+            key=lambda item: (
+                phase_index.get(item.phase_id, float("inf")),
+                _require_identifier("Curriculum", item.id),
+            ),
+        ):
+            phase_id = curriculum.phase_id
+            if phase_id is None:
+                continue
+            index = phase_index.get(phase_id)
+            if index is None or index >= len(catalog_layer.phases):
+                continue
+            catalog_phase = catalog_layer.phases[index]
+            entry = CatalogCurriculumEntry(
+                id=_require_identifier("Curriculum", curriculum.id),
+                dosage=curriculum.dosage,
+                expression=curriculum.expression,
+            )
+            if curriculum.dosage == Dosage.MEDICINAL:
+                catalog_phase.medicinal.append(entry)
+            else:
+                catalog_phase.toxic.append(entry)
+
+        for strategy in sorted(
+            layer.strategies,
+            key=lambda item: (
+                phase_index.get(item.phase_id, float("inf")),
+                _require_identifier("Strategy", item.id),
+            ),
+        ):
+            phase_id = strategy.phase_id
+            if phase_id is None:
+                continue
+            index = phase_index.get(phase_id)
+            if index is None or index >= len(catalog_layer.phases):
+                continue
+            catalog_layer.phases[index].strategies.append(
+                CatalogStrategy(
+                    id=_require_identifier("Strategy", strategy.id),
+                    strategy=strategy.strategy,
+                )
+            )
+
+        ordered_layers.append(catalog_layer)
+
     return CatalogResponse(phase_order=phase_order, layers=ordered_layers)
 
 
-__all__ = ["build_catalog"]
+__all__ = ["build_catalog", "CatalogDataError"]

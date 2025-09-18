@@ -39,13 +39,13 @@ WavelengthWatch/
 ```
 ## Configuring the Watch API Base URL
 
-The watch app resolves its networking configuration from `Resources/APIConfiguration.plist` inside the watch target. The plist contains an `API_BASE_URL` key that defaults to `https://example.com` so the bundle always builds.
+The watch app resolves its networking configuration from `Resources/APIConfiguration.plist` inside the watch target. The plist contains an `API_BASE_URL` key that defaults to `https://api.not-configured.local`, a sentinel host that intentionally fails if you try to talk to it.
 
-- **Simulator / local development**: duplicate the `Debug` configuration or edit the plist entry so it points at your tunnel or `http://127.0.0.1:8000` (remember to expose it via ngrok if you need to hit a device).
+- **Simulator / local development**: duplicate the `Debug` configuration or edit the plist entry so it points at your tunnel or `http://127.0.0.1:8000` (expose the port via ngrok if you need to reach a real watch).
 - **Release builds / TestFlight**: override the same key in Xcode’s Build Settings (`Info.plist Values`) or provide an environment-specific plist per configuration.
-- The `AppConfiguration` helper reads the key at runtime; if the plist is missing or empty, the app gracefully falls back to the placeholder URL.
+- The `AppConfiguration` helper logs (and asserts in debug builds) when the app still points at the placeholder host so you notice misconfigurations before shipping.
 
-When the backend changes environment (e.g., staging vs. production), check in a plist update so other developers inherit the same defaults.
+When the backend changes environment (e.g., staging vs. production), check in a plist update so other developers inherit the same defaults. See `frontend/WavelengthWatch/API_CONFIGURATION.md` for more operational notes.
 
 ## Getting Started
 
