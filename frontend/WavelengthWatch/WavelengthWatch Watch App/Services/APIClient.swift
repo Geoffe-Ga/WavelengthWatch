@@ -2,7 +2,7 @@ import Foundation
 
 protocol APIClientProtocol {
   func get<T: Decodable>(_ path: String) async throws -> T
-  func post<Body: Encodable, Response: Decodable>(_ path: String, body: Body) async throws -> Response
+  func post<Response: Decodable>(_ path: String, body: some Encodable) async throws -> Response
 }
 
 enum APIClientError: Error {
@@ -50,7 +50,7 @@ final class APIClient: APIClientProtocol {
   }
 
   func get<T: Decodable>(_ path: String) async throws -> T {
-    let request = URLRequest(url: try url(for: path))
+    let request = try URLRequest(url: url(for: path))
     do {
       let (data, response) = try await session.data(for: request)
       return try decodeResponse(data: data, response: response)
@@ -61,8 +61,8 @@ final class APIClient: APIClientProtocol {
     }
   }
 
-  func post<Body: Encodable, Response: Decodable>(_ path: String, body: Body) async throws -> Response {
-    var request = URLRequest(url: try url(for: path))
+  func post<Response: Decodable>(_ path: String, body: some Encodable) async throws -> Response {
+    var request = try URLRequest(url: url(for: path))
     request.httpMethod = "POST"
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
     request.setValue("application/json", forHTTPHeaderField: "Accept")

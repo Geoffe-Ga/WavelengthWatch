@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import WavelengthWatch_Watch_App
 
-private struct SampleData {
+private enum SampleData {
   static let catalog: CatalogResponseModel = {
     let medicinal = CatalogCurriculumEntryModel(id: 1, dosage: .medicinal, expression: "Commitment")
     let toxic = CatalogCurriculumEntryModel(id: 2, dosage: .toxic, expression: "Overcommitment")
@@ -65,9 +65,9 @@ struct CatalogRepositoryTests {
     let cache = CatalogCacheStub()
     let encoder = JSONEncoder()
     encoder.dateEncodingStrategy = .iso8601
-    let envelope = CatalogCacheEnvelope(fetchedAt: Date(timeIntervalSince1970: 1_000), catalog: SampleData.catalog)
+    let envelope = CatalogCacheEnvelope(fetchedAt: Date(timeIntervalSince1970: 1000), catalog: SampleData.catalog)
     cache.storedData = try encoder.encode(envelope)
-    let repository = makeRepository(remote: remote, cache: cache, now: { Date(timeIntervalSince1970: 1_500) })
+    let repository = makeRepository(remote: remote, cache: cache, now: { Date(timeIntervalSince1970: 1500) })
 
     #expect(repository.cachedCatalog() == SampleData.catalog)
     let catalog = try await repository.loadCatalog()
@@ -111,9 +111,9 @@ final class APIClientSpy: APIClientProtocol {
   private let decoder: JSONDecoder
 
   init() {
-    encoder = JSONEncoder()
+    self.encoder = JSONEncoder()
     encoder.dateEncodingStrategy = .iso8601
-    decoder = JSONDecoder()
+    self.decoder = JSONDecoder()
     decoder.dateDecodingStrategy = .iso8601
   }
 
@@ -121,7 +121,7 @@ final class APIClientSpy: APIClientProtocol {
     throw NSError(domain: "unimplemented", code: 1)
   }
 
-  func post<Body, Response>(_ path: String, body: Body) async throws -> Response where Body: Encodable, Response: Decodable {
+  func post<Response>(_ path: String, body: some Encodable) async throws -> Response where Response: Decodable {
     lastPath = path
     lastBody = try encoder.encode(body)
     let data = try encoder.encode(response)
@@ -135,7 +135,7 @@ struct JournalClientTests {
     let defaults = UserDefaults(suiteName: "JournalClientTests")!
     defaults.removePersistentDomain(forName: "JournalClientTests")
     defaults.set("12345678-1234-1234-1234-1234567890ab", forKey: "com.wavelengthwatch.userIdentifier")
-    let date = Date(timeIntervalSince1970: 1_000)
+    let date = Date(timeIntervalSince1970: 1000)
     let client = JournalClient(apiClient: spy, dateProvider: { date }, userDefaults: defaults)
 
     _ = try await client.submit(curriculumID: 5, secondaryCurriculumID: 7, strategyID: 9)

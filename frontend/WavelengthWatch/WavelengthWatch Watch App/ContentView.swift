@@ -108,13 +108,13 @@ struct ContentView: View {
       .alert(item: $viewModel.journalFeedback) { feedback in
         switch feedback.kind {
         case .success:
-          return Alert(
+          Alert(
             title: Text("Entry Logged"),
             message: Text("Thanks for checking in."),
             dismissButton: .default(Text("OK")) { viewModel.journalFeedback = nil }
           )
         case let .failure(message):
-          return Alert(
+          Alert(
             title: Text("Something went wrong"),
             message: Text(message),
             dismissButton: .default(Text("OK")) { viewModel.journalFeedback = nil }
