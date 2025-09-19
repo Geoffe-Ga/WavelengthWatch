@@ -56,7 +56,11 @@ WavelengthWatch/
 2. Run locally:
 ```bash
 uvicorn app:app --reload
-```
+ ```
 
 3. Visit http://127.0.0.1:8000/curriculum
  to see the JSON served.
+
+### Pre-push hooks & Xcode requirements
+
+Pre-commit is configured with pre-push hooks that (a) run the backend pytest suite and (b) invoke `xcodebuild` for the watch app. The Xcode build hook mirrors CI by running `xcodebuild -scheme "WavelengthWatch Watch App" -configuration Debug -destination 'generic/platform=watchOS Simulator' build` and then inspects the generated `Info.plist` with `plutil` to ensure `API_BASE_URL` is populated with a non-placeholder value. Install the full Xcode toolchain (Xcode 16.4 or newer plus the command-line tools) before running `pre-commit install --hook-type pre-push` so the `xcodebuild` and `plutil` binaries are available locally.

@@ -13,7 +13,9 @@ from backend.app import create_application
 
 
 @pytest.fixture()
-def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
+def client(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> Iterator[TestClient]:
     """Yield an API client backed by an isolated SQLite database."""
 
     db_path = tmp_path / "app.db"

@@ -3,14 +3,21 @@ repos:
     rev: v0.6.9
     hooks:
       - id: ruff
-        args: [--fix]
+        name: ruff (backend & tests)
+        pass_filenames: false
+        args: [--fix, --exit-non-zero-on-fix, backend, tests/backend]
       - id: ruff-format
+        name: ruff-format (backend & tests)
+        pass_filenames: false
+        args: [backend, tests/backend]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.11.2
     hooks:
       - id: mypy
-        args: [--config-file, mypy.ini]
+        name: mypy (backend package)
+        pass_filenames: false
+        args: [--config-file, mypy.ini, backend]
         additional_dependencies:
           - "pydantic"
           - "types-requests"
@@ -52,3 +59,53 @@ repos:
             pip install -r backend/requirements.txt
             if [ -f backend/requirements-dev.txt ]; then pip install -r backend/requirements-dev.txt; fi
             pytest -q
+      - id: watchos-xcodebuild
+        name: watchOS app build (on push)
+        entry: bash
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+        args:
+          - -lc
+          - |
+            set -euo pipefail
+
+            SCHEME="WavelengthWatch Watch App"
+            CONFIGURATION="Debug"
+            DESTINATION="generic/platform=watchOS Simulator"
+
+            echo "Building ${SCHEME}..."
+            xcodebuild -scheme "${SCHEME}" -configuration "${CONFIGURATION}" -destination "${DESTINATION}" build
+
+            echo "Inspecting build settings to locate Info.plist..."
+            BUILD_SETTINGS=$(xcodebuild -scheme "${SCHEME}" -configuration "${CONFIGURATION}" -destination "${DESTINATION}" -showBuildSettings)
+
+            TARGET_BUILD_DIR=$(printf "%s\n" "${BUILD_SETTINGS}" | awk -F ' = ' '/ TARGET_BUILD_DIR / {print $2; exit}')
+            INFOPLIST_PATH=$(printf "%s\n" "${BUILD_SETTINGS}" | awk -F ' = ' '/ INFOPLIST_PATH / {print $2; exit}')
+
+            if [ -z "${TARGET_BUILD_DIR}" ] || [ -z "${INFOPLIST_PATH}" ]; then
+              echo "Unable to determine Info.plist path from xcodebuild output." >&2
+              exit 1
+            fi
+
+            FULL_PLIST_PATH="${TARGET_BUILD_DIR}/${INFOPLIST_PATH}"
+
+            if [ ! -f "${FULL_PLIST_PATH}" ]; then
+              echo "Info.plist not found at ${FULL_PLIST_PATH}." >&2
+              exit 1
+            fi
+
+            echo "Validating API_BASE_URL in ${FULL_PLIST_PATH}..."
+            API_BASE_URL=$(plutil -extract API_BASE_URL raw -o - "${FULL_PLIST_PATH}" 2>/dev/null || true)
+
+            if [ -z "${API_BASE_URL}" ]; then
+              echo "API_BASE_URL is missing from ${FULL_PLIST_PATH}." >&2
+              exit 1
+            fi
+
+            if printf "%s" "${API_BASE_URL}" | grep -qi "placeholder"; then
+              echo "API_BASE_URL is still using a placeholder value: ${API_BASE_URL}" >&2
+              exit 1
+            fi
+
+            echo "API_BASE_URL is set to ${API_BASE_URL}"

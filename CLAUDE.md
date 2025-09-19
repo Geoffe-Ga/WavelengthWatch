@@ -43,6 +43,8 @@ pre-commit run --all-files   # Run all pre-commit hooks
 pre-commit install           # Install hooks (done by dev-setup.sh)
 ```
 
+Always rerun `pre-commit run --all-files` until every hook reports success before wrapping up any assigned task.
+
 ## Architecture Overview
 
 ### High-Level Structure

@@ -34,15 +34,23 @@ def _get_strategy_or_404(strategy_id: int, session: Session) -> Strategy:
     statement = _base_query().where(Strategy.id == strategy_id)
     strategy = session.exec(statement).first()
     if strategy is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Strategy not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Strategy not found"
+        )
     return strategy
 
 
-def _validate_references(session: Session, layer_id: int, phase_id: int) -> None:
+def _validate_references(
+    session: Session, layer_id: int, phase_id: int
+) -> None:
     if session.get(Layer, layer_id) is None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid layer_id")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid layer_id"
+        )
     if session.get(Phase, phase_id) is None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid phase_id")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid phase_id"
+        )
 
 
 def _ensure_strategy_id(strategy: Strategy) -> int:
@@ -76,8 +84,12 @@ def get_strategy(strategy_id: int, session: SessionDep) -> StrategyRead:
     return _serialize_strategy(_get_strategy_or_404(strategy_id, session))
 
 
-@router.post("/", response_model=StrategyRead, status_code=status.HTTP_201_CREATED)
-def create_strategy(payload: StrategyCreate, session: SessionDep) -> StrategyRead:
+@router.post(
+    "/", response_model=StrategyRead, status_code=status.HTTP_201_CREATED
+)
+def create_strategy(
+    payload: StrategyCreate, session: SessionDep
+) -> StrategyRead:
     _validate_references(session, payload.layer_id, payload.phase_id)
     strategy = Strategy(**payload.model_dump())
     session.add(strategy)
@@ -88,7 +100,9 @@ def create_strategy(payload: StrategyCreate, session: SessionDep) -> StrategyRea
 
 
 @router.put("/{strategy_id}", response_model=StrategyRead)
-def update_strategy(*, strategy_id: int, payload: StrategyUpdate, session: SessionDep) -> StrategyRead:
+def update_strategy(
+    *, strategy_id: int, payload: StrategyUpdate, session: SessionDep
+) -> StrategyRead:
     strategy = _get_strategy_or_404(strategy_id, session)
     data = payload.model_dump(exclude_unset=True)
     if "layer_id" in data or "phase_id" in data:

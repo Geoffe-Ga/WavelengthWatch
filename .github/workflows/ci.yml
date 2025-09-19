@@ -40,7 +40,8 @@ jobs:
       - name: Lint & Type-check
         run: |
           source .venv/bin/activate
-          ruff check backend tests/backend
+          ruff format --check backend tests/backend
+          ruff check --exit-non-zero-on-fix backend tests/backend
           mypy --config-file mypy.ini backend
 
       - name: Run tests
