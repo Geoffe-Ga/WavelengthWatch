@@ -64,3 +64,5 @@ uvicorn app:app --reload
 ### Pre-push hooks & Xcode requirements
 
 Pre-commit is configured with pre-push hooks that (a) run the backend pytest suite and (b) invoke `xcodebuild` for the watch app. The Xcode build hook mirrors CI by running `xcodebuild -scheme "WavelengthWatch Watch App" -configuration Debug -destination 'generic/platform=watchOS Simulator' build` and then inspects the generated `Info.plist` with `plutil` to ensure `API_BASE_URL` is populated with a non-placeholder value. Install the full Xcode toolchain (Xcode 16.4 or newer plus the command-line tools) before running `pre-commit install --hook-type pre-push` so the `xcodebuild` and `plutil` binaries are available locally.
+
+The watch target defines a `WW_API_BASE_URL` build setting that defaults to `https://api.wavelength.watch`. The value is written to the generated Info.plist as `API_BASE_URL`, and you can override it for local testing by passing `WW_API_BASE_URL=<custom URL>` to `xcodebuild` or by editing your Xcode scheme’s build settings.
