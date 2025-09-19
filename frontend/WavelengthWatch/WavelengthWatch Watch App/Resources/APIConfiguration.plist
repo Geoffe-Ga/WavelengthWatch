@@ -3,15 +3,6 @@
 <plist version="1.0">
 <dict>
     <key>API_BASE_URL</key>
-    <string>https://api.not-configured.local</string>
-    <!--
-    PRODUCTION CONFIGURATION
-    This file should contain production API URLs when shipping.
-
-    For local development:
-    1. Copy APIConfiguration-Template.plist to APIConfiguration-Local.plist
-    2. Update with your local development URL
-    3. APIConfiguration-Local.plist will be loaded first if it exists
-    -->
+    <string>http://127.0.0.1:8000</string>
 </dict>
 </plist>
