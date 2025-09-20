@@ -76,114 +76,16 @@ Use this quick reference tree to understand where major assets live before colla
 
 ```text
 WavelengthWatch/
-├── .github/
-│   └── workflows/
-│       ├── ci.yml
-│       ├── claude-code-review.yml
-│       └── claude.yml
-├── AGENTS.md
-├── CLAUDE.md
-├── README.md
-├── XCODE_BUILD_SETUP.md
-├── backend/
-│   ├── README.md
-│   ├── __init__.py
-│   ├── app.py
-│   ├── database.py
-│   ├── models.py
-│   ├── schemas.py
-│   ├── schemas_catalog.py
-│   ├── requirements-dev.txt
-│   ├── requirements.txt
-│   ├── data/
-│   │   ├── a-w-curriculum.csv
-│   │   ├── a-w-headers.csv
-│   │   ├── a-w-strategies.csv
-│   │   ├── curriculum.json
-│   │   ├── headers.json
-│   │   ├── strategies.json
-│   │   └── prod/
-│   │       ├── a-w-curriculum.json
-│   │       ├── a-w-headers.json
-│   │       └── a-w-strategies.json
-│   ├── routers/
-│   │   ├── __init__.py
-│   │   ├── catalog.py
-│   │   ├── curriculum.py
-│   │   ├── journal.py
-│   │   ├── layer.py
-│   │   ├── phase.py
-│   │   └── strategy.py
-│   ├── services/
-│   │   ├── __init__.py
-│   │   └── catalog.py
-│   └── tools/
-│       ├── csv_to_json.py
-│       ├── data/
-│       │   ├── curriculum.csv
-│       │   ├── journal.csv
-│       │   ├── layer.csv
-│       │   ├── phase.csv
-│       │   └── strategy.csv
-│       └── seed_data.py
-├── dev-setup.sh
-├── frontend/
-│   └── WavelengthWatch/
-│       ├── API_CONFIGURATION.md
-│       ├── WavelengthWatch Watch App/
-│       │   ├── App/
-│       │   │   └── AppConfiguration.swift
-│       │   ├── Assets.xcassets/
-│       │   │   ├── AccentColor.colorset
-│       │   │   ├── AppIcon.appiconset
-│       │   │   └── Contents.json
-│       │   ├── ContentView.swift
-│       │   ├── Models/
-│       │   │   └── CatalogModels.swift
-│       │   ├── PhaseNavigator.swift
-│       │   ├── Resources/
-│       │   │   └── APIConfiguration.plist
-│       │   ├── Services/
-│       │   │   ├── APIClient.swift
-│       │   │   ├── CatalogRepository.swift
-│       │   │   └── JournalClient.swift
-│       │   ├── ViewModels/
-│       │   │   └── ContentViewModel.swift
-│       │   └── WavelengthWatchApp.swift
-│       ├── WavelengthWatch Watch AppTests/
-│       │   └── WavelengthWatch_Watch_AppTests.swift
-│       ├── WavelengthWatch Watch AppUITests/
-│       │   ├── WavelengthWatch_Watch_AppUITests.swift
-│       │   └── WavelengthWatch_Watch_AppUITestsLaunchTests.swift
-│       ├── WavelengthWatch.xcodeproj/
-│       │   ├── project.pbxproj
-│       │   ├── project.xcworkspace/
-│       │   │   └── contents.xcworkspacedata
-│       │   └── xcuserdata/
-│       │       └── geoffgallinger.xcuserdatad/
-│       │           └── xcschemes/
-│       │               └── xcschememanagement.plist
-│       └── XCODE_PROJECT_UPDATES.md
-├── mypy.ini
-├── prompts/
-│   ├── add-headers.md
-│   ├── add-layers.md
-│   ├── ci-and-pre-commit-bootstrap.md
-│   ├── front-end-tracer-code.md
-│   └── journal_feature.md
-├── pyproject.toml
-├── pytest.ini
-├── ruff.toml
-├── scripts/
-│   └── convert_csv_to_json.sh
-└── tests/
-    └── backend/
-        ├── conftest.py
-        ├── test_app_config.py
-        ├── test_catalog_api.py
-        ├── test_curriculum_api.py
-        ├── test_journal_api.py
-        ├── test_layer_api.py
-        ├── test_phase_api.py
-        └── test_strategy_api.py
+├── backend/ — FastAPI + SQLModel service with routers, schemas, and CSV/JSON fixtures powering the curriculum and journal APIs.​
+│   ├── data/ — Source CSV/JSON catalogs bundled for backend seeding and the watch experience.
+│   ├── routers/ — Endpoint modules covering catalog, curriculum, journal, layer, phase, and strategy routes.
+│   └── tools/ — Utilities like CSV-to-JSON conversion and database seeding scripts used during setup and builds.
+├── frontend/ — watchOS SwiftUI project containing the main watch target, tests, and configuration docs for collaborators.
+│   └── WavelengthWatch Watch App/ — SwiftUI code organized into App, Assets, Models, Services, Resources, and ViewModels for the watch experience.
+├── tests/ — Pytest suite validating backend configuration and each API surface area.​
+├── prompts/ — Product and process prompts that capture planning notes for AI-assisted development.
+├── scripts/ — Automation helpers, including the CSV→JSON build script for bundling data with the app.​
+├── .github/workflows/ — Continuous integration workflows handling backend checks and automated reviews.
+├── README.md, XCODE_BUILD_SETUP.md — Contributor onboarding guide and Xcode build automation instructions.
+├── dev-setup.sh, pyproject.toml, mypy.ini, ruff.toml, pytest.ini — Repo-wide tooling bootstrap plus lint/type/test configuration defaults.
 ```
