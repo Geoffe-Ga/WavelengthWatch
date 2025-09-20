@@ -18,11 +18,11 @@ enum PhaseNavigator {
   /// - Returns: A selection in the range `1...phaseCount`.
   static func adjustedSelection(_ selection: Int, phaseCount: Int) -> Int {
     if selection == 0 {
-      phaseCount
+      return phaseCount
     } else if selection == phaseCount + 1 {
-      1
+      return 1
     } else {
-      selection
+      return selection
     }
   }
 
