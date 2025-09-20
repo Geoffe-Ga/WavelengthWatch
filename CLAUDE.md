@@ -43,6 +43,26 @@ pre-commit run --all-files   # Run all pre-commit hooks
 pre-commit install           # Install hooks (done by dev-setup.sh)
 ```
 
+## Repository Directory Overview
+
+Use this directory snapshot to quickly orient agents and contributors before they jump into implementation details:
+
+```text
+WavelengthWatch/
+├── backend/ — FastAPI + SQLModel service with routers, schemas, and CSV/JSON fixtures powering the curriculum and journal APIs.​
+│   ├── data/ — Source CSV/JSON catalogs bundled for backend seeding and the watch experience.
+│   ├── routers/ — Endpoint modules covering catalog, curriculum, journal, layer, phase, and strategy routes.
+│   └── tools/ — Utilities like CSV-to-JSON conversion and database seeding scripts used during setup and builds.
+├── frontend/ — watchOS SwiftUI project containing the main watch target, tests, and configuration docs for collaborators.
+│   └── WavelengthWatch Watch App/ — SwiftUI code organized into App, Assets, Models, Services, Resources, and ViewModels for the watch experience.
+├── tests/ — Pytest suite validating backend configuration and each API surface area.​
+├── prompts/ — Product and process prompts that capture planning notes for AI-assisted development.
+├── scripts/ — Automation helpers, including the CSV→JSON build script for bundling data with the app.​
+├── .github/workflows/ — Continuous integration workflows handling backend checks and automated reviews.
+├── README.md, XCODE_BUILD_SETUP.md — Contributor onboarding guide and Xcode build automation instructions.
+├── dev-setup.sh, pyproject.toml, mypy.ini, ruff.toml, pytest.ini — Repo-wide tooling bootstrap plus lint/type/test configuration defaults.
+```
+
 ## Architecture Overview
 
 ### High-Level Structure

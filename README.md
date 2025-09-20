@@ -16,27 +16,25 @@ _Status_: The project has not yet been deployed to production. An eventual App S
   - Pre-commit hooks enforce linting and formatting for both Swift (via Mint, SwiftLint, SwiftFormat) and Python (via Mypy, Ruff, etc. in the backend).
 
 ## Repository Structure
-```aiignore
+
+Use the detailed tree below to locate major components quickly when joining the project or pairing with an agent:
+
+```text
 WavelengthWatch/
-├── frontend/ # watchOS SwiftUI app
-│ └── WavelengthWatch/ # Xcode project + assets
-│
-├── backend/ # FastAPI service
-│ ├── app.py # FastAPI entrypoint
-│ ├── data/
-│ │ ├── curriculum.json # stage/phase + medicinal/toxic
-│ │ ├── strategies.json # self-care strategies
-│ │ └── images/ # optional static images
-│ └── requirements.txt
-│
-├── tests/ # shared test root
-│ ├── backend/ # pytest for FastAPI
-│ └── frontend/ # Swift XCTest / Swift Testing (lives in Xcode)
-│
-├── .github/workflows/ci.yml # CI pipeline
-├── .pre-commit-config.yaml # pre-commit hooks
-└── AGENTS.md # Guardrails for AI Agents in pair programming
+├── backend/ — FastAPI + SQLModel service with routers, schemas, and CSV/JSON fixtures powering the curriculum and journal APIs.​
+│   ├── data/ — Source CSV/JSON catalogs bundled for backend seeding and the watch experience.
+│   ├── routers/ — Endpoint modules covering catalog, curriculum, journal, layer, phase, and strategy routes.
+│   └── tools/ — Utilities like CSV-to-JSON conversion and database seeding scripts used during setup and builds.
+├── frontend/ — watchOS SwiftUI project containing the main watch target, tests, and configuration docs for collaborators.
+│   └── WavelengthWatch Watch App/ — SwiftUI code organized into App, Assets, Models, Services, Resources, and ViewModels for the watch experience.
+├── tests/ — Pytest suite validating backend configuration and each API surface area.​
+├── prompts/ — Product and process prompts that capture planning notes for AI-assisted development.
+├── scripts/ — Automation helpers, including the CSV→JSON build script for bundling data with the app.​
+├── .github/workflows/ — Continuous integration workflows handling backend checks and automated reviews.
+├── README.md, XCODE_BUILD_SETUP.md — Contributor onboarding guide and Xcode build automation instructions.
+├── dev-setup.sh, pyproject.toml, mypy.ini, ruff.toml, pytest.ini — Repo-wide tooling bootstrap plus lint/type/test configuration defaults.
 ```
+
 ## Configuring the Watch API Base URL
 
 The watch app resolves its networking configuration from `Resources/APIConfiguration.plist` inside the watch target. The plist contains an `API_BASE_URL` key that defaults to `https://api.not-configured.local`, a sentinel host that intentionally fails if you try to talk to it.
