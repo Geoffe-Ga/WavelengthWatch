@@ -3,14 +3,21 @@ repos:
     rev: v0.6.9
     hooks:
       - id: ruff
-        args: [--fix]
+        name: ruff (backend & tests)
+        pass_filenames: false
+        args: [--fix, --exit-non-zero-on-fix, backend, tests/backend]
       - id: ruff-format
+        name: ruff-format (backend & tests)
+        pass_filenames: false
+        args: [backend, tests/backend]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.11.2
     hooks:
       - id: mypy
-        args: [--config-file, mypy.ini]
+        name: mypy (backend package)
+        pass_filenames: false
+        args: [--config-file, mypy.ini, backend]
         additional_dependencies:
           - "pydantic"
           - "types-requests"
@@ -31,10 +38,9 @@ repos:
     hooks:
       - id: swiftformat
         name: SwiftFormat
-        entry: swiftformat
+        entry: scripts/swiftformat-lint.sh
         language: system
         types_or: [swift]
-        args: [--lint]
       - id: backend-tests
         name: backend tests (on push)
         entry: bash
@@ -52,3 +58,9 @@ repos:
             pip install -r backend/requirements.txt
             if [ -f backend/requirements-dev.txt ]; then pip install -r backend/requirements-dev.txt; fi
             pytest -q
+      - id: watchos-xcodebuild
+        name: watchOS app build (on push)
+        entry: scripts/watchos-build.sh
+        language: system
+        pass_filenames: false
+        stages: [pre-push]

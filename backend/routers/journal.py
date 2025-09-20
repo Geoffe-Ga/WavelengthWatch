@@ -29,12 +29,18 @@ def _base_query():
         .options(
             joinedload(Journal.curriculum).joinedload(Curriculum.layer),
             joinedload(Journal.curriculum).joinedload(Curriculum.phase),
-            joinedload(Journal.secondary_curriculum).joinedload(Curriculum.layer),
-            joinedload(Journal.secondary_curriculum).joinedload(Curriculum.phase),
+            joinedload(Journal.secondary_curriculum).joinedload(
+                Curriculum.layer
+            ),
+            joinedload(Journal.secondary_curriculum).joinedload(
+                Curriculum.phase
+            ),
             joinedload(Journal.strategy).joinedload(Strategy.layer),
             joinedload(Journal.strategy).joinedload(Strategy.phase),
         )
-        .order_by(Journal.created_at.desc(), cast(ColumnElement[int], Journal.id))
+        .order_by(
+            Journal.created_at.desc(), cast(ColumnElement[int], Journal.id)
+        )
     )
 
 
@@ -42,7 +48,9 @@ def _get_journal_or_404(journal_id: int, session: Session) -> Journal:
     statement = _base_query().where(Journal.id == journal_id)
     journal = session.exec(statement).first()
     if journal is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Journal not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Journal not found"
+        )
     return journal
 
 
@@ -54,14 +62,23 @@ def _validate_references(
     strategy_id: int | None,
 ) -> None:
     if session.get(Curriculum, curriculum_id) is None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid curriculum_id")
-    if secondary_curriculum_id is not None and session.get(Curriculum, secondary_curriculum_id) is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid curriculum_id",
+        )
+    if (
+        secondary_curriculum_id is not None
+        and session.get(Curriculum, secondary_curriculum_id) is None
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid secondary_curriculum_id",
         )
     if strategy_id is not None and session.get(Strategy, strategy_id) is None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid strategy_id")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid strategy_id",
+        )
 
 
 def _ensure_journal_id(journal: Journal) -> int:
@@ -101,8 +118,12 @@ def get_journal(journal_id: int, session: SessionDep) -> JournalRead:
     return _serialize_journal(_get_journal_or_404(journal_id, session))
 
 
-@router.post("/", response_model=JournalRead, status_code=status.HTTP_201_CREATED)
-def create_journal(payload: JournalCreate, session: SessionDep) -> JournalRead:
+@router.post(
+    "/", response_model=JournalRead, status_code=status.HTTP_201_CREATED
+)
+def create_journal(
+    payload: JournalCreate, session: SessionDep
+) -> JournalRead:
     _validate_references(
         session,
         curriculum_id=payload.curriculum_id,
@@ -118,12 +139,16 @@ def create_journal(payload: JournalCreate, session: SessionDep) -> JournalRead:
 
 
 @router.put("/{journal_id}", response_model=JournalRead)
-def update_journal(*, journal_id: int, payload: JournalUpdate, session: SessionDep) -> JournalRead:
+def update_journal(
+    *, journal_id: int, payload: JournalUpdate, session: SessionDep
+) -> JournalRead:
     journal = _get_journal_or_404(journal_id, session)
     data = payload.model_dump(exclude_unset=True)
     if data:
         curriculum_id = data.get("curriculum_id", journal.curriculum_id)
-        secondary_curriculum_id = data.get("secondary_curriculum_id", journal.secondary_curriculum_id)
+        secondary_curriculum_id = data.get(
+            "secondary_curriculum_id", journal.secondary_curriculum_id
+        )
         strategy_id = data.get("strategy_id", journal.strategy_id)
         _validate_references(
             session,

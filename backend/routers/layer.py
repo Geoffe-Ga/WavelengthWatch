@@ -24,7 +24,9 @@ def _serialize_layer(layer: Layer) -> LayerRead:
 def _get_layer_or_404(layer_id: int, session: Session) -> Layer:
     layer = session.get(Layer, layer_id)
     if layer is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Layer not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Layer not found"
+        )
     return layer
 
 
@@ -50,7 +52,9 @@ def get_layer(layer_id: int, session: SessionDep) -> LayerRead:
     return _serialize_layer(_get_layer_or_404(layer_id, session))
 
 
-@router.post("/", response_model=LayerRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/", response_model=LayerRead, status_code=status.HTTP_201_CREATED
+)
 def create_layer(payload: LayerCreate, session: SessionDep) -> LayerRead:
     # Reference data writes are allowed but typically performed during initial setup.
     layer = Layer(**payload.model_dump())
@@ -61,7 +65,9 @@ def create_layer(payload: LayerCreate, session: SessionDep) -> LayerRead:
 
 
 @router.put("/{layer_id}", response_model=LayerRead)
-def update_layer(*, layer_id: int, payload: LayerUpdate, session: SessionDep) -> LayerRead:
+def update_layer(
+    *, layer_id: int, payload: LayerUpdate, session: SessionDep
+) -> LayerRead:
     layer = _get_layer_or_404(layer_id, session)
     for key, value in payload.model_dump(exclude_unset=True).items():
         setattr(layer, key, value)

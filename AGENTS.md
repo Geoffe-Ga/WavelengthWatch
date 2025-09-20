@@ -10,14 +10,17 @@ bash dev-setup.sh
 
 Agents working on this project must abide by the following operating principles:
 
-1. **Test-Driven Development (TDD) Is Required**
+1. **Finish With All Hooks Green**
+  - Run `pre-commit run --all-files` and resolve issues until every hook passes before concluding any task.
+
+2. **Test-Driven Development (TDD) Is Required**
   - Write tests before or alongside new features.
 
   - For the backend (FastAPI), use pytest with lightweight, isolated tests.
 
   - Every bug fix must include a failing test that reproduces the bug before it is resolved.
 
-2. **CI is Your Feedback Loop**
+3. **CI is Your Feedback Loop**
   - GitHub Actions is the source of truth for project health.
 
   - CI should pass green on every merge to main.
@@ -32,7 +35,7 @@ Agents working on this project must abide by the following operating principles:
 
     - Add new jobs for new language environments or tools as needed (e.g. SwiftLint, Expo CLI, Docker health checks).
 
-3. **Make Small, Meaningful Commits**
+4. **Make Small, Meaningful Commits**
 
   - Each commit should introduce one small logical change or fix.
 
@@ -44,7 +47,7 @@ Agents working on this project must abide by the following operating principles:
 
     - Assurance that all CI steps have passed
 
-4. **Optimize for Learning and Maintainability**
+5. **Optimize for Learning and Maintainability**
 
   - Write code that teaches.
 
@@ -54,7 +57,7 @@ Agents working on this project must abide by the following operating principles:
 
   - Never introduce magic numbers or clever hacks without explanation.
 
-5. **No Untested Assumptions**
+6. **No Untested Assumptions**
 
   - Agents must validate their changes by:
 
@@ -64,7 +67,7 @@ Agents working on this project must abide by the following operating principles:
 
     - Checking network requests for accurate backend interaction
 
-6. **Respect the Archetypal Wavelength**
+7. **Respect the Archetypal Wavelength**
 
   - Restoration leads to Rising.
 
