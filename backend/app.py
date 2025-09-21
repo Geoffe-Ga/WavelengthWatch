@@ -30,14 +30,16 @@ def _determine_allowed_origins() -> list[str]:
     configured_origins = os.getenv("CORS_ALLOWED_ORIGINS", "")
 
     if configured_origins:
-        origins = [origin.strip() for origin in configured_origins.split(",") if origin.strip()]
+        origins = [
+            origin.strip()
+            for origin in configured_origins.split(",")
+            if origin.strip()
+        ]
         if origins:
             return origins
 
     if environment == "production":
-        msg = (
-            "CORS_ALLOWED_ORIGINS must be set to a comma-separated list when APP_ENV=production"
-        )
+        msg = "CORS_ALLOWED_ORIGINS must be set to a comma-separated list when APP_ENV=production"
         raise RuntimeError(msg)
 
     return DEFAULT_DEV_CORS_ORIGINS.copy()
@@ -47,13 +49,17 @@ def create_application() -> FastAPI:
     """Configure and return the FastAPI application."""
 
     @asynccontextmanager
-    async def lifespan(app: FastAPI):  # pragma: no cover - exercised via startup events
+    async def lifespan(
+        app: FastAPI,
+    ):  # pragma: no cover - exercised via startup events
         database.create_db_and_tables()
         with Session(database.engine) as session:
             seed_database(session)
         yield
 
-    application = FastAPI(title="WavelengthWatch API", version="1.0.0", lifespan=lifespan)
+    application = FastAPI(
+        title="WavelengthWatch API", version="1.0.0", lifespan=lifespan
+    )
 
     application.add_middleware(
         CORSMiddleware,

@@ -21,6 +21,7 @@ def _create_engine(url: str) -> Engine:
         connect_args["check_same_thread"] = False
     engine = create_engine(url, connect_args=connect_args, echo=False)
     if _is_sqlite(url):
+
         @event.listens_for(engine, "connect")
         def _set_sqlite_pragma(dbapi_connection, connection_record) -> None:  # type: ignore[override]
             cursor = dbapi_connection.cursor()
@@ -62,4 +63,10 @@ def create_db_and_tables() -> None:
     SQLModel.metadata.create_all(engine)
 
 
-__all__ = ["engine", "configure_engine", "get_session", "create_db_and_tables", "DATABASE_URL"]
+__all__ = [
+    "engine",
+    "configure_engine",
+    "get_session",
+    "create_db_and_tables",
+    "DATABASE_URL",
+]
