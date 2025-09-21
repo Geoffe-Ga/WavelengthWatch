@@ -44,6 +44,8 @@ Agents working on this project must abide by the following operating principles:
 
     - Assurance that all CI steps have passed
 
+    - `pre-commit run --all-files` status of Green
+
 4. **Optimize for Learning and Maintainability**
 
   - Write code that teaches.
