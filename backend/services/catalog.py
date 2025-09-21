@@ -44,13 +44,17 @@ def build_catalog(session: Session) -> CatalogResponse:
         ).all()
     ]
     phase_order = [name for _, name in phase_template]
-    phase_index = {phase_id: index for index, (phase_id, _) in enumerate(phase_template)}
+    phase_index = {
+        phase_id: index for index, (phase_id, _) in enumerate(phase_template)
+    }
 
     layers = (
         session.exec(
             select(Layer)
             .options(
-                selectinload(Layer.curriculum_items).selectinload(Curriculum.phase),
+                selectinload(Layer.curriculum_items).selectinload(
+                    Curriculum.phase
+                ),
                 selectinload(Layer.strategies).selectinload(Strategy.phase),
             )
             .order_by(cast(ColumnElement[int], Layer.id))
