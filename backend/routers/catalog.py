@@ -22,7 +22,9 @@ router = APIRouter(prefix="/catalog", tags=["catalog"])
     summary="Retrieve the complete curriculum catalog",
     response_description="Aggregated layers, phases, curriculum entries, and strategies.",
 )
-def get_catalog(*, response: Response, session: SessionDep) -> CatalogResponse:
+def get_catalog(
+    *, response: Response, session: SessionDep
+) -> CatalogResponse:
     """Return the cached catalog payload for clients.
 
     The payload nests medicinal/toxic curriculum entries alongside strategies so

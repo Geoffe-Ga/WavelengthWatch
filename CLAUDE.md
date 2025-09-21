@@ -87,3 +87,11 @@ WavelengthWatch is a **watch-only app** that displays the Archetypal Wavelength 
 - Python: Ruff linting (line length 78), Mypy type checking, Pydantic models
 - Swift: SwiftFormat formatting, no custom linting rules
 - Make small, meaningful commits with clear messages
+
+### No Shortcuts or Workarounds
+**IMPORTANT**: Always fix issues properly, never use shortcuts or workarounds that bypass quality checks:
+- **No commenting out failing tests** - fix the underlying issue
+- **No linter bypass comments** (`# type: ignore`, `# noqa`, etc.) - address the actual problem
+- **No disabling CI checks** - make the code pass legitimately
+- **Exception**: Missing type stubs for third-party libraries are acceptable to ignore with proper documentation
+- Fix root causes, not symptoms

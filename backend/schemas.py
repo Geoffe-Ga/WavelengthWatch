@@ -133,7 +133,9 @@ class JournalUpdate(SQLModel):
 
     @field_validator("created_at", mode="before")
     @classmethod
-    def _validate_created_at(cls, value: datetime | str | None) -> datetime | None:
+    def _validate_created_at(
+        cls, value: datetime | str | None
+    ) -> datetime | None:
         return _coerce_datetime(value)
 
 

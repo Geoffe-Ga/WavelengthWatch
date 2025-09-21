@@ -24,7 +24,9 @@ def _serialize_phase(phase: Phase) -> PhaseRead:
 def _get_phase_or_404(phase_id: int, session: Session) -> Phase:
     phase = session.get(Phase, phase_id)
     if phase is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Phase not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Phase not found"
+        )
     return phase
 
 
@@ -50,7 +52,9 @@ def get_phase(phase_id: int, session: SessionDep) -> PhaseRead:
     return _serialize_phase(_get_phase_or_404(phase_id, session))
 
 
-@router.post("/", response_model=PhaseRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/", response_model=PhaseRead, status_code=status.HTTP_201_CREATED
+)
 def create_phase(payload: PhaseCreate, session: SessionDep) -> PhaseRead:
     # Reference data writes are allowed but are typically rare in production.
     phase = Phase(**payload.model_dump())
@@ -61,7 +65,9 @@ def create_phase(payload: PhaseCreate, session: SessionDep) -> PhaseRead:
 
 
 @router.put("/{phase_id}", response_model=PhaseRead)
-def update_phase(*, phase_id: int, payload: PhaseUpdate, session: SessionDep) -> PhaseRead:
+def update_phase(
+    *, phase_id: int, payload: PhaseUpdate, session: SessionDep
+) -> PhaseRead:
     phase = _get_phase_or_404(phase_id, session)
     for key, value in payload.model_dump(exclude_unset=True).items():
         setattr(phase, key, value)

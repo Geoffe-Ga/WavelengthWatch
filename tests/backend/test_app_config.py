@@ -12,11 +12,15 @@ from backend.app import DEFAULT_DEV_CORS_ORIGINS, create_application
 def _cors_origins(app: FastAPI) -> list[str]:
     for middleware in app.user_middleware:
         if middleware.cls is CORSMiddleware:
-            return middleware.kwargs["allow_origins"]
+            origins = middleware.kwargs["allow_origins"]
+            if isinstance(origins, list):
+                return origins
     raise AssertionError("CORS middleware not configured on application")
 
 
-def test_create_application_uses_dev_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_create_application_uses_dev_defaults(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Development builds should fall back to the local default allowlist."""
 
     monkeypatch.delenv("APP_ENV", raising=False)
@@ -27,7 +31,9 @@ def test_create_application_uses_dev_defaults(monkeypatch: pytest.MonkeyPatch) -
     assert _cors_origins(app) == DEFAULT_DEV_CORS_ORIGINS
 
 
-def test_create_application_reads_configured_origins(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_create_application_reads_configured_origins(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Production configuration should respect the provided allowlist."""
 
     monkeypatch.setenv("APP_ENV", "production")

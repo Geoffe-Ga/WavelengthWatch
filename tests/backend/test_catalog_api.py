@@ -23,7 +23,11 @@ EXPECTED_LAYER_COUNT = 11
 
 
 def _flatten(entries: Iterable[dict[str, object]]) -> set[int]:
-    return {int(item["id"]) for item in entries}
+    return {
+        int(item["id"])
+        for item in entries
+        if isinstance(item["id"], int | str)
+    }
 
 
 def test_catalog_returns_joined_dataset(client) -> None:
@@ -43,7 +47,9 @@ def test_catalog_returns_joined_dataset(client) -> None:
     phase_names = [phase["name"] for phase in beige["phases"]]
     assert phase_names == PHASE_ORDER
 
-    rising = next(phase for phase in beige["phases"] if phase["name"] == "Rising")
+    rising = next(
+        phase for phase in beige["phases"] if phase["name"] == "Rising"
+    )
 
     medicinal_ids = _flatten(rising["medicinal"])
     toxic_ids = _flatten(rising["toxic"])
@@ -63,7 +69,9 @@ def test_catalog_identifiers_can_be_used_for_journaling(client) -> None:
     body = catalog.json()
 
     beige = next(layer for layer in body["layers"] if layer["id"] == 1)
-    rising = next(phase for phase in beige["phases"] if phase["name"] == "Rising")
+    rising = next(
+        phase for phase in beige["phases"] if phase["name"] == "Rising"
+    )
 
     curriculum_id = int(rising["medicinal"][0]["id"])
     toxic_id = int(rising["toxic"][0]["id"])
@@ -89,11 +97,11 @@ def test_catalog_returns_empty_payload_when_database_cleared(client) -> None:
     """The endpoint should gracefully handle an empty catalog."""
 
     with Session(database.engine) as session:
-        session.exec(delete(Journal))
-        session.exec(delete(Strategy))
-        session.exec(delete(Curriculum))
-        session.exec(delete(Layer))
-        session.exec(delete(Phase))
+        session.execute(delete(Journal))
+        session.execute(delete(Strategy))
+        session.execute(delete(Curriculum))
+        session.execute(delete(Layer))
+        session.execute(delete(Phase))
         session.commit()
 
     response = client.get("/catalog")

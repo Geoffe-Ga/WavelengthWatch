@@ -30,19 +30,30 @@ def _base_query():
     )
 
 
-def _get_curriculum_or_404(curriculum_id: int, session: Session) -> Curriculum:
+def _get_curriculum_or_404(
+    curriculum_id: int, session: Session
+) -> Curriculum:
     statement = _base_query().where(Curriculum.id == curriculum_id)
     curriculum = session.exec(statement).first()
     if curriculum is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Curriculum not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Curriculum not found",
+        )
     return curriculum
 
 
-def _validate_references(session: Session, layer_id: int, phase_id: int) -> None:
+def _validate_references(
+    session: Session, layer_id: int, phase_id: int
+) -> None:
     if session.get(Layer, layer_id) is None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid layer_id")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid layer_id"
+        )
     if session.get(Phase, phase_id) is None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid phase_id")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid phase_id"
+        )
 
 
 def _ensure_curriculum_id(curriculum: Curriculum) -> int:
@@ -76,11 +87,17 @@ def list_curriculum(
 
 @router.get("/{curriculum_id}", response_model=CurriculumRead)
 def get_curriculum(curriculum_id: int, session: SessionDep) -> CurriculumRead:
-    return _serialize_curriculum(_get_curriculum_or_404(curriculum_id, session))
+    return _serialize_curriculum(
+        _get_curriculum_or_404(curriculum_id, session)
+    )
 
 
-@router.post("/", response_model=CurriculumRead, status_code=status.HTTP_201_CREATED)
-def create_curriculum(payload: CurriculumCreate, session: SessionDep) -> CurriculumRead:
+@router.post(
+    "/", response_model=CurriculumRead, status_code=status.HTTP_201_CREATED
+)
+def create_curriculum(
+    payload: CurriculumCreate, session: SessionDep
+) -> CurriculumRead:
     # Reference data writes are infrequent but supported for administrative tooling.
     _validate_references(session, payload.layer_id, payload.phase_id)
     curriculum = Curriculum(**payload.model_dump())
@@ -88,11 +105,15 @@ def create_curriculum(payload: CurriculumCreate, session: SessionDep) -> Curricu
     session.commit()
     session.refresh(curriculum)
     curriculum_id = _ensure_curriculum_id(curriculum)
-    return _serialize_curriculum(_get_curriculum_or_404(curriculum_id, session))
+    return _serialize_curriculum(
+        _get_curriculum_or_404(curriculum_id, session)
+    )
 
 
 @router.put("/{curriculum_id}", response_model=CurriculumRead)
-def update_curriculum(*, curriculum_id: int, payload: CurriculumUpdate, session: SessionDep) -> CurriculumRead:
+def update_curriculum(
+    *, curriculum_id: int, payload: CurriculumUpdate, session: SessionDep
+) -> CurriculumRead:
     curriculum = _get_curriculum_or_404(curriculum_id, session)
     data = payload.model_dump(exclude_unset=True)
     if "layer_id" in data or "phase_id" in data:
@@ -104,7 +125,9 @@ def update_curriculum(*, curriculum_id: int, payload: CurriculumUpdate, session:
     session.add(curriculum)
     session.commit()
     curriculum_id = _ensure_curriculum_id(curriculum)
-    return _serialize_curriculum(_get_curriculum_or_404(curriculum_id, session))
+    return _serialize_curriculum(
+        _get_curriculum_or_404(curriculum_id, session)
+    )
 
 
 @router.delete("/{curriculum_id}", status_code=status.HTTP_204_NO_CONTENT)

@@ -21,7 +21,10 @@ def _iter_rows(filename: str) -> Iterable[dict[str, str]]:
         for row in reader:
             if not row:
                 continue
-            if all((value is None or str(value).strip() == "") for value in row.values()):
+            if all(
+                (value is None or str(value).strip() == "")
+                for value in row.values()
+            ):
                 continue
             yield {key: (value or "") for key, value in row.items()}
 
@@ -90,14 +93,18 @@ def _parse_optional_int(value: str) -> int | None:
 def _load_journal() -> list[Journal]:
     records: list[Journal] = []
     for row in _iter_rows("journal.csv"):
-        created_at = datetime.fromisoformat(row["created_at"].replace("Z", "+00:00")).astimezone(UTC)
+        created_at = datetime.fromisoformat(
+            row["created_at"].replace("Z", "+00:00")
+        ).astimezone(UTC)
         records.append(
             Journal(
                 id=int(row["id"]),
                 created_at=created_at,
                 user_id=int(row["user_id"]),
                 curriculum_id=int(row["curriculum_id"]),
-                secondary_curriculum_id=_parse_optional_int(row["secondary_curriculum_id"]),
+                secondary_curriculum_id=_parse_optional_int(
+                    row["secondary_curriculum_id"]
+                ),
                 strategy_id=_parse_optional_int(row["strategy_id"]),
             )
         )
