@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 
 from sqlmodel import Session, delete
 
@@ -22,8 +22,19 @@ PHASE_ORDER = [
 EXPECTED_LAYER_COUNT = 11
 
 
-def _flatten(entries: Iterable[dict[str, object]]) -> set[int]:
-    return {int(item["id"]) for item in entries}
+def _flatten(entries: Iterable[Mapping[str, object]]) -> set[int]:
+    ids: set[int] = set()
+    for item in entries:
+        identifier = item["id"]
+        if isinstance(identifier, int):
+            ids.add(identifier)
+        elif isinstance(identifier, str):
+            ids.add(int(identifier))
+        else:
+            raise TypeError(
+                f"Unsupported identifier type: {type(identifier)!r}"
+            )
+    return ids
 
 
 def test_catalog_returns_joined_dataset(client) -> None:
@@ -93,11 +104,11 @@ def test_catalog_returns_empty_payload_when_database_cleared(client) -> None:
     """The endpoint should gracefully handle an empty catalog."""
 
     with Session(database.engine) as session:
-        session.exec(delete(Journal))
-        session.exec(delete(Strategy))
-        session.exec(delete(Curriculum))
-        session.exec(delete(Layer))
-        session.exec(delete(Phase))
+        session.execute(delete(Journal))
+        session.execute(delete(Strategy))
+        session.execute(delete(Curriculum))
+        session.execute(delete(Layer))
+        session.execute(delete(Phase))
         session.commit()
 
     response = client.get("/catalog")
