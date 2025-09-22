@@ -111,44 +111,35 @@ def build_catalog(session: Session) -> CatalogResponse:
             else:
                 catalog_phase.toxic.append(entry)
 
-        # Only add strategies to layer 0 (SELF-CARE)
-        if layer_id == 0:
-            # Load all strategies regardless of their color_layer_id
-            all_strategies = session.exec(
-                select(Strategy).options(
-                    selectinload(Strategy.phase),
-                    selectinload(Strategy.color_layer),
-                )
-            ).all()
+        strategies = sorted(
+            layer.strategies,
+            key=lambda item: (
+                phase_index.get(item.phase_id, float("inf")),
+                _require_identifier("Strategy", item.id),
+            ),
+        )
 
-            for strategy in sorted(
-                all_strategies,
-                key=lambda item: (
-                    phase_index.get(item.phase_id, float("inf")),
-                    _require_identifier("Strategy", item.id),
-                ),
-            ):
-                phase_id = strategy.phase_id
-                if phase_id is None:
-                    continue
-                index = phase_index.get(phase_id)
-                if index is None or index >= len(catalog_layer.phases):
-                    continue
+        for strategy in strategies:
+            phase_id = strategy.phase_id
+            if phase_id is None:
+                continue
+            index = phase_index.get(phase_id)
+            if index is None or index >= len(catalog_layer.phases):
+                continue
 
-                # Get color from the strategy's color_layer relationship
-                color = (
-                    strategy.color_layer.color
-                    if strategy.color_layer
-                    else "Unknown"
-                )
+            color = (
+                strategy.color_layer.color
+                if strategy.color_layer
+                else layer.color
+            )
 
-                catalog_layer.phases[index].strategies.append(
-                    CatalogStrategy(
-                        id=_require_identifier("Strategy", strategy.id),
-                        strategy=strategy.strategy,
-                        color=color,
-                    )
+            catalog_layer.phases[index].strategies.append(
+                CatalogStrategy(
+                    id=_require_identifier("Strategy", strategy.id),
+                    strategy=strategy.strategy,
+                    color=color,
                 )
+            )
 
         ordered_layers.append(catalog_layer)
 
