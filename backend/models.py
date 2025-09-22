@@ -28,7 +28,7 @@ class Layer(SQLModel, table=True):
         back_populates="layer"
     )
     strategies: Mapped[list["Strategy"]] = Relationship(
-        back_populates="layer"
+        back_populates="color_layer"
     )
 
 
@@ -84,10 +84,12 @@ class Strategy(SQLModel, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
     strategy: str
-    layer_id: int = Field(foreign_key="layer.id", index=True)
+    color_layer_id: int = Field(foreign_key="layer.id", index=True)
     phase_id: int = Field(foreign_key="phase.id", index=True)
 
-    layer: Mapped[Layer | None] = Relationship(back_populates="strategies")
+    color_layer: Mapped[Layer | None] = Relationship(
+        back_populates="strategies"
+    )
     phase: Mapped[Phase | None] = Relationship(back_populates="strategies")
     journal_entries: Mapped[list["Journal"]] = Relationship(
         back_populates="strategy",

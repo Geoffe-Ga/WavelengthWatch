@@ -4,21 +4,23 @@ from __future__ import annotations
 
 
 def test_strategy_filtering(client) -> None:
-    response = client.get("/strategy", params={"layer_id": 1, "phase_id": 5})
+    response = client.get(
+        "/strategy", params={"color_layer_id": 1, "phase_id": 5}
+    )
     assert response.status_code == 200
     strategies = response.json()
     assert strategies, "Expected seeded strategies"
     for item in strategies:
-        assert item["layer_id"] == 1
+        assert item["color_layer_id"] == 1
         assert item["phase_id"] == 5
-        assert item["layer"]["title"]
+        assert item["color_layer"]["title"]
         assert item["phase"]["name"]
 
 
 def test_strategy_crud(client) -> None:
     create_payload = {
         "strategy": "Test Strategy",
-        "layer_id": 1,
+        "color_layer_id": 1,
         "phase_id": 1,
     }
     created = client.post("/strategy", json=create_payload)

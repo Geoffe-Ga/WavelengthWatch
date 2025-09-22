@@ -3,6 +3,7 @@ import Foundation
 struct CatalogStrategyModel: Codable, Identifiable, Equatable {
   let id: Int
   let strategy: String
+  let color: String
 }
 
 enum CatalogDosage: String, Codable {
