@@ -157,7 +157,7 @@ struct ContentView: View {
 
   private func layerIndicator(in size: CGSize) -> some View {
     let index = min(layerSelection, max(viewModel.layers.count - 1, 0))
-    VStack {
+    return VStack {
       Spacer()
       ZStack(alignment: .top) {
         Capsule()
