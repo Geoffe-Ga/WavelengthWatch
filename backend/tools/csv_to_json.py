@@ -43,9 +43,7 @@ def _detect(headers: Iterable[str]) -> str:
 def _convert_curriculum(
     rows: list[dict[str, str]], headers: Iterable[str]
 ) -> dict[str, dict[str, dict[str, str]]]:
-    phases = [
-        h for h in headers if h and h.lower() not in {"dosage", "stage"}
-    ]
+    phases = [h for h in headers if h and h.lower() not in {"dosage", "stage"}]
     result: dict[str, dict[str, dict[str, str]]] = {}
     for row in rows:
         dosage = row.get("dosage", "").strip().lower()
@@ -57,9 +55,7 @@ def _convert_curriculum(
             if not value:
                 continue
             phase = ph.strip().title()
-            payload = stage_map.setdefault(
-                phase, {"Medicine": "", "Toxic": ""}
-            )
+            payload = stage_map.setdefault(phase, {"Medicine": "", "Toxic": ""})
             payload[key] = value
     ordered: dict[str, dict[str, dict[str, str]]] = {}
     for stage, phase_map in result.items():
@@ -83,9 +79,7 @@ def _convert_strategies(
         phase = row.get("phase", "").strip().title()
         if not strategy or not stage or not phase:
             continue
-        result.setdefault(phase, []).append(
-            {"color": stage, "strategy": strategy}
-        )
+        result.setdefault(phase, []).append({"color": stage, "strategy": strategy})
     # remove phases without strategies while preserving order
     return {ph: result[ph] for ph in PHASE_ORDER if result.get(ph)}
 

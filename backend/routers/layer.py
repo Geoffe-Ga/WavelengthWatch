@@ -52,9 +52,7 @@ def get_layer(layer_id: int, session: SessionDep) -> LayerRead:
     return _serialize_layer(_get_layer_or_404(layer_id, session))
 
 
-@router.post(
-    "/", response_model=LayerRead, status_code=status.HTTP_201_CREATED
-)
+@router.post("/", response_model=LayerRead, status_code=status.HTTP_201_CREATED)
 def create_layer(payload: LayerCreate, session: SessionDep) -> LayerRead:
     # Reference data writes are allowed but typically performed during initial setup.
     layer = Layer(**payload.model_dump())
