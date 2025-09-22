@@ -5,9 +5,11 @@ from __future__ import annotations
 from typing import Annotated, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from sqlalchemy.engine import ScalarResult
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.elements import ColumnElement
 from sqlmodel import Session, select
+from sqlmodel.sql.expression import SelectOfScalar
 
 from ..database import get_session
 from ..models import Curriculum, Dosage, Layer, Phase
@@ -22,7 +24,7 @@ def _serialize_curriculum(curriculum: Curriculum) -> CurriculumRead:
     return CurriculumRead.model_validate(curriculum)
 
 
-def _base_query():
+def _base_query() -> SelectOfScalar[Curriculum]:
     return (
         select(Curriculum)
         .options(joinedload(Curriculum.layer), joinedload(Curriculum.phase))
@@ -30,11 +32,10 @@ def _base_query():
     )
 
 
-def _get_curriculum_or_404(
-    curriculum_id: int, session: Session
-) -> Curriculum:
+def _get_curriculum_or_404(curriculum_id: int, session: Session) -> Curriculum:
     statement = _base_query().where(Curriculum.id == curriculum_id)
-    curriculum = session.exec(statement).first()
+    result = cast(ScalarResult[Curriculum], session.exec(statement))
+    curriculum = result.one_or_none()
     if curriculum is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -43,9 +44,7 @@ def _get_curriculum_or_404(
     return curriculum
 
 
-def _validate_references(
-    session: Session, layer_id: int, phase_id: int
-) -> None:
+def _validate_references(session: Session, layer_id: int, phase_id: int) -> None:
     if session.get(Layer, layer_id) is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid layer_id"
@@ -75,29 +74,26 @@ def list_curriculum(
 ) -> list[CurriculumRead]:
     statement = _base_query()
     if layer_id is not None:
-        statement = statement.where(Curriculum.layer_id == layer_id)
+        clause = cast(ColumnElement[bool], Curriculum.layer_id == layer_id)
+        statement = statement.where(clause)
     if phase_id is not None:
-        statement = statement.where(Curriculum.phase_id == phase_id)
+        clause = cast(ColumnElement[bool], Curriculum.phase_id == phase_id)
+        statement = statement.where(clause)
     if dosage is not None:
-        statement = statement.where(Curriculum.dosage == dosage)
+        clause = cast(ColumnElement[bool], Curriculum.dosage == dosage)
+        statement = statement.where(clause)
     statement = statement.offset(offset).limit(limit)
-    rows = session.exec(statement).all()
-    return [_serialize_curriculum(row) for row in rows]
+    result = cast(ScalarResult[Curriculum], session.exec(statement))
+    return [_serialize_curriculum(row) for row in result.all()]
 
 
 @router.get("/{curriculum_id}", response_model=CurriculumRead)
 def get_curriculum(curriculum_id: int, session: SessionDep) -> CurriculumRead:
-    return _serialize_curriculum(
-        _get_curriculum_or_404(curriculum_id, session)
-    )
+    return _serialize_curriculum(_get_curriculum_or_404(curriculum_id, session))
 
 
-@router.post(
-    "/", response_model=CurriculumRead, status_code=status.HTTP_201_CREATED
-)
-def create_curriculum(
-    payload: CurriculumCreate, session: SessionDep
-) -> CurriculumRead:
+@router.post("/", response_model=CurriculumRead, status_code=status.HTTP_201_CREATED)
+def create_curriculum(payload: CurriculumCreate, session: SessionDep) -> CurriculumRead:
     # Reference data writes are infrequent but supported for administrative tooling.
     _validate_references(session, payload.layer_id, payload.phase_id)
     curriculum = Curriculum(**payload.model_dump())
@@ -105,9 +101,7 @@ def create_curriculum(
     session.commit()
     session.refresh(curriculum)
     curriculum_id = _ensure_curriculum_id(curriculum)
-    return _serialize_curriculum(
-        _get_curriculum_or_404(curriculum_id, session)
-    )
+    return _serialize_curriculum(_get_curriculum_or_404(curriculum_id, session))
 
 
 @router.put("/{curriculum_id}", response_model=CurriculumRead)
@@ -125,9 +119,7 @@ def update_curriculum(
     session.add(curriculum)
     session.commit()
     curriculum_id = _ensure_curriculum_id(curriculum)
-    return _serialize_curriculum(
-        _get_curriculum_or_404(curriculum_id, session)
-    )
+    return _serialize_curriculum(_get_curriculum_or_404(curriculum_id, session))
 
 
 @router.delete("/{curriculum_id}", status_code=status.HTTP_204_NO_CONTENT)

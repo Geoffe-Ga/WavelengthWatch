@@ -31,9 +31,7 @@ def _flatten(entries: Iterable[Mapping[str, object]]) -> set[int]:
         elif isinstance(identifier, str):
             ids.add(int(identifier))
         else:
-            raise TypeError(
-                f"Unsupported identifier type: {type(identifier)!r}"
-            )
+            raise TypeError(f"Unsupported identifier type: {type(identifier)!r}")
     return ids
 
 
@@ -54,9 +52,7 @@ def test_catalog_returns_joined_dataset(client) -> None:
     phase_names = [phase["name"] for phase in beige["phases"]]
     assert phase_names == PHASE_ORDER
 
-    rising = next(
-        phase for phase in beige["phases"] if phase["name"] == "Rising"
-    )
+    rising = next(phase for phase in beige["phases"] if phase["name"] == "Rising")
 
     medicinal_ids = _flatten(rising["medicinal"])
     toxic_ids = _flatten(rising["toxic"])
@@ -76,9 +72,7 @@ def test_catalog_identifiers_can_be_used_for_journaling(client) -> None:
     body = catalog.json()
 
     beige = next(layer for layer in body["layers"] if layer["id"] == 1)
-    rising = next(
-        phase for phase in beige["phases"] if phase["name"] == "Rising"
-    )
+    rising = next(phase for phase in beige["phases"] if phase["name"] == "Rising")
 
     curriculum_id = int(rising["medicinal"][0]["id"])
     toxic_id = int(rising["toxic"][0]["id"])

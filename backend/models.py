@@ -24,12 +24,8 @@ class Layer(SQLModel, table=True):
     title: str
     subtitle: str
 
-    curriculum_items: Mapped[list["Curriculum"]] = Relationship(
-        back_populates="layer"
-    )
-    strategies: Mapped[list["Strategy"]] = Relationship(
-        back_populates="layer"
-    )
+    curriculum_items: Mapped[list["Curriculum"]] = Relationship(back_populates="layer")
+    strategies: Mapped[list["Strategy"]] = Relationship(back_populates="layer")
 
 
 class Phase(SQLModel, table=True):
@@ -38,12 +34,8 @@ class Phase(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     name: str
 
-    curriculum_items: Mapped[list["Curriculum"]] = Relationship(
-        back_populates="phase"
-    )
-    strategies: Mapped[list["Strategy"]] = Relationship(
-        back_populates="phase"
-    )
+    curriculum_items: Mapped[list["Curriculum"]] = Relationship(back_populates="phase")
+    strategies: Mapped[list["Strategy"]] = Relationship(back_populates="phase")
 
 
 class Curriculum(SQLModel, table=True):
@@ -53,18 +45,12 @@ class Curriculum(SQLModel, table=True):
     layer_id: int = Field(foreign_key="layer.id", index=True)
     phase_id: int = Field(foreign_key="phase.id", index=True)
     dosage: Dosage = Field(
-        sa_column=Column(
-            SAEnum(Dosage, name="curriculum_dosage", native_enum=False)
-        )
+        sa_column=Column(SAEnum(Dosage, name="curriculum_dosage", native_enum=False))
     )
     expression: str
 
-    layer: Mapped[Layer | None] = Relationship(
-        back_populates="curriculum_items"
-    )
-    phase: Mapped[Phase | None] = Relationship(
-        back_populates="curriculum_items"
-    )
+    layer: Mapped[Layer | None] = Relationship(back_populates="curriculum_items")
+    phase: Mapped[Phase | None] = Relationship(back_populates="curriculum_items")
     journal_entries: Mapped[list["Journal"]] = Relationship(
         back_populates="curriculum",
         sa_relationship_kwargs={
@@ -105,9 +91,7 @@ class Journal(SQLModel, table=True):
         sa_column=Column(DateTime(timezone=True), nullable=False)
     )
     user_id: int = Field(index=True)
-    curriculum_id: int = Field(
-        foreign_key="curriculum.id", nullable=False, index=True
-    )
+    curriculum_id: int = Field(foreign_key="curriculum.id", nullable=False, index=True)
     secondary_curriculum_id: int | None = Field(
         default=None, foreign_key="curriculum.id", nullable=True, index=True
     )

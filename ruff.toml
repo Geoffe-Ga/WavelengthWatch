@@ -1,7 +1,8 @@
-line-length = 78
+line-length = 88
 target-version = "py312"
 extend-exclude = ["frontend"]
 
 [lint]
-select = ["E", "F", "I", "B", "UP"]
-ignore = ["E203", "E266", "E501"]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "C4"]
+ignore = ["E203"]
+fixable = ["ALL"]

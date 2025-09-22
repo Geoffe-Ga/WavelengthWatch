@@ -1,7 +1,10 @@
 """Database configuration and session utilities."""
 
+from __future__ import annotations
+
 import os
 from collections.abc import Iterator
+from typing import Any
 
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
@@ -23,7 +26,9 @@ def _create_engine(url: str) -> Engine:
     if _is_sqlite(url):
 
         @event.listens_for(engine, "connect")
-        def _set_sqlite_pragma(dbapi_connection, connection_record) -> None:  # type: ignore[override]
+        def _set_sqlite_pragma(
+            dbapi_connection: Any, connection_record: Any
+        ) -> None:  # pragma: no cover - thin wrapper around SQLAlchemy internals
             cursor = dbapi_connection.cursor()
             try:
                 cursor.execute("PRAGMA foreign_keys=ON")

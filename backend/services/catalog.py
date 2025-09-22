@@ -52,9 +52,7 @@ def build_catalog(session: Session) -> CatalogResponse:
         session.exec(
             select(Layer)
             .options(
-                selectinload(Layer.curriculum_items).selectinload(
-                    Curriculum.phase
-                ),
+                selectinload(Layer.curriculum_items).selectinload(Curriculum.phase),
                 selectinload(Layer.strategies).selectinload(Strategy.phase),
             )
             .order_by(cast(ColumnElement[int], Layer.id))

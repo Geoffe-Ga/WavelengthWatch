@@ -5,9 +5,11 @@ from __future__ import annotations
 from typing import Annotated, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from sqlalchemy.engine import ScalarResult
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.elements import ColumnElement
 from sqlmodel import Session, select
+from sqlmodel.sql.expression import SelectOfScalar
 
 from ..database import get_session
 from ..models import Layer, Phase, Strategy
@@ -22,7 +24,7 @@ def _serialize_strategy(strategy: Strategy) -> StrategyRead:
     return StrategyRead.model_validate(strategy)
 
 
-def _base_query():
+def _base_query() -> SelectOfScalar[Strategy]:
     return (
         select(Strategy)
         .options(joinedload(Strategy.layer), joinedload(Strategy.phase))
@@ -32,7 +34,8 @@ def _base_query():
 
 def _get_strategy_or_404(strategy_id: int, session: Session) -> Strategy:
     statement = _base_query().where(Strategy.id == strategy_id)
-    strategy = session.exec(statement).first()
+    result = cast(ScalarResult[Strategy], session.exec(statement))
+    strategy = result.one_or_none()
     if strategy is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Strategy not found"
@@ -40,9 +43,7 @@ def _get_strategy_or_404(strategy_id: int, session: Session) -> Strategy:
     return strategy
 
 
-def _validate_references(
-    session: Session, layer_id: int, phase_id: int
-) -> None:
+def _validate_references(session: Session, layer_id: int, phase_id: int) -> None:
     if session.get(Layer, layer_id) is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid layer_id"
@@ -71,12 +72,14 @@ def list_strategies(
 ) -> list[StrategyRead]:
     statement = _base_query()
     if layer_id is not None:
-        statement = statement.where(Strategy.layer_id == layer_id)
+        clause = cast(ColumnElement[bool], Strategy.layer_id == layer_id)
+        statement = statement.where(clause)
     if phase_id is not None:
-        statement = statement.where(Strategy.phase_id == phase_id)
+        clause = cast(ColumnElement[bool], Strategy.phase_id == phase_id)
+        statement = statement.where(clause)
     statement = statement.offset(offset).limit(limit)
-    rows = session.exec(statement).all()
-    return [_serialize_strategy(row) for row in rows]
+    result = cast(ScalarResult[Strategy], session.exec(statement))
+    return [_serialize_strategy(row) for row in result.all()]
 
 
 @router.get("/{strategy_id}", response_model=StrategyRead)
@@ -84,12 +87,8 @@ def get_strategy(strategy_id: int, session: SessionDep) -> StrategyRead:
     return _serialize_strategy(_get_strategy_or_404(strategy_id, session))
 
 
-@router.post(
-    "/", response_model=StrategyRead, status_code=status.HTTP_201_CREATED
-)
-def create_strategy(
-    payload: StrategyCreate, session: SessionDep
-) -> StrategyRead:
+@router.post("/", response_model=StrategyRead, status_code=status.HTTP_201_CREATED)
+def create_strategy(payload: StrategyCreate, session: SessionDep) -> StrategyRead:
     _validate_references(session, payload.layer_id, payload.phase_id)
     strategy = Strategy(**payload.model_dump())
     session.add(strategy)
