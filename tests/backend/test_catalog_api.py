@@ -53,7 +53,15 @@ def test_catalog_returns_joined_dataset(client) -> None:
     assert rising["medicinal"][0]["dosage"] == "Medicinal"
     assert rising["toxic"][0]["dosage"] == "Toxic"
 
-    strategy_names = {item["strategy"] for item in rising["strategies"]}
+    # Strategies are in layer 0 (SELF-CARE), not in other layers
+    self_care = next(layer for layer in layers if layer["id"] == 0)
+    assert self_care["color"] == "Strategies"
+    assert self_care["title"] == "SELF-CARE"
+
+    self_care_rising = next(
+        phase for phase in self_care["phases"] if phase["name"] == "Rising"
+    )
+    strategy_names = {item["strategy"] for item in self_care_rising["strategies"]}
     assert "Cold Shower" in strategy_names
 
 
@@ -67,7 +75,13 @@ def test_catalog_identifiers_can_be_used_for_journaling(client) -> None:
 
     curriculum_id = int(rising["medicinal"][0]["id"])
     toxic_id = int(rising["toxic"][0]["id"])
-    strategy_id = int(rising["strategies"][0]["id"])
+
+    # Strategies are in layer 0 (SELF-CARE)
+    self_care = next(layer for layer in body["layers"] if layer["id"] == 0)
+    self_care_rising = next(
+        phase for phase in self_care["phases"] if phase["name"] == "Rising"
+    )
+    strategy_id = int(self_care_rising["strategies"][0]["id"])
 
     payload = {
         "created_at": "2025-10-01T00:00:00Z",

@@ -75,6 +75,7 @@ def _load_strategies() -> list[Strategy]:
             Strategy(
                 id=int(row["id"]),
                 strategy=row["strategy"].strip(),
+                layer_id=int(row["layer_id"]),
                 color_layer_id=int(row["color_layer_id"]),
                 phase_id=int(row["phase_id"]),
             )

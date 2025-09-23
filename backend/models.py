@@ -25,7 +25,20 @@ class Layer(SQLModel, table=True):
     subtitle: str
 
     curriculum_items: Mapped[list["Curriculum"]] = Relationship(back_populates="layer")
-    strategies: Mapped[list["Strategy"]] = Relationship(back_populates="color_layer")
+    strategies: Mapped[list["Strategy"]] = Relationship(
+        back_populates="layer",
+        sa_relationship_kwargs={
+            "primaryjoin": "Layer.id==Strategy.layer_id",
+            "foreign_keys": "Strategy.layer_id",
+        },
+    )
+    color_strategies: Mapped[list["Strategy"]] = Relationship(
+        back_populates="color_layer",
+        sa_relationship_kwargs={
+            "primaryjoin": "Layer.id==Strategy.color_layer_id",
+            "foreign_keys": "Strategy.color_layer_id",
+        },
+    )
 
 
 class Phase(SQLModel, table=True):
@@ -70,10 +83,24 @@ class Strategy(SQLModel, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
     strategy: str
+    layer_id: int = Field(foreign_key="layer.id", index=True)
     color_layer_id: int = Field(foreign_key="layer.id", index=True)
     phase_id: int = Field(foreign_key="phase.id", index=True)
 
-    color_layer: Mapped[Layer | None] = Relationship(back_populates="strategies")
+    layer: Mapped[Layer | None] = Relationship(
+        back_populates="strategies",
+        sa_relationship_kwargs={
+            "primaryjoin": "Strategy.layer_id==Layer.id",
+            "foreign_keys": "Strategy.layer_id",
+        },
+    )
+    color_layer: Mapped[Layer | None] = Relationship(
+        back_populates="color_strategies",
+        sa_relationship_kwargs={
+            "primaryjoin": "Strategy.color_layer_id==Layer.id",
+            "foreign_keys": "Strategy.color_layer_id",
+        },
+    )
     phase: Mapped[Phase | None] = Relationship(back_populates="strategies")
     journal_entries: Mapped[list["Journal"]] = Relationship(
         back_populates="strategy",
