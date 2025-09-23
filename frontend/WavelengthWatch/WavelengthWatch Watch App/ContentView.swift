@@ -414,6 +414,30 @@ struct StrategyListView: View {
   let phase: CatalogPhaseModel
   let color: Color
   @EnvironmentObject private var viewModel: ContentViewModel
+  @State private var showingJournalConfirmation = false
+  @State private var selectedStrategy: CatalogStrategyModel?
+
+  // For strategies-only phases, find a curriculum ID from any available layer/phase
+  private var fallbackCurriculumID: Int? {
+    // First try the current phase
+    if let id = phase.medicinal.first?.id ?? phase.toxic.first?.id {
+      return id
+    }
+
+    // For strategies-only layers (layer 0), find any curriculum entry from other layers
+    // This allows logging strategies against the first available curriculum entry
+    for layer in viewModel.layers {
+      if layer.id != 0 { // Skip the strategies layer itself
+        for layerPhase in layer.phases {
+          if let id = layerPhase.medicinal.first?.id ?? layerPhase.toxic.first?.id {
+            return id
+          }
+        }
+      }
+    }
+
+    return nil
+  }
 
   var body: some View {
     ScrollView {
@@ -427,35 +451,41 @@ struct StrategyListView: View {
 
         LazyVStack(spacing: 8) {
           ForEach(phase.strategies) { item in
-            let primaryID = phase.medicinal.first?.id ?? phase.toxic.first?.id
-            HStack {
-              Circle()
-                .fill(Color(stage: item.color))
-                .frame(width: 6, height: 6)
-                .shadow(color: Color(stage: item.color), radius: 2)
-              Text(item.strategy)
-                .font(.body)
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity, alignment: .leading)
-              if let primaryID {
-                Button("Log") {
-                  Task {
-                    await viewModel.journal(
-                      curriculumID: primaryID,
-                      strategyID: item.id
-                    )
-                  }
+            ZStack(alignment: .topTrailing) {
+              HStack {
+                Circle()
+                  .fill(Color(stage: item.color))
+                  .frame(width: 6, height: 6)
+                  .shadow(color: Color(stage: item.color), radius: 2)
+                Text(item.strategy)
+                  .font(.body)
+                  .foregroundColor(.white)
+                  .frame(maxWidth: .infinity, alignment: .leading)
+                Spacer(minLength: 24)
+              }
+              .padding(.horizontal, 16)
+              .padding(.vertical, 10)
+              .background(
+                RoundedRectangle(cornerRadius: 8)
+                  .fill(color.opacity(0.1))
+              )
+              .onTapGesture {
+                if fallbackCurriculumID != nil {
+                  selectedStrategy = item
+                  showingJournalConfirmation = true
                 }
-                .buttonStyle(.bordered)
-                .tint(color)
+              }
+
+              if fallbackCurriculumID != nil {
+                MysticalJournalIcon(color: color)
+                  .padding(.top, 8)
+                  .padding(.trailing, 12)
+                  .onTapGesture {
+                    selectedStrategy = item
+                    showingJournalConfirmation = true
+                  }
               }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(
-              RoundedRectangle(cornerRadius: 8)
-                .fill(color.opacity(0.1))
-            )
           }
         }
         .padding(.horizontal, 8)
@@ -469,6 +499,21 @@ struct StrategyListView: View {
         endPoint: .bottom
       )
     )
+    .alert("Log Strategy", isPresented: $showingJournalConfirmation) {
+      Button("Yes") {
+        if let curriculumID = fallbackCurriculumID, let strategy = selectedStrategy {
+          Task {
+            await viewModel.journal(
+              curriculumID: curriculumID,
+              strategyID: strategy.id
+            )
+          }
+        }
+      }
+      Button("Cancel", role: .cancel) {}
+    } message: {
+      Text("Would you like to log \"\(selectedStrategy?.strategy ?? "")\"?")
+    }
   }
 }
 
@@ -519,15 +564,11 @@ struct CurriculumDetailView: View {
               .foregroundColor(.white.opacity(0.7))
               .tracking(1.5)
             ForEach(phase.strategies) { strategy in
-              Text(strategy.strategy)
-                .font(.footnote)
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(8)
-                .background(
-                  RoundedRectangle(cornerRadius: 8)
-                    .fill(color.opacity(0.08))
-                )
+              StrategyCard(
+                strategy: strategy,
+                color: color,
+                phase: phase
+              )
             }
           }
           .padding(.horizontal, 16)
@@ -551,42 +592,152 @@ private struct CurriculumCard: View {
   let accent: Color
   let actionTitle: String
   let action: () -> Void
+  @State private var showingJournalConfirmation = false
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 8) {
-      Text(title)
-        .font(.caption)
-        .fontWeight(.medium)
-        .foregroundColor(.white.opacity(0.7))
-        .tracking(1.5)
+    ZStack(alignment: .topTrailing) {
+      VStack(alignment: .leading, spacing: 8) {
+        Text(title)
+          .font(.caption)
+          .fontWeight(.medium)
+          .foregroundColor(.white.opacity(0.7))
+          .tracking(1.5)
 
-      Text(expression)
-        .font(.body)
-        .fontWeight(.medium)
-        .foregroundColor(accent)
-
-      Button(actionTitle, action: action)
-        .buttonStyle(.borderedProminent)
-        .tint(accent)
-        .controlSize(.small)
-    }
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .padding(.horizontal, 16)
-    .padding(.vertical, 12)
-    .background(
-      RoundedRectangle(cornerRadius: 12)
-        .fill(
-          LinearGradient(
-            gradient: Gradient(colors: [accent.opacity(0.3), accent.opacity(0.1)]),
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
+        Text(expression)
+          .font(.body)
+          .fontWeight(.medium)
+          .foregroundColor(accent)
+          .padding(.trailing, 20)
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .padding(.horizontal, 16)
+      .padding(.vertical, 12)
+      .background(
+        RoundedRectangle(cornerRadius: 12)
+          .fill(
+            LinearGradient(
+              gradient: Gradient(colors: [accent.opacity(0.3), accent.opacity(0.1)]),
+              startPoint: .topLeading,
+              endPoint: .bottomTrailing
+            )
           )
+          .overlay(
+            RoundedRectangle(cornerRadius: 12)
+              .stroke(accent.opacity(0.5), lineWidth: 0.5)
+          )
+      )
+      .onTapGesture {
+        showingJournalConfirmation = true
+      }
+
+      MysticalJournalIcon(color: accent)
+        .padding(.top, 8)
+        .padding(.trailing, 12)
+        .onTapGesture {
+          showingJournalConfirmation = true
+        }
+    }
+    .alert("Log \(title.capitalized)", isPresented: $showingJournalConfirmation) {
+      Button("Yes") {
+        action()
+      }
+      Button("Cancel", role: .cancel) {}
+    } message: {
+      Text("Would you like to log \"\(expression)\"?")
+    }
+  }
+}
+
+struct MysticalJournalIcon: View {
+  let color: Color
+  @State private var isGlowing = false
+
+  var body: some View {
+    ZStack {
+      Circle()
+        .strokeBorder(
+          color.opacity(isGlowing ? 0.6 : 0.3),
+          lineWidth: 1.0
         )
-        .overlay(
-          RoundedRectangle(cornerRadius: 12)
-            .stroke(accent.opacity(0.5), lineWidth: 0.5)
+        .frame(width: 14, height: 14)
+        .shadow(
+          color: color.opacity(isGlowing ? 0.4 : 0.2),
+          radius: isGlowing ? 2 : 1
         )
+
+      Image(systemName: "plus")
+        .font(.system(size: 8, weight: .medium))
+        .foregroundColor(color.opacity(isGlowing ? 0.9 : 0.6))
+    }
+    .scaleEffect(isGlowing ? 1.1 : 1.0)
+    .animation(
+      .easeInOut(duration: 1.5).repeatForever(autoreverses: true),
+      value: isGlowing
     )
+    .onAppear {
+      isGlowing = true
+    }
+  }
+}
+
+struct StrategyCard: View {
+  let strategy: CatalogStrategyModel
+  let color: Color
+  let phase: CatalogPhaseModel
+  @EnvironmentObject private var viewModel: ContentViewModel
+  @State private var showingJournalConfirmation = false
+
+  var body: some View {
+    ZStack(alignment: .topTrailing) {
+      HStack {
+        Circle()
+          .fill(Color(stage: strategy.color))
+          .frame(width: 6, height: 6)
+          .shadow(color: Color(stage: strategy.color), radius: 2)
+        Text(strategy.strategy)
+          .font(.footnote)
+          .foregroundColor(.white)
+          .frame(maxWidth: .infinity, alignment: .leading)
+        Spacer(minLength: 20)
+      }
+      .padding(8)
+      .background(
+        RoundedRectangle(cornerRadius: 8)
+          .fill(color.opacity(0.08))
+      )
+      .onTapGesture {
+        let primaryID = phase.medicinal.first?.id ?? phase.toxic.first?.id
+        if primaryID != nil {
+          showingJournalConfirmation = true
+        }
+      }
+
+      let primaryID = phase.medicinal.first?.id ?? phase.toxic.first?.id
+      if primaryID != nil {
+        MysticalJournalIcon(color: color)
+          .padding(.top, 6)
+          .padding(.trailing, 8)
+          .onTapGesture {
+            showingJournalConfirmation = true
+          }
+      }
+    }
+    .alert("Log Strategy", isPresented: $showingJournalConfirmation) {
+      Button("Yes") {
+        let primaryID = phase.medicinal.first?.id ?? phase.toxic.first?.id
+        if let primaryID {
+          Task {
+            await viewModel.journal(
+              curriculumID: primaryID,
+              strategyID: strategy.id
+            )
+          }
+        }
+      }
+      Button("Cancel", role: .cancel) {}
+    } message: {
+      Text("Would you like to log \"\(strategy.strategy)\"?")
+    }
   }
 }
 
