@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import Any
 
 from pydantic import field_validator
 from sqlmodel import Field, SQLModel
 
-from .models import Dosage
+from .models import Dosage, JournalSource
 
 
 def _coerce_datetime(value: datetime | str | None) -> datetime | None:
@@ -20,6 +21,23 @@ def _coerce_datetime(value: datetime | str | None) -> datetime | None:
     if value.tzinfo is None:
         value = value.replace(tzinfo=UTC)
     return value.astimezone(UTC)
+
+
+def _coerce_journal_source(
+    value: Any, *, default: JournalSource | None = None
+) -> JournalSource | None:
+    """Normalize raw journal source values into an enum."""
+
+    if value is None:
+        return default
+    if isinstance(value, JournalSource):
+        return value
+    if isinstance(value, str):
+        stripped = value.strip()
+        if not stripped:
+            return default
+        return JournalSource(stripped)
+    raise ValueError("Invalid journal source value")
 
 
 class LayerBase(SQLModel):
@@ -110,6 +128,7 @@ class JournalBase(SQLModel):
     curriculum_id: int
     secondary_curriculum_id: int | None = None
     strategy_id: int | None = None
+    source: JournalSource | None = Field(default=None)
 
     @field_validator("created_at", mode="before")
     @classmethod
@@ -119,9 +138,26 @@ class JournalBase(SQLModel):
             raise ValueError("created_at is required")
         return parsed
 
+    @field_validator("source", mode="before")
+    @classmethod
+    def _validate_source(
+        cls, value: JournalSource | str | None
+    ) -> JournalSource | None:
+        return _coerce_journal_source(value)
+
 
 class JournalCreate(JournalBase):
     """Payload for creating journals."""
+
+    source: JournalSource = Field(default=JournalSource.MANUAL)
+
+    @field_validator("source", mode="before")
+    @classmethod
+    def _validate_source(cls, value: JournalSource | str | None) -> JournalSource:
+        coerced = _coerce_journal_source(value, default=JournalSource.MANUAL)
+        if coerced is None:
+            raise ValueError("source is required")
+        return coerced
 
 
 class JournalUpdate(SQLModel):
@@ -130,11 +166,19 @@ class JournalUpdate(SQLModel):
     curriculum_id: int | None = None
     secondary_curriculum_id: int | None = None
     strategy_id: int | None = None
+    source: JournalSource | None = None
 
     @field_validator("created_at", mode="before")
     @classmethod
     def _validate_created_at(cls, value: datetime | str | None) -> datetime | None:
         return _coerce_datetime(value)
+
+    @field_validator("source", mode="before")
+    @classmethod
+    def _validate_source(
+        cls, value: JournalSource | str | None
+    ) -> JournalSource | None:
+        return _coerce_journal_source(value)
 
 
 class JournalRead(JournalBase):

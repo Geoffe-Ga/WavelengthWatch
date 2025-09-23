@@ -14,7 +14,7 @@ from sqlmodel import Session, select
 from sqlmodel.sql.expression import SelectOfScalar
 
 from ..database import get_session
-from ..models import Curriculum, Journal, Strategy
+from ..models import Curriculum, Journal, JournalSource, Strategy
 from ..schemas import JournalCreate, JournalRead, JournalUpdate
 
 SessionDep = Annotated[Session, Depends(get_session)]
@@ -95,6 +95,7 @@ def list_journal_entries(
     offset: Annotated[int, Query(ge=0)] = 0,
     user_id: Annotated[int | None, Query()] = None,
     strategy_id: Annotated[int | None, Query()] = None,
+    source: Annotated[JournalSource | None, Query()] = None,
     from_: Annotated[datetime | None, Query(alias="from")] = None,
     to: Annotated[datetime | None, Query()] = None,
 ) -> list[JournalRead]:
@@ -104,6 +105,9 @@ def list_journal_entries(
         statement = statement.where(clause)
     if strategy_id is not None:
         clause = cast(ColumnElement[bool], Journal.strategy_id == strategy_id)
+        statement = statement.where(clause)
+    if source is not None:
+        clause = cast(ColumnElement[bool], Journal.source == source)
         statement = statement.where(clause)
     if from_ is not None:
         clause = cast(ColumnElement[bool], Journal.created_at >= from_)

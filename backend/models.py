@@ -16,6 +16,13 @@ class Dosage(str, Enum):
     TOXIC = "Toxic"
 
 
+class JournalSource(str, Enum):
+    """Sources describing how a journal entry was created."""
+
+    MANUAL = "MANUAL"
+    SCHEDULED = "SCHEDULED"
+
+
 class Layer(SQLModel, table=True):
     """Reference table describing each spiral dynamics layer."""
 
@@ -98,6 +105,13 @@ class Journal(SQLModel, table=True):
     strategy_id: int | None = Field(
         default=None, foreign_key="strategy.id", nullable=True, index=True
     )
+    source: JournalSource | None = Field(
+        default=JournalSource.MANUAL,
+        sa_column=Column(
+            SAEnum(JournalSource, name="journal_source", native_enum=False),
+            nullable=True,
+        ),
+    )
 
     curriculum: Mapped[Curriculum | None] = Relationship(
         back_populates="journal_entries",
@@ -122,4 +136,12 @@ class Journal(SQLModel, table=True):
     )
 
 
-__all__ = ["Layer", "Phase", "Curriculum", "Strategy", "Journal", "Dosage"]
+__all__ = [
+    "Layer",
+    "Phase",
+    "Curriculum",
+    "Strategy",
+    "Journal",
+    "Dosage",
+    "JournalSource",
+]
