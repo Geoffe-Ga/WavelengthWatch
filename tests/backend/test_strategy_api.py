@@ -18,6 +18,7 @@ def test_strategy_filtering(client) -> None:
 def test_strategy_crud(client) -> None:
     create_payload = {
         "strategy": "Test Strategy",
+        "layer_id": 0,
         "color_layer_id": 1,
         "phase_id": 1,
     }
