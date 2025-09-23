@@ -1,5 +1,11 @@
 import SwiftUI
 
+extension Comparable {
+  func clamped(to limits: ClosedRange<Self>) -> Self {
+    min(max(self, limits.lowerBound), limits.upperBound)
+  }
+}
+
 extension Color {
   init(stage: String) {
     switch stage {
@@ -73,7 +79,6 @@ struct ContentView: View {
           layeredContent
         }
       }
-      .padding(.vertical, 4)
       .task { await viewModel.loadCatalog() }
       .onChange(of: viewModel.phaseOrder) { _ in
         adjustPhaseSelection()
@@ -127,30 +132,68 @@ struct ContentView: View {
 
   private var layeredContent: some View {
     GeometryReader { geometry in
-      TabView(selection: $layerSelection) {
-        ForEach(viewModel.layers.indices, id: \.self) { index in
-          let layer = viewModel.layers[index]
-          LayerView(
-            layer: layer,
-            phaseCount: viewModel.phaseOrder.count,
-            selection: $phaseSelection
-          )
-          .tag(index)
-          .rotationEffect(.degrees(90))
-          .frame(maxWidth: .infinity, maxHeight: .infinity)
+      ScrollViewReader { proxy in
+        ScrollView(.vertical, showsIndicators: false) {
+          LazyVStack(spacing: -20) {
+            ForEach(viewModel.layers.indices, id: \.self) { index in
+              let layer = viewModel.layers[index]
+              LayerCardView(
+                layer: layer,
+                phaseCount: viewModel.phaseOrder.count,
+                selection: $phaseSelection,
+                layerIndex: index,
+                selectedLayerIndex: layerSelection,
+                geometry: geometry
+              )
+              .id(index)
+            }
+          }
         }
-      }
-      .tabViewStyle(.page(indexDisplayMode: .never))
-      .rotationEffect(.degrees(-90))
-      .overlay(alignment: .trailing) {
-        if showLayerIndicator {
-          layerIndicator(in: geometry.size)
-            .transition(.opacity)
+        .scrollTargetBehavior(.viewAligned)
+        .scrollDisabled(false)
+        .digitalCrownRotation(
+          .init(
+            get: { Double(layerSelection) },
+            set: { newValue in
+              let clampedValue = Int(round(newValue)).clamped(to: 0 ... (viewModel.layers.count - 1))
+              if clampedValue != layerSelection {
+                layerSelection = clampedValue
+              }
+            }
+          ),
+          from: 0,
+          through: Double(viewModel.layers.count - 1),
+          by: 1.0,
+          sensitivity: .medium,
+          isContinuous: false,
+          isHapticFeedbackEnabled: true
+        )
+        .onChange(of: layerSelection) { newValue in
+          withAnimation(.easeInOut(duration: 0.3)) {
+            proxy.scrollTo(newValue, anchor: .center)
+          }
         }
-      }
-      .onAppear {
-        showLayerIndicator = true
-        scheduleLayerIndicatorHide()
+        .onAppear {
+          proxy.scrollTo(layerSelection, anchor: .center)
+          showLayerIndicator = true
+          scheduleLayerIndicatorHide()
+        }
+        .overlay(alignment: .trailing) {
+          enhancedLayerIndicator(in: geometry.size)
+        }
+        .simultaneousGesture(
+          DragGesture()
+            .onEnded { value in
+              let threshold: CGFloat = 30
+              if value.translation.height > threshold, layerSelection > 0 {
+                layerSelection -= 1
+              } else if value.translation.height < -threshold, layerSelection < viewModel.layers.count - 1 {
+                layerSelection += 1
+              }
+              showLayerIndicator = true
+              scheduleLayerIndicatorHide()
+            }
+        )
       }
     }
   }
@@ -203,10 +246,74 @@ struct ContentView: View {
     }
   }
 
+  private func enhancedLayerIndicator(in size: CGSize) -> some View {
+    VStack {
+      Spacer()
+      ZStack(alignment: .top) {
+        // Background track
+        Capsule()
+          .fill(Color.white.opacity(0.1))
+          .frame(width: 4, height: size.height * 0.5)
+
+        // Current layer indicators stack
+        VStack(spacing: 2) {
+          ForEach(viewModel.layers.indices, id: \.self) { index in
+            let layer = viewModel.layers[index]
+            let isSelected = index == layerSelection
+            let distance = abs(index - layerSelection)
+
+            Capsule()
+              .fill(
+                isSelected ?
+                  LinearGradient(
+                    gradient: Gradient(colors: [
+                      Color(stage: layer.color),
+                      Color(stage: layer.color).opacity(0.7),
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                  ) :
+                  LinearGradient(
+                    gradient: Gradient(colors: [
+                      Color(stage: layer.color).opacity(0.3),
+                      Color(stage: layer.color).opacity(0.1),
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                  )
+              )
+              .frame(
+                width: isSelected ? 8 : 4,
+                height: isSelected ? 16 : 8
+              )
+              .overlay(
+                Capsule()
+                  .stroke(
+                    isSelected ? Color.white.opacity(0.4) : Color.white.opacity(0.1),
+                    lineWidth: 0.5
+                  )
+              )
+              .shadow(
+                color: isSelected ? Color(stage: layer.color) : Color.clear,
+                radius: isSelected ? 3 : 0
+              )
+              .scaleEffect(distance > 2 ? 0.6 : 1.0)
+              .opacity(distance > 3 ? 0 : 1)
+              .animation(.interactiveSpring(response: 0.3, dampingFraction: 0.7), value: layerSelection)
+          }
+        }
+      }
+      .padding(.trailing, 6)
+      Spacer()
+    }
+    .opacity(showLayerIndicator ? 1 : 0)
+    .transition(.opacity)
+  }
+
   private func scheduleLayerIndicatorHide() {
     hideIndicatorTask?.cancel()
     hideIndicatorTask = Task {
-      try? await Task.sleep(nanoseconds: 2_000_000_000)
+      try? await Task.sleep(nanoseconds: 3_000_000_000)
       guard !Task.isCancelled else { return }
       await MainActor.run {
         withAnimation(.easeOut(duration: 0.3)) {
@@ -214,6 +321,50 @@ struct ContentView: View {
         }
       }
     }
+  }
+}
+
+struct LayerCardView: View {
+  let layer: CatalogLayerModel
+  let phaseCount: Int
+  @Binding var selection: Int
+  let layerIndex: Int
+  let selectedLayerIndex: Int
+  let geometry: GeometryProxy
+  @EnvironmentObject private var viewModel: ContentViewModel
+
+  private var transformEffect: (scale: CGFloat, rotation: Double, offset: CGFloat, opacity: Double) {
+    let distance = layerIndex - selectedLayerIndex
+
+    switch distance {
+    case 0:
+      return (scale: 1.0, rotation: 0, offset: 0, opacity: 1.0)
+    case 1:
+      return (scale: 0.95, rotation: -5, offset: 15, opacity: 0.3)
+    case -1:
+      return (scale: 0.95, rotation: 5, offset: -15, opacity: 0.3)
+    default:
+      return (scale: 0.85, rotation: 0, offset: 0, opacity: 0.0)
+    }
+  }
+
+  var body: some View {
+    LayerView(
+      layer: layer,
+      phaseCount: phaseCount,
+      selection: $selection
+    )
+    .frame(width: geometry.size.width, height: geometry.size.height)
+    .scaleEffect(transformEffect.scale)
+    .rotation3DEffect(
+      .degrees(transformEffect.rotation),
+      axis: (x: 1, y: 0, z: 0),
+      perspective: 0.8
+    )
+    .offset(y: transformEffect.offset)
+    .opacity(transformEffect.opacity)
+    .zIndex(layerIndex == selectedLayerIndex ? 10 : Double(10 - abs(layerIndex - selectedLayerIndex)))
+    .animation(.interactiveSpring(response: 0.4, dampingFraction: 0.8), value: selectedLayerIndex)
   }
 }
 
@@ -310,95 +461,107 @@ struct PhasePageView: View {
   let color: Color
 
   var body: some View {
-    VStack(spacing: 0) {
-      VStack(spacing: 4) {
-        Text(layer.title)
-          .font(.caption)
-          .fontWeight(.semibold)
-          .foregroundColor(.white.opacity(0.9))
-          .tracking(2.0)
-          .multilineTextAlignment(.center)
-        Text(layer.subtitle)
-          .font(.caption2)
-          .foregroundColor(.white.opacity(0.6))
-      }
-      .padding(.top, 12)
-      .padding(.bottom, 8)
+    GeometryReader { geometry in
+      ZStack {
+        // Background - non-tappable
+        VStack(spacing: 0) {
+          // Top gutter for vertical scroll
+          Spacer()
+            .frame(height: 4)
 
-      VStack {
-        NavigationLink(destination: destinationView) {
-          VStack(spacing: 6) {
+          // Header section - compact but readable
+          VStack(spacing: 2) {
+            Text(layer.title)
+              .font(.caption)
+              .fontWeight(.semibold)
+              .foregroundColor(.white.opacity(0.9))
+              .tracking(2.0)
+              .multilineTextAlignment(.center)
+              .lineLimit(1)
+              .minimumScaleFactor(0.8)
+            Text(layer.subtitle)
+              .font(.caption2)
+              .foregroundColor(.white.opacity(0.6))
+              .lineLimit(1)
+              .minimumScaleFactor(0.8)
+          }
+          .padding(.horizontal, 6)
+          .padding(.vertical, 2)
+
+          // Main phase display - full screen utilization
+          VStack(spacing: 12) {
+            Spacer()
+
             Text(phase.name)
-              .font(.title3)
+              .font(.title)
               .fontWeight(.medium)
               .foregroundColor(.white)
               .multilineTextAlignment(.center)
-              .shadow(color: color.opacity(0.5), radius: 4)
-            RoundedRectangle(cornerRadius: 2)
+              .shadow(color: color.opacity(0.8), radius: 8)
+              .lineLimit(3)
+              .minimumScaleFactor(0.5)
+              .padding(.horizontal, 4)
+
+            RoundedRectangle(cornerRadius: 3)
               .fill(color)
-              .frame(width: 24, height: 2)
-              .shadow(color: color, radius: 3)
+              .frame(width: 40, height: 4)
+              .shadow(color: color, radius: 6)
+
+            Spacer()
           }
           .frame(maxWidth: .infinity, maxHeight: .infinity)
-          .background(
-            RoundedRectangle(cornerRadius: 16)
-              .fill(
-                RadialGradient(
-                  gradient: Gradient(colors: [
-                    color.opacity(0.35),
-                    color.opacity(0.15),
-                    Color.clear,
-                  ]),
-                  center: .center,
-                  startRadius: 20,
-                  endRadius: 80
-                )
-              )
-              .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                  .stroke(
-                    LinearGradient(
-                      gradient: Gradient(colors: [
-                        color.opacity(0.6),
-                        color.opacity(0.2),
-                      ]),
-                      startPoint: .topLeading,
-                      endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1
-                  )
-              )
-          )
-          .scaleEffect(0.95)
+
+          // Bottom gutter for page indicators
+          Spacer()
+            .frame(height: 16)
         }
-        .buttonStyle(.plain)
-      }
-      .frame(maxHeight: .infinity)
-      .padding(.vertical, 8)
-    }
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
-    .background(
-      LinearGradient(
-        gradient: Gradient(colors: [
-          Color.black.opacity(0.9),
-          Color.black.opacity(0.7),
-          Color.black,
-        ]),
-        startPoint: .top,
-        endPoint: .bottom
-      )
-      .overlay(
-        RadialGradient(
-          gradient: Gradient(colors: [
-            color.opacity(0.08),
-            Color.clear,
-          ]),
-          center: .center,
-          startRadius: 50,
-          endRadius: 150
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(
+          LinearGradient(
+            gradient: Gradient(colors: [
+              Color.black.opacity(0.98),
+              Color.black.opacity(0.9),
+              Color.black,
+            ]),
+            startPoint: .top,
+            endPoint: .bottom
+          )
+          .overlay(
+            RadialGradient(
+              gradient: Gradient(colors: [
+                color.opacity(0.18),
+                Color.clear,
+              ]),
+              center: .center,
+              startRadius: 20,
+              endRadius: min(geometry.size.width, geometry.size.height) * 0.9
+            )
+          )
         )
-      )
-    )
+        .ignoresSafeArea(.all)
+
+        // Small tappable navigation button - bottom right
+        VStack {
+          Spacer()
+          HStack {
+            Spacer()
+            NavigationLink(destination: destinationView) {
+              Image(systemName: "chevron.right.circle.fill")
+                .foregroundColor(.white.opacity(0.8))
+                .font(.title2)
+                .background(
+                  Circle()
+                    .fill(color.opacity(0.3))
+                    .frame(width: 32, height: 32)
+                )
+            }
+            .buttonStyle(.plain)
+            .padding(.trailing, 12)
+          }
+          .padding(.bottom, 20)
+        }
+      }
+    }
   }
 
   @ViewBuilder private var destinationView: some View {

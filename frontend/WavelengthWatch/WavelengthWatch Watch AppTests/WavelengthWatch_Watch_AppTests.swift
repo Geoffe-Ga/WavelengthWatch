@@ -7,7 +7,7 @@ private enum SampleData {
   static let catalog: CatalogResponseModel = {
     let medicinal = CatalogCurriculumEntryModel(id: 1, dosage: .medicinal, expression: "Commitment")
     let toxic = CatalogCurriculumEntryModel(id: 2, dosage: .toxic, expression: "Overcommitment")
-    let strategy = CatalogStrategyModel(id: 3, strategy: "Cold Shower")
+    let strategy = CatalogStrategyModel(id: 3, strategy: "Cold Shower", color: "Blue")
     let phase = CatalogPhaseModel(id: 1, name: "Rising", medicinal: [medicinal], toxic: [toxic], strategies: [strategy])
     let layer = CatalogLayerModel(id: 1, color: "Beige", title: "SELF-CARE", subtitle: "(For Surfing)", phases: [phase])
     return CatalogResponseModel(phaseOrder: ["Rising"], layers: [layer])
