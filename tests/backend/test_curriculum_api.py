@@ -18,9 +18,7 @@ def test_curriculum_filtering_and_relations(client) -> None:
         assert item["layer"]["title"]
         assert item["phase"]["name"]
 
-    paginated = client.get(
-        "/api/v1/curriculum", params={"limit": 2, "offset": 1}
-    )
+    paginated = client.get("/api/v1/curriculum", params={"limit": 2, "offset": 1})
     assert paginated.status_code == 200
     assert len(paginated.json()) == 2
 
@@ -41,9 +39,7 @@ def test_curriculum_crud(client) -> None:
     assert detail.json()["expression"] == "Integration Testing"
 
     update_payload = {"expression": "Updated Expression", "dosage": "Toxic"}
-    updated = client.put(
-        f"/api/v1/curriculum/{curriculum_id}", json=update_payload
-    )
+    updated = client.put(f"/api/v1/curriculum/{curriculum_id}", json=update_payload)
     assert updated.status_code == 200
     updated_body = updated.json()
     assert updated_body["expression"] == "Updated Expression"

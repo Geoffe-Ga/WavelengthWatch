@@ -92,4 +92,3 @@ def create_application() -> FastAPI:
 app = create_application()
 
 __all__ = ["API_V1_PREFIX", "app", "create_application"]
-

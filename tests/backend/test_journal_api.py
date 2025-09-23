@@ -47,9 +47,7 @@ def test_journal_crud(client) -> None:
         "secondary_curriculum_id": None,
         "user_id": 98,
     }
-    updated = client.put(
-        f"/api/v1/journal/{journal_id}", json=update_payload
-    )
+    updated = client.put(f"/api/v1/journal/{journal_id}", json=update_payload)
     assert updated.status_code == 200
     updated_body = updated.json()
     assert updated_body["user_id"] == 98
