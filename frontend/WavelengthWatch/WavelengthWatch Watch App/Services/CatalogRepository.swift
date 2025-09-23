@@ -25,7 +25,7 @@ struct CatalogAPIService: CatalogRemoteServicing {
   let apiClient: APIClientProtocol
 
   func fetchCatalog() async throws -> CatalogResponseModel {
-    try await apiClient.get("/catalog")
+    try await apiClient.get(APIPath.catalog)
   }
 }
 

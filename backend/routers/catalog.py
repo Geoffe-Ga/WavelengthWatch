@@ -17,7 +17,7 @@ router = APIRouter(prefix="/catalog", tags=["catalog"])
 
 
 @router.get(
-    "/",
+    "",
     response_model=CatalogResponse,
     summary="Retrieve the complete curriculum catalog",
     response_description=(

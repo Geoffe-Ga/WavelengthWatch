@@ -51,12 +51,14 @@ curl http://localhost:8000/health
 
 ## Example Requests
 
+All JSON resources are served under the `/api/v1` prefix without a trailing slash.
+
 ### Layers
 
 ```bash
-curl http://localhost:8000/layer
-curl http://localhost:8000/layer/1
-curl -X POST http://localhost:8000/layer \
+curl http://localhost:8000/api/v1/layer
+curl http://localhost:8000/api/v1/layer/1
+curl -X POST http://localhost:8000/api/v1/layer \
   -H 'Content-Type: application/json' \
   -d '{"color": "Indigo", "title": "TEST", "subtitle": "Example"}'
 ```
@@ -64,8 +66,8 @@ curl -X POST http://localhost:8000/layer \
 ### Phases
 
 ```bash
-curl http://localhost:8000/phase
-curl -X PUT http://localhost:8000/phase/2 \
+curl http://localhost:8000/api/v1/phase
+curl -X PUT http://localhost:8000/api/v1/phase/2 \
   -H 'Content-Type: application/json' \
   -d '{"name": "Updated Phase"}'
 ```
@@ -73,9 +75,9 @@ curl -X PUT http://localhost:8000/phase/2 \
 ### Curriculum
 
 ```bash
-curl 'http://localhost:8000/curriculum?layer_id=1&phase_id=1&dosage=Medicinal'
-curl http://localhost:8000/curriculum/10
-curl -X POST http://localhost:8000/curriculum \
+curl 'http://localhost:8000/api/v1/curriculum?layer_id=1&phase_id=1&dosage=Medicinal'
+curl http://localhost:8000/api/v1/curriculum/10
+curl -X POST http://localhost:8000/api/v1/curriculum \
   -H 'Content-Type: application/json' \
   -d '{"layer_id": 1, "phase_id": 1, "dosage": "Medicinal", "expression": "Testing"}'
 ```
@@ -83,9 +85,9 @@ curl -X POST http://localhost:8000/curriculum \
 ### Strategies
 
 ```bash
-curl 'http://localhost:8000/strategy?layer_id=1&phase_id=5'
-curl http://localhost:8000/strategy/1
-curl -X PUT http://localhost:8000/strategy/1 \
+curl 'http://localhost:8000/api/v1/strategy?layer_id=1&phase_id=5'
+curl http://localhost:8000/api/v1/strategy/1
+curl -X PUT http://localhost:8000/api/v1/strategy/1 \
   -H 'Content-Type: application/json' \
   -d '{"strategy": "Updated Strategy"}'
 ```
@@ -93,9 +95,9 @@ curl -X PUT http://localhost:8000/strategy/1 \
 ### Journal Entries
 
 ```bash
-curl 'http://localhost:8000/journal?user_id=1&from=2025-09-14T00:00:00Z'
-curl http://localhost:8000/journal/1
-curl -X POST http://localhost:8000/journal \
+curl 'http://localhost:8000/api/v1/journal?user_id=1&from=2025-09-14T00:00:00Z'
+curl http://localhost:8000/api/v1/journal/1
+curl -X POST http://localhost:8000/api/v1/journal \
   -H 'Content-Type: application/json' \
   -d '{"created_at": "2025-09-16T12:00:00Z", "user_id": 42, "curriculum_id": 1, "strategy_id": 1}'
 ```

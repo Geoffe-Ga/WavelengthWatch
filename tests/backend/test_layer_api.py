@@ -4,7 +4,7 @@ from __future__ import annotations
 
 
 def test_layers_seeded(client) -> None:
-    response = client.get("/layer")
+    response = client.get("/api/v1/layer")
     assert response.status_code == 200
     payload = response.json()
     assert len(payload) == 11
@@ -16,19 +16,19 @@ def test_layers_seeded(client) -> None:
 
 def test_layer_crud(client) -> None:
     create_payload = {"color": "Test", "title": "Layer", "subtitle": "Demo"}
-    created = client.post("/layer", json=create_payload)
+    created = client.post("/api/v1/layer", json=create_payload)
     assert created.status_code == 201
     created_body = created.json()
     layer_id = created_body["id"]
     assert created_body["color"] == "Test"
 
     update_payload = {"title": "Layer Updated"}
-    updated = client.put(f"/layer/{layer_id}", json=update_payload)
+    updated = client.put(f"/api/v1/layer/{layer_id}", json=update_payload)
     assert updated.status_code == 200
     assert updated.json()["title"] == "Layer Updated"
 
-    delete_response = client.delete(f"/layer/{layer_id}")
+    delete_response = client.delete(f"/api/v1/layer/{layer_id}")
     assert delete_response.status_code == 204
 
-    missing = client.get(f"/layer/{layer_id}")
+    missing = client.get(f"/api/v1/layer/{layer_id}")
     assert missing.status_code == 404

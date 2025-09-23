@@ -15,7 +15,7 @@ def test_database_startup_creates_correct_schema(client) -> None:
     correct 'color_layer_id' column and that seeding works correctly.
     """
     # Test that we can successfully query strategies (would fail with schema mismatch)
-    response = client.get("/strategy", params={"color_layer_id": 1})
+    response = client.get("/api/v1/strategy", params={"color_layer_id": 1})
     assert response.status_code == 200
 
     # Verify that strategies were seeded and have the correct schema
@@ -65,7 +65,7 @@ def test_app_startup_completes_successfully(client) -> None:
     assert response.json() == {"status": "ok"}
 
     # Verify that database seeding populated data
-    response = client.get("/strategy")
+    response = client.get("/api/v1/strategy")
     assert response.status_code == 200
     strategies = response.json()
     assert strategies, "Database should be seeded with strategies during startup"

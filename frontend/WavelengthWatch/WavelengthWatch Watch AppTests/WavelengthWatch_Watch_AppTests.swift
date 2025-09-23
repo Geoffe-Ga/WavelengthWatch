@@ -183,7 +183,7 @@ struct JournalClientTests {
 
     _ = try await client.submit(curriculumID: 5, secondaryCurriculumID: 7, strategyID: 9)
 
-    #expect(spy.lastPath == "/journal")
+    #expect(spy.lastPath == APIPath.journal)
     let decoder = JSONDecoder()
     decoder.dateDecodingStrategy = .iso8601
     let payload = try decoder.decode(JournalPayload.self, from: spy.lastBody ?? Data())

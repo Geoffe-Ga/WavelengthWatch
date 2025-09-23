@@ -1,5 +1,10 @@
 import Foundation
 
+enum APIPath {
+  static let catalog = "/api/v1/catalog"
+  static let journal = "/api/v1/journal"
+}
+
 protocol APIClientProtocol {
   func get<T: Decodable>(_ path: String) async throws -> T
   func post<Response: Decodable>(_ path: String, body: some Encodable) async throws -> Response

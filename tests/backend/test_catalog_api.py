@@ -27,7 +27,7 @@ def _flatten(entries: Iterable[dict[str, object]]) -> set[int]:
 
 
 def test_catalog_returns_joined_dataset(client) -> None:
-    response = client.get("/catalog")
+    response = client.get("/api/v1/catalog")
     assert response.status_code == 200
     payload = response.json()
 
@@ -66,7 +66,7 @@ def test_catalog_returns_joined_dataset(client) -> None:
 
 
 def test_catalog_identifiers_can_be_used_for_journaling(client) -> None:
-    catalog = client.get("/catalog")
+    catalog = client.get("/api/v1/catalog")
     assert catalog.status_code == 200
     body = catalog.json()
 
@@ -91,7 +91,7 @@ def test_catalog_identifiers_can_be_used_for_journaling(client) -> None:
         "strategy_id": strategy_id,
     }
 
-    created = client.post("/journal", json=payload)
+    created = client.post("/api/v1/journal", json=payload)
     assert created.status_code == 201
     created_body = created.json()
     assert created_body["curriculum"]["id"] == curriculum_id
@@ -110,7 +110,7 @@ def test_catalog_returns_empty_payload_when_database_cleared(client) -> None:
         session.execute(delete(Phase))
         session.commit()
 
-    response = client.get("/catalog")
+    response = client.get("/api/v1/catalog")
     assert response.status_code == 200
     assert response.json() == {"phase_order": [], "layers": []}
 
