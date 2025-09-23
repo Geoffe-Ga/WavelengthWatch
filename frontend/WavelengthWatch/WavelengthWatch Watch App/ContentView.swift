@@ -310,78 +310,93 @@ struct PhasePageView: View {
   let color: Color
 
   var body: some View {
+    let cardShape = RoundedRectangle(cornerRadius: 22, style: .continuous)
+
     VStack(spacing: 0) {
-      VStack(spacing: 4) {
+      VStack(spacing: 6) {
         Text(layer.title)
           .font(.caption)
           .fontWeight(.semibold)
-          .foregroundColor(.white.opacity(0.9))
+          .foregroundColor(.white.opacity(0.92))
           .tracking(2.0)
           .multilineTextAlignment(.center)
+          .lineLimit(1)
+          .minimumScaleFactor(0.7)
         Text(layer.subtitle)
           .font(.caption2)
-          .foregroundColor(.white.opacity(0.6))
+          .foregroundColor(.white.opacity(0.7))
+          .multilineTextAlignment(.center)
+          .lineLimit(1)
+          .minimumScaleFactor(0.7)
       }
-      .padding(.top, 12)
-      .padding(.bottom, 8)
+      .padding(.horizontal, 16)
+      .padding(.top, 14)
+      .padding(.bottom, 6)
 
       VStack {
         NavigationLink(destination: destinationView) {
-          VStack(spacing: 6) {
+          VStack(spacing: 20) {
             Text(phase.name)
-              .font(.title3)
-              .fontWeight(.medium)
+              .font(.title2)
+              .fontWeight(.semibold)
               .foregroundColor(.white)
               .multilineTextAlignment(.center)
-              .shadow(color: color.opacity(0.5), radius: 4)
-            RoundedRectangle(cornerRadius: 2)
+              .lineLimit(1)
+              .minimumScaleFactor(0.7)
+              .shadow(color: color.opacity(0.45), radius: 8, x: 0, y: 6)
+
+            Capsule()
               .fill(color)
-              .frame(width: 24, height: 2)
-              .shadow(color: color, radius: 3)
+              .frame(width: 32, height: 4)
+              .shadow(color: color.opacity(0.9), radius: 6, x: 0, y: 3)
           }
           .frame(maxWidth: .infinity, maxHeight: .infinity)
+          .padding(.vertical, 28)
+          .padding(.horizontal, 20)
           .background(
-            RoundedRectangle(cornerRadius: 16)
+            cardShape
               .fill(
                 RadialGradient(
                   gradient: Gradient(colors: [
-                    color.opacity(0.35),
-                    color.opacity(0.15),
-                    Color.clear,
+                    color.opacity(0.55),
+                    color.opacity(0.28),
+                    color.opacity(0.12),
                   ]),
                   center: .center,
                   startRadius: 20,
-                  endRadius: 80
+                  endRadius: 180
                 )
               )
               .overlay(
-                RoundedRectangle(cornerRadius: 16)
+                cardShape
                   .stroke(
                     LinearGradient(
                       gradient: Gradient(colors: [
-                        color.opacity(0.6),
-                        color.opacity(0.2),
+                        color.opacity(0.85),
+                        color.opacity(0.35),
                       ]),
                       startPoint: .topLeading,
                       endPoint: .bottomTrailing
                     ),
-                    lineWidth: 1
+                    lineWidth: 1.25
                   )
               )
           )
-          .scaleEffect(0.95)
+          .contentShape(cardShape)
         }
         .buttonStyle(.plain)
       }
-      .frame(maxHeight: .infinity)
-      .padding(.vertical, 8)
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
+      .padding(.horizontal, 6)
+      .padding(.vertical, 6)
     }
+    .padding(.bottom, 20)
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .background(
       LinearGradient(
         gradient: Gradient(colors: [
-          Color.black.opacity(0.9),
-          Color.black.opacity(0.7),
+          Color.black.opacity(0.92),
+          Color.black.opacity(0.75),
           Color.black,
         ]),
         startPoint: .top,
@@ -390,12 +405,12 @@ struct PhasePageView: View {
       .overlay(
         RadialGradient(
           gradient: Gradient(colors: [
-            color.opacity(0.08),
+            color.opacity(0.1),
             Color.clear,
           ]),
           center: .center,
-          startRadius: 50,
-          endRadius: 150
+          startRadius: 40,
+          endRadius: 180
         )
       )
     )
