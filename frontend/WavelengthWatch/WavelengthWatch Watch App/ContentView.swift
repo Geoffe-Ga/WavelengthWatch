@@ -467,49 +467,43 @@ struct PhasePageView: View {
         VStack(spacing: 0) {
           // Top gutter for vertical scroll
           Spacer()
-            .frame(height: 4)
 
-          // Header section - compact but readable
-          VStack(spacing: 2) {
+          // Combined header and phase display - centered together
+          VStack(spacing: 8) {
             Text(layer.title)
-              .font(.caption)
+              .font(.title3)
               .fontWeight(.semibold)
               .foregroundColor(.white.opacity(0.9))
               .tracking(2.0)
               .multilineTextAlignment(.center)
               .lineLimit(1)
               .minimumScaleFactor(0.8)
+
             Text(layer.subtitle)
-              .font(.caption2)
+              .font(.caption)
               .foregroundColor(.white.opacity(0.6))
               .lineLimit(1)
               .minimumScaleFactor(0.8)
-          }
-          .padding(.horizontal, 6)
-          .padding(.vertical, 2)
-
-          // Main phase display - full screen utilization
-          VStack(spacing: 12) {
-            Spacer()
 
             Text(phase.name)
-              .font(.title)
+              .font(.largeTitle)
               .fontWeight(.medium)
               .foregroundColor(.white)
               .multilineTextAlignment(.center)
               .shadow(color: color.opacity(0.8), radius: 8)
-              .lineLimit(3)
-              .minimumScaleFactor(0.5)
-              .padding(.horizontal, 4)
+              .lineLimit(1)
+              .minimumScaleFactor(0.4)
+              .padding(.horizontal, 8)
 
             RoundedRectangle(cornerRadius: 3)
               .fill(color)
               .frame(width: 40, height: 4)
               .shadow(color: color, radius: 6)
-
-            Spacer()
           }
-          .frame(maxWidth: .infinity, maxHeight: .infinity)
+          .padding(.horizontal, 6)
+
+          Spacer()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
 
           // Bottom gutter for page indicators
           Spacer()
