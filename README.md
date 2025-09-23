@@ -7,7 +7,7 @@ WavelengthWatch is a watchOS-only app that brings the Archetypal Wavelength to y
 _Status_: The project has not yet been deployed to production. An eventual App Store launch is planned, so formal database migrations are not currently required.
 
 - **Watch-Only App (SwiftUI)**: Built in Xcode 16.4, runs natively on watchOS 11.6.1 (Apple Watch Series 9).
-- **Dynamic Curriculum Catalog**: The watch loads the `/catalog` endpoint, which delivers joined layer/phase/strategy data (with IDs) and caches it locally for 24 hours.
+- **Dynamic Curriculum Catalog**: The watch loads the `/api/v1/catalog` endpoint, which delivers joined layer/phase/strategy data (with IDs) and caches it locally for 24 hours.
 - **Journaling Support**: When a user records how they feel, the watch posts real curriculum and strategy identifiers to the backend journal endpoint.
 - **Offline-first Caching**: Cached catalog responses are stored on disk and surfaced immediately when the network is unavailable; stale caches are refreshed in the background.
 - **FastAPI Backend**: A lightweight Python service (`backend/app.py`) exposes CRUD endpoints plus the new aggregated catalog feed with appropriate cache headers.

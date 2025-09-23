@@ -62,7 +62,7 @@ def _ensure_curriculum_id(curriculum: Curriculum) -> int:
     return curriculum_id
 
 
-@router.get("/", response_model=list[CurriculumRead])
+@router.get("", response_model=list[CurriculumRead])
 def list_curriculum(
     *,
     session: SessionDep,
@@ -92,7 +92,7 @@ def get_curriculum(curriculum_id: int, session: SessionDep) -> CurriculumRead:
     return _serialize_curriculum(_get_curriculum_or_404(curriculum_id, session))
 
 
-@router.post("/", response_model=CurriculumRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=CurriculumRead, status_code=status.HTTP_201_CREATED)
 def create_curriculum(payload: CurriculumCreate, session: SessionDep) -> CurriculumRead:
     # Reference data writes are infrequent but supported for administrative tooling.
     _validate_references(session, payload.layer_id, payload.phase_id)

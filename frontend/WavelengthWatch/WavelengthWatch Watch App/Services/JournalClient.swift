@@ -79,6 +79,6 @@ final class JournalClient: JournalClientProtocol {
       secondaryCurriculumID: secondaryCurriculumID,
       strategyID: strategyID
     )
-    return try await apiClient.post("/journal", body: payload)
+    return try await apiClient.post(APIPath.journal, body: payload)
   }
 }

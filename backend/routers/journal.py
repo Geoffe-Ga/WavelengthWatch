@@ -87,7 +87,7 @@ def _ensure_journal_id(journal: Journal) -> int:
     return journal_id
 
 
-@router.get("/", response_model=list[JournalRead])
+@router.get("", response_model=list[JournalRead])
 def list_journal_entries(
     *,
     session: SessionDep,
@@ -121,7 +121,7 @@ def get_journal(journal_id: int, session: SessionDep) -> JournalRead:
     return _serialize_journal(_get_journal_or_404(journal_id, session))
 
 
-@router.post("/", response_model=JournalRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=JournalRead, status_code=status.HTTP_201_CREATED)
 def create_journal(payload: JournalCreate, session: SessionDep) -> JournalRead:
     _validate_references(
         session,

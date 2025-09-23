@@ -6,13 +6,15 @@ import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session
 
 from . import database
 from .routers import catalog, curriculum, journal, layer, phase, strategy
 from .tools.seed_data import seed_database
+
+API_V1_PREFIX = "/api/v1"
 
 DEFAULT_DEV_CORS_ORIGINS: list[str] = [
     "http://localhost",
@@ -71,12 +73,14 @@ def create_application() -> FastAPI:
         allow_headers=["*"],
     )
 
-    application.include_router(catalog.router)
-    application.include_router(layer.router)
-    application.include_router(phase.router)
-    application.include_router(curriculum.router)
-    application.include_router(strategy.router)
-    application.include_router(journal.router)
+    api_router = APIRouter(prefix=API_V1_PREFIX)
+    api_router.include_router(catalog.router)
+    api_router.include_router(layer.router)
+    api_router.include_router(phase.router)
+    api_router.include_router(curriculum.router)
+    api_router.include_router(strategy.router)
+    api_router.include_router(journal.router)
+    application.include_router(api_router)
 
     @application.get("/health", tags=["health"])
     def healthcheck() -> dict[str, str]:
@@ -87,4 +91,4 @@ def create_application() -> FastAPI:
 
 app = create_application()
 
-__all__ = ["app", "create_application"]
+__all__ = ["API_V1_PREFIX", "app", "create_application"]

@@ -73,7 +73,7 @@ def _ensure_strategy_id(strategy: Strategy) -> int:
     return strategy_id
 
 
-@router.get("/", response_model=list[StrategyRead])
+@router.get("", response_model=list[StrategyRead])
 def list_strategies(
     *,
     session: SessionDep,
@@ -101,7 +101,7 @@ def get_strategy(strategy_id: int, session: SessionDep) -> StrategyRead:
     return _serialize_strategy(_get_strategy_or_404(strategy_id, session))
 
 
-@router.post("/", response_model=StrategyRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=StrategyRead, status_code=status.HTTP_201_CREATED)
 def create_strategy(payload: StrategyCreate, session: SessionDep) -> StrategyRead:
     _validate_references(
         session, payload.layer_id, payload.color_layer_id, payload.phase_id

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 
 def test_phases_seeded(client) -> None:
-    response = client.get("/phase")
+    response = client.get("/api/v1/phase")
     assert response.status_code == 200
     phases = response.json()
     assert len(phases) == 6
@@ -12,16 +12,16 @@ def test_phases_seeded(client) -> None:
 
 
 def test_phase_crud(client) -> None:
-    created = client.post("/phase", json={"name": "Experiment"})
+    created = client.post("/api/v1/phase", json={"name": "Experiment"})
     assert created.status_code == 201
     body = created.json()
     phase_id = body["id"]
 
-    updated = client.put(f"/phase/{phase_id}", json={"name": "Experimentation"})
+    updated = client.put(f"/api/v1/phase/{phase_id}", json={"name": "Experimentation"})
     assert updated.status_code == 200
     assert updated.json()["name"] == "Experimentation"
 
-    delete_response = client.delete(f"/phase/{phase_id}")
+    delete_response = client.delete(f"/api/v1/phase/{phase_id}")
     assert delete_response.status_code == 204
-    missing = client.get(f"/phase/{phase_id}")
+    missing = client.get(f"/api/v1/phase/{phase_id}")
     assert missing.status_code == 404
