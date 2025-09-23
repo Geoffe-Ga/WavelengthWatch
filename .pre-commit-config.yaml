@@ -1,40 +1,84 @@
+minimum_pre_commit_version: "3.7.1"
+default_install_hook_types:
+  - pre-commit
+  - pre-push
 repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-ast
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+      - id: trailing-whitespace
+      - id: check-added-large-files
+        args: ["--maxkb=250"]
+  - repo: https://github.com/psf/black
+    rev: 25.1.0
+    hooks:
+      - id: black
+        name: black (backend Python)
+        files: ^(backend/|tests/|scripts/)
+        args: ["--config=pyproject.toml"]
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.6.9
+    rev: v0.12.9
     hooks:
       - id: ruff
-        args: [--fix]
+        name: ruff (lint)
+        files: ^(backend/|tests/|scripts/)
+        args: ["--config=ruff.toml", "--fix"]
       - id: ruff-format
-
+        name: ruff (format)
+        files: ^(backend/|tests/|scripts/)
+        args: ["--config=ruff.toml"]
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.11.2
+    rev: v1.17.1
     hooks:
       - id: mypy
-        args: [--config-file, mypy.ini]
+        files: ^backend/
+        args: ["--config-file", "mypy.ini"]
         additional_dependencies:
-          - "pydantic"
-          - "types-requests"
-          - "sqlalchemy>2.0"
-          - "pydantic[mypy]"
-          - "sqlmodel>=0.0.24"
-
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+          - types-requests
+          - pydantic
+          - sqlmodel
+          - fastapi
+          - starlette
+  - repo: https://github.com/PyCQA/isort
+    rev: 6.0.1
     hooks:
-      - id: check-yaml
-      - id: check-json
-      - id: end-of-file-fixer
-      - id: trailing-whitespace
-      - id: detect-private-key
-
+      - id: isort
+        name: isort (imports)
+        files: ^(backend/|tests/|scripts/)
+        args: ["--settings-path=pyproject.toml"]
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.8.6
+    hooks:
+      - id: bandit
+        name: bandit (security)
+        files: ^backend/
+        args: ["-c", "backend/.bandit", "-r", "backend"]
+  - repo: https://github.com/trailofbits/pip-audit
+    rev: v2.9.0
+    hooks:
+      - id: pip-audit
+        name: pip-audit (backend dependencies)
+        files: ^backend/
+        args: ["-r", "backend/requirements.txt"]
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: ["--baseline", ".secrets.baseline"]
   - repo: local
     hooks:
       - id: swiftformat
-        name: SwiftFormat
-        entry: swiftformat
-        language: system
-        types_or: [swift]
-        args: [--lint]
+        name: SwiftFormat (watchOS)
+        entry: scripts/swiftformat_lint.sh
+        language: script
+        files: ^frontend/.*\.swift$
       - id: backend-tests
         name: backend tests (on push)
         entry: bash

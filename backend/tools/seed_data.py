@@ -22,8 +22,7 @@ def _iter_rows(filename: str) -> Iterable[dict[str, str]]:
             if not row:
                 continue
             if all(
-                (value is None or str(value).strip() == "")
-                for value in row.values()
+                (value is None or str(value).strip() == "") for value in row.values()
             ):
                 continue
             yield {key: (value or "") for key, value in row.items()}

@@ -6,9 +6,12 @@ from datetime import datetime
 from typing import Annotated, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from sqlalchemy import desc
+from sqlalchemy.engine import ScalarResult
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.elements import ColumnElement
 from sqlmodel import Session, select
+from sqlmodel.sql.expression import SelectOfScalar
 
 from ..database import get_session
 from ..models import Curriculum, Journal, Strategy
@@ -23,7 +26,8 @@ def _serialize_journal(journal: Journal) -> JournalRead:
     return JournalRead.model_validate(journal)
 
 
-def _base_query():
+def _base_query() -> SelectOfScalar[Journal]:
+    created_at = cast(ColumnElement[datetime], Journal.created_at)
     return (
         select(Journal)
         .options(
@@ -38,15 +42,14 @@ def _base_query():
             joinedload(Journal.strategy).joinedload(Strategy.color_layer),
             joinedload(Journal.strategy).joinedload(Strategy.phase),
         )
-        .order_by(
-            Journal.created_at.desc(), cast(ColumnElement[int], Journal.id)
-        )
+        .order_by(desc(created_at), cast(ColumnElement[int], Journal.id))
     )
 
 
 def _get_journal_or_404(journal_id: int, session: Session) -> Journal:
     statement = _base_query().where(Journal.id == journal_id)
-    journal = session.exec(statement).first()
+    result = cast(ScalarResult[Journal], session.exec(statement))
+    journal = result.one_or_none()
     if journal is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Journal not found"
@@ -101,16 +104,20 @@ def list_journal_entries(
 ) -> list[JournalRead]:
     statement = _base_query()
     if user_id is not None:
-        statement = statement.where(Journal.user_id == user_id)
+        clause = cast(ColumnElement[bool], Journal.user_id == user_id)
+        statement = statement.where(clause)
     if strategy_id is not None:
-        statement = statement.where(Journal.strategy_id == strategy_id)
+        clause = cast(ColumnElement[bool], Journal.strategy_id == strategy_id)
+        statement = statement.where(clause)
     if from_ is not None:
-        statement = statement.where(Journal.created_at >= from_)
+        clause = cast(ColumnElement[bool], Journal.created_at >= from_)
+        statement = statement.where(clause)
     if to is not None:
-        statement = statement.where(Journal.created_at <= to)
+        clause = cast(ColumnElement[bool], Journal.created_at <= to)
+        statement = statement.where(clause)
     statement = statement.offset(offset).limit(limit)
-    rows = session.exec(statement).all()
-    return [_serialize_journal(row) for row in rows]
+    result = cast(ScalarResult[Journal], session.exec(statement))
+    return [_serialize_journal(row) for row in result.all()]
 
 
 @router.get("/{journal_id}", response_model=JournalRead)
@@ -118,12 +125,8 @@ def get_journal(journal_id: int, session: SessionDep) -> JournalRead:
     return _serialize_journal(_get_journal_or_404(journal_id, session))
 
 
-@router.post(
-    "/", response_model=JournalRead, status_code=status.HTTP_201_CREATED
-)
-def create_journal(
-    payload: JournalCreate, session: SessionDep
-) -> JournalRead:
+@router.post("/", response_model=JournalRead, status_code=status.HTTP_201_CREATED)
+def create_journal(payload: JournalCreate, session: SessionDep) -> JournalRead:
     _validate_references(
         session,
         curriculum_id=payload.curriculum_id,

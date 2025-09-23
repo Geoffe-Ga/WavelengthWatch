@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -31,15 +32,16 @@ def _determine_allowed_origins() -> list[str]:
 
     if configured_origins:
         origins = [
-            origin.strip()
-            for origin in configured_origins.split(",")
-            if origin.strip()
+            origin.strip() for origin in configured_origins.split(",") if origin.strip()
         ]
         if origins:
             return origins
 
     if environment == "production":
-        msg = "CORS_ALLOWED_ORIGINS must be set to a comma-separated list when APP_ENV=production"
+        msg = (
+            "CORS_ALLOWED_ORIGINS must be set to a comma-separated list when "
+            "APP_ENV=production"
+        )
         raise RuntimeError(msg)
 
     return DEFAULT_DEV_CORS_ORIGINS.copy()
@@ -51,7 +53,7 @@ def create_application() -> FastAPI:
     @asynccontextmanager
     async def lifespan(
         app: FastAPI,
-    ):  # pragma: no cover - exercised via startup events
+    ) -> AsyncIterator[None]:  # pragma: no cover - exercised via startup events
         database.create_db_and_tables()
         with Session(database.engine) as session:
             seed_database(session)

@@ -52,9 +52,7 @@ def get_phase(phase_id: int, session: SessionDep) -> PhaseRead:
     return _serialize_phase(_get_phase_or_404(phase_id, session))
 
 
-@router.post(
-    "/", response_model=PhaseRead, status_code=status.HTTP_201_CREATED
-)
+@router.post("/", response_model=PhaseRead, status_code=status.HTTP_201_CREATED)
 def create_phase(payload: PhaseCreate, session: SessionDep) -> PhaseRead:
     # Reference data writes are allowed but are typically rare in production.
     phase = Phase(**payload.model_dump())

@@ -17,9 +17,7 @@ def test_phase_crud(client) -> None:
     body = created.json()
     phase_id = body["id"]
 
-    updated = client.put(
-        f"/phase/{phase_id}", json={"name": "Experimentation"}
-    )
+    updated = client.put(f"/phase/{phase_id}", json={"name": "Experimentation"})
     assert updated.status_code == 200
     assert updated.json()["name"] == "Experimentation"
 
