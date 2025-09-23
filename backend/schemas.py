@@ -84,7 +84,7 @@ class CurriculumRead(CurriculumBase):
 
 class StrategyBase(SQLModel):
     strategy: str
-    layer_id: int
+    color_layer_id: int
     phase_id: int
 
 
@@ -94,13 +94,13 @@ class StrategyCreate(StrategyBase):
 
 class StrategyUpdate(SQLModel):
     strategy: str | None = None
-    layer_id: int | None = None
+    color_layer_id: int | None = None
     phase_id: int | None = None
 
 
 class StrategyRead(StrategyBase):
     id: int
-    layer: LayerRead | None = None
+    color_layer: LayerRead | None = None
     phase: PhaseRead | None = None
 
 

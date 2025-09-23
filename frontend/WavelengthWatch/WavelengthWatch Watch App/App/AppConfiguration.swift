@@ -8,7 +8,7 @@ struct AppConfiguration {
   let apiBaseURL: URL
 
   init(bundle: Bundle = .main) {
-    let rawValue = (bundle.object(forInfoDictionaryKey: "API_BASE_URL") as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+    let rawValue = Self.loadAPIBaseURL(from: bundle)?.trimmingCharacters(in: .whitespacesAndNewlines)
 
     guard
       let urlString = rawValue,
@@ -28,5 +28,22 @@ struct AppConfiguration {
     }
 
     self.apiBaseURL = url
+  }
+
+  private static func loadAPIBaseURL(from bundle: Bundle) -> String? {
+    // First try to load from Info.plist (for build-time configuration)
+    if let urlFromInfo = bundle.object(forInfoDictionaryKey: "API_BASE_URL") as? String {
+      return urlFromInfo
+    }
+
+    // Fallback to APIConfiguration.plist
+    guard let path = bundle.path(forResource: "APIConfiguration", ofType: "plist"),
+          let plist = NSDictionary(contentsOfFile: path),
+          let apiBaseURL = plist["API_BASE_URL"] as? String
+    else {
+      return nil
+    }
+
+    return apiBaseURL
   }
 }

@@ -12,7 +12,9 @@ from backend.app import DEFAULT_DEV_CORS_ORIGINS, create_application
 def _cors_origins(app: FastAPI) -> list[str]:
     for middleware in app.user_middleware:
         if middleware.cls is CORSMiddleware:
-            return middleware.kwargs["allow_origins"]
+            origins = middleware.kwargs["allow_origins"]
+            if isinstance(origins, list):
+                return origins
     raise AssertionError("CORS middleware not configured on application")
 
 

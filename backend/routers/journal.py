@@ -35,7 +35,7 @@ def _base_query() -> SelectOfScalar[Journal]:
             joinedload(Journal.curriculum).joinedload(Curriculum.phase),
             joinedload(Journal.secondary_curriculum).joinedload(Curriculum.layer),
             joinedload(Journal.secondary_curriculum).joinedload(Curriculum.phase),
-            joinedload(Journal.strategy).joinedload(Strategy.layer),
+            joinedload(Journal.strategy).joinedload(Strategy.color_layer),
             joinedload(Journal.strategy).joinedload(Strategy.phase),
         )
         .order_by(desc(created_at), cast(ColumnElement[int], Journal.id))

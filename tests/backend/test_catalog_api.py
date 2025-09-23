@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable
 
 from sqlmodel import Session, delete
 
@@ -22,17 +22,8 @@ PHASE_ORDER = [
 EXPECTED_LAYER_COUNT = 11
 
 
-def _flatten(entries: Iterable[Mapping[str, object]]) -> set[int]:
-    ids: set[int] = set()
-    for item in entries:
-        identifier = item["id"]
-        if isinstance(identifier, int):
-            ids.add(identifier)
-        elif isinstance(identifier, str):
-            ids.add(int(identifier))
-        else:
-            raise TypeError(f"Unsupported identifier type: {type(identifier)!r}")
-    return ids
+def _flatten(entries: Iterable[dict[str, object]]) -> set[int]:
+    return {int(item["id"]) for item in entries if isinstance(item["id"], int | str)}
 
 
 def test_catalog_returns_joined_dataset(client) -> None:

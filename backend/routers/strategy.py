@@ -27,7 +27,7 @@ def _serialize_strategy(strategy: Strategy) -> StrategyRead:
 def _base_query() -> SelectOfScalar[Strategy]:
     return (
         select(Strategy)
-        .options(joinedload(Strategy.layer), joinedload(Strategy.phase))
+        .options(joinedload(Strategy.color_layer), joinedload(Strategy.phase))
         .order_by(cast(ColumnElement[int], Strategy.id))
     )
 
@@ -43,10 +43,11 @@ def _get_strategy_or_404(strategy_id: int, session: Session) -> Strategy:
     return strategy
 
 
-def _validate_references(session: Session, layer_id: int, phase_id: int) -> None:
-    if session.get(Layer, layer_id) is None:
+def _validate_references(session: Session, color_layer_id: int, phase_id: int) -> None:
+    if session.get(Layer, color_layer_id) is None:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid layer_id"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid color_layer_id",
         )
     if session.get(Phase, phase_id) is None:
         raise HTTPException(
@@ -67,13 +68,12 @@ def list_strategies(
     session: SessionDep,
     limit: Annotated[int, Query(ge=1, le=1000)] = 100,
     offset: Annotated[int, Query(ge=0)] = 0,
-    layer_id: Annotated[int | None, Query()] = None,
+    color_layer_id: Annotated[int | None, Query()] = None,
     phase_id: Annotated[int | None, Query()] = None,
 ) -> list[StrategyRead]:
     statement = _base_query()
-    if layer_id is not None:
-        clause = cast(ColumnElement[bool], Strategy.layer_id == layer_id)
-        statement = statement.where(clause)
+    if color_layer_id is not None:
+        statement = statement.where(Strategy.color_layer_id == color_layer_id)
     if phase_id is not None:
         clause = cast(ColumnElement[bool], Strategy.phase_id == phase_id)
         statement = statement.where(clause)
@@ -89,7 +89,7 @@ def get_strategy(strategy_id: int, session: SessionDep) -> StrategyRead:
 
 @router.post("/", response_model=StrategyRead, status_code=status.HTTP_201_CREATED)
 def create_strategy(payload: StrategyCreate, session: SessionDep) -> StrategyRead:
-    _validate_references(session, payload.layer_id, payload.phase_id)
+    _validate_references(session, payload.color_layer_id, payload.phase_id)
     strategy = Strategy(**payload.model_dump())
     session.add(strategy)
     session.commit()
@@ -104,10 +104,10 @@ def update_strategy(
 ) -> StrategyRead:
     strategy = _get_strategy_or_404(strategy_id, session)
     data = payload.model_dump(exclude_unset=True)
-    if "layer_id" in data or "phase_id" in data:
-        layer_id = data.get("layer_id", strategy.layer_id)
+    if "color_layer_id" in data or "phase_id" in data:
+        color_layer_id = data.get("color_layer_id", strategy.color_layer_id)
         phase_id = data.get("phase_id", strategy.phase_id)
-        _validate_references(session, layer_id, phase_id)
+        _validate_references(session, color_layer_id, phase_id)
     for key, value in data.items():
         setattr(strategy, key, value)
     session.add(strategy)

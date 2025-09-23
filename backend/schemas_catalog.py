@@ -12,6 +12,7 @@ class CatalogStrategy(SQLModel):
 
     id: int
     strategy: str
+    color: str
 
 
 class CatalogCurriculumEntry(SQLModel):

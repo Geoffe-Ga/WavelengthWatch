@@ -1,6 +1,6 @@
 import Foundation
 
-struct JournalResponseModel: Decodable, Equatable {
+struct JournalResponseModel: Codable, Equatable {
   let id: Int
   let curriculumID: Int
   let secondaryCurriculumID: Int?
@@ -14,7 +14,7 @@ struct JournalResponseModel: Decodable, Equatable {
   }
 }
 
-struct JournalPayload: Encodable {
+struct JournalPayload: Codable {
   let createdAt: Date
   let userID: Int
   let curriculumID: Int

@@ -430,9 +430,9 @@ struct StrategyListView: View {
             let primaryID = phase.medicinal.first?.id ?? phase.toxic.first?.id
             HStack {
               Circle()
-                .fill(color)
+                .fill(Color(stage: item.color))
                 .frame(width: 6, height: 6)
-                .shadow(color: color, radius: 2)
+                .shadow(color: Color(stage: item.color), radius: 2)
               Text(item.strategy)
                 .font(.body)
                 .foregroundColor(.white)
