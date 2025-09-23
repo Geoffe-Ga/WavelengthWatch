@@ -6,7 +6,7 @@ import os
 from collections.abc import Iterator
 from typing import Any
 
-from sqlalchemy import event
+from sqlalchemy import event, inspect
 from sqlalchemy.engine import Engine
 from sqlmodel import Session, SQLModel, create_engine
 
@@ -66,6 +66,29 @@ def create_db_and_tables() -> None:
     """Create all database tables if they do not exist."""
 
     SQLModel.metadata.create_all(engine)
+    _refresh_outdated_tables()
+
+
+def _refresh_outdated_tables() -> None:
+    """Rebuild tables whose on-disk schema is missing required columns."""
+
+    inspector = inspect(engine)
+    try:
+        columns = inspector.get_columns("journal")
+    except Exception:  # pragma: no cover - guard against inspect edge cases
+        return
+
+    column_names = {column["name"] for column in columns}
+    required_columns = {"source"}
+    if required_columns.issubset(column_names):
+        return
+
+    journal_table = SQLModel.metadata.tables.get("journal")
+    if journal_table is None:  # pragma: no cover - metadata drift safeguard
+        return
+
+    journal_table.drop(engine, checkfirst=True)
+    journal_table.create(engine, checkfirst=True)
 
 
 __all__ = [

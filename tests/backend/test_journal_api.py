@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+from fastapi.testclient import TestClient
+
+from backend import database
+from backend.app import create_application
+
 
 def test_journal_filtering(client) -> None:
     response = client.get("/journal", params={"user_id": 1})
@@ -78,3 +83,36 @@ def test_journal_crud(client) -> None:
 
     missing = client.get(f"/journal/{journal_id}")
     assert missing.status_code == 404
+
+
+def test_startup_rebuilds_outdated_journal_table(tmp_path, monkeypatch) -> None:
+    """Ensure application startup recreates the journal table when schema drifts."""
+
+    db_path = tmp_path / "app.db"
+    database_url = f"sqlite:///{db_path}"
+    monkeypatch.setenv("DATABASE_URL", database_url)
+    engine = database.configure_engine(database_url)
+
+    with engine.begin() as connection:
+        connection.exec_driver_sql(
+            """
+            CREATE TABLE journal (
+                id INTEGER PRIMARY KEY,
+                created_at DATETIME NOT NULL,
+                user_id INTEGER NOT NULL,
+                curriculum_id INTEGER NOT NULL,
+                secondary_curriculum_id INTEGER,
+                strategy_id INTEGER
+            )
+            """
+        )
+
+    app = create_application()
+
+    with TestClient(app) as client:
+        response = client.get("/journal")
+        assert response.status_code == 200
+
+    engine.dispose()
+    if db_path.exists():
+        db_path.unlink()
