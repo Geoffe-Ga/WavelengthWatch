@@ -43,9 +43,7 @@ def _get_strategy_or_404(strategy_id: int, session: Session) -> Strategy:
     return strategy
 
 
-def _validate_references(
-    session: Session, color_layer_id: int, phase_id: int
-) -> None:
+def _validate_references(session: Session, color_layer_id: int, phase_id: int) -> None:
     if session.get(Layer, color_layer_id) is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -89,12 +87,8 @@ def get_strategy(strategy_id: int, session: SessionDep) -> StrategyRead:
     return _serialize_strategy(_get_strategy_or_404(strategy_id, session))
 
 
-@router.post(
-    "/", response_model=StrategyRead, status_code=status.HTTP_201_CREATED
-)
-def create_strategy(
-    payload: StrategyCreate, session: SessionDep
-) -> StrategyRead:
+@router.post("/", response_model=StrategyRead, status_code=status.HTTP_201_CREATED)
+def create_strategy(payload: StrategyCreate, session: SessionDep) -> StrategyRead:
     _validate_references(session, payload.color_layer_id, payload.phase_id)
     strategy = Strategy(**payload.model_dump())
     session.add(strategy)

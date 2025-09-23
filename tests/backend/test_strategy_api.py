@@ -4,9 +4,7 @@ from __future__ import annotations
 
 
 def test_strategy_filtering(client) -> None:
-    response = client.get(
-        "/strategy", params={"color_layer_id": 1, "phase_id": 5}
-    )
+    response = client.get("/strategy", params={"color_layer_id": 1, "phase_id": 5})
     assert response.status_code == 200
     strategies = response.json()
     assert strategies, "Expected seeded strategies"

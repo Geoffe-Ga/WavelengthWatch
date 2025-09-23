@@ -54,9 +54,7 @@ def build_catalog(session: Session) -> CatalogResponse:
             .options(
                 selectinload(Layer.curriculum_items).selectinload(Curriculum.phase),
                 selectinload(Layer.strategies).selectinload(Strategy.phase),
-                selectinload(Layer.strategies).selectinload(
-                    Strategy.color_layer
-                ),
+                selectinload(Layer.strategies).selectinload(Strategy.color_layer),
             )
             .order_by(cast(ColumnElement[int], Layer.id))
         )
@@ -125,11 +123,7 @@ def build_catalog(session: Session) -> CatalogResponse:
             if index is None or index >= len(catalog_layer.phases):
                 continue
 
-            color = (
-                strategy.color_layer.color
-                if strategy.color_layer
-                else layer.color
-            )
+            color = strategy.color_layer.color if strategy.color_layer else layer.color
 
             catalog_layer.phases[index].strategies.append(
                 CatalogStrategy(

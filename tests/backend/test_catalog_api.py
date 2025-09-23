@@ -23,11 +23,7 @@ EXPECTED_LAYER_COUNT = 11
 
 
 def _flatten(entries: Iterable[dict[str, object]]) -> set[int]:
-    return {
-        int(item["id"])
-        for item in entries
-        if isinstance(item["id"], int | str)
-    }
+    return {int(item["id"]) for item in entries if isinstance(item["id"], int | str)}
 
 
 def test_catalog_returns_joined_dataset(client) -> None:

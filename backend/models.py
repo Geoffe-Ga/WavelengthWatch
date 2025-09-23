@@ -24,12 +24,9 @@ class Layer(SQLModel, table=True):
     title: str
     subtitle: str
 
-    curriculum_items: Mapped[list["Curriculum"]] = Relationship(
-        back_populates="layer"
-    )
-    strategies: Mapped[list["Strategy"]] = Relationship(
-        back_populates="color_layer"
-    )
+    curriculum_items: Mapped[list["Curriculum"]] = Relationship(back_populates="layer")
+    strategies: Mapped[list["Strategy"]] = Relationship(back_populates="color_layer")
+
 
 class Phase(SQLModel, table=True):
     """Reference table of user energy phases."""
@@ -76,9 +73,7 @@ class Strategy(SQLModel, table=True):
     color_layer_id: int = Field(foreign_key="layer.id", index=True)
     phase_id: int = Field(foreign_key="phase.id", index=True)
 
-    color_layer: Mapped[Layer | None] = Relationship(
-        back_populates="strategies"
-    )
+    color_layer: Mapped[Layer | None] = Relationship(back_populates="strategies")
     phase: Mapped[Phase | None] = Relationship(back_populates="strategies")
     journal_entries: Mapped[list["Journal"]] = Relationship(
         back_populates="strategy",
