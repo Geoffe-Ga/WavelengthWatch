@@ -80,21 +80,21 @@ struct ContentView: View {
         }
       }
       .task { await viewModel.loadCatalog() }
-      .onChange(of: viewModel.phaseOrder) { _ in
+      .onChange(of: viewModel.phaseOrder) {
         adjustPhaseSelection()
       }
-      .onChange(of: layerSelection) { newValue in
+      .onChange(of: layerSelection) { _, newValue in
         viewModel.selectedLayerIndex = newValue
         storedLayerIndex = newValue
         showLayerIndicator = true
         scheduleLayerIndicatorHide()
       }
-      .onChange(of: viewModel.selectedLayerIndex) { newValue in
+      .onChange(of: viewModel.selectedLayerIndex) { _, newValue in
         if layerSelection != newValue {
           layerSelection = newValue
         }
       }
-      .onChange(of: phaseSelection) { newValue in
+      .onChange(of: phaseSelection) { _, newValue in
         guard viewModel.phaseOrder.count > 0 else { return }
         let adjusted = PhaseNavigator.adjustedSelection(newValue, phaseCount: viewModel.phaseOrder.count)
         if adjusted != newValue {
@@ -104,7 +104,7 @@ struct ContentView: View {
         viewModel.selectedPhaseIndex = normalized
         storedPhaseIndex = normalized
       }
-      .onChange(of: viewModel.selectedPhaseIndex) { newValue in
+      .onChange(of: viewModel.selectedPhaseIndex) { _, newValue in
         let expected = newValue + 1
         if phaseSelection != expected {
           phaseSelection = expected
@@ -148,6 +148,7 @@ struct ContentView: View {
               .id(index)
             }
           }
+          .scrollTargetLayout()
         }
         .scrollTargetBehavior(.viewAligned)
         .scrollDisabled(false)
@@ -155,6 +156,7 @@ struct ContentView: View {
           .init(
             get: { Double(layerSelection) },
             set: { newValue in
+              guard viewModel.layers.count > 0 else { return }
               let clampedValue = Int(round(newValue)).clamped(to: 0 ... (viewModel.layers.count - 1))
               if clampedValue != layerSelection {
                 layerSelection = clampedValue
@@ -162,18 +164,20 @@ struct ContentView: View {
             }
           ),
           from: 0,
-          through: Double(viewModel.layers.count - 1),
+          through: Double(max(viewModel.layers.count - 1, 0)),
           by: 1.0,
           sensitivity: .medium,
           isContinuous: false,
           isHapticFeedbackEnabled: true
         )
-        .onChange(of: layerSelection) { newValue in
+        .onChange(of: layerSelection) { _, newValue in
+          guard viewModel.layers.count > 0, newValue < viewModel.layers.count else { return }
           withAnimation(.easeInOut(duration: 0.3)) {
             proxy.scrollTo(newValue, anchor: .center)
           }
         }
         .onAppear {
+          guard viewModel.layers.count > 0, layerSelection < viewModel.layers.count else { return }
           proxy.scrollTo(layerSelection, anchor: .center)
           showLayerIndicator = true
           scheduleLayerIndicatorHide()
@@ -393,7 +397,7 @@ struct LayerView: View {
       }
     }
     .tabViewStyle(.page(indexDisplayMode: .never))
-    .onChange(of: selection) { newValue in
+    .onChange(of: selection) { _, newValue in
       guard phaseCount > 0 else { return }
       let adjusted = PhaseNavigator.adjustedSelection(newValue, phaseCount: phaseCount)
       if adjusted != newValue {
@@ -468,39 +472,116 @@ struct PhasePageView: View {
           // Top gutter for vertical scroll
           Spacer()
 
-          // Combined header and phase display - centered together
-          VStack(spacing: 8) {
-            Text(layer.title)
-              .font(.title3)
-              .fontWeight(.semibold)
-              .foregroundColor(.white.opacity(0.9))
-              .tracking(2.0)
-              .multilineTextAlignment(.center)
-              .lineLimit(1)
-              .minimumScaleFactor(0.8)
+          // Mystical floating crystal interface
+          ZStack {
+            // Mystical background orb with layer color
+            Circle()
+              .fill(
+                RadialGradient(
+                  gradient: Gradient(colors: [
+                    color.opacity(0.3),
+                    color.opacity(0.1),
+                    Color.clear,
+                  ]),
+                  center: .center,
+                  startRadius: 20,
+                  endRadius: 80
+                )
+              )
+              .frame(width: 160, height: 160)
+              .blur(radius: 1)
 
-            Text(layer.subtitle)
-              .font(.caption)
-              .foregroundColor(.white.opacity(0.6))
-              .lineLimit(1)
-              .minimumScaleFactor(0.8)
+            // Main content container - floating card
+            VStack(spacing: 12) {
+              // Layer context - minimal and elegant
+              VStack(spacing: 4) {
+                Text(layer.title)
+                  .font(.caption)
+                  .fontWeight(.medium)
+                  .foregroundColor(.white.opacity(0.7))
+                  .tracking(1.5)
+                  .textCase(.uppercase)
+                  .lineLimit(1)
+                  .minimumScaleFactor(0.8)
 
-            Text(phase.name)
-              .font(.largeTitle)
-              .fontWeight(.medium)
-              .foregroundColor(.white)
-              .multilineTextAlignment(.center)
-              .shadow(color: color.opacity(0.8), radius: 8)
-              .lineLimit(1)
-              .minimumScaleFactor(0.4)
-              .padding(.horizontal, 8)
+                Text(layer.subtitle)
+                  .font(.caption2)
+                  .foregroundColor(.white.opacity(0.5))
+                  .lineLimit(1)
+                  .minimumScaleFactor(0.8)
+              }
 
-            RoundedRectangle(cornerRadius: 3)
-              .fill(color)
-              .frame(width: 40, height: 4)
-              .shadow(color: color, radius: 6)
+              // Hero phase name with sophisticated treatment
+              Text(phase.name)
+                .font(.largeTitle)
+                .fontWeight(.light)
+                .foregroundColor(.white)
+                .multilineTextAlignment(.center)
+                .lineLimit(1)
+                .minimumScaleFactor(0.4)
+                .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
+                .padding(.horizontal, 4)
+
+              // Mystical accent - geometric crystal element
+              ZStack {
+                // Outer glow
+                Capsule()
+                  .fill(color.opacity(0.3))
+                  .frame(width: 60, height: 3)
+                  .blur(radius: 3)
+
+                // Inner crystal line
+                Capsule()
+                  .fill(
+                    LinearGradient(
+                      gradient: Gradient(colors: [
+                        color.opacity(0.6),
+                        color,
+                        color.opacity(0.6),
+                      ]),
+                      startPoint: .leading,
+                      endPoint: .trailing
+                    )
+                  )
+                  .frame(width: 50, height: 2)
+                  .shadow(color: color.opacity(0.8), radius: 4)
+              }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(
+              // Floating card background
+              RoundedRectangle(cornerRadius: 16)
+                .fill(
+                  LinearGradient(
+                    gradient: Gradient(colors: [
+                      Color.black.opacity(0.4),
+                      Color.black.opacity(0.6),
+                    ]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                  )
+                )
+                .overlay(
+                  RoundedRectangle(cornerRadius: 16)
+                    .stroke(
+                      LinearGradient(
+                        gradient: Gradient(colors: [
+                          color.opacity(0.3),
+                          Color.white.opacity(0.1),
+                          color.opacity(0.2),
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                      ),
+                      lineWidth: 1
+                    )
+                )
+                .shadow(color: color.opacity(0.2), radius: 8)
+                .shadow(color: .black.opacity(0.3), radius: 4)
+            )
           }
-          .padding(.horizontal, 6)
+          .frame(maxWidth: .infinity)
 
           Spacer()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
