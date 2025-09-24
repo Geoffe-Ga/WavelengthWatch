@@ -152,6 +152,14 @@ struct ContentView: View {
         }
         .scrollTargetBehavior(.viewAligned)
         .scrollDisabled(false)
+        .scrollPosition(id: .init(
+          get: { layerSelection },
+          set: { newId in
+            if let newId = newId as? Int, newId != layerSelection {
+              layerSelection = newId
+            }
+          }
+        ))
         .digitalCrownRotation(
           .init(
             get: { Double(layerSelection) },
