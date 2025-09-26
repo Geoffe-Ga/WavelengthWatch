@@ -11,6 +11,10 @@ build/
 *.xcodeproj/project.xcworkspace/xcuserdata/
 *.xcodeproj/xcuserdata/
 
+# API Configuration (contains local IPs/URLs)
+**/APIConfiguration.plist
+**/APIConfiguration-Local.plist
+
 # Swift Package Manager
 .swiftpm/
 .build/

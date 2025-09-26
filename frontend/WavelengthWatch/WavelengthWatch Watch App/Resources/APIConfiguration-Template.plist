@@ -5,13 +5,11 @@
     <key>API_BASE_URL</key>
     <string>https://api.not-configured.local</string>
     <!--
-    PRODUCTION CONFIGURATION
-    This file should contain production API URLs when shipping.
-
     For local development:
-    1. Copy APIConfiguration-Template.plist to APIConfiguration-Local.plist
-    2. Update with your local development URL
-    3. APIConfiguration-Local.plist will be loaded first if it exists
+    1. Copy this file to APIConfiguration.plist
+    2. Replace with your Mac's local IP: http://192.168.1.XXX:8000
+    3. Or use your Mac's hostname: http://YourMacName.local:8000
+    4. Start backend with: uvicorn backend.app:app --host 0.0.0.0 --port 8000 --reload
     -->
 </dict>
 </plist>

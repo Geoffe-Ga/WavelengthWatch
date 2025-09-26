@@ -36,14 +36,22 @@ struct AppConfiguration {
       return urlFromInfo
     }
 
-    // Fallback to APIConfiguration.plist
-    guard let path = bundle.path(forResource: "APIConfiguration", ofType: "plist"),
-          let plist = NSDictionary(contentsOfFile: path),
-          let apiBaseURL = plist["API_BASE_URL"] as? String
-    else {
-      return nil
+    // Try local development configuration first (not committed to git)
+    if let path = bundle.path(forResource: "APIConfiguration-Local", ofType: "plist"),
+       let plist = NSDictionary(contentsOfFile: path),
+       let apiBaseURL = plist["API_BASE_URL"] as? String
+    {
+      return apiBaseURL
     }
 
-    return apiBaseURL
+    // Try main configuration file (may be gitignored for local dev)
+    if let path = bundle.path(forResource: "APIConfiguration", ofType: "plist"),
+       let plist = NSDictionary(contentsOfFile: path),
+       let apiBaseURL = plist["API_BASE_URL"] as? String
+    {
+      return apiBaseURL
+    }
+
+    return nil
   }
 }
