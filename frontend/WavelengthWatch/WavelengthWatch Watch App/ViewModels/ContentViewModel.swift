@@ -78,7 +78,7 @@ final class ContentViewModel: ObservableObject {
   }
 
   private func applyCatalog(_ catalog: CatalogResponseModel) {
-    layers = catalog.layers
+    layers = catalog.layers.reversed()
     phaseOrder = catalog.phaseOrder
 
     if selectedLayerIndex >= layers.count {
