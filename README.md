@@ -15,6 +15,17 @@ _Status_: The project has not yet been deployed to production. An eventual App S
   - GitHub Actions workflow builds the watch app on a simulator, runs SwiftLint/SwiftFormat checks, and validates backend tests.
   - Pre-commit hooks enforce linting and formatting for both Swift (via Mint, SwiftLint, SwiftFormat) and Python (via Mypy, Ruff, etc. in the backend).
 
+## Journal System Architecture
+
+The shipping journal experience is a coordinated loop between the FastAPI backend and the watch app. Understanding the current solution helps future contributors reason about requested upgrades without discarding the working baseline.
+
+- **Backend data model**: `backend/models.py` defines a single `Journal` SQLModel table keyed by curriculum and optional strategy references. A `sqlalchemy.Enum` (`InitiatedBy`) tracks whether an entry is self-started or scheduled. The model intentionally keeps the schema narrow—most denormalized context (layer/phase metadata) is resolved at query time via relationships so reads return rich objects without duplicating data.
+- **Validation & serialization**: Pydantic schemas in `backend/schemas.py` validate ISO timestamps, coerce them to UTC, and ensure foreign keys exist before writes. `JournalRead` embeds the joined curriculum and strategy payloads the watch already understands, which keeps the API single-purpose.
+- **API surface**: `backend/routers/journal.py` exposes CRUD endpoints under `/api/v1/journal`. The router loads related curriculum/strategy rows using `joinedload` so clients always receive hydrated objects. Filtering by user, strategy, and time range is supported today and is covered by `tests/backend/test_journal_api.py`.
+- **Watch client flow**: `JournalClient` (Swift) derives a stable pseudo-user identifier from `UserDefaults`, stamps the current time, and posts straight to `/api/v1/journal`. The UI asks for lightweight confirmation before calling `submit`, then reuses the API response to update on-device state.
+- **Merits**: The approach is simple to reason about, works offline until submission time, and keeps the backend schema aligned with the catalog tables. Having the backend join related curriculum/strategy information reduces the amount of state the watch must maintain.
+- **Trade-offs**: There is no batching or offline queue yet, so failed submissions must be retried manually. The single-table approach makes analytics that depend on multiple combos or self-care selections harder, and introducing additional relationships will require new migrations when production deployment begins.
+
 ## Repository Structure
 
 Use the detailed tree below to locate major components quickly when joining the project or pairing with an agent:
@@ -29,6 +40,7 @@ WavelengthWatch/
 │   └── WavelengthWatch Watch App/ — SwiftUI code organized into App, Assets, Models, Services, Resources, and ViewModels for the watch experience.
 ├── tests/ — Pytest suite validating backend configuration and each API surface area.​
 ├── prompts/ — Product and process prompts that capture planning notes for AI-assisted development.
+│   └── claude-comm/ — Centralized Markdown notes authored by Claude or other agents for async communication.
 ├── scripts/ — Automation helpers, including the CSV→JSON build script for bundling data with the app.​
 ├── .github/workflows/ — Continuous integration workflows handling backend checks and automated reviews.
 ├── README.md, XCODE_BUILD_SETUP.md — Contributor onboarding guide and Xcode build automation instructions.
