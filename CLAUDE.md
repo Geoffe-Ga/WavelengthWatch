@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> **Communication files**: Store any Markdown you author for coordination or planning in `prompts/claude-comm/` so future agents can locate prior discussions quickly.
+
 **Deployment status**: The project has not yet been deployed to production. Shipping to the App Store is on the roadmap, so database migrations are not currently required.
 
 ## Development Commands
@@ -57,6 +59,7 @@ WavelengthWatch/
 │   └── WavelengthWatch Watch App/ — SwiftUI code organized into App, Assets, Models, Services, Resources, and ViewModels for the watch experience.
 ├── tests/ — Pytest suite validating backend configuration and each API surface area.​
 ├── prompts/ — Product and process prompts that capture planning notes for AI-assisted development.
+│   └── claude-comm/ — Centralized Markdown notes for async agent communication.
 ├── scripts/ — Automation helpers, including the CSV→JSON build script for bundling data with the app.​
 ├── .github/workflows/ — Continuous integration workflows handling backend checks and automated reviews.
 ├── README.md, XCODE_BUILD_SETUP.md — Contributor onboarding guide and Xcode build automation instructions.
@@ -71,25 +74,32 @@ WavelengthWatch is a **watch-only app** that displays the Archetypal Wavelength 
 ### Key Components
 
 **Frontend (SwiftUI watchOS)**:
-- `ContentView.swift`: Main app with embedded JSON datasets and layered navigation
-- **Dual-axis scrolling**: Vertical for layers (Beige→Purple→Red→etc.), horizontal for phases (Rising→Peaking→etc.)
-- **Embedded data**: All curriculum and strategies are bundled as JSON strings to ensure offline functionality
-- **Data structures**: `Phase` enum, `Strategy`, `CurriculumEntry`, and `LayerHeader` models
+- `ContentView.swift`: Main watch UI for browsing curriculum, logging journal entries, and surfacing quick confirmations.
+- **Dual-axis scrolling**: Vertical for layers (Beige→Purple→Red→etc.), horizontal for phases (Rising→Peaking→etc.).
+- **Embedded data**: Curriculum and strategies are bundled as JSON strings to ensure offline functionality, while live updates come from `/api/v1/catalog` when connectivity exists.
+- **Journal integration**: `JournalClient` lives in `Services/` and posts entries directly to the backend, deriving a stable pseudo-user identifier from `UserDefaults`.
 
 **Backend (FastAPI)**:
-- `backend/app.py`: Minimal API serving JSON endpoints (`/curriculum`, `/strategies`, `/health`)
-- `backend/data/`: JSON files converted from CSV sources using `csv_to_json.py`
-- Designed for static hosting (S3/CloudFront) or lightweight deployment
+- `backend/app.py`: Application factory wiring routers and middleware.
+- `backend/models.py`: SQLModel tables for layers, phases, curriculum items, strategies, and the shipping `Journal` table.
+- `backend/routers/journal.py`: CRUD routes under `/api/v1/journal` with eager relationship loading so responses include related curriculum/strategy payloads.
+- `backend/schemas.py`: Pydantic models that coerce timestamps to UTC and validate foreign keys via the service layer.
+
+### Journal System Notes
+- **Data model**: A single `Journal` row ties back to `Curriculum` (required) and optionally `Strategy`/`secondary_curriculum` using SQLModel relationships. The `InitiatedBy` enum tracks whether the entry was self-started or triggered by automation.
+- **Request lifecycle**: The watch sends `created_at`, `user_id`, curriculum IDs, and optional strategy data. The router guards referential integrity and re-queries with joined relationships before returning the hydrated response.
+- **Strengths**: Minimal schema surface, strong alignment with existing catalog tables, and straightforward to extend with analytics queries. Because joins happen on the server, clients can stay slim and reuse the same curriculum models.
+- **Trade-offs**: No offline queue or retry buffer yet, so failures must be retried manually. Additional relationships (e.g., multiple secondary feelings) will require schema evolution once migrations become part of the deployment story.
 
 ### Data Flow
-1. **Primary**: App uses embedded JSON datasets in Swift code
-2. **Optional**: Background refresh can fetch latest data from backend endpoints
-3. **Development**: CSV files in `backend/data/` are converted to JSON for both backend serving and frontend embedding
+1. The watch renders bundled JSON immediately.
+2. Optional background refresh hits `/api/v1/catalog` for updated curriculum and `/api/v1/journal` for history when needed.
+3. Journal submissions call `/api/v1/journal` and rely on backend joins to return hydrated entries for UI confirmation.
 
 ### Navigation Architecture
-- **Outer TabView**: Vertical scrolling through "layers" (Strategies, Beige, Purple, Red, etc.) with 90° rotation
-- **Inner TabView**: Horizontal scrolling through phases within each layer
-- **Detail Views**: `CurriculumDetailView` for medicine/toxic pairs, `StrategyListView` for strategies
+- **Outer TabView**: Vertical scrolling through "layers" (Strategies, Beige, Purple, Red, etc.) with 90° rotation.
+- **Inner TabView**: Horizontal scrolling through phases within each layer.
+- **Detail Views**: `CurriculumDetailView` for medicine/toxic pairs, `StrategyListView` for strategies.
 
 ## Development Guidelines (from AGENTS.md)
 

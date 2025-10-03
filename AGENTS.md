@@ -70,7 +70,17 @@ Agents working on this project must abide by the following operating principles:
 
   - Restoration leads to Rising.
 
-  - Agents are expected to work in cycles: test → think → implement → test → think → refine → repeat (until all green).
+ - Agents are expected to work in cycles: test → think → implement → test → think → refine → repeat (until all green).
+
+### Journal Implementation Snapshot
+
+- **Backend schema**: `backend/models.py` defines a `Journal` SQLModel table linked to curriculum and optional strategy rows with an `InitiatedBy` enum tracking self vs. scheduled entries.
+- **Validation surface**: Pydantic schemas in `backend/schemas.py` coerce incoming timestamps to UTC and ensure required fields exist before writes. `backend/routers/journal.py` rehydrates responses with joined curriculum/strategy payloads so clients stay simple.
+- **Watch client**: `JournalClient` builds a stable pseudo-user ID from `UserDefaults`, stamps the current time, and posts to `/api/v1/journal`. Alerts inside `ContentView` trigger submissions and surface success/failure feedback.
+- **Merits**: Minimal schema footprint, single endpoint for create/read/update/delete, and strong reuse of existing curriculum relationships.
+- **Trade-offs**: No offline queue or retry buffer yet; analytics beyond the existing joins will require additional persistence decisions when production migrations begin.
+
+Keep this baseline in mind when evaluating new prompts—most redesign requests start from this already-functional flow.
 
 ## Repository Directory Overview
 
@@ -86,6 +96,7 @@ WavelengthWatch/
 │   └── WavelengthWatch Watch App/ — SwiftUI code organized into App, Assets, Models, Services, Resources, and ViewModels for the watch experience.
 ├── tests/ — Pytest suite validating backend configuration and each API surface area.​
 ├── prompts/ — Product and process prompts that capture planning notes for AI-assisted development.
+│   └── claude-comm/ — Centralized Markdown notes for Claude/agent communication (add new coordination docs here).
 ├── scripts/ — Automation helpers, including the CSV→JSON build script for bundling data with the app.​
 ├── .github/workflows/ — Continuous integration workflows handling backend checks and automated reviews.
 ├── README.md, XCODE_BUILD_SETUP.md — Contributor onboarding guide and Xcode build automation instructions.
