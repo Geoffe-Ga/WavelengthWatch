@@ -2,29 +2,21 @@
 
 ## Overview
 
-WavelengthWatch is a watchOS-only app that brings the Archetypal Wavelength to your wrist. You can horizontally scroll through the six phases of the Wavelength, each phase offering a pocket-sized guide to its “medicinal” and “toxic” expressions. Tap on a phase to reveal a quick box of wisdom and self-care strategies, then swipe to the next when you’re ready. The goal is maximum uptime on your personal Apple Watch: even offline, the guidance is bundled into the app, and when connectivity is available, background refresh pulls the latest updates.
+WavelengthWatch is a watchOS-only companion for the Archetypal Wavelength. The watch app lets you browse every layer and phase, surfaces “medicinal” and “toxic” expressions side-by-side, and offers context-aware self-care strategies. Background refresh keeps the content current, while offline storage guarantees the curriculum is always available from your wrist.
 
 _Status_: The project has not yet been deployed to production. An eventual App Store launch is planned, so formal database migrations are not currently required.
 
-- **Watch-Only App (SwiftUI)**: Built in Xcode 16.4, runs natively on watchOS 11.6.1 (Apple Watch Series 9).
-- **Dynamic Curriculum Catalog**: The watch loads the `/api/v1/catalog` endpoint, which delivers joined layer/phase/strategy data (with IDs) and caches it locally for 24 hours.
-- **Journaling Support**: When a user records how they feel, the watch posts real curriculum and strategy identifiers to the backend journal endpoint.
-- **Offline-first Caching**: Cached catalog responses are stored on disk and surfaced immediately when the network is unavailable; stale caches are refreshed in the background.
-- **FastAPI Backend**: A lightweight Python service (`backend/app.py`) exposes CRUD endpoints plus the new aggregated catalog feed with appropriate cache headers.
-- **CI and Pre-commit**:
-  - GitHub Actions workflow builds the watch app on a simulator, runs SwiftLint/SwiftFormat checks, and validates backend tests.
-  - Pre-commit hooks enforce linting and formatting for both Swift (via Mint, SwiftLint, SwiftFormat) and Python (via Mypy, Ruff, etc. in the backend).
+- **watchOS SwiftUI app** – The `frontend/WavelengthWatch/WavelengthWatch.xcodeproj` target drives the UI with `ContentViewModel`, coordinating catalog loading, user selections, and journal submission feedback for the active layer and phase state.
+- **Aggregated curriculum API** – The FastAPI service (`backend/app.py`) mounts routers for catalog, layer, phase, curriculum, strategy, and journal data, seeding its SQLite database on startup before serving `/api/v1/*` routes.
+- **Disk-backed catalog caching** – `CatalogRepository` persists the aggregated `/api/v1/catalog` payload to the watch’s caches directory with a 24-hour TTL, instantly replaying saved data before attempting a refresh.
+- **Journal logging loop** – `JournalClient` stamps a stable pseudo-user ID, posts the selected curriculum, secondary curriculum (when relevant), and strategy IDs to `/api/v1/journal`, and surfaces success or retry messaging in the UI. The backend validates those references and returns hydrated curriculum/strategy objects.
+- **Configurable networking** – `AppConfiguration` reads the API base URL from `APIConfiguration.plist`, asserting in debug builds when the placeholder host is still active so local development misconfigurations are caught early.
 
-## Journal System Architecture
+## Implementation Snapshot
 
-The shipping journal experience is a coordinated loop between the FastAPI backend and the watch app. Understanding the current solution helps future contributors reason about requested upgrades without discarding the working baseline.
-
-- **Backend data model**: `backend/models.py` defines a single `Journal` SQLModel table keyed by curriculum and optional strategy references. A `sqlalchemy.Enum` (`InitiatedBy`) tracks whether an entry is self-started or scheduled. The model intentionally keeps the schema narrow—most denormalized context (layer/phase metadata) is resolved at query time via relationships so reads return rich objects without duplicating data.
-- **Validation & serialization**: Pydantic schemas in `backend/schemas.py` validate ISO timestamps, coerce them to UTC, and ensure foreign keys exist before writes. `JournalRead` embeds the joined curriculum and strategy payloads the watch already understands, which keeps the API single-purpose.
-- **API surface**: `backend/routers/journal.py` exposes CRUD endpoints under `/api/v1/journal`. The router loads related curriculum/strategy rows using `joinedload` so clients always receive hydrated objects. Filtering by user, strategy, and time range is supported today and is covered by `tests/backend/test_journal_api.py`.
-- **Watch client flow**: `JournalClient` (Swift) derives a stable pseudo-user identifier from `UserDefaults`, stamps the current time, and posts straight to `/api/v1/journal`. The UI asks for lightweight confirmation before calling `submit`, then reuses the API response to update on-device state.
-- **Merits**: The approach is simple to reason about, works offline until submission time, and keeps the backend schema aligned with the catalog tables. Having the backend join related curriculum/strategy information reduces the amount of state the watch must maintain.
-- **Trade-offs**: There is no batching or offline queue yet, so failed submissions must be retried manually. The single-table approach makes analytics that depend on multiple combos or self-care selections harder, and introducing additional relationships will require new migrations when production deployment begins.
+- **Catalog delivery** – `build_catalog` aggregates layers, phases, curriculum entries, and strategies into a single payload, ordering phases consistently and attaching cache headers so clients can reuse responses. The watch reverses the layer list for presentation, keeps the server-provided phase order, and rewinds persisted selections when phase data changes.
+- **Journal system** – The `Journal` table stores the primary curriculum, optional secondary curriculum, and strategy identifiers alongside a timestamp and generated user ID. Router helpers validate references, eagerly hydrate relationships for every CRUD operation, and expose filtering by user, strategy, or date range.
+- **Offline behaviour** – `ContentViewModel` immediately applies any cached catalog, displays loading or retry UI states, and persists selected indices via `AppStorage`. `CatalogRepository` encodes cached payloads with their fetch timestamp, automatically evicting stale data or decoding failures before requesting a fresh copy.
 
 ## Repository Structure
 
@@ -37,7 +29,7 @@ WavelengthWatch/
 │   ├── routers/ — Endpoint modules covering catalog, curriculum, journal, layer, phase, and strategy routes.
 │   └── tools/ — Utilities like CSV-to-JSON conversion and database seeding scripts used during setup and builds.
 ├── frontend/ — watchOS SwiftUI project containing the main watch target, tests, and configuration docs for collaborators.
-│   └── WavelengthWatch Watch App/ — SwiftUI code organized into App, Assets, Models, Services, Resources, and ViewModels for the watch experience.
+│   └── WavelengthWatch/ — Contains the Xcode project, watch app sources, and related tests/resources.
 ├── tests/ — Pytest suite validating backend configuration and each API surface area.​
 ├── prompts/ — Product and process prompts that capture planning notes for AI-assisted development.
 │   └── claude-comm/ — Centralized Markdown notes authored by Claude or other agents for async communication.
@@ -49,31 +41,41 @@ WavelengthWatch/
 
 ## Configuring the Watch API Base URL
 
-The watch app resolves its networking configuration from `Resources/APIConfiguration.plist` inside the watch target. The plist contains an `API_BASE_URL` key that defaults to `https://api.not-configured.local`, a sentinel host that intentionally fails if you try to talk to it.
+The watch target reads `API_BASE_URL` from `frontend/WavelengthWatch/WavelengthWatch Watch App/Resources/APIConfiguration.plist`. The default host intentionally points at `https://api.not-configured.local`, so the app refuses to talk to the network until you choose a real backend.
 
-- **Simulator / local development**: duplicate the `Debug` configuration or edit the plist entry so it points at your tunnel or `http://127.0.0.1:8000` (expose the port via ngrok if you need to reach a real watch).
-- **Release builds / TestFlight**: override the same key in Xcode’s Build Settings (`Info.plist Values`) or provide an environment-specific plist per configuration.
-- The `AppConfiguration` helper logs (and asserts in debug builds) when the app still points at the placeholder host so you notice misconfigurations before shipping.
+- **Simulator / local development** – Update the plist (or override it per build configuration) to `http://127.0.0.1:8000` or your tunnel before launching the watch app.
+- **Release builds / TestFlight** – Override the same key in **Build Settings → Info.plist Values** or check in configuration-specific plists so every build channel targets the correct environment.
+- `AppConfiguration` logs and asserts in debug builds when the placeholder host is still active, giving you an early warning about misconfiguration.
 
-When the backend changes environment (e.g., staging vs. production), check in a plist update so other developers inherit the same defaults. See `frontend/WavelengthWatch/API_CONFIGURATION.md` for more operational notes.
+When the backend changes environment (e.g., staging vs. production), check in the plist change so other developers inherit the same defaults. See `frontend/WavelengthWatch/API_CONFIGURATION.md` for more operational notes.
 
 ## Getting Started
 
 ### Frontend (watchOS)
-1. Open `frontend/watch-frontend/WavelengthWatch.xcodeproj` in Xcode 16.4.
-2. Select your Apple Watch (or simulator) as the run destination.
-3. Press ▶ to build and run.
+1. Open `frontend/WavelengthWatch/WavelengthWatch.xcodeproj` in Xcode 16.4 or newer.
+2. Select an Apple Watch simulator (or paired device) as the run destination.
+3. Update `APIConfiguration.plist` with your backend URL, then press ▶ to build and run.
 
 ### Backend (FastAPI)
-1. Install dependencies:
+1. Create and activate a virtual environment, then install dependencies:
    ```bash
-   cd backend
-   pip install -r requirements.txt
+   python -m venv .venv
+   source .venv/bin/activate
+   pip install --upgrade pip
+   pip install -r backend/requirements.txt
+   pip install -r backend/requirements-dev.txt
+   ```
+2. Start the API (from either the repository root or `backend/` directory):
+   ```bash
+   python -m uvicorn backend.app:app --reload
+   ```
+   The server seeds its SQLite database on first run; re-run `python -m backend.tools.seed_data` if you need to repopulate tables manually.
+3. Visit http://127.0.0.1:8000/health to confirm the service is responding, or hit `/api/v1/catalog` to inspect the aggregated payload.
 
-2. Run locally:
+### Tests
+
+Run the backend test suite from the repository root:
+
 ```bash
-uvicorn app:app --reload
+pytest
 ```
-
-3. Visit http://127.0.0.1:8000/curriculum
- to see the JSON served.
