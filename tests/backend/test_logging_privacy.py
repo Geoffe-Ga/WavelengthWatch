@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import logging
 import importlib
+import logging
 from collections.abc import Sequence
 
 import pytest
@@ -48,7 +48,10 @@ def test_scrub_sensitive_data_recurses_through_nested_structures():
     assert sanitized["user_id"] == logging_config.REDACTED_TEXT
     assert sanitized["created_at"] == logging_config.REDACTED_TEXT
     assert sanitized["context"]["notes"] == logging_config.REDACTED_TEXT
-    assert sanitized["context"]["measurements"][0]["user_id"] == logging_config.REDACTED_TEXT
+    assert (
+        sanitized["context"]["measurements"][0]["user_id"]
+        == logging_config.REDACTED_TEXT
+    )
     assert (
         sanitized["context"]["measurements"][1]["secondary_curriculum_id"]
         == logging_config.REDACTED_TEXT
@@ -56,7 +59,9 @@ def test_scrub_sensitive_data_recurses_through_nested_structures():
     assert sanitized["context"]["strategy_id"] == 3
 
 
-def test_logging_filter_redacts_payload_before_emission(caplog: pytest.LogCaptureFixture):
+def test_logging_filter_redacts_payload_before_emission(
+    caplog: pytest.LogCaptureFixture,
+):
     from backend import logging_config
 
     logging_config.configure_logging()
@@ -100,7 +105,9 @@ def test_logging_filter_sanitizes_f_strings(caplog: pytest.LogCaptureFixture):
     assert "2024-07-02T08:00:00Z" not in log_output
 
 
-def test_logging_filter_sanitizes_percent_format_strings(caplog: pytest.LogCaptureFixture):
+def test_logging_filter_sanitizes_percent_format_strings(
+    caplog: pytest.LogCaptureFixture,
+):
     from backend import logging_config
 
     logging_config.configure_logging()
@@ -128,7 +135,9 @@ class _SequenceRequiringMarker(Sequence):
         return len(self._data)
 
 
-def test_logging_filter_handles_sequence_constructor_fallback(caplog: pytest.LogCaptureFixture):
+def test_logging_filter_handles_sequence_constructor_fallback(
+    caplog: pytest.LogCaptureFixture,
+):
     from backend import logging_config
 
     logging_config.configure_logging()
@@ -138,7 +147,9 @@ def test_logging_filter_handles_sequence_constructor_fallback(caplog: pytest.Log
     with caplog.at_level(logging.INFO):
         logger.info(
             "custom sequence payload",
-            extra={"items": _SequenceRequiringMarker([{"user_id": 5}], marker="journal")},
+            extra={
+                "items": _SequenceRequiringMarker([{"user_id": 5}], marker="journal")
+            },
         )
 
     record = caplog.records[0]

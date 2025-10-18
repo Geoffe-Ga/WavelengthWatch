@@ -23,8 +23,9 @@ _SENSITIVE_FIELDS = {
 }
 
 
-# Heuristic replacements for common f-string/percent-formatting mistakes. This is best-effort
-# protection—the preferred guidance is to send identifiers via structured payloads.
+# Heuristic replacements for common f-string/percent-formatting
+# mistakes. This is best-effort protection—the preferred guidance is
+# to send identifiers via structured payloads.
 _STRING_PATTERNS: tuple[tuple[re.Pattern[str], Callable[[re.Match[str]], str]], ...] = (
     (
         re.compile(r"(?i)(\buser(?:[_\s]?id)?)(\s*(?:=|:)?\s*)([0-9a-zA-Z-]+)"),
@@ -75,9 +76,9 @@ def scrub_sensitive_data(value: Any) -> Any:
             for key, val in value.items()
         }
 
-    if isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
+    if isinstance(value, Sequence) and not isinstance(value, str | bytes | bytearray):
         redacted_values = [scrub_sensitive_data(item) for item in value]
-        constructor = tuple if isinstance(value, tuple) else type(value)
+        constructor = tuple if isinstance(value, tuple) else list
         try:
             return constructor(redacted_values)
         except TypeError:
@@ -97,10 +98,10 @@ class _SensitiveDataFilter(logging.Filter):
             if isinstance(attr_value, Mapping):
                 setattr(record, attr_name, scrub_sensitive_data(attr_value))
             elif isinstance(attr_value, Sequence) and not isinstance(
-                attr_value, (str, bytes, bytearray)
+                attr_value, str | bytes | bytearray
             ):
                 sanitized = [scrub_sensitive_data(item) for item in attr_value]
-                constructor = tuple if isinstance(attr_value, tuple) else type(attr_value)
+                constructor = tuple if isinstance(attr_value, tuple) else list
                 try:
                     reconstructed = constructor(sanitized)
                 except TypeError:
