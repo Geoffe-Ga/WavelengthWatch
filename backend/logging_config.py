@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Mapping, Sequence
-from typing import Any, Callable
+import re
+from collections.abc import Callable, Mapping, Sequence
+from typing import Any
 
 REDACTED_TEXT = "[REDACTED]"
 
@@ -22,8 +23,43 @@ _SENSITIVE_FIELDS = {
 }
 
 
+# Heuristic replacements for common f-string/percent-formatting mistakes. This is best-effort
+# protection—the preferred guidance is to send identifiers via structured payloads.
+_STRING_PATTERNS: tuple[tuple[re.Pattern[str], Callable[[re.Match[str]], str]], ...] = (
+    (
+        re.compile(r"(?i)(\buser(?:[_\s]?id)?)(\s*(?:=|:)?\s*)([0-9a-zA-Z-]+)"),
+        lambda match: f"{match.group(1)}{match.group(2)}{REDACTED_TEXT}",
+    ),
+    (
+        re.compile(r"(?i)(\bdevice(?:[_\s]?id)?)(\s*(?:=|:)?\s*)([0-9a-zA-Z-]+)"),
+        lambda match: f"{match.group(1)}{match.group(2)}{REDACTED_TEXT}",
+    ),
+    (
+        re.compile(r"(?i)(\bcreated[_\s]?at\b)(\s*(?:=|:)?\s*)([^\s,;]+)"),
+        lambda match: f"{match.group(1)}{match.group(2)}{REDACTED_TEXT}",
+    ),
+    (
+        re.compile(r"(?i)(\bupdated[_\s]?at\b)(\s*(?:=|:)?\s*)([^\s,;]+)"),
+        lambda match: f"{match.group(1)}{match.group(2)}{REDACTED_TEXT}",
+    ),
+    (
+        re.compile(r"\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z\b"),
+        lambda match: REDACTED_TEXT,
+    ),
+)
+
+
 def _is_sensitive_field(name: str) -> bool:
     return name.lower() in _SENSITIVE_FIELDS
+
+
+def _scrub_string_message(message: str) -> str:
+    """Apply lightweight regex scrubbing to formatted string messages."""
+
+    sanitized = message
+    for pattern, replacement in _STRING_PATTERNS:
+        sanitized = pattern.sub(replacement, sanitized)
+    return sanitized
 
 
 def scrub_sensitive_data(value: Any) -> Any:
@@ -40,9 +76,12 @@ def scrub_sensitive_data(value: Any) -> Any:
         }
 
     if isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
-        constructor = tuple if isinstance(value, tuple) else type(value)
         redacted_values = [scrub_sensitive_data(item) for item in value]
-        return constructor(redacted_values)
+        constructor = tuple if isinstance(value, tuple) else type(value)
+        try:
+            return constructor(redacted_values)
+        except TypeError:
+            return list(redacted_values)
 
     return value
 
@@ -61,11 +100,12 @@ class _SensitiveDataFilter(logging.Filter):
                 attr_value, (str, bytes, bytearray)
             ):
                 sanitized = [scrub_sensitive_data(item) for item in attr_value]
-                setattr(
-                    record,
-                    attr_name,
-                    tuple(sanitized) if isinstance(attr_value, tuple) else type(attr_value)(sanitized),
-                )
+                constructor = tuple if isinstance(attr_value, tuple) else type(attr_value)
+                try:
+                    reconstructed = constructor(sanitized)
+                except TypeError:
+                    reconstructed = list(sanitized)
+                setattr(record, attr_name, reconstructed)
 
         if isinstance(record.msg, Mapping):
             record.msg = scrub_sensitive_data(record.msg)
@@ -82,6 +122,10 @@ class _SensitiveDataFilter(logging.Filter):
                 scrub_sensitive_data(arg) if isinstance(arg, Mapping) else arg
                 for arg in record.args
             ]
+
+        message = record.getMessage()
+        record.msg = _scrub_string_message(message)
+        record.args = ()
 
         return True
 

@@ -1,5 +1,7 @@
 # Journal Telemetry Threat Model
 
+**Last Reviewed:** 2024-07-15
+
 ## Scope
 - **Assets**: Journal entries (`user_id`, `created_at`, curriculum/strategy identifiers), request metadata, background seeding operations, diagnostic logs.
 - **Actors**: Watch app clients, backend maintainers, observability tooling, malicious network observers.
