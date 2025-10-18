@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session
 
 from . import database
+from .logging_config import configure_logging
 from .routers import catalog, curriculum, journal, layer, phase, strategy
 from .tools.seed_data import seed_database
 
@@ -51,6 +52,8 @@ def _determine_allowed_origins() -> list[str]:
 
 def create_application() -> FastAPI:
     """Configure and return the FastAPI application."""
+
+    configure_logging()
 
     @asynccontextmanager
     async def lifespan(
