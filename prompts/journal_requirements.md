@@ -1,0 +1,43 @@
+# Journal Feature Requirements Alignment
+
+## Workshop Summary
+- **Date**: 2024-05-04
+- **Participants**: Product (Avery), Design (Mika), Engineering (Backend – Sol, Frontend – Rina), QA (Jordan)
+- **Context**: Align on watchOS journal flow prior to Milestone 1 implementation work. Review tracer code baseline and confirm guardrails for backend and client behaviors.
+
+## UX Narrative and Core User Flow
+1. **Entry Triggers**
+   - User receives a subtle haptic notification when a scheduled journal session begins (no audible alert by default).
+   - User can also initiate a session manually from the "Reflect" tab on the watch.
+2. **Session Cadence**
+   - Default cadence is three check-ins per day (morning 08:00, afternoon 13:00, evening 20:00) aligned to the user's local timezone.
+   - Users may defer a prompt once; deferrals snooze for 45 minutes before re-alerting.
+3. **In-session Experience**
+   - Prompt card displays curriculum context (phase + strategy) with a single-sentence reflection cue.
+   - User responds via dictation or preset quick responses; entries auto-save upon confirmation.
+   - Confirmation screen offers "View Past Entries" shortcut.
+4. **Empty States**
+   - If no scheduled session exists, the Reflect tab shows the most recent curriculum phase and a "Start Reflection" button.
+
+## Timer Cadence Expectations
+- Backend scheduler emits session plans at midnight local time using the user's stored timezone.
+- Watch client refreshes cadence during app foreground events and when push notifications arrive.
+- Missed sessions older than 12 hours are marked "expired" and no haptic is sent.
+
+## Notification Behavior Under watchOS Constraints
+- All notifications are high-priority but silent (haptic-only) to comply with watchOS quiet mode.
+- Notification payload includes journal session ID for idempotent handling.
+- If the watch is locked, notifications show the prompt title only; body text requires unlock.
+
+## Backend Retention Rules
+- Journal entries persist for 18 months; thereafter they are archived to cold storage (S3 bucket) with GDPR-compliant deletion on request.
+- Soft delete flag (`deleted_at`) keeps entries from appearing in read APIs before hard delete occurs.
+- Audit trail retains creation channel (`self_initiated` vs `scheduled`) for analytics.
+
+## Assumptions and Open Questions
+- **Assumption**: Timezone preference already exists in user profile; no additional API required.
+- **Assumption**: Cold storage archiving pipeline will be managed by existing data retention service.
+- **Open Question**: Determine UX copy for expired session notifications in Milestone 1.
+
+## Testing Notes
+- No automated tests were created for this discovery task; future milestones must create unit tests covering cadence calculation, notification payloads, and retention enforcement when implemented.
