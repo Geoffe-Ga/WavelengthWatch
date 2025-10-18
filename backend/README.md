@@ -43,6 +43,11 @@ python -m backend.tools.seed_data
 - `APP_ENV` controls environment-specific behavior and defaults to `development`.
 - `CORS_ALLOWED_ORIGINS` should be a comma-separated list of allowed origins. It is required when `APP_ENV=production`; otherwise the API falls back to localhost defaults for development.
 
+## Privacy & Telemetry Guardrails
+
+- Logging is configured via `backend.logging_config.configure_logging()` (invoked during app startup) to redact sensitive identifiers such as `user_id`, `created_at`, and `secondary_curriculum_id` before any message is emitted. The filter also heuristically scrubs formatted strings and warns contributors to prefer structured payloads over f-strings for future proofing. See `tests/backend/test_logging_privacy.py` for coverage.
+- The [journal telemetry threat model](../prompts/claude-comm/journal-telemetry-threat-model.md) documents assumptions, identified risks, and required mitigations. Review it before introducing new telemetry sinks or expanding the journal schema.
+
 ## Health Check
 
 ```bash
