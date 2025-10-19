@@ -63,13 +63,15 @@ final class ContentViewModel: ObservableObject {
   func journal(
     curriculumID: Int,
     secondaryCurriculumID: Int? = nil,
-    strategyID: Int? = nil
+    strategyID: Int? = nil,
+    initiatedBy: InitiatedBy = .self_initiated
   ) async {
     do {
       _ = try await journalClient.submit(
         curriculumID: curriculumID,
         secondaryCurriculumID: secondaryCurriculumID,
-        strategyID: strategyID
+        strategyID: strategyID,
+        initiatedBy: initiatedBy
       )
       journalFeedback = JournalFeedback(kind: .success)
     } catch {

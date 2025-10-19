@@ -59,3 +59,49 @@ def test_journal_crud(client) -> None:
 
     missing = client.get(f"/api/v1/journal/{journal_id}")
     assert missing.status_code == 404
+
+
+def test_journal_initiated_by_field(client) -> None:
+    """Test initiated_by field validation and defaults."""
+    # Test default value (self)
+    payload_without_initiated_by = {
+        "created_at": "2025-10-19T12:00:00Z",
+        "user_id": 100,
+        "curriculum_id": 1,
+    }
+    response = client.post("/api/v1/journal", json=payload_without_initiated_by)
+    assert response.status_code == 201
+    body = response.json()
+    assert body["initiated_by"] == "self"
+
+    # Test explicit self value
+    payload_self = {
+        "created_at": "2025-10-19T12:00:00Z",
+        "user_id": 101,
+        "curriculum_id": 1,
+        "initiated_by": "self",
+    }
+    response = client.post("/api/v1/journal", json=payload_self)
+    assert response.status_code == 201
+    assert response.json()["initiated_by"] == "self"
+
+    # Test scheduled value
+    payload_scheduled = {
+        "created_at": "2025-10-19T12:00:00Z",
+        "user_id": 102,
+        "curriculum_id": 1,
+        "initiated_by": "scheduled",
+    }
+    response = client.post("/api/v1/journal", json=payload_scheduled)
+    assert response.status_code == 201
+    assert response.json()["initiated_by"] == "scheduled"
+
+    # Test invalid value
+    payload_invalid = {
+        "created_at": "2025-10-19T12:00:00Z",
+        "user_id": 103,
+        "curriculum_id": 1,
+        "initiated_by": "invalid_value",
+    }
+    response = client.post("/api/v1/journal", json=payload_invalid)
+    assert response.status_code == 422

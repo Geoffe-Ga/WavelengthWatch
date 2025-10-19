@@ -150,7 +150,7 @@ final class FailingRemoteStub: CatalogRemoteServicing {
 final class APIClientSpy: APIClientProtocol {
   var lastPath: String?
   var lastBody: Data?
-  var response = JournalResponseModel(id: 10, curriculumID: 5, secondaryCurriculumID: 7, strategyID: 9)
+  var response = JournalResponseModel(id: 10, curriculumID: 5, secondaryCurriculumID: 7, strategyID: 9, initiatedBy: .self_initiated)
   private let encoder: JSONEncoder
   private let decoder: JSONDecoder
 
@@ -182,7 +182,7 @@ struct JournalClientTests {
     let date = Date(timeIntervalSince1970: 1000)
     let client = JournalClient(apiClient: spy, dateProvider: { date }, userDefaults: defaults)
 
-    _ = try await client.submit(curriculumID: 5, secondaryCurriculumID: 7, strategyID: 9)
+    _ = try await client.submit(curriculumID: 5, secondaryCurriculumID: 7, strategyID: 9, initiatedBy: .scheduled)
 
     #expect(spy.lastPath == APIPath.journal)
     let decoder = JSONDecoder()
@@ -192,6 +192,7 @@ struct JournalClientTests {
     #expect(payload.secondaryCurriculumID == 7)
     #expect(payload.strategyID == 9)
     #expect(payload.createdAt == date)
+    #expect(payload.initiatedBy == .scheduled)
     let expected = Int("123456781234", radix: 16) ?? 0
     #expect(payload.userID == expected)
   }
@@ -232,13 +233,14 @@ final class JournalClientMock: JournalClientProtocol {
   func submit(
     curriculumID: Int,
     secondaryCurriculumID: Int?,
-    strategyID: Int?
+    strategyID: Int?,
+    initiatedBy: InitiatedBy
   ) async throws -> JournalResponseModel {
     submissions.append((curriculumID, secondaryCurriculumID, strategyID))
     if shouldFail {
       throw ErrorStub()
     }
-    return JournalResponseModel(id: 1, curriculumID: curriculumID, secondaryCurriculumID: secondaryCurriculumID, strategyID: strategyID)
+    return JournalResponseModel(id: 1, curriculumID: curriculumID, secondaryCurriculumID: secondaryCurriculumID, strategyID: strategyID, initiatedBy: initiatedBy)
   }
 }
 
