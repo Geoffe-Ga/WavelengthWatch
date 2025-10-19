@@ -496,6 +496,101 @@ struct JournalScheduleTests {
   }
 }
 
+struct ScheduleViewModelTests {
+  @MainActor
+  @Test func addsScheduleAndPersists() throws {
+    let defaults = UserDefaults(suiteName: "ScheduleViewModelTests.add")!
+    defaults.removePersistentDomain(forName: "ScheduleViewModelTests.add")
+
+    let viewModel = ScheduleViewModel(userDefaults: defaults)
+    #expect(viewModel.schedules.isEmpty)
+
+    var time = DateComponents()
+    time.hour = 8
+    time.minute = 0
+    let schedule = JournalSchedule(time: time, repeatDays: [1, 2, 3, 4, 5])
+
+    viewModel.addSchedule(schedule)
+    #expect(viewModel.schedules.count == 1)
+    #expect(viewModel.schedules[0].id == schedule.id)
+
+    // Verify persistence
+    let newViewModel = ScheduleViewModel(userDefaults: defaults)
+    #expect(newViewModel.schedules.count == 1)
+    #expect(newViewModel.schedules[0].id == schedule.id)
+  }
+
+  @MainActor
+  @Test func updatesSchedule() {
+    let defaults = UserDefaults(suiteName: "ScheduleViewModelTests.update")!
+    defaults.removePersistentDomain(forName: "ScheduleViewModelTests.update")
+
+    let viewModel = ScheduleViewModel(userDefaults: defaults)
+
+    var time = DateComponents()
+    time.hour = 8
+    time.minute = 0
+    let schedule = JournalSchedule(time: time, repeatDays: [1, 2, 3])
+    viewModel.addSchedule(schedule)
+
+    var updatedTime = DateComponents()
+    updatedTime.hour = 10
+    updatedTime.minute = 30
+    let updated = JournalSchedule(
+      id: schedule.id,
+      time: updatedTime,
+      enabled: false,
+      repeatDays: [0, 6]
+    )
+    viewModel.updateSchedule(updated)
+
+    #expect(viewModel.schedules.count == 1)
+    #expect(viewModel.schedules[0].time.hour == 10)
+    #expect(viewModel.schedules[0].enabled == false)
+  }
+
+  @MainActor
+  @Test func deletesSchedule() {
+    let defaults = UserDefaults(suiteName: "ScheduleViewModelTests.delete")!
+    defaults.removePersistentDomain(forName: "ScheduleViewModelTests.delete")
+
+    let viewModel = ScheduleViewModel(userDefaults: defaults)
+
+    var time = DateComponents()
+    time.hour = 8
+    time.minute = 0
+    viewModel.addSchedule(JournalSchedule(time: time))
+    viewModel.addSchedule(JournalSchedule(time: time))
+
+    #expect(viewModel.schedules.count == 2)
+
+    viewModel.deleteSchedule(at: IndexSet(integer: 0))
+    #expect(viewModel.schedules.count == 1)
+  }
+
+  @MainActor
+  @Test func togglesScheduleEnabled() {
+    let defaults = UserDefaults(suiteName: "ScheduleViewModelTests.toggle")!
+    defaults.removePersistentDomain(forName: "ScheduleViewModelTests.toggle")
+
+    let viewModel = ScheduleViewModel(userDefaults: defaults)
+
+    var time = DateComponents()
+    time.hour = 8
+    time.minute = 0
+    let schedule = JournalSchedule(time: time, enabled: true)
+    viewModel.addSchedule(schedule)
+
+    #expect(viewModel.schedules[0].enabled == true)
+
+    viewModel.toggleSchedule(schedule)
+    #expect(viewModel.schedules[0].enabled == false)
+
+    viewModel.toggleSchedule(schedule)
+    #expect(viewModel.schedules[0].enabled == true)
+  }
+}
+
 struct JournalUIInteractionTests {
   private func makeSampleStrategyPhase() -> CatalogPhaseModel {
     let medicinal = CatalogCurriculumEntryModel(id: 1, dosage: .medicinal, expression: "Commitment")
