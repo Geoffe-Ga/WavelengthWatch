@@ -496,6 +496,87 @@ struct JournalScheduleTests {
   }
 }
 
+final class MockNotificationCenter: UNUserNotificationCenter {
+  var requestedPermissions: UNAuthorizationOptions?
+  var permissionResult: Bool = true
+  var addedRequests: [UNNotificationRequest] = []
+  var removedAllPending = false
+
+  override func requestAuthorization(options: UNAuthorizationOptions) async throws -> Bool {
+    requestedPermissions = options
+    return permissionResult
+  }
+
+  override func add(_ request: UNNotificationRequest) async throws {
+    addedRequests.append(request)
+  }
+
+  override func removeAllPendingNotificationRequests() {
+    removedAllPending = true
+    addedRequests.removeAll()
+  }
+}
+
+struct NotificationSchedulerTests {
+  @Test func requestsPermissionWithCorrectOptions() async throws {
+    let mockCenter = MockNotificationCenter()
+    let scheduler = NotificationScheduler(notificationCenter: mockCenter)
+
+    let granted = try await scheduler.requestPermission()
+
+    #expect(granted == true)
+    #expect(mockCenter.requestedPermissions?.contains(.alert) == true)
+    #expect(mockCenter.requestedPermissions?.contains(.sound) == true)
+    #expect(mockCenter.requestedPermissions?.contains(.badge) == true)
+  }
+
+  @Test func schedulesNotificationsForEnabledSchedules() async throws {
+    let mockCenter = MockNotificationCenter()
+    let scheduler = NotificationScheduler(notificationCenter: mockCenter)
+
+    var time = DateComponents()
+    time.hour = 8
+    time.minute = 0
+
+    let enabledSchedule = JournalSchedule(time: time, enabled: true, repeatDays: [1, 3, 5])
+    let disabledSchedule = JournalSchedule(time: time, enabled: false, repeatDays: [2, 4])
+
+    try await scheduler.scheduleNotifications(for: [enabledSchedule, disabledSchedule])
+
+    // Should only schedule for enabled schedule (3 days = 3 notifications)
+    #expect(mockCenter.addedRequests.count == 3)
+    #expect(mockCenter.removedAllPending == true)
+  }
+
+  @Test func cancelsAllNotifications() {
+    let mockCenter = MockNotificationCenter()
+    let scheduler = NotificationScheduler(notificationCenter: mockCenter)
+
+    scheduler.cancelAllNotifications()
+
+    #expect(mockCenter.removedAllPending == true)
+  }
+
+  @Test func notificationContentIncludesScheduleInfo() async throws {
+    let mockCenter = MockNotificationCenter()
+    let scheduler = NotificationScheduler(notificationCenter: mockCenter)
+
+    var time = DateComponents()
+    time.hour = 8
+    time.minute = 0
+
+    let schedule = JournalSchedule(time: time, repeatDays: [1])
+
+    try await scheduler.scheduleNotifications(for: [schedule])
+
+    #expect(mockCenter.addedRequests.count == 1)
+    let request = mockCenter.addedRequests[0]
+    #expect(request.content.title == "Journal Check-In")
+    #expect(request.content.userInfo["initiatedBy"] as? String == "scheduled")
+    #expect(request.content.userInfo["scheduleId"] as? String == schedule.id.uuidString)
+  }
+}
+
 struct ScheduleViewModelTests {
   @MainActor
   @Test func addsScheduleAndPersists() throws {

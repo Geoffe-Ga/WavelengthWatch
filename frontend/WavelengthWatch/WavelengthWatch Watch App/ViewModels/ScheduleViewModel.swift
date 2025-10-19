@@ -6,10 +6,15 @@ final class ScheduleViewModel: ObservableObject {
   @Published var schedules: [JournalSchedule] = []
 
   private let userDefaults: UserDefaults
+  private let notificationScheduler: NotificationSchedulerProtocol
   private let schedulesKey = "com.wavelengthwatch.journalSchedules"
 
-  init(userDefaults: UserDefaults = .standard) {
+  init(
+    userDefaults: UserDefaults = .standard,
+    notificationScheduler: NotificationSchedulerProtocol = NotificationScheduler()
+  ) {
     self.userDefaults = userDefaults
+    self.notificationScheduler = notificationScheduler
     loadSchedules()
   }
 
@@ -34,9 +39,20 @@ final class ScheduleViewModel: ObservableObject {
       let encoder = JSONEncoder()
       let data = try encoder.encode(schedules)
       userDefaults.set(data, forKey: schedulesKey)
+
+      // Update notifications whenever schedules change
+      Task {
+        try? await notificationScheduler.scheduleNotifications(for: schedules)
+      }
     } catch {
       // Silently fail - could add error reporting here
     }
+  }
+
+  // MARK: - Permissions
+
+  func requestNotificationPermission() async throws -> Bool {
+    try await notificationScheduler.requestPermission()
   }
 
   // MARK: - CRUD Operations
