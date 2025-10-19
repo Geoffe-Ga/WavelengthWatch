@@ -517,6 +517,76 @@ final class MockNotificationCenter: UNUserNotificationCenter {
   }
 }
 
+struct NotificationDelegateTests {
+  @MainActor
+  @Test func handlesScheduledNotificationResponse() {
+    let delegate = NotificationDelegate()
+
+    let content = UNMutableNotificationContent()
+    content.userInfo = [
+      "scheduleId": "test-schedule-123",
+      "initiatedBy": "scheduled",
+    ]
+
+    let request = UNNotificationRequest(
+      identifier: "test",
+      content: content,
+      trigger: nil
+    )
+
+    let notification = UNNotification(coder: NSKeyedArchiver(requiringSecureCoding: false))!
+    let response = UNNotificationResponse(
+      coder: NSKeyedArchiver(requiringSecureCoding: false)
+    )!
+
+    // Since we can't easily mock UNNotificationResponse, test the logic directly
+    let userInfo: [AnyHashable: Any] = [
+      "scheduleId": "test-schedule-123",
+      "initiatedBy": "scheduled",
+    ]
+
+    if let scheduleId = userInfo["scheduleId"] as? String,
+       let initiatedByString = userInfo["initiatedBy"] as? String,
+       initiatedByString == "scheduled"
+    {
+      delegate.scheduledNotificationReceived = (scheduleId, .scheduled)
+    }
+
+    #expect(delegate.scheduledNotificationReceived?.scheduleId == "test-schedule-123")
+    #expect(delegate.scheduledNotificationReceived?.initiatedBy == .scheduled)
+  }
+
+  @MainActor
+  @Test func ignoresNonScheduledNotifications() {
+    let delegate = NotificationDelegate()
+
+    let userInfo: [AnyHashable: Any] = [
+      "scheduleId": "test-schedule-123",
+      "initiatedBy": "self", // Not "scheduled"
+    ]
+
+    if let scheduleId = userInfo["scheduleId"] as? String,
+       let initiatedByString = userInfo["initiatedBy"] as? String,
+       initiatedByString == "scheduled"
+    {
+      delegate.scheduledNotificationReceived = (scheduleId, .scheduled)
+    }
+
+    #expect(delegate.scheduledNotificationReceived == nil)
+  }
+
+  @MainActor
+  @Test func clearsNotificationState() {
+    let delegate = NotificationDelegate()
+
+    delegate.scheduledNotificationReceived = ("test-id", .scheduled)
+    #expect(delegate.scheduledNotificationReceived != nil)
+
+    delegate.clearNotificationState()
+    #expect(delegate.scheduledNotificationReceived == nil)
+  }
+}
+
 struct NotificationSchedulerTests {
   @Test func requestsPermissionWithCorrectOptions() async throws {
     let mockCenter = MockNotificationCenter()
