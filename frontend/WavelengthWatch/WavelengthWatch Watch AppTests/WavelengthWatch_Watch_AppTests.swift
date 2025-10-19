@@ -228,6 +228,7 @@ final class JournalClientMock: JournalClientProtocol {
   struct ErrorStub: Error {}
 
   var submissions: [(Int, Int?, Int?)] = []
+  var submittedInitiatedBy: InitiatedBy?
   var shouldFail = false
 
   func submit(
@@ -237,6 +238,7 @@ final class JournalClientMock: JournalClientProtocol {
     initiatedBy: InitiatedBy
   ) async throws -> JournalResponseModel {
     submissions.append((curriculumID, secondaryCurriculumID, strategyID))
+    submittedInitiatedBy = initiatedBy
     if shouldFail {
       throw ErrorStub()
     }
@@ -549,7 +551,10 @@ struct NotificationDelegateTests {
        let initiatedByString = userInfo["initiatedBy"] as? String,
        initiatedByString == "scheduled"
     {
-      delegate.scheduledNotificationReceived = (scheduleId, .scheduled)
+      delegate.scheduledNotificationReceived = ScheduledNotification(
+        scheduleId: scheduleId,
+        initiatedBy: .scheduled
+      )
     }
 
     #expect(delegate.scheduledNotificationReceived?.scheduleId == "test-schedule-123")
@@ -569,7 +574,10 @@ struct NotificationDelegateTests {
        let initiatedByString = userInfo["initiatedBy"] as? String,
        initiatedByString == "scheduled"
     {
-      delegate.scheduledNotificationReceived = (scheduleId, .scheduled)
+      delegate.scheduledNotificationReceived = ScheduledNotification(
+        scheduleId: scheduleId,
+        initiatedBy: .scheduled
+      )
     }
 
     #expect(delegate.scheduledNotificationReceived == nil)
@@ -579,11 +587,53 @@ struct NotificationDelegateTests {
   @Test func clearsNotificationState() {
     let delegate = NotificationDelegate()
 
-    delegate.scheduledNotificationReceived = ("test-id", .scheduled)
+    delegate.scheduledNotificationReceived = ScheduledNotification(
+      scheduleId: "test-id",
+      initiatedBy: .scheduled
+    )
     #expect(delegate.scheduledNotificationReceived != nil)
 
     delegate.clearNotificationState()
     #expect(delegate.scheduledNotificationReceived == nil)
+  }
+}
+
+struct ContentViewModelInitiationContextTests {
+  @MainActor
+  @Test func usesCurrentInitiatedByWhenNotOverridden() async {
+    let repository = CatalogRepositoryMock(cached: SampleData.catalog, result: .success(SampleData.catalog))
+    let journal = JournalClientMock()
+    let viewModel = ContentViewModel(repository: repository, journalClient: journal)
+
+    viewModel.setInitiatedBy(.scheduled)
+    await viewModel.journal(curriculumID: 1)
+
+    #expect(journal.submissions.count == 1)
+    #expect(journal.submittedInitiatedBy == .scheduled)
+  }
+
+  @MainActor
+  @Test func resetsToSelfInitiatedAfterSubmission() async {
+    let repository = CatalogRepositoryMock(cached: SampleData.catalog, result: .success(SampleData.catalog))
+    let journal = JournalClientMock()
+    let viewModel = ContentViewModel(repository: repository, journalClient: journal)
+
+    viewModel.setInitiatedBy(.scheduled)
+    await viewModel.journal(curriculumID: 1)
+
+    #expect(viewModel.currentInitiatedBy == .self_initiated)
+  }
+
+  @MainActor
+  @Test func allowsExplicitOverrideOfInitiatedBy() async {
+    let repository = CatalogRepositoryMock(cached: SampleData.catalog, result: .success(SampleData.catalog))
+    let journal = JournalClientMock()
+    let viewModel = ContentViewModel(repository: repository, journalClient: journal)
+
+    viewModel.setInitiatedBy(.scheduled)
+    await viewModel.journal(curriculumID: 1, initiatedBy: .self_initiated)
+
+    #expect(journal.submittedInitiatedBy == .self_initiated)
   }
 }
 

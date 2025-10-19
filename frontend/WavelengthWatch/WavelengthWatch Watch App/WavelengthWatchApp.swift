@@ -26,9 +26,14 @@ struct WavelengthWatch_Watch_AppApp: App {
 
 // MARK: - Notification Handling
 
+struct ScheduledNotification: Equatable {
+  let scheduleId: String
+  let initiatedBy: InitiatedBy
+}
+
 @MainActor
 final class NotificationDelegate: ObservableObject {
-  @Published var scheduledNotificationReceived: (scheduleId: String, initiatedBy: InitiatedBy)?
+  @Published var scheduledNotificationReceived: ScheduledNotification?
 
   func handleNotificationResponse(_ response: UNNotificationResponse) {
     let userInfo = response.notification.request.content.userInfo
@@ -37,7 +42,10 @@ final class NotificationDelegate: ObservableObject {
        let initiatedByString = userInfo["initiatedBy"] as? String,
        initiatedByString == "scheduled"
     {
-      scheduledNotificationReceived = (scheduleId, .scheduled)
+      scheduledNotificationReceived = ScheduledNotification(
+        scheduleId: scheduleId,
+        initiatedBy: .scheduled
+      )
     }
   }
 

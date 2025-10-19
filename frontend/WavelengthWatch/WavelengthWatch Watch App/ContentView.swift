@@ -28,6 +28,7 @@ struct ContentView: View {
   @AppStorage("selectedLayerIndex") private var storedLayerIndex = 0
   @AppStorage("selectedPhaseIndex") private var storedPhaseIndex = 0
   @StateObject private var viewModel: ContentViewModel
+  @EnvironmentObject private var notificationDelegate: NotificationDelegate
   @State private var layerSelection: Int
   @State private var phaseSelection: Int
   @State private var showLayerIndicator = false
@@ -124,6 +125,12 @@ struct ContentView: View {
             message: Text(message),
             dismissButton: .default(Text("OK")) { viewModel.journalFeedback = nil }
           )
+        }
+      }
+      .onChange(of: notificationDelegate.scheduledNotificationReceived) { _, newValue in
+        if let notification = newValue {
+          viewModel.setInitiatedBy(notification.initiatedBy)
+          notificationDelegate.clearNotificationState()
         }
       }
     }

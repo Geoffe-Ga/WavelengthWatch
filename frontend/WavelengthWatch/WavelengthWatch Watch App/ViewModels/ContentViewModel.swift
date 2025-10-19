@@ -9,6 +9,7 @@ final class ContentViewModel: ObservableObject {
   @Published var journalFeedback: JournalFeedback?
   @Published var selectedLayerIndex: Int
   @Published var selectedPhaseIndex: Int
+  @Published var currentInitiatedBy: InitiatedBy = .self_initiated
 
   private let repository: CatalogRepositoryProtocol
   private let journalClient: JournalClientProtocol
@@ -64,19 +65,26 @@ final class ContentViewModel: ObservableObject {
     curriculumID: Int,
     secondaryCurriculumID: Int? = nil,
     strategyID: Int? = nil,
-    initiatedBy: InitiatedBy = .self_initiated
+    initiatedBy: InitiatedBy? = nil
   ) async {
     do {
+      let effectiveInitiatedBy = initiatedBy ?? currentInitiatedBy
       _ = try await journalClient.submit(
         curriculumID: curriculumID,
         secondaryCurriculumID: secondaryCurriculumID,
         strategyID: strategyID,
-        initiatedBy: initiatedBy
+        initiatedBy: effectiveInitiatedBy
       )
       journalFeedback = JournalFeedback(kind: .success)
+      // Reset to self-initiated after successful submission
+      currentInitiatedBy = .self_initiated
     } catch {
       journalFeedback = JournalFeedback(kind: .failure("We couldn't log your entry. Please try again."))
     }
+  }
+
+  func setInitiatedBy(_ value: InitiatedBy) {
+    currentInitiatedBy = value
   }
 
   private func applyCatalog(_ catalog: CatalogResponseModel) {
