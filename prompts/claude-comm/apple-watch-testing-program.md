@@ -13,9 +13,82 @@
 - **watchOS Simulator:** Apple Watch Series 10 (46mm) - watchOS 11.0+
 - **Physical Device:** Apple Watch Series 6+ recommended
 - **Backend:** FastAPI server running on `http://localhost:8000` or configured API endpoint
+- **Python:** 3.13+ with virtual environment
+- **SQLite:** For database inspection
+
+### Initial Setup Commands
+
+#### 1. Set Up Backend Environment
+```bash
+# Navigate to project root
+cd /Users/geoffgallinger/Projects/WavelengthWatchRoot
+
+# Create and activate virtual environment (if not exists)
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Install dependencies
+pip install -e .
+
+# Verify installation
+python -c "import fastapi; print('FastAPI installed:', fastapi.__version__)"
+```
+
+#### 2. Start Backend Server
+```bash
+# From project root, with venv activated
+cd /Users/geoffgallinger/Projects/WavelengthWatchRoot
+
+# Start server with auto-reload
+uvicorn backend.app:app --reload --host 0.0.0.0 --port 8000
+
+# Server should start at: http://localhost:8000
+# API docs available at: http://localhost:8000/docs
+```
+
+Expected output:
+```
+INFO:     Will watch for changes in these directories: ['/Users/geoffgallinger/Projects/WavelengthWatchRoot']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [PID] using WatchFiles
+INFO:     Started server process [PID]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+```
+
+#### 3. Verify Backend Health
+```bash
+# Check if server is responding
+curl http://localhost:8000/
+
+# Should return: {"message":"WavelengthWatch API"}
+
+# Check API documentation
+open http://localhost:8000/docs
+```
+
+#### 4. Database Setup and Seeding
+```bash
+# The database is auto-created on first startup
+# Verify database exists
+ls -lh app.db
+
+# Check database has been seeded
+sqlite3 app.db "SELECT COUNT(*) FROM layer;"
+# Should return: 10 (number of layers)
+
+sqlite3 app.db "SELECT COUNT(*) FROM curriculum;"
+# Should return: ~hundreds (number of curriculum entries)
+
+sqlite3 app.db "SELECT COUNT(*) FROM strategy;"
+# Should return: ~hundreds (number of strategies)
+```
 
 ### Initial Setup Checklist
-- [ ] Backend server is running and accessible
+- [ ] Backend virtual environment activated
+- [ ] Backend server running on http://localhost:8000
+- [ ] API health check passing (curl http://localhost:8000/)
+- [ ] Database seeded with curriculum data
 - [ ] API_BASE_URL configured in Xcode project (Info.plist or APIConfiguration.plist)
 - [ ] Simulator paired with iPhone simulator
 - [ ] Physical watch paired and development profile installed
@@ -50,8 +123,42 @@
 
 **Verification:**
 ```bash
-# Check backend logs or query database
+# Method 1: Check via API
 curl http://localhost:8000/api/v1/journal | jq '.[-1]'
+
+# Method 2: Query database directly
+sqlite3 app.db "SELECT * FROM journal ORDER BY created_at DESC LIMIT 1;"
+
+# Method 3: Pretty-print with column headers
+sqlite3 app.db << 'EOF'
+.headers on
+.mode column
+SELECT
+  id,
+  datetime(created_at) as created,
+  curriculum_id,
+  secondary_curriculum_id,
+  strategy_id,
+  initiated_by
+FROM journal
+ORDER BY created_at DESC
+LIMIT 1;
+EOF
+
+# Verify curriculum relationship
+sqlite3 app.db << 'EOF'
+.headers on
+.mode column
+SELECT
+  j.id as journal_id,
+  c.expression as feeling,
+  c.dosage,
+  j.initiated_by
+FROM journal j
+JOIN curriculum c ON j.curriculum_id = c.id
+ORDER BY j.created_at DESC
+LIMIT 1;
+EOF
 ```
 
 ### 1.2 Secondary Feeling Selection
@@ -93,8 +200,28 @@ curl http://localhost:8000/api/v1/journal | jq '.[-1]'
 
 **Critical Test:** Verify strategy is logged against PRIMARY curriculum ID, not a fallback
 ```bash
-# Check last journal entry has correct curriculum_id
+# Method 1: Check via API
 curl http://localhost:8000/api/v1/journal | jq '.[-1] | {curriculum_id, strategy_id}'
+
+# Method 2: Query with full relationship details
+sqlite3 app.db << 'EOF'
+.headers on
+.mode column
+SELECT
+  j.id,
+  c.expression as primary_feeling,
+  s.strategy,
+  j.initiated_by
+FROM journal j
+JOIN curriculum c ON j.curriculum_id = c.id
+LEFT JOIN strategy s ON j.strategy_id = s.id
+WHERE j.strategy_id IS NOT NULL
+ORDER BY j.created_at DESC
+LIMIT 1;
+EOF
+
+# Verify primary curriculum ID matches the one selected (not fallback)
+# Compare with the curriculum you selected in the UI
 ```
 
 ### 1.4 Offline Queue Functionality
@@ -298,11 +425,68 @@ curl http://localhost:8000/api/v1/journal | jq '.[-1] | {curriculum_id, strategy
 
 **Objective:** Verify frontend-backend contract
 
+**Quick Database Inspection Commands:**
+```bash
+# View all tables
+sqlite3 app.db ".tables"
+
+# Count entries in each table
+sqlite3 app.db << 'EOF'
+SELECT 'Layers:' as table_name, COUNT(*) as count FROM layer
+UNION ALL SELECT 'Phases:', COUNT(*) FROM phase
+UNION ALL SELECT 'Curriculum:', COUNT(*) FROM curriculum
+UNION ALL SELECT 'Strategies:', COUNT(*) FROM strategy
+UNION ALL SELECT 'Journal Entries:', COUNT(*) FROM journal;
+EOF
+
+# View recent journal entries with full details
+sqlite3 app.db << 'EOF'
+.headers on
+.mode column
+SELECT
+  j.id,
+  datetime(j.created_at) as created,
+  c1.expression as primary_feeling,
+  c2.expression as secondary_feeling,
+  s.strategy,
+  j.initiated_by
+FROM journal j
+LEFT JOIN curriculum c1 ON j.curriculum_id = c1.id
+LEFT JOIN curriculum c2 ON j.secondary_curriculum_id = c2.id
+LEFT JOIN strategy s ON j.strategy_id = s.id
+ORDER BY j.created_at DESC
+LIMIT 10;
+EOF
+
+# View journal entries by initiated_by type
+sqlite3 app.db << 'EOF'
+.headers on
+.mode column
+SELECT
+  initiated_by,
+  COUNT(*) as count,
+  MIN(datetime(created_at)) as first_entry,
+  MAX(datetime(created_at)) as last_entry
+FROM journal
+GROUP BY initiated_by;
+EOF
+
+# Clear all journal entries (useful for testing)
+# WARNING: This deletes data!
+sqlite3 app.db "DELETE FROM journal;"
+```
+
 **API Endpoints to Test:**
 
 #### GET /api/v1/catalog
 ```bash
 curl http://localhost:8000/api/v1/catalog | jq
+
+# Or pretty-print specific sections
+curl http://localhost:8000/api/v1/catalog | jq '.layers[] | {color: .color, phase_count: (.phases | length)}'
+
+# Count total curriculum entries
+curl http://localhost:8000/api/v1/catalog | jq '[.layers[].phases[].medicinal[], .layers[].phases[].toxic[]] | length'
 ```
 - [ ] Returns all layers with phases
 - [ ] Includes medicinal/toxic curriculum entries
@@ -327,7 +511,21 @@ curl -X POST http://localhost:8000/api/v1/journal \
 
 #### GET /api/v1/journal
 ```bash
-curl http://localhost:8000/api/v1/journal?user_id=123456 | jq
+# Get all journal entries
+curl http://localhost:8000/api/v1/journal | jq
+
+# Filter by user_id (use your actual user_id from the watch)
+curl "http://localhost:8000/api/v1/journal?user_id=123456" | jq
+
+# Pretty-print with just essential fields
+curl http://localhost:8000/api/v1/journal | jq '.[] | {id, created_at, curriculum_id, initiated_by}'
+
+# Get entries from last 24 hours
+curl http://localhost:8000/api/v1/journal | jq --arg date "$(date -u -v-1d '+%Y-%m-%dT%H:%M:%S')" \
+  '[.[] | select(.created_at > $date)]'
+
+# Count entries by initiated_by
+curl http://localhost:8000/api/v1/journal | jq 'group_by(.initiated_by) | map({type: .[0].initiated_by, count: length})'
 ```
 - [ ] Returns user's journal entries
 - [ ] Includes related curriculum/strategy data
@@ -599,6 +797,240 @@ idevicesyslog -u <DEVICE_UDID> | grep WavelengthWatch
 - [ ] Real-world testing completed (1 week)
 - [ ] Performance benchmarks met
 - [ ] All known issues resolved or documented
+
+---
+
+## Troubleshooting Commands
+
+### Backend Issues
+
+#### Server Won't Start
+```bash
+# Check if port 8000 is already in use
+lsof -i :8000
+
+# Kill process using port 8000
+kill -9 $(lsof -t -i:8000)
+
+# Start server on different port
+uvicorn backend.app:app --reload --port 8001
+```
+
+#### Database Corrupted or Missing
+```bash
+# Backup existing database
+cp app.db app.db.backup
+
+# Delete and recreate database
+rm app.db
+# Server will auto-create and seed on next startup
+uvicorn backend.app:app --reload
+```
+
+#### View Server Logs
+```bash
+# Run server with verbose logging
+uvicorn backend.app:app --reload --log-level debug
+
+# Filter logs for specific endpoint
+uvicorn backend.app:app --reload 2>&1 | grep "/api/v1/journal"
+```
+
+### Database Inspection
+
+#### Export Journal Data to CSV
+```bash
+# Export all journal entries
+sqlite3 -header -csv app.db "SELECT * FROM journal;" > journal_export.csv
+
+# Export with relationships
+sqlite3 -header -csv app.db << 'EOF' > journal_detailed.csv
+SELECT
+  j.id,
+  j.created_at,
+  c1.expression as primary_feeling,
+  c1.dosage as primary_dosage,
+  c2.expression as secondary_feeling,
+  s.strategy,
+  j.initiated_by
+FROM journal j
+LEFT JOIN curriculum c1 ON j.curriculum_id = c1.id
+LEFT JOIN curriculum c2 ON j.secondary_curriculum_id = c2.id
+LEFT JOIN strategy s ON j.strategy_id = s.id
+ORDER BY j.created_at DESC;
+EOF
+
+# Open in Excel/Numbers
+open journal_detailed.csv
+```
+
+#### Find Specific Curriculum Items
+```bash
+# Search for curriculum by expression
+sqlite3 app.db << 'EOF'
+.headers on
+.mode column
+SELECT id, expression, dosage, layer_id, phase_id
+FROM curriculum
+WHERE expression LIKE '%Commitment%';
+EOF
+
+# Get all strategies for a specific phase
+sqlite3 app.db << 'EOF'
+.headers on
+.mode column
+SELECT s.id, s.strategy, p.name as phase, l.color as layer
+FROM strategy s
+JOIN phase p ON s.phase_id = p.id
+JOIN layer l ON s.layer_id = l.id
+WHERE p.name = 'Rising'
+ORDER BY l.color, s.strategy;
+EOF
+```
+
+#### Reset Specific Test Data
+```bash
+# Delete only self-initiated entries (keep scheduled)
+sqlite3 app.db "DELETE FROM journal WHERE initiated_by = 'self_initiated';"
+
+# Delete entries from last hour (for quick retest)
+sqlite3 app.db "DELETE FROM journal WHERE created_at > datetime('now', '-1 hour');"
+
+# Delete entries for specific user_id
+sqlite3 app.db "DELETE FROM journal WHERE user_id = 123456;"
+```
+
+### Xcode/Simulator Issues
+
+#### Simulator Not Responding
+```bash
+# List all simulators
+xcrun simctl list devices | grep "Apple Watch"
+
+# Delete unavailable simulators
+xcrun simctl delete unavailable
+
+# Erase specific simulator
+xcrun simctl erase "Apple Watch Series 10 (46mm)"
+
+# Restart simulator service
+killall -9 com.apple.CoreSimulator.CoreSimulatorService
+```
+
+#### Clear App Data on Simulator
+```bash
+# Get app bundle ID
+xcrun simctl listapps booted | grep WavelengthWatch
+
+# Uninstall app from simulator
+xcrun simctl uninstall booted com.geoffgallinger.WavelengthWatch
+
+# Clear UserDefaults
+# (uninstall/reinstall will clear this automatically)
+```
+
+#### Watch Logs from Simulator
+```bash
+# Stream all logs from watch simulator
+xcrun simctl spawn booted log stream --predicate 'subsystem == "com.geoffgallinger.WavelengthWatch"' --level debug
+
+# Filter for journal-related logs
+xcrun simctl spawn booted log stream --predicate 'subsystem == "com.geoffgallinger.WavelengthWatch"' | grep -i journal
+
+# Save logs to file
+xcrun simctl spawn booted log stream --predicate 'subsystem == "com.geoffgallinger.WavelengthWatch"' > watch_logs.txt
+```
+
+### Network Debugging
+
+#### Check Network Connectivity from Simulator
+```bash
+# Test backend from simulator's perspective
+# (Simulator uses host's localhost)
+curl http://localhost:8000/
+
+# Check if backend is accessible from network
+curl http://$(ipconfig getifaddr en0):8000/
+
+# Test with verbose output
+curl -v http://localhost:8000/api/v1/catalog
+```
+
+#### Monitor Network Requests
+```bash
+# Use mitmproxy to inspect traffic (requires installation)
+mitmproxy -p 8080
+
+# Or use built-in network debugging in Xcode:
+# Debug Navigator → Network → Enable Network Debugging
+```
+
+### Test Data Generation
+
+#### Create Test Journal Entries via API
+```bash
+# Create a batch of test entries
+for i in {1..10}; do
+  curl -X POST http://localhost:8000/api/v1/journal \
+    -H "Content-Type: application/json" \
+    -d "{
+      \"curriculum_id\": $((RANDOM % 100 + 1)),
+      \"user_id\": 123456,
+      \"initiated_by\": \"self_initiated\",
+      \"created_at\": \"$(date -u -v-${i}H '+%Y-%m-%dT%H:%M:%SZ')\"
+    }"
+  sleep 0.5
+done
+
+# Create test entries with strategies
+curl -X POST http://localhost:8000/api/v1/journal \
+  -H "Content-Type: application/json" \
+  -d '{
+    "curriculum_id": 1,
+    "strategy_id": 3,
+    "user_id": 123456,
+    "initiated_by": "self_initiated",
+    "created_at": "'"$(date -u '+%Y-%m-%dT%H:%M:%SZ')"'"
+  }'
+```
+
+### Performance Testing
+
+#### Benchmark API Endpoints
+```bash
+# Time single request
+time curl -s http://localhost:8000/api/v1/catalog > /dev/null
+
+# Run 100 requests and measure
+for i in {1..100}; do
+  curl -s -w "%{time_total}\n" -o /dev/null http://localhost:8000/api/v1/catalog
+done | awk '{sum+=$1} END {print "Average:", sum/NR, "seconds"}'
+
+# Use Apache Bench (if installed)
+ab -n 100 -c 10 http://localhost:8000/api/v1/catalog
+```
+
+#### Check Database Size and Performance
+```bash
+# Check database file size
+ls -lh app.db
+
+# Analyze database
+sqlite3 app.db "PRAGMA integrity_check;"
+sqlite3 app.db "PRAGMA optimize;"
+
+# Show table sizes
+sqlite3 app.db << 'EOF'
+SELECT
+  name,
+  SUM(pgsize) as size_bytes,
+  ROUND(SUM(pgsize) / 1024.0 / 1024.0, 2) as size_mb
+FROM dbstat
+WHERE name IN ('journal', 'curriculum', 'strategy', 'layer', 'phase')
+GROUP BY name
+ORDER BY size_bytes DESC;
+EOF
+```
 
 ---
 
