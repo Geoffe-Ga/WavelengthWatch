@@ -33,6 +33,7 @@ struct ContentView: View {
   @State private var phaseSelection: Int
   @State private var showLayerIndicator = false
   @State private var hideIndicatorTask: Task<Void, Never>?
+  @State private var showingMenu = false
 
   init() {
     let configuration = AppConfiguration()
@@ -131,6 +132,28 @@ struct ContentView: View {
         if let notification = newValue {
           viewModel.setInitiatedBy(notification.initiatedBy)
           notificationDelegate.clearNotificationState()
+        }
+      }
+      .toolbar {
+        ToolbarItem(placement: .topBarLeading) {
+          Button {
+            showingMenu = true
+          } label: {
+            Image(systemName: "ellipsis.circle")
+              .foregroundColor(.white.opacity(0.7))
+          }
+        }
+      }
+      .sheet(isPresented: $showingMenu) {
+        NavigationStack {
+          MenuView()
+            .toolbar {
+              ToolbarItem(placement: .cancellationAction) {
+                Button("Done") {
+                  showingMenu = false
+                }
+              }
+            }
         }
       }
     }
@@ -991,6 +1014,115 @@ struct StrategyCard: View {
     } message: {
       Text("Would you like to log \"\(strategy.strategy)\"?")
     }
+  }
+}
+
+// MARK: - Menu Views
+
+struct MenuView: View {
+  var body: some View {
+    List {
+      NavigationLink(destination: ScheduleSettingsView()) {
+        Label("Schedules", systemImage: "clock")
+      }
+
+      NavigationLink(destination: AnalyticsView()) {
+        Label("Analytics", systemImage: "chart.bar")
+      }
+
+      NavigationLink(destination: ConceptExplainerView()) {
+        Label("About Archetypal Wavelength", systemImage: "book")
+      }
+    }
+    .navigationTitle("Menu")
+    .navigationBarTitleDisplayMode(.inline)
+  }
+}
+
+struct AnalyticsView: View {
+  var body: some View {
+    VStack(spacing: 16) {
+      Image(systemName: "chart.bar.fill")
+        .font(.system(size: 48))
+        .foregroundColor(.blue.opacity(0.6))
+
+      Text("Analytics")
+        .font(.title2)
+        .fontWeight(.thin)
+
+      Text("Coming Soon")
+        .font(.caption)
+        .foregroundColor(.secondary)
+
+      Text("View your journal history, patterns, and insights.")
+        .font(.caption)
+        .foregroundColor(.secondary)
+        .multilineTextAlignment(.center)
+        .padding(.horizontal)
+    }
+    .padding()
+  }
+}
+
+struct ConceptExplainerView: View {
+  var body: some View {
+    ScrollView {
+      VStack(alignment: .leading, spacing: 16) {
+        Text("Archetypal Wavelength")
+          .font(.title2)
+          .fontWeight(.bold)
+
+        Text("The Archetypal Wavelength is a framework for understanding emotional and developmental patterns.")
+          .font(.body)
+
+        Group {
+          Text("Layers")
+            .font(.headline)
+            .padding(.top, 8)
+
+          Text("Each color represents a developmental stage, from Beige (survival) through Purple (tribal), Red (power), and beyond.")
+            .font(.caption)
+        }
+
+        Group {
+          Text("Phases")
+            .font(.headline)
+            .padding(.top, 8)
+
+          Text("Each layer cycles through phases: Rising, Peaking, Falling, Recovering, Integrating, and Embodying.")
+            .font(.caption)
+        }
+
+        Group {
+          Text("Dosages")
+            .font(.headline)
+            .padding(.top, 8)
+
+          Text("Each feeling exists in two forms:")
+            .font(.caption)
+
+          Text("• Medicinal: The healthy expression")
+            .font(.caption)
+            .padding(.leading)
+
+          Text("• Toxic: The shadow or excessive form")
+            .font(.caption)
+            .padding(.leading)
+        }
+
+        Group {
+          Text("Self-Care Strategies")
+            .font(.headline)
+            .padding(.top, 8)
+
+          Text("Each phase has specific strategies to help you navigate that emotional territory with grace.")
+            .font(.caption)
+        }
+      }
+      .padding()
+    }
+    .navigationTitle("About")
+    .navigationBarTitleDisplayMode(.inline)
   }
 }
 
