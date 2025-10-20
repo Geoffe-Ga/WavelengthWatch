@@ -447,18 +447,21 @@ xcodebuild test \
 
 ## Known Issues & Workarounds
 
-### Issue 1: Schedule Settings Not Accessible
-**Status:** ⚠️ Blocker for 1.5 testing
+### Issue 1: Schedule Settings Not Accessible ✅ RESOLVED
+**Status:** ✅ Fixed in commit 2069cbf
 **Description:** `ScheduleSettingsView` exists but no UI to access it
-**Workaround:** Manually navigate in code or add temporary button
-**Fix Required:** Add settings icon to ContentView toolbar
+**Fix:** Added three-dot menu button in top-left toolbar
+- Menu includes: Schedules, Analytics (placeholder), About Archetypal Wavelength
+- Accessible from any layer/phase
 
-### Issue 2: NotificationDelegate Not Wired
-**Status:** ⚠️ Medium priority
-**Location:** `WavelengthWatchApp.swift:67`
-**Description:** NotificationDelegateShim doesn't forward to NotificationDelegate
-**Impact:** Notification response handling may not work correctly
-**Fix Required:** Forward `didReceive response:` to NotificationDelegate
+### Issue 2: NotificationDelegate Not Wired ✅ RESOLVED
+**Status:** ✅ Fixed in commit d13e5b0
+**Location:** `WavelengthWatchApp.swift:62-72`
+**Description:** NotificationDelegateShim didn't forward to NotificationDelegate
+**Fix:** Added delegate property and forwarding logic
+- `NotificationDelegateShim.shared.delegate = notificationDelegate`
+- Forwards `didReceive response:` to `delegate.handleNotificationResponse()`
+- Tested with `shimForwardsNotificationResponseToDelegate`
 
 ### Issue 3: No Visual Feedback for Pending Queue
 **Status:** ℹ️ Enhancement
