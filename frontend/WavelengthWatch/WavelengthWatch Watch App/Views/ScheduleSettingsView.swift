@@ -113,42 +113,38 @@ struct ScheduleEditView: View {
   let schedule: JournalSchedule?
   let onSave: (JournalSchedule) -> Void
 
-  @State private var selectedHour: Int
-  @State private var selectedMinute: Int
+  @State private var selectedTime: Date
   @State private var selectedDays: Set<Int>
+  @State private var showingTimePicker = false
   @Environment(\.dismiss) private var dismiss
 
   init(schedule: JournalSchedule?, onSave: @escaping (JournalSchedule) -> Void) {
     self.schedule = schedule
     self.onSave = onSave
 
-    _selectedHour = State(initialValue: schedule?.time.hour ?? 8)
-    _selectedMinute = State(initialValue: schedule?.time.minute ?? 0)
+    // Convert DateComponents to Date for picker
+    let calendar = Calendar.current
+    let hour = schedule?.time.hour ?? 8
+    let minute = schedule?.time.minute ?? 0
+    let date = calendar.date(from: DateComponents(hour: hour, minute: minute)) ?? Date()
+
+    _selectedTime = State(initialValue: date)
     _selectedDays = State(initialValue: schedule?.repeatDays ?? [0, 1, 2, 3, 4, 5, 6])
   }
 
   var body: some View {
     Form {
       Section {
-        HStack {
-          Picker("Hour", selection: $selectedHour) {
-            ForEach(0 ..< 24) { hour in
-              Text("\(hour)").tag(hour)
-            }
+        Button {
+          showingTimePicker = true
+        } label: {
+          HStack {
+            Text("Set Time")
+              .foregroundColor(.primary)
+            Spacer()
+            Text(timeString)
+              .foregroundColor(.blue)
           }
-          .pickerStyle(.wheel)
-          .frame(width: 60)
-
-          Text(":")
-            .font(.title2)
-
-          Picker("Minute", selection: $selectedMinute) {
-            ForEach(0 ..< 60) { minute in
-              Text(String(format: "%02d", minute)).tag(minute)
-            }
-          }
-          .pickerStyle(.wheel)
-          .frame(width: 60)
         }
       } header: {
         Text("Time")
@@ -183,6 +179,15 @@ struct ScheduleEditView: View {
     }
     .navigationTitle(schedule == nil ? "New Schedule" : "Edit Schedule")
     .navigationBarTitleDisplayMode(.inline)
+    .sheet(isPresented: $showingTimePicker) {
+      TimePickerView(selectedTime: $selectedTime)
+    }
+  }
+
+  private var timeString: String {
+    let formatter = DateFormatter()
+    formatter.timeStyle = .short
+    return formatter.string(from: selectedTime)
   }
 
   private func toggleDay(_ day: Int) {
@@ -198,19 +203,54 @@ struct ScheduleEditView: View {
   }
 
   private func saveSchedule() {
-    var time = DateComponents()
-    time.hour = selectedHour
-    time.minute = selectedMinute
+    let calendar = Calendar.current
+    let components = calendar.dateComponents([.hour, .minute], from: selectedTime)
 
     let updatedSchedule = JournalSchedule(
       id: schedule?.id ?? UUID(),
-      time: time,
+      time: components,
       enabled: schedule?.enabled ?? true,
       repeatDays: selectedDays
     )
 
     onSave(updatedSchedule)
     dismiss()
+  }
+}
+
+struct TimePickerView: View {
+  @Binding var selectedTime: Date
+  @Environment(\.dismiss) private var dismiss
+
+  var body: some View {
+    NavigationStack {
+      VStack(spacing: 16) {
+        Text("Set Time")
+          .font(.headline)
+          .padding(.top)
+
+        DatePicker(
+          "Time",
+          selection: $selectedTime,
+          displayedComponents: .hourAndMinute
+        )
+        .datePickerStyle(.wheel)
+        .labelsHidden()
+
+        Button("Done") {
+          dismiss()
+        }
+        .foregroundColor(.blue)
+        .padding(.bottom)
+      }
+      .toolbar {
+        ToolbarItem(placement: .cancellationAction) {
+          Button("Cancel") {
+            dismiss()
+          }
+        }
+      }
+    }
   }
 }
 
