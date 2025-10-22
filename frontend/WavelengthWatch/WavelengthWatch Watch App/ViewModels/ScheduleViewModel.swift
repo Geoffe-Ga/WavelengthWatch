@@ -34,7 +34,7 @@ final class ScheduleViewModel: ObservableObject {
     }
   }
 
-  private func saveSchedules() {
+  func saveSchedules() {
     do {
       let encoder = JSONEncoder()
       let data = try encoder.encode(schedules)
@@ -72,14 +72,6 @@ final class ScheduleViewModel: ObservableObject {
 
   func deleteSchedule(at offsets: IndexSet) {
     schedules.remove(atOffsets: offsets)
-    saveSchedules()
-  }
-
-  func toggleSchedule(_ schedule: JournalSchedule) {
-    guard let index = schedules.firstIndex(where: { $0.id == schedule.id }) else {
-      return
-    }
-    schedules[index].enabled.toggle()
     saveSchedules()
   }
 }

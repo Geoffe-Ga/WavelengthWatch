@@ -7,7 +7,7 @@ struct ScheduleSettingsView: View {
   var body: some View {
     List {
       Section {
-        ForEach(viewModel.schedules) { schedule in
+        ForEach(Array(viewModel.schedules.enumerated()), id: \.element.id) { index, schedule in
           NavigationLink {
             ScheduleEditView(
               schedule: schedule,
@@ -16,9 +16,13 @@ struct ScheduleSettingsView: View {
               }
             )
           } label: {
-            ScheduleRow(schedule: schedule) {
-              viewModel.toggleSchedule(schedule)
-            }
+            ScheduleRow(
+              schedule: schedule,
+              isEnabled: Binding(
+                get: { viewModel.schedules[index].enabled },
+                set: { viewModel.schedules[index].enabled = $0; viewModel.saveSchedules() }
+              )
+            )
           }
         }
         .onDelete { offsets in
@@ -61,7 +65,7 @@ struct ScheduleSettingsView: View {
 
 struct ScheduleRow: View {
   let schedule: JournalSchedule
-  let onToggle: () -> Void
+  @Binding var isEnabled: Bool
 
   var body: some View {
     HStack {
@@ -75,11 +79,8 @@ struct ScheduleRow: View {
 
       Spacer()
 
-      Toggle("", isOn: .init(
-        get: { schedule.enabled },
-        set: { _ in onToggle() }
-      ))
-      .labelsHidden()
+      Toggle("", isOn: $isEnabled)
+        .labelsHidden()
     }
   }
 
