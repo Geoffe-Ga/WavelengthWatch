@@ -42,6 +42,11 @@ struct ScheduleSettingsView: View {
       }
     }
     .navigationTitle("Schedules")
+    .onAppear {
+      Task {
+        try? await viewModel.requestNotificationPermission()
+      }
+    }
     .sheet(isPresented: $showingAddSchedule) {
       NavigationStack {
         ScheduleEditView(

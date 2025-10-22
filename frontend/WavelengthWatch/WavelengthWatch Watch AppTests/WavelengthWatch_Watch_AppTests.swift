@@ -699,6 +699,22 @@ struct NotificationSchedulerTests {
 
 struct ScheduleViewModelTests {
   @MainActor
+  @Test func requestsNotificationPermission() async throws {
+    let mockCenter = MockNotificationCenter()
+    let scheduler = NotificationScheduler(notificationCenter: mockCenter)
+    let defaults = UserDefaults(suiteName: "ScheduleViewModelTests.permission")!
+    defaults.removePersistentDomain(forName: "ScheduleViewModelTests.permission")
+    let viewModel = ScheduleViewModel(userDefaults: defaults, notificationScheduler: scheduler)
+
+    let granted = try await viewModel.requestNotificationPermission()
+
+    #expect(granted == true)
+    #expect(mockCenter.requestedPermissions?.contains(.alert) == true)
+    #expect(mockCenter.requestedPermissions?.contains(.sound) == true)
+    #expect(mockCenter.requestedPermissions?.contains(.badge) == true)
+  }
+
+  @MainActor
   @Test func addsScheduleAndPersists() throws {
     let defaults = UserDefaults(suiteName: "ScheduleViewModelTests.add")!
     defaults.removePersistentDomain(forName: "ScheduleViewModelTests.add")
