@@ -770,7 +770,7 @@ struct ScheduleViewModelTests {
   }
 
   @MainActor
-  @Test func togglesScheduleEnabled() {
+  @Test func togglesScheduleEnabledViaDirectBinding() {
     let defaults = UserDefaults(suiteName: "ScheduleViewModelTests.toggle")!
     defaults.removePersistentDomain(forName: "ScheduleViewModelTests.toggle")
 
@@ -784,10 +784,13 @@ struct ScheduleViewModelTests {
 
     #expect(viewModel.schedules[0].enabled == true)
 
-    viewModel.toggleSchedule(schedule)
+    // Toggle via direct binding access (as ScheduleRow now does)
+    viewModel.schedules[0].enabled.toggle()
+    viewModel.saveSchedules()
     #expect(viewModel.schedules[0].enabled == false)
 
-    viewModel.toggleSchedule(schedule)
+    viewModel.schedules[0].enabled.toggle()
+    viewModel.saveSchedules()
     #expect(viewModel.schedules[0].enabled == true)
   }
 }
