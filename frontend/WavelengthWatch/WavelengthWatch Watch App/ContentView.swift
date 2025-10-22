@@ -57,107 +57,117 @@ struct ContentView: View {
   }
 
   var body: some View {
-    NavigationStack {
-      ZStack {
-        if viewModel.layers.isEmpty {
-          if viewModel.isLoading {
-            ProgressView("Loading curriculum…")
-              .foregroundStyle(.white)
-          } else if let error = viewModel.loadErrorMessage {
-            VStack(spacing: 12) {
-              Text(error)
-                .multilineTextAlignment(.center)
-              Button("Retry") {
-                Task { await viewModel.retry() }
+    ZStack {
+      NavigationStack {
+        ZStack {
+          if viewModel.layers.isEmpty {
+            if viewModel.isLoading {
+              ProgressView("Loading curriculum…")
+                .foregroundStyle(.white)
+            } else if let error = viewModel.loadErrorMessage {
+              VStack(spacing: 12) {
+                Text(error)
+                  .multilineTextAlignment(.center)
+                Button("Retry") {
+                  Task { await viewModel.retry() }
+                }
               }
+              .padding()
+            } else {
+              ProgressView("Loading curriculum…")
             }
-            .padding()
+          } else if viewModel.phaseOrder.isEmpty {
+            Text("No phase information available.")
           } else {
-            ProgressView("Loading curriculum…")
+            layeredContent
           }
-        } else if viewModel.phaseOrder.isEmpty {
-          Text("No phase information available.")
-        } else {
-          layeredContent
+        }
+        .task { await viewModel.loadCatalog() }
+        .onChange(of: viewModel.phaseOrder) {
+          adjustPhaseSelection()
+        }
+        .onChange(of: layerSelection) { _, newValue in
+          viewModel.selectedLayerIndex = newValue
+          storedLayerIndex = newValue
+          showLayerIndicator = true
+          scheduleLayerIndicatorHide()
+        }
+        .onChange(of: viewModel.selectedLayerIndex) { _, newValue in
+          if layerSelection != newValue {
+            layerSelection = newValue
+          }
+        }
+        .onChange(of: phaseSelection) { _, newValue in
+          guard viewModel.phaseOrder.count > 0 else { return }
+          let adjusted = PhaseNavigator.adjustedSelection(newValue, phaseCount: viewModel.phaseOrder.count)
+          if adjusted != newValue {
+            phaseSelection = adjusted
+          }
+          let normalized = PhaseNavigator.normalizedIndex(adjusted, phaseCount: viewModel.phaseOrder.count)
+          viewModel.selectedPhaseIndex = normalized
+          storedPhaseIndex = normalized
+        }
+        .onChange(of: viewModel.selectedPhaseIndex) { _, newValue in
+          let expected = newValue + 1
+          if phaseSelection != expected {
+            phaseSelection = expected
+          }
+        }
+        .alert(item: $viewModel.journalFeedback) { feedback in
+          switch feedback.kind {
+          case .success:
+            Alert(
+              title: Text("Entry Logged"),
+              message: Text("Thanks for checking in."),
+              dismissButton: .default(Text("OK")) { viewModel.journalFeedback = nil }
+            )
+          case let .failure(message):
+            Alert(
+              title: Text("Something went wrong"),
+              message: Text(message),
+              dismissButton: .default(Text("OK")) { viewModel.journalFeedback = nil }
+            )
+          }
+        }
+        .onChange(of: notificationDelegate.scheduledNotificationReceived) { _, newValue in
+          if let notification = newValue {
+            viewModel.setInitiatedBy(notification.initiatedBy)
+            notificationDelegate.clearNotificationState()
+          }
+        }
+        .sheet(isPresented: $showingMenu) {
+          NavigationStack {
+            MenuView()
+              .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                  Button("Done") {
+                    showingMenu = false
+                  }
+                }
+              }
+          }
         }
       }
-      .task { await viewModel.loadCatalog() }
-      .onChange(of: viewModel.phaseOrder) {
-        adjustPhaseSelection()
-      }
-      .onChange(of: layerSelection) { _, newValue in
-        viewModel.selectedLayerIndex = newValue
-        storedLayerIndex = newValue
-        showLayerIndicator = true
-        scheduleLayerIndicatorHide()
-      }
-      .onChange(of: viewModel.selectedLayerIndex) { _, newValue in
-        if layerSelection != newValue {
-          layerSelection = newValue
-        }
-      }
-      .onChange(of: phaseSelection) { _, newValue in
-        guard viewModel.phaseOrder.count > 0 else { return }
-        let adjusted = PhaseNavigator.adjustedSelection(newValue, phaseCount: viewModel.phaseOrder.count)
-        if adjusted != newValue {
-          phaseSelection = adjusted
-        }
-        let normalized = PhaseNavigator.normalizedIndex(adjusted, phaseCount: viewModel.phaseOrder.count)
-        viewModel.selectedPhaseIndex = normalized
-        storedPhaseIndex = normalized
-      }
-      .onChange(of: viewModel.selectedPhaseIndex) { _, newValue in
-        let expected = newValue + 1
-        if phaseSelection != expected {
-          phaseSelection = expected
-        }
-      }
-      .alert(item: $viewModel.journalFeedback) { feedback in
-        switch feedback.kind {
-        case .success:
-          Alert(
-            title: Text("Entry Logged"),
-            message: Text("Thanks for checking in."),
-            dismissButton: .default(Text("OK")) { viewModel.journalFeedback = nil }
-          )
-        case let .failure(message):
-          Alert(
-            title: Text("Something went wrong"),
-            message: Text(message),
-            dismissButton: .default(Text("OK")) { viewModel.journalFeedback = nil }
-          )
-        }
-      }
-      .onChange(of: notificationDelegate.scheduledNotificationReceived) { _, newValue in
-        if let notification = newValue {
-          viewModel.setInitiatedBy(notification.initiatedBy)
-          notificationDelegate.clearNotificationState()
-        }
-      }
-      .toolbar {
-        ToolbarItem(placement: .topBarLeading) {
+      .environmentObject(viewModel)
+
+      // Floating menu button overlay
+      VStack {
+        HStack {
           Button {
             showingMenu = true
           } label: {
             Image(systemName: "ellipsis.circle")
+              .font(.system(size: 20))
               .foregroundColor(.white.opacity(0.7))
           }
+          .buttonStyle(.plain)
+          .padding(.leading, 8)
+          .padding(.top, 8)
+          Spacer()
         }
-      }
-      .sheet(isPresented: $showingMenu) {
-        NavigationStack {
-          MenuView()
-            .toolbar {
-              ToolbarItem(placement: .cancellationAction) {
-                Button("Done") {
-                  showingMenu = false
-                }
-              }
-            }
-        }
+        Spacer()
       }
     }
-    .environmentObject(viewModel)
   }
 
   private var layeredContent: some View {
