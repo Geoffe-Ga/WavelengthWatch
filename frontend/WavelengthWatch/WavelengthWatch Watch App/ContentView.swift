@@ -1,5 +1,17 @@
 import SwiftUI
 
+// Environment key for tracking detail view visibility
+private struct IsShowingDetailViewKey: EnvironmentKey {
+  static let defaultValue: Binding<Bool> = .constant(false)
+}
+
+extension EnvironmentValues {
+  var isShowingDetailView: Binding<Bool> {
+    get { self[IsShowingDetailViewKey.self] }
+    set { self[IsShowingDetailViewKey.self] = newValue }
+  }
+}
+
 extension Comparable {
   func clamped(to limits: ClosedRange<Self>) -> Self {
     min(max(self, limits.lowerBound), limits.upperBound)
@@ -34,6 +46,7 @@ struct ContentView: View {
   @State private var showLayerIndicator = false
   @State private var hideIndicatorTask: Task<Void, Never>?
   @State private var showingMenu = false
+  @State private var isShowingDetailView = false
 
   init() {
     let configuration = AppConfiguration()
@@ -149,23 +162,28 @@ struct ContentView: View {
         }
       }
       .environmentObject(viewModel)
+      .environment(\.isShowingDetailView, $isShowingDetailView)
 
-      // Floating menu button overlay
-      VStack {
-        HStack {
-          Button {
-            showingMenu = true
-          } label: {
-            Image(systemName: "ellipsis.circle")
-              .font(.system(size: 20))
-              .foregroundColor(.white.opacity(0.7))
+      // Floating menu button overlay - only show on main view
+      if !isShowingDetailView {
+        VStack {
+          HStack {
+            Button {
+              showingMenu = true
+            } label: {
+              Image(systemName: "ellipsis.circle")
+                .font(.system(size: 20))
+                .foregroundColor(.white.opacity(0.7))
+            }
+            .buttonStyle(.plain)
+            .frame(minWidth: 44, minHeight: 44)
+            .contentShape(Rectangle())
+            .padding(.leading, 8)
+            .padding(.top, 4)
+            Spacer()
           }
-          .buttonStyle(.plain)
-          .padding(.leading, 8)
-          .padding(.top, 8)
           Spacer()
         }
-        Spacer()
       }
     }
   }
@@ -700,6 +718,7 @@ struct StrategyListView: View {
   let phase: CatalogPhaseModel
   let color: Color
   @EnvironmentObject private var viewModel: ContentViewModel
+  @Environment(\.isShowingDetailView) private var isShowingDetailView
   @State private var showingJournalConfirmation = false
   @State private var selectedStrategy: CatalogStrategyModel?
 
@@ -800,6 +819,12 @@ struct StrategyListView: View {
     } message: {
       Text("Would you like to log \"\(selectedStrategy?.strategy ?? "")\"?")
     }
+    .onAppear {
+      isShowingDetailView.wrappedValue = true
+    }
+    .onDisappear {
+      isShowingDetailView.wrappedValue = false
+    }
   }
 }
 
@@ -808,6 +833,7 @@ struct CurriculumDetailView: View {
   let phase: CatalogPhaseModel
   let color: Color
   @EnvironmentObject private var viewModel: ContentViewModel
+  @Environment(\.isShowingDetailView) private var isShowingDetailView
 
   var body: some View {
     ScrollView {
@@ -869,6 +895,12 @@ struct CurriculumDetailView: View {
         endPoint: .bottom
       )
     )
+    .onAppear {
+      isShowingDetailView.wrappedValue = true
+    }
+    .onDisappear {
+      isShowingDetailView.wrappedValue = false
+    }
   }
 }
 
