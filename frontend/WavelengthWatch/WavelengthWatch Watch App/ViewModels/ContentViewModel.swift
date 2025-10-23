@@ -80,6 +80,8 @@ final class ContentViewModel: ObservableObject {
       currentInitiatedBy = .self_initiated
     } catch {
       journalFeedback = JournalFeedback(kind: .failure("We couldn't log your entry. Please try again."))
+      // Reset to self-initiated after failure
+      currentInitiatedBy = .self_initiated
     }
   }
 

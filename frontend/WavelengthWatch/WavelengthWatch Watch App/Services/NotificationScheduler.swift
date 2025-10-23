@@ -8,10 +8,32 @@ protocol NotificationSchedulerProtocol {
 }
 
 final class NotificationScheduler: NotificationSchedulerProtocol {
-  private let notificationCenter: UNUserNotificationCenter
+  private let notificationCenter: NotificationCenterProtocol
+  private static let journalCategoryIdentifier = "JOURNAL_CHECKIN"
+  private static let logEmotionsActionIdentifier = "LOG_EMOTIONS"
 
   init(notificationCenter: UNUserNotificationCenter = .current()) {
     self.notificationCenter = notificationCenter
+    configureNotificationCategories()
+  }
+
+  private func configureNotificationCategories() {
+    // Create "Log Emotions" action
+    let logEmotionsAction = UNNotificationAction(
+      identifier: Self.logEmotionsActionIdentifier,
+      title: "Log Emotions",
+      options: [.foreground]
+    )
+
+    // Create category with actions
+    let category = UNNotificationCategory(
+      identifier: Self.journalCategoryIdentifier,
+      actions: [logEmotionsAction],
+      intentIdentifiers: [],
+      options: []
+    )
+
+    notificationCenter.setNotificationCategories([category])
   }
 
   func requestPermission() async throws -> Bool {
@@ -45,6 +67,7 @@ final class NotificationScheduler: NotificationSchedulerProtocol {
     content.title = "Journal Check-In"
     content.body = "How are you feeling right now?"
     content.sound = .default
+    content.categoryIdentifier = Self.journalCategoryIdentifier
     content.userInfo = [
       "scheduleId": schedule.id.uuidString,
       "initiatedBy": "scheduled",
