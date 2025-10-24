@@ -14,7 +14,6 @@ final class NotificationScheduler: NotificationSchedulerProtocol {
 
   init(notificationCenter: UNUserNotificationCenter = .current()) {
     self.notificationCenter = notificationCenter
-    configureNotificationCategories()
   }
 
   private func configureNotificationCategories() {
@@ -37,10 +36,15 @@ final class NotificationScheduler: NotificationSchedulerProtocol {
   }
 
   func requestPermission() async throws -> Bool {
-    try await notificationCenter.requestAuthorization(options: [.alert, .sound, .badge])
+    // Configure categories before requesting permission
+    configureNotificationCategories()
+    return try await notificationCenter.requestAuthorization(options: [.alert, .sound, .badge])
   }
 
   func scheduleNotifications(for schedules: [JournalSchedule]) async throws {
+    // Ensure categories are configured
+    configureNotificationCategories()
+
     // Remove all existing notifications
     notificationCenter.removeAllPendingNotificationRequests()
 
