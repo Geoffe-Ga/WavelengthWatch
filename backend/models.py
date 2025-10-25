@@ -16,6 +16,13 @@ class Dosage(str, Enum):
     TOXIC = "Toxic"
 
 
+class InitiatedBy(str, Enum):
+    """Source of journal entry creation."""
+
+    SELF = "self"
+    SCHEDULED = "scheduled"
+
+
 class Layer(SQLModel, table=True):
     """Reference table describing each spiral dynamics layer."""
 
@@ -125,6 +132,12 @@ class Journal(SQLModel, table=True):
     strategy_id: int | None = Field(
         default=None, foreign_key="strategy.id", nullable=True, index=True
     )
+    initiated_by: InitiatedBy = Field(
+        default=InitiatedBy.SELF,
+        sa_column=Column(
+            SAEnum(InitiatedBy, name="journal_initiated_by", native_enum=False)
+        ),
+    )
 
     curriculum: Mapped[Curriculum | None] = Relationship(
         back_populates="journal_entries",
@@ -149,4 +162,12 @@ class Journal(SQLModel, table=True):
     )
 
 
-__all__ = ["Layer", "Phase", "Curriculum", "Strategy", "Journal", "Dosage"]
+__all__ = [
+    "Layer",
+    "Phase",
+    "Curriculum",
+    "Strategy",
+    "Journal",
+    "Dosage",
+    "InitiatedBy",
+]

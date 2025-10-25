@@ -9,7 +9,7 @@ from pathlib import Path
 
 from sqlmodel import Session, SQLModel, select
 
-from ..models import Curriculum, Dosage, Journal, Layer, Phase, Strategy
+from ..models import Curriculum, Dosage, InitiatedBy, Journal, Layer, Phase, Strategy
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
 
@@ -96,6 +96,15 @@ def _load_journal() -> list[Journal]:
         created_at = datetime.fromisoformat(
             row["created_at"].replace("Z", "+00:00")
         ).astimezone(UTC)
+
+        # Parse initiated_by, defaulting to SELF if not present
+        initiated_by_str = row.get("initiated_by", "self").strip().lower()
+        initiated_by = (
+            InitiatedBy.SCHEDULED
+            if initiated_by_str == "scheduled"
+            else InitiatedBy.SELF
+        )
+
         records.append(
             Journal(
                 id=int(row["id"]),
@@ -106,6 +115,7 @@ def _load_journal() -> list[Journal]:
                     row["secondary_curriculum_id"]
                 ),
                 strategy_id=_parse_optional_int(row["strategy_id"]),
+                initiated_by=initiated_by,
             )
         )
     return records

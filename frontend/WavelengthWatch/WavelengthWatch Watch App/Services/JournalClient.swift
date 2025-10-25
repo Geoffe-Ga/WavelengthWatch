@@ -1,16 +1,23 @@
 import Foundation
 
+enum InitiatedBy: String, Codable {
+  case self_initiated = "self"
+  case scheduled
+}
+
 struct JournalResponseModel: Codable, Equatable {
   let id: Int
   let curriculumID: Int
   let secondaryCurriculumID: Int?
   let strategyID: Int?
+  let initiatedBy: InitiatedBy
 
   enum CodingKeys: String, CodingKey {
     case id
     case curriculumID = "curriculum_id"
     case secondaryCurriculumID = "secondary_curriculum_id"
     case strategyID = "strategy_id"
+    case initiatedBy = "initiated_by"
   }
 }
 
@@ -20,6 +27,7 @@ struct JournalPayload: Codable {
   let curriculumID: Int
   let secondaryCurriculumID: Int?
   let strategyID: Int?
+  let initiatedBy: InitiatedBy
 
   enum CodingKeys: String, CodingKey {
     case createdAt = "created_at"
@@ -27,6 +35,7 @@ struct JournalPayload: Codable {
     case curriculumID = "curriculum_id"
     case secondaryCurriculumID = "secondary_curriculum_id"
     case strategyID = "strategy_id"
+    case initiatedBy = "initiated_by"
   }
 }
 
@@ -35,7 +44,8 @@ protocol JournalClientProtocol {
   func submit(
     curriculumID: Int,
     secondaryCurriculumID: Int?,
-    strategyID: Int?
+    strategyID: Int?,
+    initiatedBy: InitiatedBy
   ) async throws -> JournalResponseModel
 }
 
@@ -70,14 +80,16 @@ final class JournalClient: JournalClientProtocol {
   func submit(
     curriculumID: Int,
     secondaryCurriculumID: Int?,
-    strategyID: Int?
+    strategyID: Int?,
+    initiatedBy: InitiatedBy = .self_initiated
   ) async throws -> JournalResponseModel {
     let payload = JournalPayload(
       createdAt: dateProvider(),
       userID: numericUserIdentifier(),
       curriculumID: curriculumID,
       secondaryCurriculumID: secondaryCurriculumID,
-      strategyID: strategyID
+      strategyID: strategyID,
+      initiatedBy: initiatedBy
     )
     return try await apiClient.post(APIPath.journal, body: payload)
   }
