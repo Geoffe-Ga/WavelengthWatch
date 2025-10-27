@@ -1,5 +1,11 @@
 import SwiftUI
 
+// MARK: - UI Constants
+
+private enum UIConstants {
+  static let menuButtonSize: CGFloat = 20
+}
+
 // Environment key for tracking detail view visibility
 private struct IsShowingDetailViewKey: EnvironmentKey {
   static let defaultValue: Binding<Bool> = .constant(false)
@@ -172,7 +178,7 @@ struct ContentView: View {
               showingMenu = true
             } label: {
               Image(systemName: "ellipsis.circle")
-                .font(.system(size: 20))
+                .font(.system(size: UIConstants.menuButtonSize))
                 .foregroundColor(.white.opacity(0.7))
             }
             .buttonStyle(.plain)

@@ -13,7 +13,26 @@ struct WavelengthWatch_Watch_AppApp: App {
   @StateObject private var notificationDelegate = NotificationDelegate()
 
   init() {
+    NotificationDelegateShim.shared.delegate = notificationDelegate
     UNUserNotificationCenter.current().delegate = NotificationDelegateShim.shared
+    configureNotificationCategories()
+  }
+
+  private func configureNotificationCategories() {
+    let logEmotionsAction = UNNotificationAction(
+      identifier: "LOG_EMOTIONS",
+      title: "Log Emotions",
+      options: [.foreground]
+    )
+
+    let category = UNNotificationCategory(
+      identifier: "JOURNAL_CHECKIN",
+      actions: [logEmotionsAction],
+      intentIdentifiers: [],
+      options: []
+    )
+
+    UNUserNotificationCenter.current().setNotificationCategories([category])
   }
 
   var body: some Scene {
@@ -57,6 +76,7 @@ final class NotificationDelegate: ObservableObject {
 // Shim to bridge UNUserNotificationCenterDelegate to our NotificationDelegate
 final class NotificationDelegateShim: NSObject, UNUserNotificationCenterDelegate {
   static let shared = NotificationDelegateShim()
+  weak var delegate: NotificationDelegate?
 
   func userNotificationCenter(
     _ center: UNUserNotificationCenter,
@@ -64,8 +84,7 @@ final class NotificationDelegateShim: NSObject, UNUserNotificationCenterDelegate
     withCompletionHandler completionHandler: @escaping () -> Void
   ) {
     Task { @MainActor in
-      // In a real implementation, we'd forward this to NotificationDelegate
-      // For now, this satisfies the delegate requirement
+      delegate?.handleNotificationResponse(response)
       completionHandler()
     }
   }

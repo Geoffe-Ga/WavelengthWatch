@@ -3,6 +3,8 @@ import SwiftUI
 struct ScheduleSettingsView: View {
   @StateObject private var viewModel = ScheduleViewModel()
   @State private var showingAddSchedule = false
+  @State private var showingPermissionAlert = false
+  @State private var permissionAlertMessage = ""
 
   var body: some View {
     List {
@@ -19,8 +21,15 @@ struct ScheduleSettingsView: View {
             ScheduleRow(
               schedule: schedule,
               isEnabled: Binding(
-                get: { viewModel.schedules[index].enabled },
-                set: { viewModel.schedules[index].enabled = $0; viewModel.saveSchedules() }
+                get: {
+                  guard index < viewModel.schedules.count else { return false }
+                  return viewModel.schedules[index].enabled
+                },
+                set: {
+                  guard index < viewModel.schedules.count else { return }
+                  viewModel.schedules[index].enabled = $0
+                  viewModel.saveSchedules()
+                }
               )
             )
           }
@@ -44,8 +53,22 @@ struct ScheduleSettingsView: View {
     .navigationTitle("Schedules")
     .onAppear {
       Task {
-        try? await viewModel.requestNotificationPermission()
+        do {
+          let granted = try await viewModel.requestNotificationPermission()
+          if !granted {
+            permissionAlertMessage = "Notifications are disabled. Enable them in Settings to receive scheduled journal prompts."
+            showingPermissionAlert = true
+          }
+        } catch {
+          permissionAlertMessage = "Failed to request notification permissions: \(error.localizedDescription)"
+          showingPermissionAlert = true
+        }
       }
+    }
+    .alert("Notification Permissions", isPresented: $showingPermissionAlert) {
+      Button("OK", role: .cancel) {}
+    } message: {
+      Text(permissionAlertMessage)
     }
     .sheet(isPresented: $showingAddSchedule) {
       NavigationStack {
@@ -71,6 +94,12 @@ struct ScheduleSettingsView: View {
 struct ScheduleRow: View {
   let schedule: JournalSchedule
   @Binding var isEnabled: Bool
+
+  private static let timeFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.timeStyle = .short
+    return formatter
+  }()
 
   var body: some View {
     HStack {
@@ -123,6 +152,12 @@ struct ScheduleEditView: View {
   @State private var selectedDays: Set<Int>
   @State private var showingTimePicker = false
   @Environment(\.dismiss) private var dismiss
+
+  private static let timeFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.timeStyle = .short
+    return formatter
+  }()
 
   init(schedule: JournalSchedule?, onSave: @escaping (JournalSchedule) -> Void) {
     self.schedule = schedule
@@ -191,9 +226,7 @@ struct ScheduleEditView: View {
   }
 
   private var timeString: String {
-    let formatter = DateFormatter()
-    formatter.timeStyle = .short
-    return formatter.string(from: selectedTime)
+    Self.timeFormatter.string(from: selectedTime)
   }
 
   private func toggleDay(_ day: Int) {
