@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from pydantic import field_validator
 from sqlmodel import Field, SQLModel
 
-from .models import Dosage
+from .models import Dosage, InitiatedBy
 
 
 def _coerce_datetime(value: datetime | str | None) -> datetime | None:
@@ -113,6 +113,7 @@ class JournalBase(SQLModel):
     curriculum_id: int
     secondary_curriculum_id: int | None = None
     strategy_id: int | None = None
+    initiated_by: InitiatedBy = Field(default=InitiatedBy.SELF)
 
     @field_validator("created_at", mode="before")
     @classmethod
@@ -133,6 +134,7 @@ class JournalUpdate(SQLModel):
     curriculum_id: int | None = None
     secondary_curriculum_id: int | None = None
     strategy_id: int | None = None
+    initiated_by: InitiatedBy | None = None
 
     @field_validator("created_at", mode="before")
     @classmethod

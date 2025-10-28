@@ -1,5 +1,23 @@
 import SwiftUI
 
+// MARK: - UI Constants
+
+private enum UIConstants {
+  static let menuButtonSize: CGFloat = 20
+}
+
+// Environment key for tracking detail view visibility
+private struct IsShowingDetailViewKey: EnvironmentKey {
+  static let defaultValue: Binding<Bool> = .constant(false)
+}
+
+extension EnvironmentValues {
+  var isShowingDetailView: Binding<Bool> {
+    get { self[IsShowingDetailViewKey.self] }
+    set { self[IsShowingDetailViewKey.self] = newValue }
+  }
+}
+
 extension Comparable {
   func clamped(to limits: ClosedRange<Self>) -> Self {
     min(max(self, limits.lowerBound), limits.upperBound)
@@ -28,10 +46,13 @@ struct ContentView: View {
   @AppStorage("selectedLayerIndex") private var storedLayerIndex = 0
   @AppStorage("selectedPhaseIndex") private var storedPhaseIndex = 0
   @StateObject private var viewModel: ContentViewModel
+  @EnvironmentObject private var notificationDelegate: NotificationDelegate
   @State private var layerSelection: Int
   @State private var phaseSelection: Int
   @State private var showLayerIndicator = false
   @State private var hideIndicatorTask: Task<Void, Never>?
+  @State private var showingMenu = false
+  @State private var isShowingDetailView = false
 
   init() {
     let configuration = AppConfiguration()
@@ -55,79 +76,122 @@ struct ContentView: View {
   }
 
   var body: some View {
-    NavigationStack {
-      ZStack {
-        if viewModel.layers.isEmpty {
-          if viewModel.isLoading {
-            ProgressView("Loading curriculum…")
-              .foregroundStyle(.white)
-          } else if let error = viewModel.loadErrorMessage {
-            VStack(spacing: 12) {
-              Text(error)
-                .multilineTextAlignment(.center)
-              Button("Retry") {
-                Task { await viewModel.retry() }
+    ZStack {
+      NavigationStack {
+        ZStack {
+          if viewModel.layers.isEmpty {
+            if viewModel.isLoading {
+              ProgressView("Loading curriculum…")
+                .foregroundStyle(.white)
+            } else if let error = viewModel.loadErrorMessage {
+              VStack(spacing: 12) {
+                Text(error)
+                  .multilineTextAlignment(.center)
+                Button("Retry") {
+                  Task { await viewModel.retry() }
+                }
               }
+              .padding()
+            } else {
+              ProgressView("Loading curriculum…")
             }
-            .padding()
+          } else if viewModel.phaseOrder.isEmpty {
+            Text("No phase information available.")
           } else {
-            ProgressView("Loading curriculum…")
+            layeredContent
           }
-        } else if viewModel.phaseOrder.isEmpty {
-          Text("No phase information available.")
-        } else {
-          layeredContent
+        }
+        .task { await viewModel.loadCatalog() }
+        .onChange(of: viewModel.phaseOrder) {
+          adjustPhaseSelection()
+        }
+        .onChange(of: layerSelection) { _, newValue in
+          viewModel.selectedLayerIndex = newValue
+          storedLayerIndex = newValue
+          showLayerIndicator = true
+          scheduleLayerIndicatorHide()
+        }
+        .onChange(of: viewModel.selectedLayerIndex) { _, newValue in
+          if layerSelection != newValue {
+            layerSelection = newValue
+          }
+        }
+        .onChange(of: phaseSelection) { _, newValue in
+          guard viewModel.phaseOrder.count > 0 else { return }
+          let adjusted = PhaseNavigator.adjustedSelection(newValue, phaseCount: viewModel.phaseOrder.count)
+          if adjusted != newValue {
+            phaseSelection = adjusted
+          }
+          let normalized = PhaseNavigator.normalizedIndex(adjusted, phaseCount: viewModel.phaseOrder.count)
+          viewModel.selectedPhaseIndex = normalized
+          storedPhaseIndex = normalized
+        }
+        .onChange(of: viewModel.selectedPhaseIndex) { _, newValue in
+          let expected = newValue + 1
+          if phaseSelection != expected {
+            phaseSelection = expected
+          }
+        }
+        .alert(item: $viewModel.journalFeedback) { feedback in
+          switch feedback.kind {
+          case .success:
+            Alert(
+              title: Text("Entry Logged"),
+              message: Text("Thanks for checking in."),
+              dismissButton: .default(Text("OK")) { viewModel.journalFeedback = nil }
+            )
+          case let .failure(message):
+            Alert(
+              title: Text("Something went wrong"),
+              message: Text(message),
+              dismissButton: .default(Text("OK")) { viewModel.journalFeedback = nil }
+            )
+          }
+        }
+        .onChange(of: notificationDelegate.scheduledNotificationReceived) { _, newValue in
+          if let notification = newValue {
+            viewModel.setInitiatedBy(notification.initiatedBy)
+            notificationDelegate.clearNotificationState()
+          }
+        }
+        .sheet(isPresented: $showingMenu) {
+          NavigationStack {
+            MenuView()
+              .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                  Button("Done") {
+                    showingMenu = false
+                  }
+                }
+              }
+          }
         }
       }
-      .task { await viewModel.loadCatalog() }
-      .onChange(of: viewModel.phaseOrder) {
-        adjustPhaseSelection()
-      }
-      .onChange(of: layerSelection) { _, newValue in
-        viewModel.selectedLayerIndex = newValue
-        storedLayerIndex = newValue
-        showLayerIndicator = true
-        scheduleLayerIndicatorHide()
-      }
-      .onChange(of: viewModel.selectedLayerIndex) { _, newValue in
-        if layerSelection != newValue {
-          layerSelection = newValue
-        }
-      }
-      .onChange(of: phaseSelection) { _, newValue in
-        guard viewModel.phaseOrder.count > 0 else { return }
-        let adjusted = PhaseNavigator.adjustedSelection(newValue, phaseCount: viewModel.phaseOrder.count)
-        if adjusted != newValue {
-          phaseSelection = adjusted
-        }
-        let normalized = PhaseNavigator.normalizedIndex(adjusted, phaseCount: viewModel.phaseOrder.count)
-        viewModel.selectedPhaseIndex = normalized
-        storedPhaseIndex = normalized
-      }
-      .onChange(of: viewModel.selectedPhaseIndex) { _, newValue in
-        let expected = newValue + 1
-        if phaseSelection != expected {
-          phaseSelection = expected
-        }
-      }
-      .alert(item: $viewModel.journalFeedback) { feedback in
-        switch feedback.kind {
-        case .success:
-          Alert(
-            title: Text("Entry Logged"),
-            message: Text("Thanks for checking in."),
-            dismissButton: .default(Text("OK")) { viewModel.journalFeedback = nil }
-          )
-        case let .failure(message):
-          Alert(
-            title: Text("Something went wrong"),
-            message: Text(message),
-            dismissButton: .default(Text("OK")) { viewModel.journalFeedback = nil }
-          )
+      .environmentObject(viewModel)
+      .environment(\.isShowingDetailView, $isShowingDetailView)
+
+      // Floating menu button overlay - only show on main view
+      if !isShowingDetailView {
+        VStack {
+          HStack {
+            Button {
+              showingMenu = true
+            } label: {
+              Image(systemName: "ellipsis.circle")
+                .font(.system(size: UIConstants.menuButtonSize))
+                .foregroundColor(.white.opacity(0.7))
+            }
+            .buttonStyle(.plain)
+            .frame(minWidth: 44, minHeight: 44)
+            .contentShape(Rectangle())
+            .padding(.leading, 8)
+            .padding(.top, 4)
+            Spacer()
+          }
+          Spacer()
         }
       }
     }
-    .environmentObject(viewModel)
   }
 
   private var layeredContent: some View {
@@ -660,6 +724,7 @@ struct StrategyListView: View {
   let phase: CatalogPhaseModel
   let color: Color
   @EnvironmentObject private var viewModel: ContentViewModel
+  @Environment(\.isShowingDetailView) private var isShowingDetailView
   @State private var showingJournalConfirmation = false
   @State private var selectedStrategy: CatalogStrategyModel?
 
@@ -760,6 +825,12 @@ struct StrategyListView: View {
     } message: {
       Text("Would you like to log \"\(selectedStrategy?.strategy ?? "")\"?")
     }
+    .onAppear {
+      isShowingDetailView.wrappedValue = true
+    }
+    .onDisappear {
+      isShowingDetailView.wrappedValue = false
+    }
   }
 }
 
@@ -768,6 +839,7 @@ struct CurriculumDetailView: View {
   let phase: CatalogPhaseModel
   let color: Color
   @EnvironmentObject private var viewModel: ContentViewModel
+  @Environment(\.isShowingDetailView) private var isShowingDetailView
 
   var body: some View {
     ScrollView {
@@ -829,6 +901,12 @@ struct CurriculumDetailView: View {
         endPoint: .bottom
       )
     )
+    .onAppear {
+      isShowingDetailView.wrappedValue = true
+    }
+    .onDisappear {
+      isShowingDetailView.wrappedValue = false
+    }
   }
 }
 
@@ -984,6 +1062,115 @@ struct StrategyCard: View {
     } message: {
       Text("Would you like to log \"\(strategy.strategy)\"?")
     }
+  }
+}
+
+// MARK: - Menu Views
+
+struct MenuView: View {
+  var body: some View {
+    List {
+      NavigationLink(destination: ScheduleSettingsView()) {
+        Label("Schedules", systemImage: "clock")
+      }
+
+      NavigationLink(destination: AnalyticsView()) {
+        Label("Analytics", systemImage: "chart.bar")
+      }
+
+      NavigationLink(destination: ConceptExplainerView()) {
+        Label("About Archetypal Wavelength", systemImage: "book")
+      }
+    }
+    .navigationTitle("Menu")
+    .navigationBarTitleDisplayMode(.inline)
+  }
+}
+
+struct AnalyticsView: View {
+  var body: some View {
+    VStack(spacing: 16) {
+      Image(systemName: "chart.bar.fill")
+        .font(.system(size: 48))
+        .foregroundColor(.blue.opacity(0.6))
+
+      Text("Analytics")
+        .font(.title2)
+        .fontWeight(.thin)
+
+      Text("Coming Soon")
+        .font(.caption)
+        .foregroundColor(.secondary)
+
+      Text("View your journal history, patterns, and insights.")
+        .font(.caption)
+        .foregroundColor(.secondary)
+        .multilineTextAlignment(.center)
+        .padding(.horizontal)
+    }
+    .padding()
+  }
+}
+
+struct ConceptExplainerView: View {
+  var body: some View {
+    ScrollView {
+      VStack(alignment: .leading, spacing: 16) {
+        Text("Archetypal Wavelength")
+          .font(.title2)
+          .fontWeight(.bold)
+
+        Text("The Archetypal Wavelength is a framework for understanding emotional and developmental patterns.")
+          .font(.body)
+
+        Group {
+          Text("Layers")
+            .font(.headline)
+            .padding(.top, 8)
+
+          Text("Each color represents a developmental stage, from Beige (survival) through Purple (tribal), Red (power), and beyond.")
+            .font(.caption)
+        }
+
+        Group {
+          Text("Phases")
+            .font(.headline)
+            .padding(.top, 8)
+
+          Text("Each layer cycles through phases: Rising, Peaking, Falling, Recovering, Integrating, and Embodying.")
+            .font(.caption)
+        }
+
+        Group {
+          Text("Dosages")
+            .font(.headline)
+            .padding(.top, 8)
+
+          Text("Each feeling exists in two forms:")
+            .font(.caption)
+
+          Text("• Medicinal: The healthy expression")
+            .font(.caption)
+            .padding(.leading)
+
+          Text("• Toxic: The shadow or excessive form")
+            .font(.caption)
+            .padding(.leading)
+        }
+
+        Group {
+          Text("Self-Care Strategies")
+            .font(.headline)
+            .padding(.top, 8)
+
+          Text("Each phase has specific strategies to help you navigate that emotional territory with grace.")
+            .font(.caption)
+        }
+      }
+      .padding()
+    }
+    .navigationTitle("About")
+    .navigationBarTitleDisplayMode(.inline)
   }
 }
 

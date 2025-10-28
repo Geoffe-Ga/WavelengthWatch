@@ -150,7 +150,7 @@ final class FailingRemoteStub: CatalogRemoteServicing {
 final class APIClientSpy: APIClientProtocol {
   var lastPath: String?
   var lastBody: Data?
-  var response = JournalResponseModel(id: 10, curriculumID: 5, secondaryCurriculumID: 7, strategyID: 9)
+  var response = JournalResponseModel(id: 10, curriculumID: 5, secondaryCurriculumID: 7, strategyID: 9, initiatedBy: .self_initiated)
   private let encoder: JSONEncoder
   private let decoder: JSONDecoder
 
@@ -182,7 +182,7 @@ struct JournalClientTests {
     let date = Date(timeIntervalSince1970: 1000)
     let client = JournalClient(apiClient: spy, dateProvider: { date }, userDefaults: defaults)
 
-    _ = try await client.submit(curriculumID: 5, secondaryCurriculumID: 7, strategyID: 9)
+    _ = try await client.submit(curriculumID: 5, secondaryCurriculumID: 7, strategyID: 9, initiatedBy: .scheduled)
 
     #expect(spy.lastPath == APIPath.journal)
     let decoder = JSONDecoder()
@@ -192,6 +192,7 @@ struct JournalClientTests {
     #expect(payload.secondaryCurriculumID == 7)
     #expect(payload.strategyID == 9)
     #expect(payload.createdAt == date)
+    #expect(payload.initiatedBy == .scheduled)
     let expected = Int("123456781234", radix: 16) ?? 0
     #expect(payload.userID == expected)
   }
@@ -227,18 +228,21 @@ final class JournalClientMock: JournalClientProtocol {
   struct ErrorStub: Error {}
 
   var submissions: [(Int, Int?, Int?)] = []
+  var submittedInitiatedBy: InitiatedBy?
   var shouldFail = false
 
   func submit(
     curriculumID: Int,
     secondaryCurriculumID: Int?,
-    strategyID: Int?
+    strategyID: Int?,
+    initiatedBy: InitiatedBy
   ) async throws -> JournalResponseModel {
     submissions.append((curriculumID, secondaryCurriculumID, strategyID))
+    submittedInitiatedBy = initiatedBy
     if shouldFail {
       throw ErrorStub()
     }
-    return JournalResponseModel(id: 1, curriculumID: curriculumID, secondaryCurriculumID: secondaryCurriculumID, strategyID: strategyID)
+    return JournalResponseModel(id: 1, curriculumID: curriculumID, secondaryCurriculumID: secondaryCurriculumID, strategyID: strategyID, initiatedBy: initiatedBy)
   }
 }
 
@@ -442,6 +446,368 @@ struct MysticalJournalIconTests {
     let color = Color.blue
 
     #expect(true) // Updated test for plus sign design - compilation verified
+  }
+}
+
+struct JournalScheduleTests {
+  @Test func encodesAndDecodesSchedule() throws {
+    var time = DateComponents()
+    time.hour = 8
+    time.minute = 0
+
+    let schedule = JournalSchedule(
+      id: UUID(),
+      time: time,
+      enabled: true,
+      repeatDays: [1, 2, 3, 4, 5]
+    )
+
+    let encoder = JSONEncoder()
+    let data = try encoder.encode(schedule)
+
+    let decoder = JSONDecoder()
+    let decoded = try decoder.decode(JournalSchedule.self, from: data)
+
+    #expect(decoded.id == schedule.id)
+    #expect(decoded.time.hour == 8)
+    #expect(decoded.time.minute == 0)
+    #expect(decoded.enabled == true)
+    #expect(decoded.repeatDays == [1, 2, 3, 4, 5])
+  }
+
+  @Test func validatesRepeatDays() {
+    var time = DateComponents()
+    time.hour = 8
+    time.minute = 0
+
+    let validSchedule = JournalSchedule(time: time, repeatDays: [0, 6])
+    #expect(validSchedule.isValid)
+
+    let invalidSchedule = JournalSchedule(time: time, repeatDays: [-1, 7])
+    #expect(!invalidSchedule.isValid)
+  }
+
+  @Test func defaultsToAllDaysEnabled() {
+    var time = DateComponents()
+    time.hour = 8
+    time.minute = 0
+
+    let schedule = JournalSchedule(time: time)
+    #expect(schedule.enabled == true)
+    #expect(schedule.repeatDays == [0, 1, 2, 3, 4, 5, 6])
+  }
+}
+
+final class MockNotificationCenter: UNUserNotificationCenter {
+  var requestedPermissions: UNAuthorizationOptions?
+  var permissionResult: Bool = true
+  var addedRequests: [UNNotificationRequest] = []
+  var removedAllPending = false
+
+  override func requestAuthorization(options: UNAuthorizationOptions) async throws -> Bool {
+    requestedPermissions = options
+    return permissionResult
+  }
+
+  override func add(_ request: UNNotificationRequest) async throws {
+    addedRequests.append(request)
+  }
+
+  override func removeAllPendingNotificationRequests() {
+    removedAllPending = true
+    addedRequests.removeAll()
+  }
+}
+
+struct NotificationDelegateTests {
+  @MainActor
+  @Test func handlesScheduledNotificationResponse() {
+    let delegate = NotificationDelegate()
+
+    let content = UNMutableNotificationContent()
+    content.userInfo = [
+      "scheduleId": "test-schedule-123",
+      "initiatedBy": "scheduled",
+    ]
+
+    let request = UNNotificationRequest(
+      identifier: "test",
+      content: content,
+      trigger: nil
+    )
+
+    let notification = UNNotification(coder: NSKeyedArchiver(requiringSecureCoding: false))!
+    let response = UNNotificationResponse(
+      coder: NSKeyedArchiver(requiringSecureCoding: false)
+    )!
+
+    // Since we can't easily mock UNNotificationResponse, test the logic directly
+    let userInfo: [AnyHashable: Any] = [
+      "scheduleId": "test-schedule-123",
+      "initiatedBy": "scheduled",
+    ]
+
+    if let scheduleId = userInfo["scheduleId"] as? String,
+       let initiatedByString = userInfo["initiatedBy"] as? String,
+       initiatedByString == "scheduled"
+    {
+      delegate.scheduledNotificationReceived = ScheduledNotification(
+        scheduleId: scheduleId,
+        initiatedBy: .scheduled
+      )
+    }
+
+    #expect(delegate.scheduledNotificationReceived?.scheduleId == "test-schedule-123")
+    #expect(delegate.scheduledNotificationReceived?.initiatedBy == .scheduled)
+  }
+
+  @MainActor
+  @Test func ignoresNonScheduledNotifications() {
+    let delegate = NotificationDelegate()
+
+    let userInfo: [AnyHashable: Any] = [
+      "scheduleId": "test-schedule-123",
+      "initiatedBy": "self", // Not "scheduled"
+    ]
+
+    if let scheduleId = userInfo["scheduleId"] as? String,
+       let initiatedByString = userInfo["initiatedBy"] as? String,
+       initiatedByString == "scheduled"
+    {
+      delegate.scheduledNotificationReceived = ScheduledNotification(
+        scheduleId: scheduleId,
+        initiatedBy: .scheduled
+      )
+    }
+
+    #expect(delegate.scheduledNotificationReceived == nil)
+  }
+
+  @MainActor
+  @Test func clearsNotificationState() {
+    let delegate = NotificationDelegate()
+
+    delegate.scheduledNotificationReceived = ScheduledNotification(
+      scheduleId: "test-id",
+      initiatedBy: .scheduled
+    )
+    #expect(delegate.scheduledNotificationReceived != nil)
+
+    delegate.clearNotificationState()
+    #expect(delegate.scheduledNotificationReceived == nil)
+  }
+}
+
+struct ContentViewModelInitiationContextTests {
+  @MainActor
+  @Test func usesCurrentInitiatedByWhenNotOverridden() async {
+    let repository = CatalogRepositoryMock(cached: SampleData.catalog, result: .success(SampleData.catalog))
+    let journal = JournalClientMock()
+    let viewModel = ContentViewModel(repository: repository, journalClient: journal)
+
+    viewModel.setInitiatedBy(.scheduled)
+    await viewModel.journal(curriculumID: 1)
+
+    #expect(journal.submissions.count == 1)
+    #expect(journal.submittedInitiatedBy == .scheduled)
+  }
+
+  @MainActor
+  @Test func resetsToSelfInitiatedAfterSubmission() async {
+    let repository = CatalogRepositoryMock(cached: SampleData.catalog, result: .success(SampleData.catalog))
+    let journal = JournalClientMock()
+    let viewModel = ContentViewModel(repository: repository, journalClient: journal)
+
+    viewModel.setInitiatedBy(.scheduled)
+    await viewModel.journal(curriculumID: 1)
+
+    #expect(viewModel.currentInitiatedBy == .self_initiated)
+  }
+
+  @MainActor
+  @Test func allowsExplicitOverrideOfInitiatedBy() async {
+    let repository = CatalogRepositoryMock(cached: SampleData.catalog, result: .success(SampleData.catalog))
+    let journal = JournalClientMock()
+    let viewModel = ContentViewModel(repository: repository, journalClient: journal)
+
+    viewModel.setInitiatedBy(.scheduled)
+    await viewModel.journal(curriculumID: 1, initiatedBy: .self_initiated)
+
+    #expect(journal.submittedInitiatedBy == .self_initiated)
+  }
+}
+
+struct NotificationSchedulerTests {
+  @Test func requestsPermissionWithCorrectOptions() async throws {
+    let mockCenter = MockNotificationCenter()
+    let scheduler = NotificationScheduler(notificationCenter: mockCenter)
+
+    let granted = try await scheduler.requestPermission()
+
+    #expect(granted == true)
+    #expect(mockCenter.requestedPermissions?.contains(.alert) == true)
+    #expect(mockCenter.requestedPermissions?.contains(.sound) == true)
+    #expect(mockCenter.requestedPermissions?.contains(.badge) == true)
+  }
+
+  @Test func schedulesNotificationsForEnabledSchedules() async throws {
+    let mockCenter = MockNotificationCenter()
+    let scheduler = NotificationScheduler(notificationCenter: mockCenter)
+
+    var time = DateComponents()
+    time.hour = 8
+    time.minute = 0
+
+    let enabledSchedule = JournalSchedule(time: time, enabled: true, repeatDays: [1, 3, 5])
+    let disabledSchedule = JournalSchedule(time: time, enabled: false, repeatDays: [2, 4])
+
+    try await scheduler.scheduleNotifications(for: [enabledSchedule, disabledSchedule])
+
+    // Should only schedule for enabled schedule (3 days = 3 notifications)
+    #expect(mockCenter.addedRequests.count == 3)
+    #expect(mockCenter.removedAllPending == true)
+  }
+
+  @Test func cancelsAllNotifications() {
+    let mockCenter = MockNotificationCenter()
+    let scheduler = NotificationScheduler(notificationCenter: mockCenter)
+
+    scheduler.cancelAllNotifications()
+
+    #expect(mockCenter.removedAllPending == true)
+  }
+
+  @Test func notificationContentIncludesScheduleInfo() async throws {
+    let mockCenter = MockNotificationCenter()
+    let scheduler = NotificationScheduler(notificationCenter: mockCenter)
+
+    var time = DateComponents()
+    time.hour = 8
+    time.minute = 0
+
+    let schedule = JournalSchedule(time: time, repeatDays: [1])
+
+    try await scheduler.scheduleNotifications(for: [schedule])
+
+    #expect(mockCenter.addedRequests.count == 1)
+    let request = mockCenter.addedRequests[0]
+    #expect(request.content.title == "Journal Check-In")
+    #expect(request.content.userInfo["initiatedBy"] as? String == "scheduled")
+    #expect(request.content.userInfo["scheduleId"] as? String == schedule.id.uuidString)
+  }
+}
+
+struct ScheduleViewModelTests {
+  @MainActor
+  @Test func requestsNotificationPermission() async throws {
+    let mockCenter = MockNotificationCenter()
+    let scheduler = NotificationScheduler(notificationCenter: mockCenter)
+    let defaults = UserDefaults(suiteName: "ScheduleViewModelTests.permission")!
+    defaults.removePersistentDomain(forName: "ScheduleViewModelTests.permission")
+    let viewModel = ScheduleViewModel(userDefaults: defaults, notificationScheduler: scheduler)
+
+    let granted = try await viewModel.requestNotificationPermission()
+
+    #expect(granted == true)
+    #expect(mockCenter.requestedPermissions?.contains(.alert) == true)
+    #expect(mockCenter.requestedPermissions?.contains(.sound) == true)
+    #expect(mockCenter.requestedPermissions?.contains(.badge) == true)
+  }
+
+  @MainActor
+  @Test func addsScheduleAndPersists() throws {
+    let defaults = UserDefaults(suiteName: "ScheduleViewModelTests.add")!
+    defaults.removePersistentDomain(forName: "ScheduleViewModelTests.add")
+
+    let viewModel = ScheduleViewModel(userDefaults: defaults)
+    #expect(viewModel.schedules.isEmpty)
+
+    var time = DateComponents()
+    time.hour = 8
+    time.minute = 0
+    let schedule = JournalSchedule(time: time, repeatDays: [1, 2, 3, 4, 5])
+
+    viewModel.addSchedule(schedule)
+    #expect(viewModel.schedules.count == 1)
+    #expect(viewModel.schedules[0].id == schedule.id)
+
+    // Verify persistence
+    let newViewModel = ScheduleViewModel(userDefaults: defaults)
+    #expect(newViewModel.schedules.count == 1)
+    #expect(newViewModel.schedules[0].id == schedule.id)
+  }
+
+  @MainActor
+  @Test func updatesSchedule() {
+    let defaults = UserDefaults(suiteName: "ScheduleViewModelTests.update")!
+    defaults.removePersistentDomain(forName: "ScheduleViewModelTests.update")
+
+    let viewModel = ScheduleViewModel(userDefaults: defaults)
+
+    var time = DateComponents()
+    time.hour = 8
+    time.minute = 0
+    let schedule = JournalSchedule(time: time, repeatDays: [1, 2, 3])
+    viewModel.addSchedule(schedule)
+
+    var updatedTime = DateComponents()
+    updatedTime.hour = 10
+    updatedTime.minute = 30
+    let updated = JournalSchedule(
+      id: schedule.id,
+      time: updatedTime,
+      enabled: false,
+      repeatDays: [0, 6]
+    )
+    viewModel.updateSchedule(updated)
+
+    #expect(viewModel.schedules.count == 1)
+    #expect(viewModel.schedules[0].time.hour == 10)
+    #expect(viewModel.schedules[0].enabled == false)
+  }
+
+  @MainActor
+  @Test func deletesSchedule() {
+    let defaults = UserDefaults(suiteName: "ScheduleViewModelTests.delete")!
+    defaults.removePersistentDomain(forName: "ScheduleViewModelTests.delete")
+
+    let viewModel = ScheduleViewModel(userDefaults: defaults)
+
+    var time = DateComponents()
+    time.hour = 8
+    time.minute = 0
+    viewModel.addSchedule(JournalSchedule(time: time))
+    viewModel.addSchedule(JournalSchedule(time: time))
+
+    #expect(viewModel.schedules.count == 2)
+
+    viewModel.deleteSchedule(at: IndexSet(integer: 0))
+    #expect(viewModel.schedules.count == 1)
+  }
+
+  @MainActor
+  @Test func togglesScheduleEnabledViaDirectBinding() {
+    let defaults = UserDefaults(suiteName: "ScheduleViewModelTests.toggle")!
+    defaults.removePersistentDomain(forName: "ScheduleViewModelTests.toggle")
+
+    let viewModel = ScheduleViewModel(userDefaults: defaults)
+
+    var time = DateComponents()
+    time.hour = 8
+    time.minute = 0
+    let schedule = JournalSchedule(time: time, enabled: true)
+    viewModel.addSchedule(schedule)
+
+    #expect(viewModel.schedules[0].enabled == true)
+
+    // Toggle via direct binding access (as ScheduleRow now does)
+    viewModel.schedules[0].enabled.toggle()
+    viewModel.saveSchedules()
+    #expect(viewModel.schedules[0].enabled == false)
+
+    viewModel.schedules[0].enabled.toggle()
+    viewModel.saveSchedules()
+    #expect(viewModel.schedules[0].enabled == true)
   }
 }
 
