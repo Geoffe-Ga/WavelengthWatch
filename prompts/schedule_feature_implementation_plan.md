@@ -4,7 +4,7 @@
 
 After analyzing the WavelengthWatch codebase, I recommend implementing the multi-emotion logging flow using **SwiftUI environment-based state management** combined with a dedicated **JournalFlowCoordinator** object. This approach leverages existing patterns in the codebase while maintaining clean separation of concerns.
 
-The app is a **watchOS-native SwiftUI application** (not React Native as initially assumed in the requirements). It uses `@StateObject`, `@Published`, and `@EnvironmentObject` for state management, native SwiftUI `NavigationStack` for navigation, and protocols for dependency injection. The implementation will introduce a flow coordinator that temporarily overrides navigation constraints during scheduler-initiated journaling sessions.
+The app is a **watchOS-native SwiftUI application**. It uses `@StateObject`, `@Published`, and `@EnvironmentObject` for state management, native SwiftUI `NavigationStack` for navigation, and protocols for dependency injection. The implementation will introduce a flow coordinator that temporarily overrides navigation constraints during scheduler-initiated journaling sessions.
 
 **Key Architecture Decision**: Rather than building a separate modal stack, we'll enhance the existing navigation system with **environment-based flow state** that controls layer visibility and tracks multi-step journal entries. This maintains consistency with the app's current architecture while enabling the constrained navigation required for the feature.
 
@@ -215,6 +215,17 @@ NavigationLink(destination: destinationView) {
 - `StrategyCard`: Self-care strategy rows (ContentView.swift:1007-1066)
 
 ## Implementation Roadmap
+
+### Requirements for ALL phases
+- Test Driven Development (and other adherance to CLAUDE and AGENTS files).
+  - Use a Red -> Green -> Refactor workflow pattern
+  - Write tests that matter and achieve coverage goals
+  - Don't take shortcuts or comment out tests.
+- Iterate on pre-commit run --all-files until everything shows Green
+- After each sub-phase of the implementation plan (e.g. 1.1 or 5.2) `git add` all changed files and create a detailed `commit` message
+- If, at the end of the phase, you reach a place where code should be tested in a Simulator or on a physical device before continuing, call that out *clearly*!
+- Re-read this document after each phase, and audit yourself against the original requirements
+- Re-read this document again before beginning each phase to ensure adherance to it
 
 ### Phase 1: Foundation (JournalFlowCoordinator & State Models)
 
@@ -1226,3 +1237,5 @@ The **key architectural insight** is using environment-based state propagation r
 3. Test navigation filtering behavior early (Phase 2)
 4. Validate phase ID → index mapping with real data
 5. Conduct accessibility audit after Phase 6
+
+*Remember to adhere to the "Requirements for all Phases" and to your CLAUDE.md instructions. Let's build something better together!*

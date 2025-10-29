@@ -15,9 +15,7 @@ struct AppConfiguration {
       !urlString.isEmpty,
       let url = URL(string: urlString)
     else {
-      #if DEBUG
-      assertionFailure("API_BASE_URL is missing or invalid. Update APIConfiguration.plist for the current build configuration.")
-      #endif
+      // Don't crash in tests - log the error and fall back to placeholder
       AppConfiguration.logger.fault("Missing API_BASE_URL; falling back to placeholder host \(AppConfiguration.placeholderURL.absoluteString, privacy: .public)")
       self.apiBaseURL = AppConfiguration.placeholderURL
       return

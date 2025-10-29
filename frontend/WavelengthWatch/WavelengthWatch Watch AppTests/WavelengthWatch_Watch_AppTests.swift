@@ -493,24 +493,29 @@ struct JournalScheduleTests {
   }
 }
 
-final class MockNotificationCenter: UNUserNotificationCenter {
+final class MockNotificationCenter: NotificationCenterProtocol {
   var requestedPermissions: UNAuthorizationOptions?
   var permissionResult: Bool = true
   var addedRequests: [UNNotificationRequest] = []
   var removedAllPending = false
+  var categoriesSet: Set<UNNotificationCategory> = []
 
-  override func requestAuthorization(options: UNAuthorizationOptions) async throws -> Bool {
+  func requestAuthorization(options: UNAuthorizationOptions) async throws -> Bool {
     requestedPermissions = options
     return permissionResult
   }
 
-  override func add(_ request: UNNotificationRequest) async throws {
+  func add(_ request: UNNotificationRequest) async throws {
     addedRequests.append(request)
   }
 
-  override func removeAllPendingNotificationRequests() {
+  func removeAllPendingNotificationRequests() {
     removedAllPending = true
     addedRequests.removeAll()
+  }
+
+  func setNotificationCategories(_ categories: Set<UNNotificationCategory>) {
+    categoriesSet = categories
   }
 }
 
@@ -693,7 +698,6 @@ struct NotificationSchedulerTests {
 }
 
 struct ScheduleViewModelTests {
-  @MainActor
   @Test func requestsNotificationPermission() async throws {
     let mockCenter = MockNotificationCenter()
     let scheduler = NotificationScheduler(notificationCenter: mockCenter)

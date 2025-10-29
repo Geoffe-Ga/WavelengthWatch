@@ -1,7 +1,6 @@
 import Foundation
 import SwiftUI
 
-@MainActor
 final class ScheduleViewModel: ObservableObject {
   @Published var schedules: [JournalSchedule] = []
 
@@ -9,17 +8,20 @@ final class ScheduleViewModel: ObservableObject {
   private let notificationScheduler: NotificationSchedulerProtocol
   private let schedulesKey = "com.wavelengthwatch.journalSchedules"
 
-  init(
+  nonisolated init(
     userDefaults: UserDefaults = .standard,
     notificationScheduler: NotificationSchedulerProtocol = NotificationScheduler()
   ) {
     self.userDefaults = userDefaults
     self.notificationScheduler = notificationScheduler
-    loadSchedules()
+    Task { @MainActor in
+      loadSchedules()
+    }
   }
 
   // MARK: - Persistence
 
+  @MainActor
   private func loadSchedules() {
     guard let data = userDefaults.data(forKey: schedulesKey) else {
       return
@@ -34,6 +36,7 @@ final class ScheduleViewModel: ObservableObject {
     }
   }
 
+  @MainActor
   func saveSchedules() {
     do {
       let encoder = JSONEncoder()
@@ -57,11 +60,13 @@ final class ScheduleViewModel: ObservableObject {
 
   // MARK: - CRUD Operations
 
+  @MainActor
   func addSchedule(_ schedule: JournalSchedule) {
     schedules.append(schedule)
     saveSchedules()
   }
 
+  @MainActor
   func updateSchedule(_ schedule: JournalSchedule) {
     guard let index = schedules.firstIndex(where: { $0.id == schedule.id }) else {
       return
@@ -70,6 +75,7 @@ final class ScheduleViewModel: ObservableObject {
     saveSchedules()
   }
 
+  @MainActor
   func deleteSchedule(at offsets: IndexSet) {
     schedules.remove(atOffsets: offsets)
     saveSchedules()
