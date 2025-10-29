@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import Testing
+import UserNotifications
 @testable import WavelengthWatch_Watch_App
 
 private enum SampleData {
@@ -247,7 +248,6 @@ final class JournalClientMock: JournalClientProtocol {
 }
 
 struct ContentViewModelTests {
-  @MainActor
   @Test func loadsCatalogSuccessfully() async throws {
     let repository = CatalogRepositoryMock(cached: SampleData.catalog, result: .success(SampleData.catalog))
     let journal = JournalClientMock()
@@ -260,7 +260,6 @@ struct ContentViewModelTests {
     #expect(viewModel.isLoading == false)
   }
 
-  @MainActor
   @Test func surfacesErrorWhenLoadingFails() async {
     enum TestError: Error { case failure }
     let repository = CatalogRepositoryMock(result: .failure(TestError.failure))
@@ -273,7 +272,6 @@ struct ContentViewModelTests {
     #expect(viewModel.loadErrorMessage != nil)
   }
 
-  @MainActor
   @Test func retriesAfterFailure() async {
     enum TestError: Error { case failure }
     let repository = CatalogRepositoryMock(result: .failure(TestError.failure))
@@ -290,7 +288,6 @@ struct ContentViewModelTests {
     #expect(viewModel.loadErrorMessage == nil)
   }
 
-  @MainActor
   @Test func reportsJournalOutcome() async {
     let repository = CatalogRepositoryMock(cached: SampleData.catalog, result: .success(SampleData.catalog))
     let journal = JournalClientMock()
@@ -311,7 +308,6 @@ struct ContentViewModelTests {
     }
   }
 
-  @MainActor
   @Test func logsJournalEntriesWithStrategy() async {
     let repository = CatalogRepositoryMock(cached: SampleData.catalog, result: .success(SampleData.catalog))
     let journal = JournalClientMock()
@@ -326,7 +322,6 @@ struct ContentViewModelTests {
     #expect(submission.2 == 3) // strategyID
   }
 
-  @MainActor
   @Test func logsJournalEntriesWithSecondaryCurriculum() async {
     let repository = CatalogRepositoryMock(cached: SampleData.catalog, result: .success(SampleData.catalog))
     let journal = JournalClientMock()

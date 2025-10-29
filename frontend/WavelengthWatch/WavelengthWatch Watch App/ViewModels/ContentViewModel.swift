@@ -1,6 +1,5 @@
 import Foundation
 
-@MainActor
 final class ContentViewModel: ObservableObject {
   @Published var layers: [CatalogLayerModel] = []
   @Published var phaseOrder: [String] = []
@@ -24,7 +23,7 @@ final class ContentViewModel: ObservableObject {
     let kind: Kind
   }
 
-  init(
+  nonisolated init(
     repository: CatalogRepositoryProtocol,
     journalClient: JournalClientProtocol,
     initialLayerIndex: Int = 0,
@@ -36,6 +35,7 @@ final class ContentViewModel: ObservableObject {
     self.selectedPhaseIndex = initialPhaseIndex
   }
 
+  @MainActor
   func loadCatalog(forceRefresh: Bool = false) async {
     if isLoading { return }
     isLoading = true
@@ -57,10 +57,12 @@ final class ContentViewModel: ObservableObject {
     isLoading = false
   }
 
+  @MainActor
   func retry() async {
     await loadCatalog(forceRefresh: true)
   }
 
+  @MainActor
   func journal(
     curriculumID: Int,
     secondaryCurriculumID: Int? = nil,
@@ -85,10 +87,12 @@ final class ContentViewModel: ObservableObject {
     }
   }
 
+  @MainActor
   func setInitiatedBy(_ value: InitiatedBy) {
     currentInitiatedBy = value
   }
 
+  @MainActor
   private func applyCatalog(_ catalog: CatalogResponseModel) {
     layers = catalog.layers.reversed()
     phaseOrder = catalog.phaseOrder
