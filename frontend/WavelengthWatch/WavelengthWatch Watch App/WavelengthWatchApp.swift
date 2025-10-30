@@ -13,8 +13,6 @@ struct WavelengthWatch_Watch_AppApp: App {
   @StateObject private var notificationDelegate = NotificationDelegate()
 
   init() {
-    NotificationDelegateShim.shared.delegate = notificationDelegate
-    UNUserNotificationCenter.current().delegate = NotificationDelegateShim.shared
     configureNotificationCategories()
   }
 
