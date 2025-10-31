@@ -520,26 +520,8 @@ final class MockNotificationCenter: NotificationCenterProtocol {
 }
 
 struct NotificationDelegateTests {
-  @MainActor
-  @Test func handlesScheduledNotificationResponse() {
-    let delegate = NotificationDelegate()
-
-    let content = UNMutableNotificationContent()
-    content.userInfo = [
-      "scheduleId": "test-schedule-123",
-      "initiatedBy": "scheduled",
-    ]
-
-    let request = UNNotificationRequest(
-      identifier: "test",
-      content: content,
-      trigger: nil
-    )
-
-    let notification = UNNotification(coder: NSKeyedArchiver(requiringSecureCoding: false))!
-    let response = UNNotificationResponse(
-      coder: NSKeyedArchiver(requiringSecureCoding: false)
-    )!
+  @Test func handlesScheduledNotificationResponse() async {
+    let delegate = await MainActor.run { NotificationDelegate() }
 
     // Since we can't easily mock UNNotificationResponse, test the logic directly
     let userInfo: [AnyHashable: Any] = [
@@ -547,54 +529,65 @@ struct NotificationDelegateTests {
       "initiatedBy": "scheduled",
     ]
 
-    if let scheduleId = userInfo["scheduleId"] as? String,
-       let initiatedByString = userInfo["initiatedBy"] as? String,
-       initiatedByString == "scheduled"
-    {
-      delegate.scheduledNotificationReceived = ScheduledNotification(
-        scheduleId: scheduleId,
-        initiatedBy: .scheduled
-      )
+    await MainActor.run {
+      if let scheduleId = userInfo["scheduleId"] as? String,
+         let initiatedByString = userInfo["initiatedBy"] as? String,
+         initiatedByString == "scheduled"
+      {
+        delegate.scheduledNotificationReceived = ScheduledNotification(
+          scheduleId: scheduleId,
+          initiatedBy: .scheduled
+        )
+      }
     }
 
-    #expect(delegate.scheduledNotificationReceived?.scheduleId == "test-schedule-123")
-    #expect(delegate.scheduledNotificationReceived?.initiatedBy == .scheduled)
+    await MainActor.run {
+      #expect(delegate.scheduledNotificationReceived?.scheduleId == "test-schedule-123")
+      #expect(delegate.scheduledNotificationReceived?.initiatedBy == .scheduled)
+    }
   }
 
-  @MainActor
-  @Test func ignoresNonScheduledNotifications() {
-    let delegate = NotificationDelegate()
+  @Test func ignoresNonScheduledNotifications() async {
+    let delegate = await MainActor.run { NotificationDelegate() }
 
     let userInfo: [AnyHashable: Any] = [
       "scheduleId": "test-schedule-123",
       "initiatedBy": "self", // Not "scheduled"
     ]
 
-    if let scheduleId = userInfo["scheduleId"] as? String,
-       let initiatedByString = userInfo["initiatedBy"] as? String,
-       initiatedByString == "scheduled"
-    {
-      delegate.scheduledNotificationReceived = ScheduledNotification(
-        scheduleId: scheduleId,
-        initiatedBy: .scheduled
-      )
+    await MainActor.run {
+      if let scheduleId = userInfo["scheduleId"] as? String,
+         let initiatedByString = userInfo["initiatedBy"] as? String,
+         initiatedByString == "scheduled"
+      {
+        delegate.scheduledNotificationReceived = ScheduledNotification(
+          scheduleId: scheduleId,
+          initiatedBy: .scheduled
+        )
+      }
     }
 
-    #expect(delegate.scheduledNotificationReceived == nil)
+    await MainActor.run {
+      #expect(delegate.scheduledNotificationReceived == nil)
+    }
   }
 
-  @MainActor
-  @Test func clearsNotificationState() {
-    let delegate = NotificationDelegate()
+  @Test func clearsNotificationState() async {
+    let delegate = await MainActor.run { NotificationDelegate() }
 
-    delegate.scheduledNotificationReceived = ScheduledNotification(
-      scheduleId: "test-id",
-      initiatedBy: .scheduled
-    )
-    #expect(delegate.scheduledNotificationReceived != nil)
+    await MainActor.run {
+      delegate.scheduledNotificationReceived = ScheduledNotification(
+        scheduleId: "test-id",
+        initiatedBy: .scheduled
+      )
+      #expect(delegate.scheduledNotificationReceived != nil)
+    }
 
-    delegate.clearNotificationState()
-    #expect(delegate.scheduledNotificationReceived == nil)
+    await delegate.clearNotificationState()
+
+    await MainActor.run {
+      #expect(delegate.scheduledNotificationReceived == nil)
+    }
   }
 }
 
