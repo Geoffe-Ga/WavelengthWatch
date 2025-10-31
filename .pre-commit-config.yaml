@@ -91,3 +91,17 @@ repos:
             pip install -r backend/requirements.txt
             if [ -f backend/requirements-dev.txt ]; then pip install -r backend/requirements-dev.txt; fi
             pytest -q
+      - id: watchos-tests
+        name: watchOS tests (on push)
+        entry: bash
+        language: system
+        pass_filenames: false
+        files: ^frontend/WavelengthWatch/
+        stages: [pre-push]
+        args:
+          - -lc
+          - |
+            set -euo pipefail
+            cd frontend/WavelengthWatch
+            # Run test script - exits 1 if any tests fail
+            ./run-tests-individually.sh

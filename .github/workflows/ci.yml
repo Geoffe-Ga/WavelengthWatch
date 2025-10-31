@@ -103,3 +103,8 @@ jobs:
             -configuration Debug \
             CODE_SIGNING_ALLOWED=NO \
             build
+
+      - name: Run watchOS tests
+        run: |
+          cd frontend/WavelengthWatch
+          ./run-tests-individually.sh
