@@ -31,7 +31,8 @@ struct AppConfigurationTests {
 
   @Test func usesPlaceholderWhenURLIsInvalid() {
     let bundle = MockBundle()
-    bundle.infoPlistValues["API_BASE_URL"] = "not-a-valid-url"
+    // Use a string that URL(string:) will actually reject (unmatched bracket makes it invalid)
+    bundle.infoPlistValues["API_BASE_URL"] = "http://["
 
     let config = AppConfiguration(bundle: bundle)
 
