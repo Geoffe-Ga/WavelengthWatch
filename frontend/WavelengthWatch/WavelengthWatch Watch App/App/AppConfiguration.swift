@@ -1,13 +1,19 @@
 import Foundation
 import OSLog
 
+protocol BundleProtocol {
+  func object(forInfoDictionaryKey key: String) -> Any?
+  func path(forResource name: String?, ofType ext: String?) -> String?
+}
+
+extension Bundle: BundleProtocol {}
+
 struct AppConfiguration {
   private static let placeholderURL = URL(string: "https://api.not-configured.local")!
-  private static let logger = Logger(subsystem: "com.wavelengthwatch.watch", category: "AppConfiguration")
 
   let apiBaseURL: URL
 
-  init(bundle: Bundle = .main) {
+  init(bundle: BundleProtocol = Bundle.main) {
     let rawValue = Self.loadAPIBaseURL(from: bundle)?.trimmingCharacters(in: .whitespacesAndNewlines)
 
     guard
@@ -15,20 +21,24 @@ struct AppConfiguration {
       !urlString.isEmpty,
       let url = URL(string: urlString)
     else {
-      // Don't crash in tests - log the error and fall back to placeholder
-      AppConfiguration.logger.fault("Missing API_BASE_URL; falling back to placeholder host \(AppConfiguration.placeholderURL.absoluteString, privacy: .public)")
-      self.apiBaseURL = AppConfiguration.placeholderURL
+      // Don't crash in tests - fall back to placeholder
+      #if DEBUG
+      print("⚠️ Missing API_BASE_URL; falling back to placeholder host \(Self.placeholderURL.absoluteString)")
+      #endif
+      self.apiBaseURL = Self.placeholderURL
       return
     }
 
-    if url == AppConfiguration.placeholderURL {
-      AppConfiguration.logger.error("API_BASE_URL is still pointing at the placeholder host. Configure a real backend before shipping.")
+    if url == Self.placeholderURL {
+      #if DEBUG
+      print("⚠️ API_BASE_URL is still pointing at the placeholder host. Configure a real backend before shipping.")
+      #endif
     }
 
     self.apiBaseURL = url
   }
 
-  private static func loadAPIBaseURL(from bundle: Bundle) -> String? {
+  private static func loadAPIBaseURL(from bundle: BundleProtocol) -> String? {
     // First try to load from Info.plist (for build-time configuration)
     if let urlFromInfo = bundle.object(forInfoDictionaryKey: "API_BASE_URL") as? String {
       return urlFromInfo

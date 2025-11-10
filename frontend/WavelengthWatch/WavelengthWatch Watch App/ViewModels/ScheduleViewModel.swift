@@ -8,15 +8,14 @@ final class ScheduleViewModel: ObservableObject {
   private let notificationScheduler: NotificationSchedulerProtocol
   private let schedulesKey = "com.wavelengthwatch.journalSchedules"
 
-  nonisolated init(
+  @MainActor
+  init(
     userDefaults: UserDefaults = .standard,
     notificationScheduler: NotificationSchedulerProtocol = NotificationScheduler()
   ) {
     self.userDefaults = userDefaults
     self.notificationScheduler = notificationScheduler
-    Task { @MainActor in
-      loadSchedules()
-    }
+    loadSchedules()
   }
 
   // MARK: - Persistence

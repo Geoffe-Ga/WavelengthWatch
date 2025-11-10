@@ -147,7 +147,6 @@
 			buildPhases = (
 				676DA3AC2E7204A500C63894 /* Sources */,
 				676DA3AD2E7204A500C63894 /* Frameworks */,
-				672C7DEF2E74E2950077457E /* ShellScript */,
 				676DA3AE2E7204A500C63894 /* Resources */,
 			);
 			buildRules = (
@@ -288,26 +287,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		672C7DEF2E74E2950077457E /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "#!/bin/sh\necho 'Legacy JSON generation skipped.'\n";
-		};
-/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		676DA3AC2E7204A500C63894 /* Sources */ = {
