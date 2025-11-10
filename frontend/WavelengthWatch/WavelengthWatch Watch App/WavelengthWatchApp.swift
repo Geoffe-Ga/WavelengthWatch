@@ -37,6 +37,10 @@ struct WavelengthWatch_Watch_AppApp: App {
     WindowGroup {
       ContentView()
         .environmentObject(notificationDelegate)
+        .onAppear {
+          NotificationDelegateShim.shared.delegate = notificationDelegate
+          UNUserNotificationCenter.current().delegate = NotificationDelegateShim.shared
+        }
     }
   }
 }
