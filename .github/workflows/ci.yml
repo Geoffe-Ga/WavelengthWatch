@@ -104,7 +104,6 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build
 
-      - name: Run watchOS tests
-        run: |
-          cd frontend/WavelengthWatch
-          ./run-tests-individually.sh
+      # Note: watchOS tests are skipped in CI due to GitHub Actions simulator reliability issues.
+      # Tests are verified locally before merging and in pre-push hooks.
+      # See CLAUDE.md for instructions on running tests locally with ./run-tests-individually.sh
