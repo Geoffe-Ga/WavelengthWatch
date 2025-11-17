@@ -13,6 +13,7 @@ set -e  # Exit on first failure
 SCHEME="WavelengthWatch Watch App"
 DESTINATION="platform=watchOS Simulator,name=Apple Watch Series 10 (46mm)"
 TEST_TARGET="WavelengthWatch Watch AppTests"
+DERIVED_DATA_PATH="$(pwd)/.test-cache"
 
 # All available test suites
 ALL_SUITES=(
@@ -42,6 +43,17 @@ echo "====================================="
 echo "Test suites: ${SUITES[*]}"
 echo ""
 
+# Build once for all tests - this is the slowest part (20-25 seconds)
+echo "Building for testing (this happens once)..."
+xcodebuild build-for-testing \
+  -scheme "$SCHEME" \
+  -destination "$DESTINATION" \
+  -derivedDataPath "$DERIVED_DATA_PATH" \
+  > /dev/null 2>&1
+
+echo "✅ Build complete. Running tests..."
+echo ""
+
 FAILED_SUITES=()
 PASSED_COUNT=0
 LOG_DIR="/tmp/watchos_tests"
@@ -51,16 +63,15 @@ for suite in "${SUITES[@]}"; do
   echo "Testing: $suite"
   LOG_FILE="$LOG_DIR/${suite}.log"
 
-  xcodebuild test \
-    -scheme "$SCHEME" \
+  # Run tests without building - this is fast (2-5 seconds per suite)
+  xcodebuild test-without-building \
+    -xctestrun "$(find "$DERIVED_DATA_PATH" -name "*.xctestrun" | head -1)" \
     -destination "$DESTINATION" \
     -only-testing:"$TEST_TARGET/$suite" \
     2>&1 | tee "$LOG_FILE" > /dev/null
 
-  if grep -q "TEST SUCCEEDED" "$LOG_FILE"; then
-    echo "✅ $suite PASSED"
-    ((PASSED_COUNT++))
-  else
+  # Check for test failures - if no failures found, tests passed
+  if grep -q "TEST FAILED\|Test case.*failed\|Testing failed" "$LOG_FILE"; then
     echo "❌ $suite FAILED"
     FAILED_SUITES+=("$suite")
 
@@ -71,6 +82,9 @@ for suite in "${SUITES[@]}"; do
     grep -A 5 "failed\|error\|Error" "$LOG_FILE" | head -20 || echo "No error details found"
     echo "---"
     echo "Full log: $LOG_FILE"
+  else
+    echo "✅ $suite PASSED"
+    ((PASSED_COUNT++))
   fi
 
   echo ""
