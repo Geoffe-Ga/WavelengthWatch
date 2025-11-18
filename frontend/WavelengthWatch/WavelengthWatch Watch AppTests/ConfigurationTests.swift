@@ -14,7 +14,7 @@ struct AppConfigurationTests {
 
   @Test func fallsBackToConfigurationPlist() throws {
     let bundle = MockBundle()
-    bundle.plistPaths["APIConfiguration"] = createTempPlist(withURL: "https://fallback.example.com")
+    bundle.plistPaths["APIConfiguration"] = try createTempPlist(withURL: "https://fallback.example.com")
 
     let config = AppConfiguration(bundle: bundle)
 
@@ -57,13 +57,13 @@ struct AppConfigurationTests {
     #expect(config.apiBaseURL.absoluteString == "https://api.not-configured.local")
   }
 
-  private func createTempPlist(withURL url: String) -> String {
+  private func createTempPlist(withURL url: String) throws -> String {
     let tempDir = NSTemporaryDirectory()
     let tempFile = URL(fileURLWithPath: tempDir).appendingPathComponent(UUID().uuidString + ".plist")
 
     let plistDict: [String: Any] = ["API_BASE_URL": url]
-    let plistData = try! PropertyListSerialization.data(fromPropertyList: plistDict, format: .xml, options: 0)
-    try! plistData.write(to: tempFile)
+    let plistData = try PropertyListSerialization.data(fromPropertyList: plistDict, format: .xml, options: 0)
+    try plistData.write(to: tempFile)
 
     return tempFile.path
   }

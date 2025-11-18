@@ -8,7 +8,10 @@ import UserNotifications
 
 // MARK: - Bundle Mock
 
-final class MockBundle: BundleProtocol, @unchecked Sendable {
+/// Mock Bundle for testing AppConfiguration
+/// Note: This mock is only used synchronously within single-threaded tests,
+/// so mutable state is safe. Not marked Sendable to avoid false safety claims.
+final class MockBundle: BundleProtocol {
   var infoPlistValues: [String: Any] = [:]
   var plistPaths: [String: String] = [:]
 

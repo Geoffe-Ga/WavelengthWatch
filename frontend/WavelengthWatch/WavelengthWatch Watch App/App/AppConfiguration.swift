@@ -9,6 +9,7 @@ protocol BundleProtocol {
 extension Bundle: BundleProtocol {}
 
 struct AppConfiguration {
+  private static let logger = Logger(subsystem: "com.wavelengthwatch.watch", category: "AppConfiguration")
   private static let placeholderURL = URL(string: "https://api.not-configured.local")!
 
   let apiBaseURL: URL
@@ -21,18 +22,13 @@ struct AppConfiguration {
       !urlString.isEmpty,
       let url = URL(string: urlString)
     else {
-      // Don't crash in tests - fall back to placeholder
-      #if DEBUG
-      print("⚠️ Missing API_BASE_URL; falling back to placeholder host \(Self.placeholderURL.absoluteString)")
-      #endif
+      Self.logger.fault("Missing API_BASE_URL; falling back to placeholder host \(Self.placeholderURL.absoluteString, privacy: .public)")
       self.apiBaseURL = Self.placeholderURL
       return
     }
 
     if url == Self.placeholderURL {
-      #if DEBUG
-      print("⚠️ API_BASE_URL is still pointing at the placeholder host. Configure a real backend before shipping.")
-      #endif
+      Self.logger.warning("API_BASE_URL is still pointing at the placeholder host. Configure a real backend before shipping.")
     }
 
     self.apiBaseURL = url
