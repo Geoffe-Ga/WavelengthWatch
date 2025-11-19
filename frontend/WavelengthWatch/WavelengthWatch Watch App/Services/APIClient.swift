@@ -28,7 +28,9 @@ final class APIClient: APIClientProtocol {
       self.session = session
     } else {
       let configuration = URLSessionConfiguration.ephemeral
-      configuration.waitsForConnectivity = true
+      configuration.waitsForConnectivity = false
+      configuration.timeoutIntervalForRequest = 10.0
+      configuration.timeoutIntervalForResource = 30.0
       self.session = URLSession(configuration: configuration)
     }
     self.decoder = decoder
