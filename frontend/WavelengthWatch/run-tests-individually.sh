@@ -11,8 +11,8 @@
 set -e  # Exit on first failure
 
 SCHEME="WavelengthWatch Watch App"
-# Use generic destination for better CI compatibility
-DESTINATION="platform=watchOS Simulator,OS=latest"
+# Use a commonly available simulator across different Xcode/CI versions
+DESTINATION="platform=watchOS Simulator,name=Apple Watch Series 10 (46mm)"
 TEST_TARGET="WavelengthWatch Watch AppTests"
 DERIVED_DATA_PATH="$(pwd)/.test-cache"
 
