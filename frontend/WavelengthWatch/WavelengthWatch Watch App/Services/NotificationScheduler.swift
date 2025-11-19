@@ -12,7 +12,7 @@ final class NotificationScheduler: NotificationSchedulerProtocol {
   private static let journalCategoryIdentifier = "JOURNAL_CHECKIN"
   private static let logEmotionsActionIdentifier = "LOG_EMOTIONS"
 
-  init(notificationCenter: UNUserNotificationCenter = .current()) {
+  init(notificationCenter: NotificationCenterProtocol = UNUserNotificationCenter.current()) {
     self.notificationCenter = notificationCenter
   }
 

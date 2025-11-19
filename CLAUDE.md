@@ -37,7 +37,15 @@ swiftformat --lint frontend  # Check formatting without modifying
 # Build (use Xcode for running)
 # Open frontend/WavelengthWatch/WavelengthWatch.xcodeproj in Xcode 16.4+
 # Select Apple Watch target and build/run
+
+# Testing
+cd frontend/WavelengthWatch
+./run-tests-individually.sh                    # Run all test suites
+./run-tests-individually.sh PhaseNavigatorTests  # Run specific suite
 ```
+
+**Important: watchOS Simulator Limitation**
+The watchOS Simulator cannot reliably run all test suites simultaneously, resulting in SIGSEGV crashes due to resource contention. The `run-tests-individually.sh` script runs each test suite separately to prevent these crashes. This is a known simulator limitation, not a code issue.
 
 ### Pre-commit and CI
 ```bash
