@@ -389,7 +389,7 @@ struct ContentView: View {
   private func scheduleLayerIndicatorHide() {
     hideIndicatorTask?.cancel()
     hideIndicatorTask = Task {
-      try? await Task.sleep(nanoseconds: 3_000_000_000)
+      try? await Task.sleep(nanoseconds: 1_000_000_000)
       guard !Task.isCancelled else { return }
       await MainActor.run {
         withAnimation(.easeOut(duration: 0.3)) {
@@ -520,7 +520,7 @@ struct LayerView: View {
     }
     hideIndicatorTask?.cancel()
     hideIndicatorTask = Task {
-      try? await Task.sleep(nanoseconds: 2_000_000_000)
+      try? await Task.sleep(nanoseconds: 1_000_000_000)
       guard !Task.isCancelled else { return }
       await MainActor.run {
         withAnimation(.easeOut(duration: 0.3)) {
