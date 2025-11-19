@@ -29,28 +29,10 @@ final class CatalogRemoteStub: CatalogRemoteServicing {
   }
 }
 
-final class CatalogCacheStub: CatalogCachePersisting {
-  var storedData: Data?
-  var removeCount = 0
-
-  func loadCatalogData() throws -> Data? {
-    storedData
-  }
-
-  func writeCatalogData(_ data: Data) throws {
-    storedData = data
-  }
-
-  func removeCatalogData() throws {
-    storedData = nil
-    removeCount += 1
-  }
-}
-
 struct CatalogRepositoryTests {
   private func makeRepository(
     remote: CatalogRemoteStub,
-    cache: CatalogCacheStub,
+    cache: InMemoryCatalogCacheMock,
     now: @escaping () -> Date,
     ttl: TimeInterval = 60 * 60 * 24,
     logger: CatalogRepositoryLogging = CatalogRepositoryLoggerSpy()
@@ -66,7 +48,7 @@ struct CatalogRepositoryTests {
 
   @Test func returnsCachedCatalogWhenFresh() async throws {
     let remote = CatalogRemoteStub(response: SampleData.catalog)
-    let cache = CatalogCacheStub()
+    let cache = InMemoryCatalogCacheMock()
     let encoder = JSONEncoder()
     encoder.dateEncodingStrategy = .iso8601
     let envelope = CatalogCacheEnvelope(fetchedAt: Date(timeIntervalSince1970: 1000), catalog: SampleData.catalog)
@@ -81,7 +63,7 @@ struct CatalogRepositoryTests {
 
   @Test func refreshesWhenCacheIsStale() async throws {
     let remote = CatalogRemoteStub(response: SampleData.catalog)
-    let cache = CatalogCacheStub()
+    let cache = InMemoryCatalogCacheMock()
     let encoder = JSONEncoder()
     encoder.dateEncodingStrategy = .iso8601
     let staleDate = Date(timeIntervalSince1970: 0)
@@ -96,7 +78,7 @@ struct CatalogRepositoryTests {
 
   @Test func invalidatesCorruptCache() async throws {
     let remote = CatalogRemoteStub(response: SampleData.catalog)
-    let cache = CatalogCacheStub()
+    let cache = InMemoryCatalogCacheMock()
     cache.storedData = Data("invalid".utf8)
     let logger = CatalogRepositoryLoggerSpy()
     let repository = makeRepository(remote: remote, cache: cache, now: { Date() }, logger: logger)
@@ -111,7 +93,7 @@ struct CatalogRepositoryTests {
 
   @Test func propagatesNetworkFailures() async {
     enum StubError: Error { case transport }
-    let cache = CatalogCacheStub()
+    let cache = InMemoryCatalogCacheMock()
     cache.storedData = nil
     let repository = CatalogRepository(
       remote: FailingRemoteStub(error: StubError.transport),
