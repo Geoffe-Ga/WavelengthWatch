@@ -74,8 +74,16 @@ When the backend changes environment (e.g., staging vs. production), check in th
 
 ### Tests
 
-Run the backend test suite from the repository root:
-
+**Backend (pytest)**:
 ```bash
 pytest
 ```
+
+**Frontend (watchOS)**:
+```bash
+cd frontend/WavelengthWatch
+./run-tests-individually.sh  # Run all 12 test suites
+./run-tests-individually.sh AppConfigurationTests  # Run specific suite
+```
+
+The watchOS test runner executes each test suite individually to prevent SIGSEGV crashes caused by watchOS Simulator resource contention. See `CLAUDE.md` for more testing details.
