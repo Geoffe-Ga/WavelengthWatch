@@ -10,7 +10,13 @@ import UserNotifications
 
 @main
 struct WavelengthWatch_Watch_AppApp: App {
-  @StateObject private var notificationDelegate = NotificationDelegate()
+  @StateObject private var notificationDelegate: NotificationDelegate = {
+    let delegate = NotificationDelegate()
+    // Register delegate immediately upon creation to avoid race condition
+    NotificationDelegateShim.shared.delegate = delegate
+    UNUserNotificationCenter.current().delegate = NotificationDelegateShim.shared
+    return delegate
+  }()
 
   init() {
     configureNotificationCategories()
@@ -37,10 +43,6 @@ struct WavelengthWatch_Watch_AppApp: App {
     WindowGroup {
       ContentView()
         .environmentObject(notificationDelegate)
-        .onAppear {
-          NotificationDelegateShim.shared.delegate = notificationDelegate
-          UNUserNotificationCenter.current().delegate = NotificationDelegateShim.shared
-        }
     }
   }
 }

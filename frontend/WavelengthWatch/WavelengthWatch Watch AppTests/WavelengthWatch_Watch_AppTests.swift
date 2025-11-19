@@ -508,6 +508,17 @@ struct NotificationDelegateTests {
       #expect(delegate.scheduledNotificationReceived == nil)
     }
   }
+
+  /// Regression test for notification delegate race condition.
+  /// Verifies that the NotificationDelegateShim has a delegate registered
+  /// immediately after app initialization, preventing dropped notifications
+  /// that could arrive before ContentView appears.
+  @Test func delegateIsRegisteredImmediately() {
+    // The shim should have a delegate set by the app's StateObject initialization
+    // This test verifies that we don't have a race condition where notifications
+    // could arrive before the delegate is registered.
+    #expect(NotificationDelegateShim.shared.delegate != nil)
+  }
 }
 
 struct ContentViewModelInitiationContextTests {
