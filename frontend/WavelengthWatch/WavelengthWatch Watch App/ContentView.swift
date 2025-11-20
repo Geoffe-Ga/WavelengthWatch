@@ -106,14 +106,25 @@ struct ContentView: View {
           adjustPhaseSelection()
         }
         .onChange(of: layerSelection) { _, newValue in
-          viewModel.selectedLayerIndex = newValue
-          storedLayerIndex = newValue
+          // Convert filtered index to layer ID
+          if let layerId = viewModel.filteredIndexToLayerId(newValue) {
+            viewModel.selectedLayerId = layerId
+            // Convert layer ID to full array index
+            if let fullIndex = viewModel.layerIdToIndex(layerId) {
+              viewModel.selectedLayerIndex = fullIndex
+              storedLayerIndex = fullIndex
+            }
+          }
           showLayerIndicator = true
           scheduleLayerIndicatorHide()
         }
-        .onChange(of: viewModel.selectedLayerIndex) { _, newValue in
-          if layerSelection != newValue {
-            layerSelection = newValue
+        .onChange(of: viewModel.selectedLayerId) { _, newLayerId in
+          // When selectedLayerId changes, update layerSelection to match in filtered array
+          guard let layerId = newLayerId else { return }
+          if let filteredIndex = viewModel.layerIdToFilteredIndex(layerId) {
+            if layerSelection != filteredIndex {
+              layerSelection = filteredIndex
+            }
           }
         }
         .onChange(of: phaseSelection) { _, newValue in

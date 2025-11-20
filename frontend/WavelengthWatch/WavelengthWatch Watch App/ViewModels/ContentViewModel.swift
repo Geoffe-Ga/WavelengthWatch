@@ -6,10 +6,43 @@ final class ContentViewModel: ObservableObject {
   @Published var isLoading = false
   @Published var loadErrorMessage: String?
   @Published var journalFeedback: JournalFeedback?
-  @Published var selectedLayerIndex: Int
+
+  /// Index in the full (unfiltered) layers array. Derived from selectedLayerId.
+  @Published var selectedLayerIndex: Int {
+    didSet {
+      // Auto-initialize selectedLayerId from selectedLayerIndex when set directly
+      // Guard to prevent infinite loops
+      if layers.count > 0, selectedLayerIndex >= 0, selectedLayerIndex < layers.count {
+        let layerId = layers[selectedLayerIndex].id
+        if selectedLayerId != layerId {
+          selectedLayerId = layerId
+        }
+      }
+    }
+  }
+
   @Published var selectedPhaseIndex: Int
   @Published var currentInitiatedBy: InitiatedBy = .self_initiated
-  @Published var layerFilterMode: LayerFilterMode = .all
+  @Published var layerFilterMode: LayerFilterMode = .all {
+    didSet {
+      handleFilterModeChange(from: oldValue, to: layerFilterMode)
+    }
+  }
+
+  /// SOURCE OF TRUTH: Which layer is currently selected, tracked by layer ID.
+  /// This remains stable across filter mode changes. selectedLayerIndex is derived from this.
+  @Published var selectedLayerId: Int? {
+    didSet {
+      // Keep selectedLayerIndex in sync when selectedLayerId changes
+      // Guard to prevent infinite loops
+      if let layerId = selectedLayerId,
+         let fullIndex = layerIdToIndex(layerId),
+         selectedLayerIndex != fullIndex
+      {
+        selectedLayerIndex = fullIndex
+      }
+    }
+  }
 
   private let repository: CatalogRepositoryProtocol
   private let journalClient: JournalClientProtocol
@@ -103,6 +136,28 @@ final class ContentViewModel: ObservableObject {
     currentInitiatedBy = value
   }
 
+  /// Converts a layer ID to its index in the full layers array.
+  func layerIdToIndex(_ layerId: Int) -> Int? {
+    layers.firstIndex { $0.id == layerId }
+  }
+
+  /// Converts a layer ID to its index in the filtered layers array.
+  func layerIdToFilteredIndex(_ layerId: Int) -> Int? {
+    filteredLayers.firstIndex { $0.id == layerId }
+  }
+
+  /// Converts a filtered index to the corresponding layer ID.
+  func filteredIndexToLayerId(_ filteredIndex: Int) -> Int? {
+    guard filteredIndex >= 0, filteredIndex < filteredLayers.count else { return nil }
+    return filteredLayers[filteredIndex].id
+  }
+
+  /// Converts a full array index to the corresponding layer ID.
+  func indexToLayerId(_ index: Int) -> Int? {
+    guard index >= 0, index < layers.count else { return nil }
+    return layers[index].id
+  }
+
   @MainActor
   private func applyCatalog(_ catalog: CatalogResponseModel) {
     layers = catalog.layers.reversed()
@@ -113,6 +168,40 @@ final class ContentViewModel: ObservableObject {
     }
     if selectedPhaseIndex >= phaseOrder.count {
       selectedPhaseIndex = max(0, phaseOrder.count - 1)
+    }
+
+    // Initialize selectedLayerId from selectedLayerIndex
+    if selectedLayerId == nil, selectedLayerIndex < layers.count {
+      selectedLayerId = layers[selectedLayerIndex].id
+    }
+  }
+
+  /// Handles filter mode changes by preserving or clamping the selected layer ID.
+  ///
+  /// This method ONLY manages selectedLayerId (the source of truth).
+  /// When the filter mode changes:
+  /// - If the currently selected layer (by ID) exists in the new filtered set, preserve it (do nothing)
+  /// - If not, clamp selectedLayerId to the first layer in the new filtered set
+  ///
+  /// Note: selectedLayerIndex will be synced separately by ContentView's onChange handlers.
+  private func handleFilterModeChange(from oldMode: LayerFilterMode, to newMode: LayerFilterMode) {
+    guard oldMode != newMode else { return }
+    guard layers.count > 0 else { return } // Only process if layers are loaded
+    guard let currentLayerId = selectedLayerId else { return }
+
+    // Check if current layer exists in new filtered set
+    if layerIdToFilteredIndex(currentLayerId) != nil {
+      // Layer exists in new filtered set, preserve selectedLayerId
+      // Do nothing - selectedLayerId stays the same
+    } else {
+      // Selected layer not in new filtered set, clamp to first available layer
+      guard filteredLayers.count > 0 else {
+        selectedLayerId = nil
+        return
+      }
+
+      // Update selectedLayerId to first layer in filtered set
+      selectedLayerId = filteredLayers[0].id
     }
   }
 }
