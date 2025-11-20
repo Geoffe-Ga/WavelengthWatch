@@ -36,6 +36,7 @@ final class JournalFlowViewModel: ObservableObject {
 
   // MARK: - Initialization
 
+  @MainActor
   init(catalog: CatalogResponseModel, initiatedBy: InitiatedBy = .self_initiated) {
     self.catalog = catalog
     self.layers = catalog.layers.reversed()
@@ -46,19 +47,9 @@ final class JournalFlowViewModel: ObservableObject {
 
   /// Returns layers filtered based on the current step.
   ///
-  /// - Primary emotion: emotions only (exclude strategies layer)
-  /// - Secondary emotion: emotions only (exclude strategies layer)
-  /// - Strategy selection: strategies only (only layer 0)
-  /// - Review: all layers
+  /// Delegates to LayerFilterMode to ensure consistency with ContentViewModel filtering logic.
   var filteredLayers: [CatalogLayerModel] {
-    switch currentStep {
-    case .primaryEmotion, .secondaryEmotion:
-      layers.filter { $0.id != 0 }
-    case .strategySelection:
-      layers.filter { $0.id == 0 }
-    case .review:
-      layers
-    }
+    filterMode.filter(layers)
   }
 
   /// Returns the filter mode for the current step.
@@ -93,16 +84,19 @@ final class JournalFlowViewModel: ObservableObject {
   // MARK: - Selection Methods
 
   /// Selects the primary emotion curriculum entry.
+  @MainActor
   func selectPrimaryCurriculum(id: Int) {
     primaryCurriculumID = id
   }
 
   /// Selects the secondary emotion curriculum entry.
+  @MainActor
   func selectSecondaryCurriculum(id: Int?) {
     secondaryCurriculumID = id
   }
 
   /// Selects a strategy.
+  @MainActor
   func selectStrategy(id: Int?) {
     strategyID = id
   }
@@ -110,6 +104,7 @@ final class JournalFlowViewModel: ObservableObject {
   // MARK: - Navigation Methods
 
   /// Advances to the next step in the flow.
+  @MainActor
   func advanceStep() {
     switch currentStep {
     case .primaryEmotion:
@@ -124,6 +119,7 @@ final class JournalFlowViewModel: ObservableObject {
   }
 
   /// Resets the flow to the beginning, clearing all selections.
+  @MainActor
   func reset() {
     currentStep = .primaryEmotion
     primaryCurriculumID = nil
