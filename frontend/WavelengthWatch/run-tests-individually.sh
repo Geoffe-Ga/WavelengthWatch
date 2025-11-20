@@ -59,11 +59,19 @@ fi
 
 # Build once for all tests - this is the slowest part (20-25 seconds)
 echo "Building for testing..."
-xcodebuild build-for-testing \
+if ! xcodebuild build-for-testing \
   -scheme "$SCHEME" \
   -destination "$DESTINATION" \
   -derivedDataPath "$DERIVED_DATA_PATH" \
-  > /dev/null 2>&1
+  > /dev/null 2>&1; then
+  echo "❌ Build failed. Showing error output:"
+  echo ""
+  xcodebuild build-for-testing \
+    -scheme "$SCHEME" \
+    -destination "$DESTINATION" \
+    -derivedDataPath "$DERIVED_DATA_PATH"
+  exit 1
+fi
 
 echo "✅ Build complete."
 echo ""
