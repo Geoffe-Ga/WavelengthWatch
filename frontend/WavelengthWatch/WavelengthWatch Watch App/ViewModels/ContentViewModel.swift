@@ -9,9 +9,20 @@ final class ContentViewModel: ObservableObject {
   @Published var selectedLayerIndex: Int
   @Published var selectedPhaseIndex: Int
   @Published var currentInitiatedBy: InitiatedBy = .self_initiated
+  @Published var layerFilterMode: LayerFilterMode = .all
 
   private let repository: CatalogRepositoryProtocol
   private let journalClient: JournalClientProtocol
+
+  /// Returns layers filtered according to the current filter mode.
+  ///
+  /// The filtered layers change based on `layerFilterMode`:
+  /// - `.all`: All layers (0-10) for normal browsing
+  /// - `.emotionsOnly`: Only emotion layers (1-10), excluding strategies
+  /// - `.strategiesOnly`: Only strategies layer (0)
+  var filteredLayers: [CatalogLayerModel] {
+    layerFilterMode.filter(layers)
+  }
 
   struct JournalFeedback: Identifiable, Equatable {
     enum Kind: Equatable {

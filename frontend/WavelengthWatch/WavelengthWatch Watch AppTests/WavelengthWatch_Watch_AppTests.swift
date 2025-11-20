@@ -10,8 +10,25 @@ private enum SampleData {
     let toxic = CatalogCurriculumEntryModel(id: 2, dosage: .toxic, expression: "Overcommitment")
     let strategy = CatalogStrategyModel(id: 3, strategy: "Cold Shower", color: "Blue")
     let phase = CatalogPhaseModel(id: 1, name: "Rising", medicinal: [medicinal], toxic: [toxic], strategies: [strategy])
-    let layer = CatalogLayerModel(id: 1, color: "Beige", title: "SELF-CARE", subtitle: "(For Surfing)", phases: [phase])
-    return CatalogResponseModel(phaseOrder: ["Rising"], layers: [layer])
+
+    // Mimic production: Layers 0-10 (strategies + all spiral dynamics colors)
+    let layers = [
+      // Layer 0: Strategies
+      CatalogLayerModel(id: 0, color: "Strategies", title: "SELF-CARE", subtitle: "(Strategies)", phases: [phase]),
+      // Layers 1-10: Emotion layers (spiral dynamics)
+      CatalogLayerModel(id: 1, color: "Beige", title: "BEIGE", subtitle: "(Survival)", phases: [phase]),
+      CatalogLayerModel(id: 2, color: "Purple", title: "PURPLE", subtitle: "(Tribal)", phases: [phase]),
+      CatalogLayerModel(id: 3, color: "Red", title: "RED", subtitle: "(Power)", phases: [phase]),
+      CatalogLayerModel(id: 4, color: "Blue", title: "BLUE", subtitle: "(Order)", phases: [phase]),
+      CatalogLayerModel(id: 5, color: "Orange", title: "ORANGE", subtitle: "(Achievement)", phases: [phase]),
+      CatalogLayerModel(id: 6, color: "Green", title: "GREEN", subtitle: "(Community)", phases: [phase]),
+      CatalogLayerModel(id: 7, color: "Yellow", title: "YELLOW", subtitle: "(Integral)", phases: [phase]),
+      CatalogLayerModel(id: 8, color: "Turquoise", title: "TURQUOISE", subtitle: "(Holistic)", phases: [phase]),
+      CatalogLayerModel(id: 9, color: "Coral", title: "CORAL", subtitle: "(Transpersonal)", phases: [phase]),
+      CatalogLayerModel(id: 10, color: "Teal", title: "TEAL", subtitle: "(Unitive)", phases: [phase]),
+    ]
+
+    return CatalogResponseModel(phaseOrder: ["Rising"], layers: layers)
   }()
 }
 
@@ -316,6 +333,93 @@ struct ContentViewModelTests {
     #expect(submission.0 == 1) // curriculumID
     #expect(submission.1 == 2) // secondaryCurriculumID
     #expect(submission.2 == nil) // strategyID
+  }
+
+  // MARK: - Layer Filtering Tests
+
+  @Test func filteredLayersDefaultsToAll() async {
+    let repository = CatalogRepositoryMock(cached: SampleData.catalog, result: .success(SampleData.catalog))
+    let journal = JournalClientMock()
+    let viewModel = ContentViewModel(repository: repository, journalClient: journal)
+
+    await viewModel.loadCatalog()
+
+    // Default filter mode should be .all
+    #expect(viewModel.layerFilterMode == .all)
+    #expect(viewModel.filteredLayers.count == viewModel.layers.count)
+  }
+
+  @Test func filteredLayersWithEmotionsOnlyExcludesLayerZero() async {
+    let repository = CatalogRepositoryMock(cached: SampleData.catalog, result: .success(SampleData.catalog))
+    let journal = JournalClientMock()
+    let viewModel = ContentViewModel(repository: repository, journalClient: journal)
+
+    await viewModel.loadCatalog()
+
+    // Set filter to emotions only
+    viewModel.layerFilterMode = .emotionsOnly
+
+    // Should exclude layer 0 (11 total layers, 10 emotion layers)
+    #expect(!viewModel.filteredLayers.contains { $0.id == 0 })
+    #expect(viewModel.filteredLayers.count == 10)
+    #expect(viewModel.filteredLayers.count == viewModel.layers.count - 1)
+  }
+
+  @Test func filteredLayersWithStrategiesOnlyIncludesOnlyLayerZero() async {
+    let repository = CatalogRepositoryMock(cached: SampleData.catalog, result: .success(SampleData.catalog))
+    let journal = JournalClientMock()
+    let viewModel = ContentViewModel(repository: repository, journalClient: journal)
+
+    await viewModel.loadCatalog()
+
+    // Set filter to strategies only
+    viewModel.layerFilterMode = .strategiesOnly
+
+    // Should include only layer 0
+    #expect(viewModel.filteredLayers.count == 1)
+    #expect(viewModel.filteredLayers.first?.id == 0)
+  }
+
+  @Test func filteredLayersReactsToModeChange() async {
+    let repository = CatalogRepositoryMock(cached: SampleData.catalog, result: .success(SampleData.catalog))
+    let journal = JournalClientMock()
+    let viewModel = ContentViewModel(repository: repository, journalClient: journal)
+
+    await viewModel.loadCatalog()
+
+    let originalCount = viewModel.filteredLayers.count
+
+    // Change to emotions only
+    viewModel.layerFilterMode = .emotionsOnly
+    let emotionsCount = viewModel.filteredLayers.count
+
+    // Change to strategies only
+    viewModel.layerFilterMode = .strategiesOnly
+    let strategiesCount = viewModel.filteredLayers.count
+
+    // Verify filtering works (prod has 11 layers: 0-10)
+    #expect(originalCount == 11) // All layers (0-10)
+    #expect(emotionsCount == 10) // Only emotion layers (1-10)
+    #expect(strategiesCount == 1) // Only strategy layer (0)
+    #expect(originalCount > emotionsCount)
+    #expect(emotionsCount > strategiesCount)
+  }
+
+  @Test func filteredLayersWhenLayersEmptyReturnsEmpty() {
+    let repository = CatalogRepositoryMock(result: .success(SampleData.catalog))
+    let journal = JournalClientMock()
+    let viewModel = ContentViewModel(repository: repository, journalClient: journal)
+
+    // Don't load catalog, layers should be empty
+    #expect(viewModel.layers.isEmpty)
+    #expect(viewModel.filteredLayers.isEmpty)
+
+    // Try different filter modes
+    viewModel.layerFilterMode = .emotionsOnly
+    #expect(viewModel.filteredLayers.isEmpty)
+
+    viewModel.layerFilterMode = .strategiesOnly
+    #expect(viewModel.filteredLayers.isEmpty)
   }
 }
 
