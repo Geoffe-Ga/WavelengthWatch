@@ -600,6 +600,19 @@ struct NotificationSchedulerTests {
     #expect(request.content.userInfo["initiatedBy"] as? String == "scheduled")
     #expect(request.content.userInfo["scheduleId"] as? String == schedule.id.uuidString)
   }
+
+  @Test func mockNotificationCenterPreventsSystemCalls() async throws {
+    // This test verifies that we're using the mock and not making system calls
+    let mockCenter = MockNotificationCenter()
+    let scheduler = NotificationScheduler(notificationCenter: mockCenter)
+
+    // Perform a notification operation
+    _ = try await scheduler.requestPermission()
+
+    // Verify the mock was used (no system calls were made)
+    mockCenter.assertWasUsed()
+    #expect(mockCenter.requestedPermissions != nil)
+  }
 }
 
 struct JournalUIInteractionTests {
