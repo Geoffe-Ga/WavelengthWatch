@@ -25,6 +25,27 @@ final class MockBundle: BundleProtocol {
   }
 }
 
+// MARK: - Catalog Cache Mock
+
+/// In-memory cache implementation for tests - avoids file I/O overhead
+final class InMemoryCatalogCacheMock: CatalogCachePersisting {
+  var storedData: Data?
+  var removeCount = 0
+
+  func loadCatalogData() throws -> Data? {
+    storedData
+  }
+
+  func writeCatalogData(_ data: Data) throws {
+    storedData = data
+  }
+
+  func removeCatalogData() throws {
+    storedData = nil
+    removeCount += 1
+  }
+}
+
 // MARK: - Notification Center Mock
 
 final class MockNotificationCenter: NotificationCenterProtocol {
