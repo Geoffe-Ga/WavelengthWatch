@@ -82,8 +82,9 @@ pytest
 **Frontend (watchOS)**:
 ```bash
 cd frontend/WavelengthWatch
-./run-tests-individually.sh  # Run all 12 test suites
+./run-tests-individually.sh                    # Run all 12 test suites (optimized, ~1 min)
+./run-tests-individually.sh --individual       # Legacy mode (~12 min)
 ./run-tests-individually.sh AppConfigurationTests  # Run specific suite
 ```
 
-The watchOS test runner executes each test suite individually to prevent SIGSEGV crashes caused by watchOS Simulator resource contention. See `CLAUDE.md` for more testing details.
+After fixing the `@StateObject` initialization bug (commit 3945b6a), all test suites can run together on a single simulator. The optimized mode is ~12x faster than individual execution. See `CLAUDE.md` for more testing details.
