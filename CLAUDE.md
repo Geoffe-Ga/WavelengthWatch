@@ -40,12 +40,13 @@ swiftformat --lint frontend  # Check formatting without modifying
 
 # Testing
 cd frontend/WavelengthWatch
-./run-tests-individually.sh                    # Run all test suites
-./run-tests-individually.sh PhaseNavigatorTests  # Run specific suite
+./run-tests-individually.sh                       # Run all test suites (optimized - single simulator)
+./run-tests-individually.sh --individual          # Run suites individually (legacy mode)
+./run-tests-individually.sh PhaseNavigatorTests   # Run specific suite
 ```
 
-**Important: watchOS Simulator Limitation**
-The watchOS Simulator cannot reliably run all test suites simultaneously, resulting in SIGSEGV crashes due to resource contention. The `run-tests-individually.sh` script runs each test suite separately to prevent these crashes. This is a known simulator limitation, not a code issue.
+**Test Optimization (Nov 2025)**
+After fixing the `@StateObject` initialization bug (commit 3945b6a), all test suites can now run together on a single simulator without crashes. The script runs all suites together by default (~12x faster than individual execution). Use `--individual` flag for legacy behavior if needed.
 
 ### Pre-commit and CI
 ```bash
