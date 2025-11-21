@@ -81,6 +81,26 @@ final class FileCatalogCacheStore: CatalogCachePersisting {
   }
 }
 
+final class InMemoryCatalogCache: CatalogCachePersisting {
+  private var storage: Data?
+
+  func loadCatalogDataSync() throws -> Data? {
+    storage
+  }
+
+  func loadCatalogData() async throws -> Data? {
+    storage
+  }
+
+  func writeCatalogData(_ data: Data) async throws {
+    storage = data
+  }
+
+  func removeCatalogData() async throws {
+    storage = nil
+  }
+}
+
 final class CatalogRepository: CatalogRepositoryProtocol {
   private let remote: CatalogRemoteServicing
   private let cache: CatalogCachePersisting
