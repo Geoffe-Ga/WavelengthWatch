@@ -1044,11 +1044,18 @@ struct MenuView: View {
 
   var body: some View {
     List {
+      // Log Emotion uses sheet presentation for modal flow
+      // (other menu items use NavigationLink for settings navigation)
       Button {
-        showingLogEmotionFlow = true
+        if viewModel.layers.count > 0 {
+          showingLogEmotionFlow = true
+        }
       } label: {
         Label("Log Emotion", systemImage: "heart.text.square")
       }
+      .disabled(viewModel.layers.count == 0)
+      .accessibilityLabel("Log your current emotion")
+      .accessibilityHint("Opens emotion logging flow")
 
       NavigationLink(destination: ScheduleSettingsView()) {
         Label("Schedules", systemImage: "clock")
