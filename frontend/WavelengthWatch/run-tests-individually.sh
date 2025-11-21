@@ -69,6 +69,10 @@ if ! xcodebuild build-for-testing \
   -scheme "$SCHEME" \
   -destination "$DESTINATION" \
   -derivedDataPath "$DERIVED_DATA_PATH" \
+  -quiet \
+  -parallel-testing-enabled NO \
+  -maximum-concurrent-test-simulator-destinations 1 \
+  -enableCodeCoverage NO \
   > /dev/null 2>&1; then
   echo "❌ Build failed. Showing error output:"
   echo ""
