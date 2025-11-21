@@ -102,4 +102,7 @@ jobs:
         timeout-minutes: 25
         run: |
           cd frontend/WavelengthWatch
+          # Clean simulator state to prevent "termination assertions" errors
+          xcrun simctl shutdown all || true
+          xcrun simctl erase all || true
           ./run-tests-individually.sh
