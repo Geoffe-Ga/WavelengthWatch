@@ -106,14 +106,25 @@ struct ContentView: View {
           adjustPhaseSelection()
         }
         .onChange(of: layerSelection) { _, newValue in
-          viewModel.selectedLayerIndex = newValue
-          storedLayerIndex = newValue
+          // Convert filtered index to layer ID
+          if let layerId = viewModel.filteredIndexToLayerId(newValue) {
+            viewModel.selectedLayerId = layerId
+            // Convert layer ID to full array index
+            if let fullIndex = viewModel.layerIdToIndex(layerId) {
+              viewModel.selectedLayerIndex = fullIndex
+              storedLayerIndex = fullIndex
+            }
+          }
           showLayerIndicator = true
           scheduleLayerIndicatorHide()
         }
-        .onChange(of: viewModel.selectedLayerIndex) { _, newValue in
-          if layerSelection != newValue {
-            layerSelection = newValue
+        .onChange(of: viewModel.selectedLayerId) { _, newLayerId in
+          // When selectedLayerId changes, update layerSelection to match in filtered array
+          guard let layerId = newLayerId else { return }
+          if let filteredIndex = viewModel.layerIdToFilteredIndex(layerId) {
+            if layerSelection != filteredIndex {
+              layerSelection = filteredIndex
+            }
           }
         }
         .onChange(of: phaseSelection) { _, newValue in
@@ -199,8 +210,8 @@ struct ContentView: View {
       ScrollViewReader { proxy in
         ScrollView(.vertical, showsIndicators: false) {
           LazyVStack(spacing: -20) {
-            ForEach(viewModel.layers.indices, id: \.self) { index in
-              let layer = viewModel.layers[index]
+            ForEach(viewModel.filteredLayers.indices, id: \.self) { index in
+              let layer = viewModel.filteredLayers[index]
               LayerCardView(
                 layer: layer,
                 phaseCount: viewModel.phaseOrder.count,
@@ -228,28 +239,28 @@ struct ContentView: View {
           .init(
             get: { Double(layerSelection) },
             set: { newValue in
-              guard viewModel.layers.count > 0 else { return }
-              let clampedValue = Int(round(newValue)).clamped(to: 0 ... (viewModel.layers.count - 1))
+              guard viewModel.filteredLayers.count > 0 else { return }
+              let clampedValue = Int(round(newValue)).clamped(to: 0 ... (viewModel.filteredLayers.count - 1))
               if clampedValue != layerSelection {
                 layerSelection = clampedValue
               }
             }
           ),
           from: 0,
-          through: Double(max(viewModel.layers.count - 1, 0)),
+          through: Double(max(viewModel.filteredLayers.count - 1, 0)),
           by: 1.0,
           sensitivity: .medium,
           isContinuous: false,
           isHapticFeedbackEnabled: true
         )
         .onChange(of: layerSelection) { _, newValue in
-          guard viewModel.layers.count > 0, newValue < viewModel.layers.count else { return }
+          guard viewModel.filteredLayers.count > 0, newValue < viewModel.filteredLayers.count else { return }
           withAnimation(.easeInOut(duration: 0.3)) {
             proxy.scrollTo(newValue, anchor: .center)
           }
         }
         .onAppear {
-          guard viewModel.layers.count > 0, layerSelection < viewModel.layers.count else { return }
+          guard viewModel.filteredLayers.count > 0, layerSelection < viewModel.filteredLayers.count else { return }
           proxy.scrollTo(layerSelection, anchor: .center)
           showLayerIndicator = true
           scheduleLayerIndicatorHide()
@@ -263,7 +274,7 @@ struct ContentView: View {
               let threshold: CGFloat = 30
               if value.translation.height > threshold, layerSelection > 0 {
                 layerSelection -= 1
-              } else if value.translation.height < -threshold, layerSelection < viewModel.layers.count - 1 {
+              } else if value.translation.height < -threshold, layerSelection < viewModel.filteredLayers.count - 1 {
                 layerSelection += 1
               }
               showLayerIndicator = true
@@ -272,46 +283,6 @@ struct ContentView: View {
         )
       }
     }
-  }
-
-  private func layerIndicator(in size: CGSize) -> some View {
-    let index = min(layerSelection, max(viewModel.layers.count - 1, 0))
-    return VStack {
-      Spacer()
-      ZStack(alignment: .top) {
-        Capsule()
-          .fill(Color.white.opacity(0.1))
-          .frame(width: 4, height: size.height * 0.4)
-        Capsule()
-          .fill(
-            LinearGradient(
-              gradient: Gradient(colors: [
-                Color(stage: viewModel.layers[index].color),
-                Color(stage: viewModel.layers[index].color).opacity(0.6),
-              ]),
-              startPoint: .top,
-              endPoint: .bottom
-            )
-          )
-          .frame(width: 6, height: max(20, (size.height * 0.4) / CGFloat(max(viewModel.layers.count, 1))))
-          .overlay(
-            Capsule()
-              .stroke(Color.white.opacity(0.3), lineWidth: 0.5)
-          )
-          .shadow(color: Color(stage: viewModel.layers[index].color), radius: 3)
-          .offset(y: offset(for: size.height * 0.4, layerIndex: index))
-          .animation(.interactiveSpring(response: 0.3, dampingFraction: 0.7), value: index)
-      }
-      .padding(.trailing, 6)
-      Spacer()
-    }
-  }
-
-  private func offset(for trackHeight: CGFloat, layerIndex: Int? = nil) -> CGFloat {
-    guard viewModel.layers.count > 1 else { return 0 }
-    let available = trackHeight - 20
-    let index = layerIndex ?? layerSelection
-    return CGFloat(viewModel.layers.count - 1 - index) * (available / CGFloat(viewModel.layers.count - 1))
   }
 
   private func adjustPhaseSelection() {
@@ -333,8 +304,8 @@ struct ContentView: View {
 
         // Current layer indicators stack
         VStack(spacing: 2) {
-          ForEach(viewModel.layers.indices, id: \.self) { index in
-            let layer = viewModel.layers[index]
+          ForEach(viewModel.filteredLayers.indices, id: \.self) { index in
+            let layer = viewModel.filteredLayers[index]
             let isSelected = index == layerSelection
             let distance = abs(index - layerSelection)
 
