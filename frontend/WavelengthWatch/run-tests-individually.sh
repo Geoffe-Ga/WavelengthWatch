@@ -94,14 +94,14 @@ if [ "$INDIVIDUAL_MODE" = true ] || [ ${#SUITES[@]} -eq 1 ]; then
     SUITE_LOG="$LOG_DIR/${suite}.log"
 
     # Run tests without building - this is fast (2-5 seconds per suite)
-    xcodebuild test-without-building \
+    # Store output in memory first to avoid unnecessary disk I/O
+    if ! TEST_OUTPUT=$(xcodebuild test-without-building \
       -xctestrun "$(find "$DERIVED_DATA_PATH" -name "*.xctestrun" | head -1)" \
       -destination "$DESTINATION" \
       -only-testing:"$TEST_TARGET/$suite" \
-      2>&1 | tee "$SUITE_LOG" > /dev/null
-
-    # Check for test failures
-    if grep -q "TEST FAILED\|Test case.*failed\|Testing failed" "$SUITE_LOG"; then
+      2>&1); then
+      # Test failed - save output to disk for analysis
+      echo "$TEST_OUTPUT" > "$SUITE_LOG"
       echo "❌ $suite FAILED"
       FAILED_SUITES+=("$suite")
 
@@ -109,12 +109,27 @@ if [ "$INDIVIDUAL_MODE" = true ] || [ ${#SUITES[@]} -eq 1 ]; then
       echo ""
       echo "Failure details for $suite:"
       echo "---"
-      grep -A 5 "failed\|error\|Error" "$SUITE_LOG" | head -20 || echo "No error details found"
+      echo "$TEST_OUTPUT" | grep -A 5 "failed\|error\|Error" | head -20 || echo "No error details found"
       echo "---"
       echo "Full log: $SUITE_LOG"
     else
-      echo "✅ $suite PASSED"
-      ((PASSED_COUNT++))
+      # Test passed - only save if it contains failures in output (xcodebuild exit code can be misleading)
+      if echo "$TEST_OUTPUT" | grep -q "TEST FAILED\|Test case.*failed\|Testing failed"; then
+        echo "$TEST_OUTPUT" > "$SUITE_LOG"
+        echo "❌ $suite FAILED"
+        FAILED_SUITES+=("$suite")
+
+        echo ""
+        echo "Failure details for $suite:"
+        echo "---"
+        echo "$TEST_OUTPUT" | grep -A 5 "failed\|error\|Error" | head -20 || echo "No error details found"
+        echo "---"
+        echo "Full log: $SUITE_LOG"
+      else
+        echo "✅ $suite PASSED"
+        ((PASSED_COUNT++))
+        # Don't write log file for passing tests
+      fi
     fi
 
     echo ""
@@ -150,31 +165,54 @@ else
   done
 
   # Run all tests together
-  xcodebuild test-without-building \
+  # Store output in memory first to avoid unnecessary disk I/O
+  if ! TEST_OUTPUT=$(xcodebuild test-without-building \
     -xctestrun "$(find "$DERIVED_DATA_PATH" -name "*.xctestrun" | head -1)" \
     -destination "$DESTINATION" \
     "${ONLY_TESTING_ARGS[@]}" \
-    2>&1 | tee "$LOG_FILE"
+    2>&1); then
+    # Tests failed - save output to disk for analysis
+    echo "$TEST_OUTPUT" > "$LOG_FILE"
 
-  echo ""
-  echo "====================================="
-
-  # Check for failures
-  if grep -q "TEST FAILED\|Test case.*failed\|Testing failed" "$LOG_FILE"; then
+    echo ""
+    echo "====================================="
     echo "❌ Tests FAILED"
     echo ""
     echo "Failure details:"
     echo "---"
-    grep -A 5 "failed\|error\|Error" "$LOG_FILE" | head -30 || echo "No error details found"
+    echo "$TEST_OUTPUT" | grep -A 5 "failed\|error\|Error" | head -30 || echo "No error details found"
     echo "---"
     echo "Full log: $LOG_FILE"
     echo ""
     echo "💡 Tip: Run with --individual flag to isolate failing suite(s)"
     exit 1
   else
-    echo "✅ All test suites passed!"
-    echo ""
-    echo "Full log: $LOG_FILE"
-    exit 0
+    # Tests passed - check for failures in output (xcodebuild exit code can be misleading)
+    if echo "$TEST_OUTPUT" | grep -q "TEST FAILED\|Test case.*failed\|Testing failed"; then
+      echo "$TEST_OUTPUT" > "$LOG_FILE"
+
+      echo ""
+      echo "====================================="
+      echo "❌ Tests FAILED"
+      echo ""
+      echo "Failure details:"
+      echo "---"
+      echo "$TEST_OUTPUT" | grep -A 5 "failed\|error\|Error" | head -30 || echo "No error details found"
+      echo "---"
+      echo "Full log: $LOG_FILE"
+      echo ""
+      echo "💡 Tip: Run with --individual flag to isolate failing suite(s)"
+      exit 1
+    else
+      # All tests passed - save log for reference
+      echo "$TEST_OUTPUT" > "$LOG_FILE"
+
+      echo ""
+      echo "====================================="
+      echo "✅ All test suites passed!"
+      echo ""
+      echo "Full log: $LOG_FILE"
+      exit 0
+    fi
   fi
 fi
