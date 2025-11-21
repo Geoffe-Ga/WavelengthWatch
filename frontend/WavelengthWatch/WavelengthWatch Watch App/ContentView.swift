@@ -1039,8 +1039,17 @@ struct StrategyCard: View {
 // MARK: - Menu Views
 
 struct MenuView: View {
+  @EnvironmentObject private var viewModel: ContentViewModel
+  @State private var showingLogEmotionFlow = false
+
   var body: some View {
     List {
+      Button {
+        showingLogEmotionFlow = true
+      } label: {
+        Label("Log Emotion", systemImage: "heart.text.square")
+      }
+
       NavigationLink(destination: ScheduleSettingsView()) {
         Label("Schedules", systemImage: "clock")
       }
@@ -1055,6 +1064,15 @@ struct MenuView: View {
     }
     .navigationTitle("Menu")
     .navigationBarTitleDisplayMode(.inline)
+    .sheet(isPresented: $showingLogEmotionFlow) {
+      if viewModel.layers.count > 0 {
+        FlowCoordinatorView(
+          catalog: CatalogResponseModel(phaseOrder: viewModel.phaseOrder, layers: viewModel.layers),
+          initiatedBy: .self_initiated,
+          isPresented: $showingLogEmotionFlow
+        )
+      }
+    }
   }
 }
 
