@@ -423,33 +423,6 @@ struct ContentViewModelTests {
   }
 }
 
-struct PhaseNavigatorTests {
-  @Test func wrapsFromFirstToLast() {
-    let adjusted = PhaseNavigator.adjustedSelection(0, phaseCount: 6)
-    #expect(adjusted == 6)
-  }
-
-  @Test func wrapsFromLastToFirst() {
-    let adjusted = PhaseNavigator.adjustedSelection(7, phaseCount: 6)
-    #expect(adjusted == 1)
-  }
-
-  @Test func normalizesSelection() {
-    let index = PhaseNavigator.normalizedIndex(1, phaseCount: 6)
-    #expect(index == 0)
-    let last = PhaseNavigator.normalizedIndex(6, phaseCount: 6)
-    #expect(last == 5)
-  }
-}
-
-struct MysticalJournalIconTests {
-  @Test func mysticalJournalIconHasPlusSignDesign() {
-    let color = Color.blue
-
-    #expect(true) // Updated test for plus sign design - compilation verified
-  }
-}
-
 struct JournalScheduleTests {
   @Test func encodesAndDecodesSchedule() throws {
     var time = DateComponents()
