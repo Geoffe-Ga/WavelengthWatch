@@ -6,6 +6,11 @@
 # can run together on a single simulator without SIGSEGV crashes. This is ~12x faster
 # than running each suite individually.
 #
+# Build flags optimized for:
+# - Single simulator execution (no Xcode parallelization conflicts)
+# - Reduced I/O overhead (quiet mode)
+# - Faster builds (code coverage disabled by default)
+#
 # Usage:
 #   ./run-tests-individually.sh                    # Run all test suites together (default)
 #   ./run-tests-individually.sh --individual       # Run suites individually (legacy mode)
@@ -76,10 +81,14 @@ if ! xcodebuild build-for-testing \
   > /dev/null 2>&1; then
   echo "❌ Build failed. Showing error output:"
   echo ""
+  # Error path: omit -quiet for verbose debugging output
   xcodebuild build-for-testing \
     -scheme "$SCHEME" \
     -destination "$DESTINATION" \
-    -derivedDataPath "$DERIVED_DATA_PATH"
+    -derivedDataPath "$DERIVED_DATA_PATH" \
+    -parallel-testing-enabled NO \
+    -maximum-concurrent-test-simulator-destinations 1 \
+    -enableCodeCoverage NO
   exit 1
 fi
 
