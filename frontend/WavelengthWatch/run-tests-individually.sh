@@ -33,6 +33,12 @@ ALL_SUITES=(
   "JournalScheduleTests"
   "JournalClientTests"
   "MysticalJournalIconTests"
+  "LayerFilterModeTests"
+  "EmotionSummaryCardTests"
+  "FilteredLayerNavigationViewTests"
+  "ContentViewFilteringTests"
+  "JournalFlowViewModelTests"
+  "FlowCoordinatorViewTests"
 )
 
 # Parse arguments
