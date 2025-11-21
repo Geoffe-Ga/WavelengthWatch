@@ -1047,6 +1047,7 @@ struct MenuView: View {
       // Log Emotion uses sheet presentation for modal flow
       // (other menu items use NavigationLink for settings navigation)
       Button {
+        // Guard: Ensure catalog hasn't been cleared between button tap and sheet presentation
         if viewModel.layers.count > 0 {
           showingLogEmotionFlow = true
         }
