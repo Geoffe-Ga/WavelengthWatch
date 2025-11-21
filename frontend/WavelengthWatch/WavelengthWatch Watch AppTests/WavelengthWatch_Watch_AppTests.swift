@@ -33,15 +33,19 @@ final class CatalogCacheStub: CatalogCachePersisting {
   var storedData: Data?
   var removeCount = 0
 
-  func loadCatalogData() throws -> Data? {
+  func loadCatalogDataSync() throws -> Data? {
     storedData
   }
 
-  func writeCatalogData(_ data: Data) throws {
+  func loadCatalogData() async throws -> Data? {
+    storedData
+  }
+
+  func writeCatalogData(_ data: Data) async throws {
     storedData = data
   }
 
-  func removeCatalogData() throws {
+  func removeCatalogData() async throws {
     storedData = nil
     removeCount += 1
   }

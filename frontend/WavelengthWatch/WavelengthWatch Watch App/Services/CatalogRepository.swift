@@ -6,9 +6,12 @@ protocol CatalogRemoteServicing {
 }
 
 protocol CatalogCachePersisting {
-  func loadCatalogData() throws -> Data?
-  func writeCatalogData(_ data: Data) throws
-  func removeCatalogData() throws
+  /// Synchronous version for cachedCatalog() - may block briefly
+  func loadCatalogDataSync() throws -> Data?
+  /// Async version for background loading
+  func loadCatalogData() async throws -> Data?
+  func writeCatalogData(_ data: Data) async throws
+  func removeCatalogData() async throws
 }
 
 protocol CatalogRepositoryProtocol {
@@ -43,25 +46,38 @@ final class FileCatalogCacheStore: CatalogCachePersisting {
     self.init(fileURL: directory.appendingPathComponent(fileName), fileManager: fileManager)
   }
 
-  func loadCatalogData() throws -> Data? {
+  func loadCatalogDataSync() throws -> Data? {
     guard fileManager.fileExists(atPath: fileURL.path) else {
       return nil
     }
     return try Data(contentsOf: fileURL)
   }
 
-  func writeCatalogData(_ data: Data) throws {
-    let directory = fileURL.deletingLastPathComponent()
-    if !fileManager.fileExists(atPath: directory.path) {
-      try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
-    }
-    try data.write(to: fileURL, options: [.atomic])
+  func loadCatalogData() async throws -> Data? {
+    try await Task {
+      guard fileManager.fileExists(atPath: fileURL.path) else {
+        return nil
+      }
+      return try Data(contentsOf: fileURL)
+    }.value
   }
 
-  func removeCatalogData() throws {
-    if fileManager.fileExists(atPath: fileURL.path) {
-      try fileManager.removeItem(at: fileURL)
-    }
+  func writeCatalogData(_ data: Data) async throws {
+    try await Task {
+      let directory = fileURL.deletingLastPathComponent()
+      if !fileManager.fileExists(atPath: directory.path) {
+        try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+      }
+      try data.write(to: fileURL, options: [.atomic])
+    }.value
+  }
+
+  func removeCatalogData() async throws {
+    try await Task {
+      if fileManager.fileExists(atPath: fileURL.path) {
+        try fileManager.removeItem(at: fileURL)
+      }
+    }.value
   }
 }
 
@@ -73,6 +89,7 @@ final class CatalogRepository: CatalogRepositoryProtocol {
   private let encoder: JSONEncoder
   private let cacheTTL: TimeInterval
   private let logger: CatalogRepositoryLogging
+  private var memoryCache: CatalogCacheEnvelope?
 
   init(
     remote: CatalogRemoteServicing,
@@ -94,23 +111,32 @@ final class CatalogRepository: CatalogRepositoryProtocol {
     self.logger = logger
   }
 
-  private func readEnvelope() -> CatalogCacheEnvelope? {
+  private func readEnvelope() async -> CatalogCacheEnvelope? {
+    // Check memory cache first
+    if let memoryCache {
+      return memoryCache
+    }
+
+    // Fall back to disk cache
     do {
-      guard let data = try cache.loadCatalogData() else {
+      guard let data = try await cache.loadCatalogData() else {
         return nil
       }
-      return try decoder.decode(CatalogCacheEnvelope.self, from: data)
+      let envelope = try decoder.decode(CatalogCacheEnvelope.self, from: data)
+      memoryCache = envelope
+      return envelope
     } catch {
       logger.cacheDecodingFailed(error)
-      try? cache.removeCatalogData()
+      try? await cache.removeCatalogData()
       return nil
     }
   }
 
-  private func writeEnvelope(_ catalog: CatalogResponseModel) throws {
+  private func writeEnvelope(_ catalog: CatalogResponseModel) async throws {
     let envelope = CatalogCacheEnvelope(fetchedAt: dateProvider(), catalog: catalog)
+    memoryCache = envelope
     let data = try encoder.encode(envelope)
-    try cache.writeCatalogData(data)
+    try await cache.writeCatalogData(data)
   }
 
   private func isFresh(_ envelope: CatalogCacheEnvelope) -> Bool {
@@ -118,21 +144,36 @@ final class CatalogRepository: CatalogRepositoryProtocol {
   }
 
   func cachedCatalog() -> CatalogResponseModel? {
-    readEnvelope()?.catalog
+    // Check memory cache first for fast access
+    if let memoryCache {
+      return memoryCache.catalog
+    }
+
+    // Fall back to synchronous disk read (may block briefly)
+    do {
+      guard let data = try cache.loadCatalogDataSync() else {
+        return nil
+      }
+      let envelope = try decoder.decode(CatalogCacheEnvelope.self, from: data)
+      memoryCache = envelope
+      return envelope.catalog
+    } catch {
+      return nil
+    }
   }
 
   func loadCatalog(forceRefresh: Bool = false) async throws -> CatalogResponseModel {
-    if !forceRefresh, let envelope = readEnvelope(), isFresh(envelope) {
+    if !forceRefresh, let envelope = await readEnvelope(), isFresh(envelope) {
       return envelope.catalog
     }
     let catalog = try await remote.fetchCatalog()
-    try? writeEnvelope(catalog)
+    try? await writeEnvelope(catalog)
     return catalog
   }
 
   func refreshCatalog() async throws -> CatalogResponseModel {
     let catalog = try await remote.fetchCatalog()
-    try? writeEnvelope(catalog)
+    try? await writeEnvelope(catalog)
     return catalog
   }
 }
