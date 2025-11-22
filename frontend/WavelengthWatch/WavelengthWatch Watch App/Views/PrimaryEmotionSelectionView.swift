@@ -5,6 +5,7 @@ import SwiftUI
 /// This view displays only emotion layers (excluding strategies layer 0),
 /// allows the user to browse phases, and presents a dosage picker when
 /// tapping on a phase card.
+@MainActor
 struct PrimaryEmotionSelectionView: View {
   let catalog: CatalogResponseModel
   @ObservedObject var flowViewModel: JournalFlowViewModel
@@ -41,8 +42,9 @@ struct PrimaryEmotionSelectionView: View {
           onSelect: { curriculum in
             flowViewModel.selectPrimaryCurriculum(id: curriculum.id)
             showingDosagePicker = false
-            // Advance to next step after selection
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            // Advance to next step after brief delay to allow sheet dismissal animation
+            Task { @MainActor in
+              try? await Task.sleep(nanoseconds: 300_000_000)
               flowViewModel.advanceStep()
             }
           },
