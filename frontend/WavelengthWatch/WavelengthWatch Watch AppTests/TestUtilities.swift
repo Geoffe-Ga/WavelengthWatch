@@ -36,6 +36,11 @@ final class InMemoryCatalogCacheMock: CatalogCachePersisting {
     storedData
   }
 
+  func removeCatalogDataSync() throws {
+    storedData = nil
+    removeCount += 1
+  }
+
   func loadCatalogData() async throws -> Data? {
     storedData
   }

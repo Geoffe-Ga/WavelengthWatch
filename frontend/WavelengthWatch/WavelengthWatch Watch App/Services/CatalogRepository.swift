@@ -8,6 +8,8 @@ protocol CatalogRemoteServicing {
 protocol CatalogCachePersisting {
   /// Synchronous version for cachedCatalog() - may block briefly
   func loadCatalogDataSync() throws -> Data?
+  /// Synchronous cache removal for error recovery in synchronous contexts
+  func removeCatalogDataSync() throws
   /// Async version for background loading
   func loadCatalogData() async throws -> Data?
   func writeCatalogData(_ data: Data) async throws
@@ -53,73 +55,59 @@ final class FileCatalogCacheStore: CatalogCachePersisting {
     return try Data(contentsOf: fileURL)
   }
 
-  func loadCatalogData() async throws -> Data? {
-    try await withCheckedThrowingContinuation { continuation in
-      DispatchQueue.global(qos: .userInitiated).async { [fileURL, fileManager] in
-        guard fileManager.fileExists(atPath: fileURL.path) else {
-          continuation.resume(returning: nil)
-          return
-        }
-        do {
-          let data = try Data(contentsOf: fileURL)
-          continuation.resume(returning: data)
-        } catch {
-          continuation.resume(throwing: error)
-        }
-      }
+  func removeCatalogDataSync() throws {
+    if fileManager.fileExists(atPath: fileURL.path) {
+      try fileManager.removeItem(at: fileURL)
     }
+  }
+
+  func loadCatalogData() async throws -> Data? {
+    // File I/O already happens on background threads when called from async context
+    guard fileManager.fileExists(atPath: fileURL.path) else {
+      return nil
+    }
+    return try Data(contentsOf: fileURL)
   }
 
   func writeCatalogData(_ data: Data) async throws {
-    try await withCheckedThrowingContinuation { continuation in
-      DispatchQueue.global(qos: .userInitiated).async { [fileURL, fileManager] in
-        do {
-          let directory = fileURL.deletingLastPathComponent()
-          if !fileManager.fileExists(atPath: directory.path) {
-            try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
-          }
-          try data.write(to: fileURL, options: [.atomic])
-          continuation.resume()
-        } catch {
-          continuation.resume(throwing: error)
-        }
-      }
+    let directory = fileURL.deletingLastPathComponent()
+    if !fileManager.fileExists(atPath: directory.path) {
+      try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
     }
+    try data.write(to: fileURL, options: [.atomic])
   }
 
   func removeCatalogData() async throws {
-    try await withCheckedThrowingContinuation { continuation in
-      DispatchQueue.global(qos: .userInitiated).async { [fileURL, fileManager] in
-        do {
-          if fileManager.fileExists(atPath: fileURL.path) {
-            try fileManager.removeItem(at: fileURL)
-          }
-          continuation.resume()
-        } catch {
-          continuation.resume(throwing: error)
-        }
-      }
+    if fileManager.fileExists(atPath: fileURL.path) {
+      try fileManager.removeItem(at: fileURL)
     }
   }
 }
 
+/// In-memory cache for testing and lightweight scenarios.
+/// Thread-safe via serial queue protection.
 final class InMemoryCatalogCache: CatalogCachePersisting {
   private var storage: Data?
+  private let queue = DispatchQueue(label: "com.wavelengthwatch.inmemorycache")
 
   func loadCatalogDataSync() throws -> Data? {
-    storage
+    queue.sync { storage }
+  }
+
+  func removeCatalogDataSync() throws {
+    queue.sync { storage = nil }
   }
 
   func loadCatalogData() async throws -> Data? {
-    storage
+    queue.sync { storage }
   }
 
   func writeCatalogData(_ data: Data) async throws {
-    storage = data
+    queue.sync { storage = data }
   }
 
   func removeCatalogData() async throws {
-    storage = nil
+    queue.sync { storage = nil }
   }
 }
 
@@ -174,21 +162,36 @@ final class CatalogRepository: CatalogRepositoryProtocol {
   }
 
   private func readEnvelope() async -> CatalogCacheEnvelope? {
-    // Check memory cache first (thread-safe read)
-    let cachedEnvelope = serialQueue.sync { memoryCache }
-    if let cachedEnvelope {
-      return cachedEnvelope
+    // Quick check if already cached
+    let cached = serialQueue.sync { memoryCache }
+    if let cached {
+      return cached
     }
 
-    // Fall back to disk cache
+    // Load from disk (outside lock to avoid blocking other operations)
+    let data: Data
     do {
-      guard let data = try await cache.loadCatalogData() else {
+      guard let diskData = try await cache.loadCatalogData() else {
         return nil
       }
+      data = diskData
+    } catch {
+      logger.cacheDecodingFailed(error)
+      try? await cache.removeCatalogData()
+      return nil
+    }
+
+    // Decode and update cache with double-check to prevent redundant disk reads
+    do {
       let envelope = try decoder.decode(CatalogCacheEnvelope.self, from: data)
-      // Update memory cache (thread-safe write)
-      serialQueue.sync { memoryCache = envelope }
-      return envelope
+      return serialQueue.sync {
+        // Double-check: another thread may have loaded it while we were reading from disk
+        if let existing = memoryCache {
+          return existing
+        }
+        memoryCache = envelope
+        return envelope
+      }
     } catch {
       logger.cacheDecodingFailed(error)
       try? await cache.removeCatalogData()
@@ -225,8 +228,9 @@ final class CatalogRepository: CatalogRepositoryProtocol {
         memoryCache = envelope
         return envelope.catalog
       } catch {
-        // Log decoding errors for debugging, consistent with readEnvelope()
+        // Log decoding errors and remove corrupted cache
         logger.cacheDecodingFailed(error)
+        try? cache.removeCatalogDataSync()
         return nil
       }
     }
