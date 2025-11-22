@@ -209,25 +209,26 @@ final class CatalogRepository: CatalogRepositoryProtocol {
   }
 
   func cachedCatalog() -> CatalogResponseModel? {
-    // Check memory cache first for fast access (thread-safe read)
-    let cachedEnvelope = serialQueue.sync { memoryCache }
-    if let cachedEnvelope {
-      return cachedEnvelope.catalog
-    }
+    // Protect entire read-decode-update operation to prevent TOCTOU race
+    serialQueue.sync {
+      // Check memory cache first for fast access
+      if let cachedEnvelope = memoryCache {
+        return cachedEnvelope.catalog
+      }
 
-    // Fall back to synchronous disk read (may block briefly)
-    do {
-      guard let data = try cache.loadCatalogDataSync() else {
+      // Fall back to synchronous disk read and populate memory cache
+      do {
+        guard let data = try cache.loadCatalogDataSync() else {
+          return nil
+        }
+        let envelope = try decoder.decode(CatalogCacheEnvelope.self, from: data)
+        memoryCache = envelope
+        return envelope.catalog
+      } catch {
+        // Log decoding errors for debugging, consistent with readEnvelope()
+        logger.cacheDecodingFailed(error)
         return nil
       }
-      let envelope = try decoder.decode(CatalogCacheEnvelope.self, from: data)
-      // Update memory cache (thread-safe write)
-      serialQueue.sync { memoryCache = envelope }
-      return envelope.catalog
-    } catch {
-      // Log decoding errors for debugging, consistent with readEnvelope()
-      logger.cacheDecodingFailed(error)
-      return nil
     }
   }
 

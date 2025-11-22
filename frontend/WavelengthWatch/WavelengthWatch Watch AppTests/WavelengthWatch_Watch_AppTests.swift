@@ -109,6 +109,29 @@ struct CatalogRepositoryTests {
     // Remote should not be called since memory cache is fresh
     #expect(remote.fetchCount == 0)
   }
+
+  @Test func concurrentAccessIsSafe() async throws {
+    let remote = CatalogRemoteStub(response: SampleData.catalog)
+    let cache = InMemoryCatalogCacheMock()
+    let encoder = JSONEncoder()
+    encoder.dateEncodingStrategy = .iso8601
+    let envelope = CatalogCacheEnvelope(fetchedAt: Date(timeIntervalSince1970: 1000), catalog: SampleData.catalog)
+    cache.storedData = try encoder.encode(envelope)
+    let repository = makeRepository(remote: remote, cache: cache, now: { Date(timeIntervalSince1970: 1500) })
+
+    // Perform many concurrent operations to verify thread safety
+    await withTaskGroup(of: Void.self) { group in
+      for _ in 0 ..< 10 {
+        group.addTask { _ = repository.cachedCatalog() }
+        group.addTask { _ = try? await repository.loadCatalog() }
+        group.addTask { _ = try? await repository.refreshCatalog() }
+      }
+    }
+
+    // Should not crash or cause data corruption
+    #expect(repository.cachedCatalog() != nil)
+    #expect(repository.cachedCatalog() == SampleData.catalog)
+  }
 }
 
 struct JournalClientTests {
