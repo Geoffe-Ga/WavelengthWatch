@@ -46,6 +46,7 @@ ALL_SUITES=(
   "FlowCoordinatorViewTests"
   "MenuViewTests"
   "PrimaryEmotionSelectionViewTests"
+  "SecondaryEmotionPromptViewTests"
 )
 
 # Parse arguments
