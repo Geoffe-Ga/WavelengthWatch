@@ -74,18 +74,9 @@ struct FlowCoordinatorView: View {
   }
 
   private var primaryEmotionView: some View {
-    FilteredLayerNavigationView(
-      layers: flowViewModel.filteredLayers,
-      phaseOrder: catalog.phaseOrder,
-      selectedLayerIndex: $primaryLayerIndex,
-      selectedPhaseIndex: $primaryPhaseIndex,
-      onPhaseCardTap: {
-        // TODO: Phase 1.3 - Navigate to curriculum detail view
-        // This will require creating a FlowCurriculumDetailView that:
-        // 1. Shows medicinal/toxic options for selected phase
-        // 2. Calls flowViewModel.selectPrimaryCurriculum(id:)
-        // 3. Advances to next step
-      }
+    PrimaryEmotionSelectionView(
+      catalog: catalog,
+      flowViewModel: flowViewModel
     )
   }
 
