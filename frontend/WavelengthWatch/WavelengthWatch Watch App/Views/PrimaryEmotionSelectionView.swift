@@ -13,6 +13,7 @@ struct PrimaryEmotionSelectionView: View {
   @State private var selectedLayerIndex: Int = 0
   @State private var selectedPhaseIndex: Int = 0
   @State private var showingDosagePicker: Bool = false
+  @State private var advanceTask: Task<Void, Never>?
 
   var body: some View {
     VStack(spacing: 0) {
@@ -43,8 +44,9 @@ struct PrimaryEmotionSelectionView: View {
             flowViewModel.selectPrimaryCurriculum(id: curriculum.id)
             showingDosagePicker = false
             // Advance to next step after brief delay to allow sheet dismissal animation
-            Task { @MainActor in
+            advanceTask = Task { @MainActor in
               try? await Task.sleep(nanoseconds: 300_000_000)
+              guard !Task.isCancelled else { return }
               flowViewModel.advanceStep()
             }
           },
@@ -55,6 +57,10 @@ struct PrimaryEmotionSelectionView: View {
         .presentationDetents([.medium, .large])
       }
     }
+    .onDisappear {
+      // Cancel pending advancement if view is dismissed
+      advanceTask?.cancel()
+    }
   }
 
   private var currentLayer: CatalogLayerModel? {
@@ -64,7 +70,9 @@ struct PrimaryEmotionSelectionView: View {
 
   private var currentPhase: CatalogPhaseModel? {
     guard let layer = currentLayer else { return nil }
-    let phaseIndex = selectedPhaseIndex - 1 // Adjust for 1-based indexing
+    // Convert from TabView's 1-based tag indexing to 0-based array indexing
+    // FilteredLayerNavigationView uses PhaseNavigator with tags starting at 1
+    let phaseIndex = selectedPhaseIndex - 1
     guard phaseIndex >= 0, phaseIndex < layer.phases.count else { return nil }
     return layer.phases[phaseIndex]
   }
@@ -99,22 +107,29 @@ private struct DosagePickerView: View {
 
         // Dosage options
         VStack(spacing: 12) {
-          if !phase.medicinal.isEmpty {
-            DosageSection(
-              title: "Medicinal",
-              entries: phase.medicinal,
-              color: .green,
-              onSelect: onSelect
-            )
-          }
+          if phase.medicinal.isEmpty, phase.toxic.isEmpty {
+            // Empty state - should not happen with valid catalog data
+            Text("No dosage options available")
+              .foregroundColor(.secondary)
+              .padding()
+          } else {
+            if !phase.medicinal.isEmpty {
+              DosageSection(
+                title: "Medicinal",
+                entries: phase.medicinal,
+                color: .green,
+                onSelect: onSelect
+              )
+            }
 
-          if !phase.toxic.isEmpty {
-            DosageSection(
-              title: "Toxic",
-              entries: phase.toxic,
-              color: .red,
-              onSelect: onSelect
-            )
+            if !phase.toxic.isEmpty {
+              DosageSection(
+                title: "Toxic",
+                entries: phase.toxic,
+                color: .red,
+                onSelect: onSelect
+              )
+            }
           }
         }
         .padding()
