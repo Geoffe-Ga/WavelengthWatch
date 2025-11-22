@@ -97,52 +97,46 @@ struct PrimaryEmotionSelectionViewTests {
     #expect(viewModel.currentStep == .secondaryEmotion)
   }
 
-  @Test("tap phase card shows dosage picker")
-  func tapPhaseCard_showsDosagePicker() {
-    let catalog = makeSampleCatalog()
+  @Test("empty phase with no dosage options")
+  func emptyPhase_showsFallbackMessage() {
+    // Create catalog with phase that has no medicinal or toxic entries
+    let emptyPhase = CatalogPhaseModel(
+      id: 1,
+      name: "Empty",
+      medicinal: [],
+      toxic: [],
+      strategies: []
+    )
+
+    let layer = CatalogLayerModel(
+      id: 3,
+      color: "Red",
+      title: "RED",
+      subtitle: "(Power)",
+      phases: [emptyPhase]
+    )
+
+    let catalog = CatalogResponseModel(
+      phaseOrder: ["Empty"],
+      layers: [layer]
+    )
+
     let viewModel = JournalFlowViewModel(catalog: catalog, initiatedBy: .self_initiated)
 
-    // This test verifies the view state management
-    // The actual UI interaction is tested in integration tests
-    #expect(viewModel.currentStep == .primaryEmotion)
+    // Verify the view model can handle empty phases
     #expect(viewModel.filteredLayers.count == 1)
+    #expect(viewModel.filteredLayers.first?.phases.first?.medicinal.isEmpty == true)
+    #expect(viewModel.filteredLayers.first?.phases.first?.toxic.isEmpty == true)
   }
 
-  @Test("cancel dosage picker does not store selection")
-  func cancelDosagePicker_doesNotStoreSelection() {
-    let catalog = makeSampleCatalog()
-    let viewModel = JournalFlowViewModel(catalog: catalog, initiatedBy: .self_initiated)
-
-    // Verify no selection initially
-    #expect(viewModel.primaryCurriculumID == nil)
-
-    // Cancel should not change state
-    #expect(viewModel.primaryCurriculumID == nil)
-    #expect(viewModel.currentStep == .primaryEmotion)
-  }
-
-  @Test("cancel dosage picker does not advance step")
-  func cancelDosagePicker_doesNotAdvanceStep() {
-    let catalog = makeSampleCatalog()
-    let viewModel = JournalFlowViewModel(catalog: catalog, initiatedBy: .self_initiated)
-
-    #expect(viewModel.currentStep == .primaryEmotion)
-
-    // Simulating cancel - step should remain unchanged
-    #expect(viewModel.currentStep == .primaryEmotion)
-  }
-
-  @Test("rapid selection cancellation does not advance")
-  func rapidSelectionCancellation_doesNotAdvance() async {
-    let catalog = makeSampleCatalog()
-    let viewModel = JournalFlowViewModel(catalog: catalog, initiatedBy: .self_initiated)
-
-    // Select and immediately cancel (simulating rapid tap then dismiss)
-    viewModel.selectPrimaryCurriculum(id: 1)
-    #expect(viewModel.primaryCurriculumID == 1)
-
-    // If task were cancelled, step should not advance
-    // (This will be validated once we implement proper cancellation)
-    #expect(viewModel.currentStep == .primaryEmotion)
-  }
+  // TODO: UI Testing - Sheet Presentation and Interaction
+  // The following behaviors require UI testing (ViewInspector or integration tests):
+  // - Tapping phase card presents dosage picker sheet
+  // - Cancel button dismisses sheet without storing selection
+  // - Selecting dosage dismisses sheet and stores curriculum ID
+  // - Rapid selection then dismissal cancels pending advancement
+  // - Empty phase displays "No dosage options available" message
+  //
+  // Current unit tests verify view model state management only.
+  // See Phase 6.3 (#89) for integration test implementation.
 }

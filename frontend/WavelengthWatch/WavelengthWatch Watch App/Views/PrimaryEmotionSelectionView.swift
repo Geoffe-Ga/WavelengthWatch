@@ -41,6 +41,9 @@ struct PrimaryEmotionSelectionView: View {
           phase: phase,
           layer: layer,
           onSelect: { curriculum in
+            // Cancel any pending advancement from previous rapid taps
+            advanceTask?.cancel()
+
             flowViewModel.selectPrimaryCurriculum(id: curriculum.id)
             showingDosagePicker = false
             // Advance to next step after brief delay to allow sheet dismissal animation
