@@ -113,4 +113,35 @@ struct FlowCoordinatorViewTests {
     #expect(flowViewModel.primaryCurriculumID == 10)
     #expect(flowViewModel.currentStep == .secondaryEmotion)
   }
+
+  @Test func secondaryEmotion_showsPromptInitially() async {
+    let catalog = createTestCatalog()
+    let flowViewModel = await JournalFlowViewModel(catalog: catalog, initiatedBy: .self_initiated)
+
+    // Advance to secondary emotion step
+    await flowViewModel.selectPrimaryCurriculum(id: 10)
+    await flowViewModel.advanceStep()
+
+    // Should be in secondary emotion step (where prompt will be shown)
+    #expect(flowViewModel.currentStep == .secondaryEmotion)
+    #expect(flowViewModel.getPrimaryCurriculum() != nil)
+  }
+
+  @Test func secondaryEmotion_skipAdvancesToStrategy() async {
+    let catalog = createTestCatalog()
+    let flowViewModel = await JournalFlowViewModel(catalog: catalog, initiatedBy: .self_initiated)
+
+    // Advance to secondary emotion step
+    await flowViewModel.selectPrimaryCurriculum(id: 10)
+    await flowViewModel.advanceStep()
+
+    #expect(flowViewModel.currentStep == .secondaryEmotion)
+
+    // Skip secondary emotion (what prompt's skip button does)
+    await flowViewModel.advanceStep()
+
+    // Should advance to strategy selection without secondary emotion
+    #expect(flowViewModel.currentStep == .strategySelection)
+    #expect(flowViewModel.secondaryCurriculumID == nil)
+  }
 }

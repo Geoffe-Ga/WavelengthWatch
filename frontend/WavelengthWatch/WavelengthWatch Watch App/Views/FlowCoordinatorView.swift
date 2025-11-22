@@ -18,6 +18,9 @@ struct FlowCoordinatorView: View {
   @State private var strategyLayerIndex: Int = 0
   @State private var strategyPhaseIndex: Int = 0
 
+  // Track whether user has chosen to add secondary emotion
+  @State private var showingSecondaryEmotionPicker: Bool = false
+
   init(catalog: CatalogResponseModel, initiatedBy: InitiatedBy, isPresented: Binding<Bool> = .constant(true)) {
     self.catalog = catalog
     self._isPresented = isPresented
@@ -34,7 +37,12 @@ struct FlowCoordinatorView: View {
             }
           }
           ToolbarItem(placement: .confirmationAction) {
-            if flowViewModel.currentStep != .review, flowViewModel.currentStep != .primaryEmotion {
+            // Show Skip button for optional steps, but not when showing prompt
+            // (prompt has its own skip button)
+            if flowViewModel.currentStep == .secondaryEmotion, !showingSecondaryEmotionPicker {
+              // Don't show toolbar skip - SecondaryEmotionPromptView has its own
+              EmptyView()
+            } else if flowViewModel.currentStep == .strategySelection {
               Button("Skip") {
                 flowViewModel.advanceStep()
               }
@@ -81,16 +89,35 @@ struct FlowCoordinatorView: View {
   }
 
   private var secondaryEmotionView: some View {
-    FilteredLayerNavigationView(
-      layers: flowViewModel.filteredLayers,
-      phaseOrder: catalog.phaseOrder,
-      selectedLayerIndex: $secondaryLayerIndex,
-      selectedPhaseIndex: $secondaryPhaseIndex,
-      onPhaseCardTap: {
-        // TODO: Phase 1.3 - Navigate to curriculum detail view
-        // Calls flowViewModel.selectSecondaryCurriculum(id:)
+    Group {
+      if showingSecondaryEmotionPicker {
+        // Show emotion selection UI after user chooses to add secondary
+        FilteredLayerNavigationView(
+          layers: flowViewModel.filteredLayers,
+          phaseOrder: catalog.phaseOrder,
+          selectedLayerIndex: $secondaryLayerIndex,
+          selectedPhaseIndex: $secondaryPhaseIndex,
+          onPhaseCardTap: {
+            // TODO: Phase 3.2 - Navigate to curriculum detail view
+            // Calls flowViewModel.selectSecondaryCurriculum(id:)
+          }
+        )
+      } else {
+        // Show prompt first
+        SecondaryEmotionPromptView(
+          flowViewModel: flowViewModel,
+          onAddSecondary: {
+            showingSecondaryEmotionPicker = true
+          }
+        )
       }
-    )
+    }
+    .onChange(of: flowViewModel.currentStep) { _, newStep in
+      // Reset picker state when leaving secondary emotion step
+      if newStep != .secondaryEmotion {
+        showingSecondaryEmotionPicker = false
+      }
+    }
   }
 
   private var strategySelectionView: some View {

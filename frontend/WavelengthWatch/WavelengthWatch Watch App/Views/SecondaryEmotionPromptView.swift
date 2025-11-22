@@ -8,6 +8,7 @@ import SwiftUI
 @MainActor
 struct SecondaryEmotionPromptView: View {
   @ObservedObject var flowViewModel: JournalFlowViewModel
+  let onAddSecondary: () -> Void
 
   var body: some View {
     VStack(spacing: 20) {
@@ -42,11 +43,9 @@ struct SecondaryEmotionPromptView: View {
 
       // Action buttons
       VStack(spacing: 12) {
-        // Add Secondary button - stays on secondaryEmotion step, shows selection UI
-        // Note: The actual transition to selection UI will be handled by the parent coordinator
+        // Add Secondary button - triggers transition to selection UI
         Button {
-          // Keep current step as .secondaryEmotion
-          // Parent view will show selection UI
+          onAddSecondary()
         } label: {
           Text("Add Secondary")
             .font(.body)
@@ -111,5 +110,10 @@ struct SecondaryEmotionPromptView: View {
   viewModel.selectPrimaryCurriculum(id: 1)
   viewModel.advanceStep()
 
-  return SecondaryEmotionPromptView(flowViewModel: viewModel)
+  return SecondaryEmotionPromptView(
+    flowViewModel: viewModel,
+    onAddSecondary: {
+      print("Add Secondary tapped")
+    }
+  )
 }
