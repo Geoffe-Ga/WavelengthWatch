@@ -83,6 +83,32 @@ struct CatalogRepositoryTests {
       #expect(error is StubError)
     }
   }
+
+  @Test func memoryCacheIsPopulatedAndReused() async throws {
+    let remote = CatalogRemoteStub(response: SampleData.catalog)
+    let cache = InMemoryCatalogCacheMock()
+    let encoder = JSONEncoder()
+    encoder.dateEncodingStrategy = .iso8601
+    let envelope = CatalogCacheEnvelope(fetchedAt: Date(timeIntervalSince1970: 1000), catalog: SampleData.catalog)
+    cache.storedData = try encoder.encode(envelope)
+    let repository = makeRepository(remote: remote, cache: cache, now: { Date(timeIntervalSince1970: 1500) })
+
+    // First load should populate memory cache from disk
+    _ = try await repository.loadCatalog()
+
+    // Clear disk cache to verify memory cache is being used
+    try await cache.removeCatalogData()
+
+    // Should still return from memory cache even though disk cache is gone
+    #expect(repository.cachedCatalog() != nil)
+    #expect(repository.cachedCatalog() == SampleData.catalog)
+
+    // loadCatalog should also use memory cache
+    let catalog = try await repository.loadCatalog()
+    #expect(catalog == SampleData.catalog)
+    // Remote should not be called since memory cache is fresh
+    #expect(remote.fetchCount == 0)
+  }
 }
 
 struct JournalClientTests {

@@ -54,30 +54,52 @@ final class FileCatalogCacheStore: CatalogCachePersisting {
   }
 
   func loadCatalogData() async throws -> Data? {
-    try await Task {
-      guard fileManager.fileExists(atPath: fileURL.path) else {
-        return nil
+    try await withCheckedThrowingContinuation { continuation in
+      DispatchQueue.global(qos: .userInitiated).async { [fileURL, fileManager] in
+        guard fileManager.fileExists(atPath: fileURL.path) else {
+          continuation.resume(returning: nil)
+          return
+        }
+        do {
+          let data = try Data(contentsOf: fileURL)
+          continuation.resume(returning: data)
+        } catch {
+          continuation.resume(throwing: error)
+        }
       }
-      return try Data(contentsOf: fileURL)
-    }.value
+    }
   }
 
   func writeCatalogData(_ data: Data) async throws {
-    try await Task {
-      let directory = fileURL.deletingLastPathComponent()
-      if !fileManager.fileExists(atPath: directory.path) {
-        try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+    try await withCheckedThrowingContinuation { continuation in
+      DispatchQueue.global(qos: .userInitiated).async { [fileURL, fileManager] in
+        do {
+          let directory = fileURL.deletingLastPathComponent()
+          if !fileManager.fileExists(atPath: directory.path) {
+            try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+          }
+          try data.write(to: fileURL, options: [.atomic])
+          continuation.resume()
+        } catch {
+          continuation.resume(throwing: error)
+        }
       }
-      try data.write(to: fileURL, options: [.atomic])
-    }.value
+    }
   }
 
   func removeCatalogData() async throws {
-    try await Task {
-      if fileManager.fileExists(atPath: fileURL.path) {
-        try fileManager.removeItem(at: fileURL)
+    try await withCheckedThrowingContinuation { continuation in
+      DispatchQueue.global(qos: .userInitiated).async { [fileURL, fileManager] in
+        do {
+          if fileManager.fileExists(atPath: fileURL.path) {
+            try fileManager.removeItem(at: fileURL)
+          }
+          continuation.resume()
+        } catch {
+          continuation.resume(throwing: error)
+        }
       }
-    }.value
+    }
   }
 }
 
@@ -101,6 +123,20 @@ final class InMemoryCatalogCache: CatalogCachePersisting {
   }
 }
 
+/// Repository for catalog data with dual-layer caching (memory + disk).
+///
+/// Thread Safety: Uses a serial queue to protect memoryCache access from concurrent reads/writes.
+/// All public methods are thread-safe and can be called from any thread/actor.
+///
+/// Caching Strategy:
+/// - Memory cache: Fast, in-process cache cleared only on app restart
+/// - Disk cache: Persistent across app launches, subject to TTL expiration
+/// - Memory cache is populated from disk on first access and updated on writes
+///
+/// Performance Characteristics:
+/// - cachedCatalog(): Synchronous, returns immediately from memory or reads disk (may block briefly)
+/// - loadCatalog(): Async, checks memory → disk → network, respects TTL
+/// - refreshCatalog(): Async, always fetches from network and updates both caches
 final class CatalogRepository: CatalogRepositoryProtocol {
   private let remote: CatalogRemoteServicing
   private let cache: CatalogCachePersisting
@@ -109,7 +145,13 @@ final class CatalogRepository: CatalogRepositoryProtocol {
   private let encoder: JSONEncoder
   private let cacheTTL: TimeInterval
   private let logger: CatalogRepositoryLogging
+
+  /// In-memory cache for fast access. Cleared only on app restart.
+  /// Thread-safe via serialQueue protection.
   private var memoryCache: CatalogCacheEnvelope?
+
+  /// Serial queue to protect memoryCache from concurrent access.
+  private let serialQueue = DispatchQueue(label: "com.wavelengthwatch.catalogrepository.cache")
 
   init(
     remote: CatalogRemoteServicing,
@@ -132,9 +174,10 @@ final class CatalogRepository: CatalogRepositoryProtocol {
   }
 
   private func readEnvelope() async -> CatalogCacheEnvelope? {
-    // Check memory cache first
-    if let memoryCache {
-      return memoryCache
+    // Check memory cache first (thread-safe read)
+    let cachedEnvelope = serialQueue.sync { memoryCache }
+    if let cachedEnvelope {
+      return cachedEnvelope
     }
 
     // Fall back to disk cache
@@ -143,7 +186,8 @@ final class CatalogRepository: CatalogRepositoryProtocol {
         return nil
       }
       let envelope = try decoder.decode(CatalogCacheEnvelope.self, from: data)
-      memoryCache = envelope
+      // Update memory cache (thread-safe write)
+      serialQueue.sync { memoryCache = envelope }
       return envelope
     } catch {
       logger.cacheDecodingFailed(error)
@@ -154,7 +198,8 @@ final class CatalogRepository: CatalogRepositoryProtocol {
 
   private func writeEnvelope(_ catalog: CatalogResponseModel) async throws {
     let envelope = CatalogCacheEnvelope(fetchedAt: dateProvider(), catalog: catalog)
-    memoryCache = envelope
+    // Update memory cache (thread-safe write)
+    serialQueue.sync { memoryCache = envelope }
     let data = try encoder.encode(envelope)
     try await cache.writeCatalogData(data)
   }
@@ -164,9 +209,10 @@ final class CatalogRepository: CatalogRepositoryProtocol {
   }
 
   func cachedCatalog() -> CatalogResponseModel? {
-    // Check memory cache first for fast access
-    if let memoryCache {
-      return memoryCache.catalog
+    // Check memory cache first for fast access (thread-safe read)
+    let cachedEnvelope = serialQueue.sync { memoryCache }
+    if let cachedEnvelope {
+      return cachedEnvelope.catalog
     }
 
     // Fall back to synchronous disk read (may block briefly)
@@ -175,9 +221,12 @@ final class CatalogRepository: CatalogRepositoryProtocol {
         return nil
       }
       let envelope = try decoder.decode(CatalogCacheEnvelope.self, from: data)
-      memoryCache = envelope
+      // Update memory cache (thread-safe write)
+      serialQueue.sync { memoryCache = envelope }
       return envelope.catalog
     } catch {
+      // Log decoding errors for debugging, consistent with readEnvelope()
+      logger.cacheDecodingFailed(error)
       return nil
     }
   }
