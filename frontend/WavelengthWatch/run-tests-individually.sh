@@ -148,7 +148,8 @@ if [ "$INDIVIDUAL_MODE" = true ] || [ ${#SUITES[@]} -eq 1 ]; then
       else
         echo "✅ $suite PASSED"
         ((PASSED_COUNT++))
-        # Don't write log file for passing tests
+        # Write log file for reference (consistent with optimized mode)
+        echo "$TEST_OUTPUT" > "$SUITE_LOG"
       fi
     fi
 
