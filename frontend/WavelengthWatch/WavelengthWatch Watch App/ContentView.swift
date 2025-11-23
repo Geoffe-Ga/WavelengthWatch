@@ -54,6 +54,8 @@ struct ContentView: View {
   @State private var hideIndicatorTask: Task<Void, Never>?
   @State private var showingMenu = false
   @State private var isShowingDetailView = false
+  @State private var showingFlowFromNotification = false
+  @State private var pendingNotificationInitiatedBy: InitiatedBy?
 
   init() {
     let configuration = AppConfiguration()
@@ -163,7 +165,9 @@ struct ContentView: View {
         }
         .onChange(of: notificationDelegate.scheduledNotificationReceived) { _, newValue in
           if let notification = newValue {
-            viewModel.setInitiatedBy(notification.initiatedBy)
+            pendingNotificationInitiatedBy = notification.initiatedBy
+            showingFlowFromNotification = true
+            // Clear delegate state immediately so next notification can trigger onChange
             notificationDelegate.clearNotificationState()
           }
         }
@@ -177,6 +181,22 @@ struct ContentView: View {
                   }
                 }
               }
+          }
+        }
+        .sheet(isPresented: $showingFlowFromNotification) {
+          if let initiatedBy = pendingNotificationInitiatedBy {
+            NotificationFlowSheet(
+              initiatedBy: initiatedBy,
+              journalClient: journalClient,
+              isPresented: $showingFlowFromNotification
+            )
+            .environmentObject(viewModel)
+          }
+        }
+        .onChange(of: showingFlowFromNotification) { _, isShowing in
+          if !isShowing {
+            // Clear local state when sheet dismisses (delegate already cleared)
+            pendingNotificationInitiatedBy = nil
           }
         }
       }
