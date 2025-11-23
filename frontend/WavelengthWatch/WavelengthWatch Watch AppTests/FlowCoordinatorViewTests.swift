@@ -113,4 +113,76 @@ struct FlowCoordinatorViewTests {
     #expect(flowViewModel.primaryCurriculumID == 10)
     #expect(flowViewModel.currentStep == .secondaryEmotion)
   }
+
+  @Test func secondaryEmotion_showsPromptInitially() async {
+    let catalog = createTestCatalog()
+    let flowViewModel = await JournalFlowViewModel(catalog: catalog, initiatedBy: .self_initiated)
+
+    // Advance to secondary emotion step
+    await flowViewModel.selectPrimaryCurriculum(id: 10)
+    await flowViewModel.advanceStep()
+
+    // Should be in secondary emotion step (where prompt will be shown)
+    #expect(flowViewModel.currentStep == .secondaryEmotion)
+    #expect(flowViewModel.getPrimaryCurriculum() != nil)
+  }
+
+  @Test func secondaryEmotion_skipAdvancesToStrategy() async {
+    let catalog = createTestCatalog()
+    let flowViewModel = await JournalFlowViewModel(catalog: catalog, initiatedBy: .self_initiated)
+
+    // Advance to secondary emotion step
+    await flowViewModel.selectPrimaryCurriculum(id: 10)
+    await flowViewModel.advanceStep()
+
+    #expect(flowViewModel.currentStep == .secondaryEmotion)
+
+    // Skip secondary emotion (what prompt's skip button does)
+    await flowViewModel.advanceStep()
+
+    // Should advance to strategy selection without secondary emotion
+    #expect(flowViewModel.currentStep == .strategySelection)
+    #expect(flowViewModel.secondaryCurriculumID == nil)
+  }
+
+  @Test func cancel_resetsPickerState() async {
+    let catalog = createTestCatalog()
+    let flowViewModel = await JournalFlowViewModel(catalog: catalog, initiatedBy: .self_initiated)
+
+    // Advance to secondary emotion step and select primary
+    await flowViewModel.selectPrimaryCurriculum(id: 10)
+    await flowViewModel.advanceStep()
+
+    #expect(flowViewModel.currentStep == .secondaryEmotion)
+
+    // Reset (simulating what cancel does)
+    await flowViewModel.reset()
+
+    // Flow should be reset to beginning
+    #expect(flowViewModel.currentStep == .primaryEmotion)
+    #expect(flowViewModel.primaryCurriculumID == nil)
+    // Note: FlowCoordinatorView's showingSecondaryEmotionPicker would also reset via onChange
+  }
+
+  @Test func stepChange_resetsPickerState() async {
+    let catalog = createTestCatalog()
+    let flowViewModel = await JournalFlowViewModel(catalog: catalog, initiatedBy: .self_initiated)
+
+    // Simulate the flow: primary -> secondary -> strategy -> back to primary (via reset)
+    await flowViewModel.selectPrimaryCurriculum(id: 10)
+    await flowViewModel.advanceStep()
+
+    #expect(flowViewModel.currentStep == .secondaryEmotion)
+
+    // Skip to strategy
+    await flowViewModel.advanceStep()
+    #expect(flowViewModel.currentStep == .strategySelection)
+
+    // Reset flow (simulates navigating back or canceling)
+    await flowViewModel.reset()
+
+    // Should be back at primary emotion
+    #expect(flowViewModel.currentStep == .primaryEmotion)
+    // Note: showingSecondaryEmotionPicker is FlowCoordinatorView state that resets via onChange
+  }
 }

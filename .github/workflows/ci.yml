@@ -90,14 +90,6 @@ jobs:
       - name: SwiftFormat check
         run: swiftformat --lint frontend
 
-      - name: Cache Xcode DerivedData
-        uses: actions/cache@v4
-        with:
-          path: ~/Library/Developer/Xcode/DerivedData
-          key: ${{ runner.os }}-xcode-${{ hashFiles('frontend/**/*.swift', 'frontend/**/*.xcodeproj/**') }}
-          restore-keys: |
-            ${{ runner.os }}-xcode-
-
       - name: Build and test watchOS app
         timeout-minutes: 25
         run: |
