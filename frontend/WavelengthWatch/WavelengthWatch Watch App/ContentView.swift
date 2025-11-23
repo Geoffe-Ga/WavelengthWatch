@@ -47,6 +47,7 @@ struct ContentView: View {
   @AppStorage("selectedPhaseIndex") private var storedPhaseIndex = 0
   @StateObject private var viewModel: ContentViewModel
   @EnvironmentObject private var notificationDelegate: NotificationDelegate
+  let journalClient: JournalClientProtocol
   @State private var layerSelection: Int
   @State private var phaseSelection: Int
   @State private var showLayerIndicator = false
@@ -62,6 +63,7 @@ struct ContentView: View {
       cache: FileCatalogCacheStore()
     )
     let journalClient = JournalClient(apiClient: apiClient)
+    self.journalClient = journalClient
     let initialLayer = UserDefaults.standard.integer(forKey: "selectedLayerIndex")
     let initialPhase = UserDefaults.standard.integer(forKey: "selectedPhaseIndex")
     let model = ContentViewModel(
@@ -167,7 +169,7 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showingMenu) {
           NavigationStack {
-            MenuView()
+            MenuView(journalClient: journalClient)
               .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                   Button("Done") {
@@ -1039,6 +1041,7 @@ struct StrategyCard: View {
 // MARK: - Menu Views
 
 struct MenuView: View {
+  let journalClient: JournalClientProtocol
   @EnvironmentObject private var viewModel: ContentViewModel
   @State private var showingLogEmotionFlow = false
 
@@ -1077,6 +1080,7 @@ struct MenuView: View {
         FlowCoordinatorView(
           catalog: CatalogResponseModel(phaseOrder: viewModel.phaseOrder, layers: viewModel.layers),
           initiatedBy: .self_initiated,
+          journalClient: journalClient,
           isPresented: $showingLogEmotionFlow
         )
       }
