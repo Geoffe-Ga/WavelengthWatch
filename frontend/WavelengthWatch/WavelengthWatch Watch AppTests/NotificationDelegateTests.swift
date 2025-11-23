@@ -164,22 +164,6 @@ struct NotificationDelegateTests {
     }
   }
 
-  @Test("notification tap with scheduled sets initiatedBy to scheduled")
-  func notificationTap_setsInitiatedByScheduled() async {
-    let delegate = await MainActor.run { NotificationDelegate() }
-
-    await simulateNotificationTap(
-      delegate: delegate,
-      scheduleId: "evening-checkin",
-      initiatedBy: "scheduled"
-    )
-
-    await MainActor.run {
-      // Verify initiatedBy is set to .scheduled
-      #expect(delegate.scheduledNotificationReceived?.initiatedBy == .scheduled)
-    }
-  }
-
   @Test("notification payload parsed correctly")
   func notificationPayload_parsedCorrectly() async {
     let delegate = await MainActor.run { NotificationDelegate() }

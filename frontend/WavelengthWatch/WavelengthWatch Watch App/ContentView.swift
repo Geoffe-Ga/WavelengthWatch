@@ -55,7 +55,7 @@ struct ContentView: View {
   @State private var showingMenu = false
   @State private var isShowingDetailView = false
   @State private var showingFlowFromNotification = false
-  @State private var notificationInitiatedBy: InitiatedBy?
+  @State private var pendingNotificationInitiatedBy: InitiatedBy?
 
   init() {
     let configuration = AppConfiguration()
@@ -165,7 +165,7 @@ struct ContentView: View {
         }
         .onChange(of: notificationDelegate.scheduledNotificationReceived) { _, newValue in
           if let notification = newValue {
-            notificationInitiatedBy = notification.initiatedBy
+            pendingNotificationInitiatedBy = notification.initiatedBy
             showingFlowFromNotification = true
           }
         }
@@ -182,45 +182,19 @@ struct ContentView: View {
           }
         }
         .sheet(isPresented: $showingFlowFromNotification) {
-          if let initiatedBy = notificationInitiatedBy {
-            if viewModel.layers.count > 0 {
-              FlowCoordinatorView(
-                catalog: CatalogResponseModel(phaseOrder: viewModel.phaseOrder, layers: viewModel.layers),
-                initiatedBy: initiatedBy,
-                journalClient: journalClient,
-                isPresented: $showingFlowFromNotification
-              )
-            } else {
-              VStack(spacing: 12) {
-                if viewModel.isLoading {
-                  ProgressView("Loading curriculum…")
-                } else {
-                  Text("Unable to load emotion catalog")
-                    .font(.footnote)
-                    .multilineTextAlignment(.center)
-                  Button("Dismiss") {
-                    showingFlowFromNotification = false
-                  }
-                }
-              }
-              .padding()
-              .onChange(of: viewModel.layers.count) { _, newCount in
-                // Auto-dismiss fallback and re-present flow when catalog loads
-                if newCount > 0 {
-                  showingFlowFromNotification = false
-                  // Re-trigger sheet presentation after a brief delay
-                  DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    showingFlowFromNotification = true
-                  }
-                }
-              }
-            }
+          if let initiatedBy = pendingNotificationInitiatedBy {
+            NotificationFlowSheet(
+              initiatedBy: initiatedBy,
+              journalClient: journalClient,
+              isPresented: $showingFlowFromNotification
+            )
+            .environmentObject(viewModel)
           }
         }
         .onChange(of: showingFlowFromNotification) { _, isShowing in
           if !isShowing {
             notificationDelegate.clearNotificationState()
-            notificationInitiatedBy = nil
+            pendingNotificationInitiatedBy = nil
           }
         }
       }
