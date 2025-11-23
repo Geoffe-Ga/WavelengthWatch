@@ -121,14 +121,19 @@ struct JournalReviewView: View {
     .onDisappear {
       submitTask?.cancel()
       submitTask = nil
+      isSubmitting = false
     }
   }
 
-  private var formattedTimestamp: String {
+  private static let timestampFormatter: DateFormatter = {
     let formatter = DateFormatter()
     formatter.dateStyle = .medium
     formatter.timeStyle = .short
-    return formatter.string(from: Date())
+    return formatter
+  }()
+
+  private var formattedTimestamp: String {
+    Self.timestampFormatter.string(from: Date())
   }
 
   @ViewBuilder
