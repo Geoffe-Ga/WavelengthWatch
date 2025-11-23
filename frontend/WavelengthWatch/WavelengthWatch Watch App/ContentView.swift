@@ -55,7 +55,7 @@ struct ContentView: View {
   @State private var showingMenu = false
   @State private var isShowingDetailView = false
   @State private var showingFlowFromNotification = false
-  @State private var notificationInitiatedBy: InitiatedBy = .self_initiated
+  @State private var notificationInitiatedBy: InitiatedBy?
 
   init() {
     let configuration = AppConfiguration()
@@ -167,7 +167,6 @@ struct ContentView: View {
           if let notification = newValue {
             notificationInitiatedBy = notification.initiatedBy
             showingFlowFromNotification = true
-            notificationDelegate.clearNotificationState()
           }
         }
         .sheet(isPresented: $showingMenu) {
@@ -183,14 +182,34 @@ struct ContentView: View {
           }
         }
         .sheet(isPresented: $showingFlowFromNotification) {
-          if viewModel.layers.count > 0 {
-            FlowCoordinatorView(
-              catalog: CatalogResponseModel(phaseOrder: viewModel.phaseOrder, layers: viewModel.layers),
-              initiatedBy: notificationInitiatedBy,
-              journalClient: journalClient,
-              isPresented: $showingFlowFromNotification
-            )
+          if let initiatedBy = notificationInitiatedBy {
+            if viewModel.layers.count > 0 {
+              FlowCoordinatorView(
+                catalog: CatalogResponseModel(phaseOrder: viewModel.phaseOrder, layers: viewModel.layers),
+                initiatedBy: initiatedBy,
+                journalClient: journalClient,
+                isPresented: $showingFlowFromNotification
+              )
+            } else {
+              VStack(spacing: 12) {
+                if viewModel.isLoading {
+                  ProgressView("Loading curriculum…")
+                } else {
+                  Text("Unable to load emotion catalog")
+                    .font(.footnote)
+                    .multilineTextAlignment(.center)
+                  Button("Dismiss") {
+                    showingFlowFromNotification = false
+                  }
+                }
+              }
+              .padding()
+            }
           }
+        }
+        .onDisappear {
+          notificationDelegate.clearNotificationState()
+          notificationInitiatedBy = nil
         }
       }
       .environmentObject(viewModel)

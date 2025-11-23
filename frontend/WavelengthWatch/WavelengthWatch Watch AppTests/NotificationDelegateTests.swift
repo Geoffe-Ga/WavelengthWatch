@@ -5,6 +5,41 @@ import UserNotifications
 
 @Suite("NotificationDelegate Tests")
 struct NotificationDelegateTests {
+  /// Helper method to simulate notification tap by setting delegate state
+  /// Note: We can't create UNNotificationResponse in tests (sealed class),
+  /// so we directly simulate what handleNotificationResponse does.
+  private func simulateNotificationTap(
+    delegate: NotificationDelegate,
+    scheduleId: String,
+    initiatedBy: String
+  ) async {
+    await MainActor.run {
+      let content = UNMutableNotificationContent()
+      content.userInfo = [
+        "scheduleId": scheduleId,
+        "initiatedBy": initiatedBy,
+      ]
+
+      let request = UNNotificationRequest(
+        identifier: "test-notification",
+        content: content,
+        trigger: nil
+      )
+
+      let userInfo = request.content.userInfo
+
+      if let scheduleId = userInfo["scheduleId"] as? String,
+         let initiatedByString = userInfo["initiatedBy"] as? String,
+         initiatedByString == "scheduled"
+      {
+        delegate.scheduledNotificationReceived = ScheduledNotification(
+          scheduleId: scheduleId,
+          initiatedBy: .scheduled
+        )
+      }
+    }
+  }
+
   /// Tests the core notification handling logic by calling handleNotificationResponse with a mock response.
   /// Note: We can't easily mock UNNotificationResponse (it's a sealed class), so we test the logic
   /// by verifying the delegate correctly parses userInfo and updates its state.
@@ -115,34 +150,11 @@ struct NotificationDelegateTests {
   func notificationTap_setsStateForFlow() async {
     let delegate = await MainActor.run { NotificationDelegate() }
 
-    // Simulate notification tap
-    let content = UNMutableNotificationContent()
-    content.title = "Journal Check-In"
-    content.userInfo = [
-      "scheduleId": "morning-checkin",
-      "initiatedBy": "scheduled",
-    ]
-
-    let request = UNNotificationRequest(
-      identifier: "test-notification",
-      content: content,
-      trigger: nil
+    await simulateNotificationTap(
+      delegate: delegate,
+      scheduleId: "morning-checkin",
+      initiatedBy: "scheduled"
     )
-
-    // Handle notification response
-    await MainActor.run {
-      let userInfo = request.content.userInfo
-
-      if let scheduleId = userInfo["scheduleId"] as? String,
-         let initiatedByString = userInfo["initiatedBy"] as? String,
-         initiatedByString == "scheduled"
-      {
-        delegate.scheduledNotificationReceived = ScheduledNotification(
-          scheduleId: scheduleId,
-          initiatedBy: .scheduled
-        )
-      }
-    }
 
     // Verify state that ContentView will observe
     await MainActor.run {
@@ -156,32 +168,11 @@ struct NotificationDelegateTests {
   func notificationTap_setsInitiatedByScheduled() async {
     let delegate = await MainActor.run { NotificationDelegate() }
 
-    let content = UNMutableNotificationContent()
-    content.userInfo = [
-      "scheduleId": "evening-checkin",
-      "initiatedBy": "scheduled",
-    ]
-
-    let request = UNNotificationRequest(
-      identifier: "test-notification",
-      content: content,
-      trigger: nil
+    await simulateNotificationTap(
+      delegate: delegate,
+      scheduleId: "evening-checkin",
+      initiatedBy: "scheduled"
     )
-
-    // Simulate what handleNotificationResponse does (we can't create UNNotificationResponse)
-    await MainActor.run {
-      let userInfo = request.content.userInfo
-
-      if let scheduleId = userInfo["scheduleId"] as? String,
-         let initiatedByString = userInfo["initiatedBy"] as? String,
-         initiatedByString == "scheduled"
-      {
-        delegate.scheduledNotificationReceived = ScheduledNotification(
-          scheduleId: scheduleId,
-          initiatedBy: .scheduled
-        )
-      }
-    }
 
     await MainActor.run {
       // Verify initiatedBy is set to .scheduled
@@ -206,31 +197,11 @@ struct NotificationDelegateTests {
         delegate.clearNotificationState()
       }
 
-      let content = UNMutableNotificationContent()
-      content.userInfo = [
-        "scheduleId": testCase.scheduleId,
-        "initiatedBy": testCase.initiatedBy,
-      ]
-
-      let request = UNNotificationRequest(
-        identifier: "test",
-        content: content,
-        trigger: nil
+      await simulateNotificationTap(
+        delegate: delegate,
+        scheduleId: testCase.scheduleId,
+        initiatedBy: testCase.initiatedBy
       )
-
-      await MainActor.run {
-        let userInfo = request.content.userInfo
-
-        if let scheduleId = userInfo["scheduleId"] as? String,
-           let initiatedByString = userInfo["initiatedBy"] as? String,
-           initiatedByString == "scheduled"
-        {
-          delegate.scheduledNotificationReceived = ScheduledNotification(
-            scheduleId: scheduleId,
-            initiatedBy: .scheduled
-          )
-        }
-      }
 
       await MainActor.run {
         if testCase.shouldParse {
