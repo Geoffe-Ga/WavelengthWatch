@@ -48,6 +48,7 @@ ALL_SUITES=(
   "PrimaryEmotionSelectionViewTests"
   "SecondaryEmotionPromptViewTests"
   "SecondaryEmotionSelectionViewTests"
+  "StrategySelectionViewTests"
 )
 
 # Parse arguments
