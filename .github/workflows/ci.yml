@@ -90,16 +90,6 @@ jobs:
       - name: SwiftFormat check
         run: swiftformat --lint frontend
 
-      - name: Cache Xcode DerivedData
-        uses: actions/cache@v4
-        with:
-          path: ~/Library/Developer/Xcode/DerivedData
-          # Note: hashFiles() patterns must be split into separate calls due to GitHub Actions parser limitation
-          # Using comma-separated patterns in a single call causes parsing errors
-          key: ${{ runner.os }}-xcode-${{ hashFiles('frontend/WavelengthWatch/**/*.swift') }}-${{ hashFiles('frontend/WavelengthWatch/*.xcodeproj/**') }}
-          restore-keys: |
-            ${{ runner.os }}-xcode-
-
       - name: Build and test watchOS app
         timeout-minutes: 25
         run: |
