@@ -9,6 +9,12 @@ import Testing
 /// managing the flow's lifecycle from initialization to cancellation.
 @MainActor
 struct FlowCoordinatorViewTests {
+  private class MockJournalClient: JournalClientProtocol {
+    func submit(curriculumID: Int, secondaryCurriculumID: Int?, strategyID: Int?, initiatedBy: InitiatedBy) async throws -> JournalResponseModel {
+      JournalResponseModel(id: 1, curriculumID: curriculumID, secondaryCurriculumID: secondaryCurriculumID, strategyID: strategyID, initiatedBy: initiatedBy)
+    }
+  }
+
   private func createTestCatalog() -> CatalogResponseModel {
     let phase = CatalogPhaseModel(
       id: 1,
@@ -34,7 +40,7 @@ struct FlowCoordinatorViewTests {
 
   @Test func init_createsFlowViewModel() async {
     let catalog = createTestCatalog()
-    let coordinator = FlowCoordinatorView(catalog: catalog, initiatedBy: .self_initiated)
+    let coordinator = FlowCoordinatorView(catalog: catalog, initiatedBy: .self_initiated, journalClient: MockJournalClient())
 
     // The coordinator should create a JournalFlowViewModel internally
     // We'll verify this by checking that the view renders without crashing
@@ -73,6 +79,7 @@ struct FlowCoordinatorViewTests {
     let coordinator = FlowCoordinatorView(
       catalog: catalog,
       initiatedBy: .self_initiated,
+      journalClient: MockJournalClient(),
       isPresented: binding
     )
 
@@ -87,7 +94,7 @@ struct FlowCoordinatorViewTests {
 
   @Test func currentStepView_showsPrimaryInitially() async {
     let catalog = createTestCatalog()
-    let coordinator = FlowCoordinatorView(catalog: catalog, initiatedBy: .self_initiated)
+    let coordinator = FlowCoordinatorView(catalog: catalog, initiatedBy: .self_initiated, journalClient: MockJournalClient())
 
     // Coordinator should start at primary emotion step
     #expect(coordinator.flowViewModel.currentStep == .primaryEmotion)

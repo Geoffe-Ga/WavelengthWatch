@@ -7,14 +7,21 @@ import SwiftUI
 /// The flow is presented as a sheet that can be dismissed via a cancel button.
 struct FlowCoordinatorView: View {
   let catalog: CatalogResponseModel
+  let journalClient: JournalClientProtocol
   @Binding var isPresented: Bool
   @StateObject var flowViewModel: JournalFlowViewModel
 
   // Track whether user has chosen to add secondary emotion
   @State private var showingSecondaryEmotionPicker: Bool = false
 
-  init(catalog: CatalogResponseModel, initiatedBy: InitiatedBy, isPresented: Binding<Bool> = .constant(true)) {
+  init(
+    catalog: CatalogResponseModel,
+    initiatedBy: InitiatedBy,
+    journalClient: JournalClientProtocol,
+    isPresented: Binding<Bool> = .constant(true)
+  ) {
     self.catalog = catalog
+    self.journalClient = journalClient
     self._isPresented = isPresented
     self._flowViewModel = StateObject(wrappedValue: JournalFlowViewModel(catalog: catalog, initiatedBy: initiatedBy))
   }
@@ -126,27 +133,19 @@ struct FlowCoordinatorView: View {
   }
 
   private var reviewView: some View {
-    VStack(spacing: 20) {
-      Text("Review Step")
-        .font(.title2)
-        .fontWeight(.thin)
-        .foregroundColor(.white)
-        .padding()
-
-      Text("TODO: Phase 2.x - Display selected emotions and strategies")
-        .font(.callout)
-        .foregroundColor(.white.opacity(0.6))
-        .multilineTextAlignment(.center)
-        .padding()
-
-      // Placeholder: Future implementation will show:
-      // - Selected primary emotion (from flowViewModel.getPrimaryCurriculum())
-      // - Selected secondary emotion (from flowViewModel.getSecondaryCurriculum())
-      // - Selected strategy (from flowViewModel.getStrategy())
-      // - Submit button to create journal entry
-    }
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
-    .background(Color.black)
+    JournalReviewView(
+      catalog: catalog,
+      flowViewModel: flowViewModel,
+      journalClient: journalClient,
+      onSuccess: {
+        // Close flow after successful submission
+        cancel()
+      },
+      onEdit: {
+        // Return to primary emotion step for editing
+        flowViewModel.reset()
+      }
+    )
   }
 
   func cancel() {
