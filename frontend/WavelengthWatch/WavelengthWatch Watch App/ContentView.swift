@@ -167,6 +167,8 @@ struct ContentView: View {
           if let notification = newValue {
             pendingNotificationInitiatedBy = notification.initiatedBy
             showingFlowFromNotification = true
+            // Clear delegate state immediately so next notification can trigger onChange
+            notificationDelegate.clearNotificationState()
           }
         }
         .sheet(isPresented: $showingMenu) {
@@ -193,7 +195,7 @@ struct ContentView: View {
         }
         .onChange(of: showingFlowFromNotification) { _, isShowing in
           if !isShowing {
-            notificationDelegate.clearNotificationState()
+            // Clear local state when sheet dismisses (delegate already cleared)
             pendingNotificationInitiatedBy = nil
           }
         }
