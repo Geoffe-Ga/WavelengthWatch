@@ -11,10 +11,6 @@ struct FlowCoordinatorView: View {
   @StateObject var flowViewModel: JournalFlowViewModel
 
   // State tracking for layer/phase selections per step
-  @State private var primaryLayerIndex: Int = 0
-  @State private var primaryPhaseIndex: Int = 0
-  @State private var secondaryLayerIndex: Int = 0
-  @State private var secondaryPhaseIndex: Int = 0
   @State private var strategyLayerIndex: Int = 0
   @State private var strategyPhaseIndex: Int = 0
 
@@ -104,15 +100,9 @@ struct FlowCoordinatorView: View {
     Group {
       if showingSecondaryEmotionPicker {
         // Show emotion selection UI after user chooses to add secondary
-        FilteredLayerNavigationView(
-          layers: flowViewModel.filteredLayers,
-          phaseOrder: catalog.phaseOrder,
-          selectedLayerIndex: $secondaryLayerIndex,
-          selectedPhaseIndex: $secondaryPhaseIndex,
-          onPhaseCardTap: {
-            // TODO: #81 (Phase 3.2) - Navigate to curriculum detail view
-            // Calls flowViewModel.selectSecondaryCurriculum(id:)
-          }
+        SecondaryEmotionSelectionView(
+          catalog: catalog,
+          flowViewModel: flowViewModel
         )
       } else {
         // Show prompt first
