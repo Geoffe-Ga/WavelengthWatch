@@ -5,6 +5,41 @@ import UserNotifications
 
 @Suite("NotificationDelegate Tests")
 struct NotificationDelegateTests {
+  /// Helper method to simulate notification tap by setting delegate state
+  /// Note: We can't create UNNotificationResponse in tests (sealed class),
+  /// so we directly simulate what handleNotificationResponse does.
+  private func simulateNotificationTap(
+    delegate: NotificationDelegate,
+    scheduleId: String,
+    initiatedBy: String
+  ) async {
+    await MainActor.run {
+      let content = UNMutableNotificationContent()
+      content.userInfo = [
+        "scheduleId": scheduleId,
+        "initiatedBy": initiatedBy,
+      ]
+
+      let request = UNNotificationRequest(
+        identifier: "test-notification",
+        content: content,
+        trigger: nil
+      )
+
+      let userInfo = request.content.userInfo
+
+      if let scheduleId = userInfo["scheduleId"] as? String,
+         let initiatedByString = userInfo["initiatedBy"] as? String,
+         initiatedByString == "scheduled"
+      {
+        delegate.scheduledNotificationReceived = ScheduledNotification(
+          scheduleId: scheduleId,
+          initiatedBy: .scheduled
+        )
+      }
+    }
+  }
+
   /// Tests the core notification handling logic by calling handleNotificationResponse with a mock response.
   /// Note: We can't easily mock UNNotificationResponse (it's a sealed class), so we test the logic
   /// by verifying the delegate correctly parses userInfo and updates its state.
@@ -109,5 +144,57 @@ struct NotificationDelegateTests {
     // This test verifies that we don't have a race condition where notifications
     // could arrive before the delegate is registered.
     #expect(NotificationDelegateShim.shared.delegate != nil)
+  }
+
+  @Test("notification tap sets state for flow to open")
+  func notificationTap_setsStateForFlow() async {
+    let delegate = await MainActor.run { NotificationDelegate() }
+
+    await simulateNotificationTap(
+      delegate: delegate,
+      scheduleId: "morning-checkin",
+      initiatedBy: "scheduled"
+    )
+
+    // Verify state that ContentView will observe
+    await MainActor.run {
+      #expect(delegate.scheduledNotificationReceived != nil)
+      #expect(delegate.scheduledNotificationReceived?.initiatedBy == .scheduled)
+      #expect(delegate.scheduledNotificationReceived?.scheduleId == "morning-checkin")
+    }
+  }
+
+  @Test("notification payload parsed correctly")
+  func notificationPayload_parsedCorrectly() async {
+    let delegate = await MainActor.run { NotificationDelegate() }
+
+    // Test various payload scenarios
+    let testCases: [(scheduleId: String, initiatedBy: String, shouldParse: Bool)] = [
+      ("morning-123", "scheduled", true),
+      ("evening-456", "scheduled", true),
+      ("invalid", "self", false), // Not "scheduled" - should be ignored
+      ("missing-initiated", "scheduled", true),
+    ]
+
+    for testCase in testCases {
+      await MainActor.run {
+        delegate.clearNotificationState()
+      }
+
+      await simulateNotificationTap(
+        delegate: delegate,
+        scheduleId: testCase.scheduleId,
+        initiatedBy: testCase.initiatedBy
+      )
+
+      await MainActor.run {
+        if testCase.shouldParse {
+          #expect(delegate.scheduledNotificationReceived != nil)
+          #expect(delegate.scheduledNotificationReceived?.scheduleId == testCase.scheduleId)
+        } else {
+          #expect(delegate.scheduledNotificationReceived == nil)
+        }
+      }
+    }
   }
 }

@@ -54,6 +54,8 @@ struct ContentView: View {
   @State private var hideIndicatorTask: Task<Void, Never>?
   @State private var showingMenu = false
   @State private var isShowingDetailView = false
+  @State private var showingFlowFromNotification = false
+  @State private var pendingNotificationInitiatedBy: InitiatedBy?
 
   init() {
     let configuration = AppConfiguration()
@@ -163,8 +165,8 @@ struct ContentView: View {
         }
         .onChange(of: notificationDelegate.scheduledNotificationReceived) { _, newValue in
           if let notification = newValue {
-            viewModel.setInitiatedBy(notification.initiatedBy)
-            notificationDelegate.clearNotificationState()
+            pendingNotificationInitiatedBy = notification.initiatedBy
+            showingFlowFromNotification = true
           }
         }
         .sheet(isPresented: $showingMenu) {
@@ -177,6 +179,22 @@ struct ContentView: View {
                   }
                 }
               }
+          }
+        }
+        .sheet(isPresented: $showingFlowFromNotification) {
+          if let initiatedBy = pendingNotificationInitiatedBy {
+            NotificationFlowSheet(
+              initiatedBy: initiatedBy,
+              journalClient: journalClient,
+              isPresented: $showingFlowFromNotification
+            )
+            .environmentObject(viewModel)
+          }
+        }
+        .onChange(of: showingFlowFromNotification) { _, isShowing in
+          if !isShowing {
+            notificationDelegate.clearNotificationState()
+            pendingNotificationInitiatedBy = nil
           }
         }
       }
