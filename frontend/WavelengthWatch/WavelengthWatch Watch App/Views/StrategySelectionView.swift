@@ -11,7 +11,6 @@ struct StrategySelectionView: View {
 
   @State private var selectedPhaseIndex: Int = 1 // TabView uses 1-based indexing
   @State private var showingStrategyConfirmation: Bool = false
-  @State private var selectedStrategy: CatalogStrategyModel?
   @State private var advanceTask: Task<Void, Never>?
 
   var body: some View {
@@ -58,6 +57,7 @@ struct StrategySelectionView: View {
     }
     .onDisappear {
       advanceTask?.cancel()
+      advanceTask = nil
     }
   }
 
@@ -106,20 +106,31 @@ struct StrategySelectionView: View {
       return 1 // Default to first phase
     }
 
-    // Find which phase contains this curriculum
-    for layer in catalog.layers {
-      for (index, phase) in layer.phases.enumerated() {
+    // Find phase name containing the primary curriculum (search emotion layers only)
+    var primaryPhaseName: String?
+    for layer in catalog.layers where layer.id != 0 {
+      for phase in layer.phases {
         let hasInMedicinal = phase.medicinal.contains { $0.id == primaryCurriculum.id }
         let hasInToxic = phase.toxic.contains { $0.id == primaryCurriculum.id }
 
         if hasInMedicinal || hasInToxic {
-          // TabView uses 1-based tag indexing
-          return index + 1
+          primaryPhaseName = phase.name
+          break
         }
       }
+      if primaryPhaseName != nil { break }
     }
 
-    return 1 // Fallback to first phase
+    // Find matching phase in strategy layer by name
+    guard let phaseName = primaryPhaseName,
+          let strategyLayer = flowViewModel.filteredLayers.first(where: { $0.id == 0 }),
+          let matchIndex = strategyLayer.phases.firstIndex(where: { $0.name == phaseName })
+    else {
+      return 1 // Fallback to first phase
+    }
+
+    // TabView uses 1-based tag indexing
+    return matchIndex + 1
   }
 
   private var currentPhase: CatalogPhaseModel? {
@@ -146,7 +157,7 @@ struct StrategySelectionView: View {
     // Advance to review after brief delay
     advanceTask = Task { @MainActor in
       try? await Task.sleep(nanoseconds: 300_000_000)
-      guard !Task.isCancelled else { return }
+      guard !Task.isCancelled, flowViewModel.currentStep == .strategySelection else { return }
       flowViewModel.advanceStep()
     }
   }
