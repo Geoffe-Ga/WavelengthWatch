@@ -10,10 +10,6 @@ struct FlowCoordinatorView: View {
   @Binding var isPresented: Bool
   @StateObject var flowViewModel: JournalFlowViewModel
 
-  // State tracking for layer/phase selections per step
-  @State private var strategyLayerIndex: Int = 0
-  @State private var strategyPhaseIndex: Int = 0
-
   // Track whether user has chosen to add secondary emotion
   @State private var showingSecondaryEmotionPicker: Bool = false
 
@@ -123,15 +119,9 @@ struct FlowCoordinatorView: View {
   }
 
   private var strategySelectionView: some View {
-    FilteredLayerNavigationView(
-      layers: flowViewModel.filteredLayers,
-      phaseOrder: catalog.phaseOrder,
-      selectedLayerIndex: $strategyLayerIndex,
-      selectedPhaseIndex: $strategyPhaseIndex,
-      onPhaseCardTap: {
-        // TODO: #84 (Phase 4.2) - Navigate to strategy detail view
-        // Calls flowViewModel.selectStrategy(id:)
-      }
+    StrategySelectionView(
+      catalog: catalog,
+      flowViewModel: flowViewModel
     )
   }
 
