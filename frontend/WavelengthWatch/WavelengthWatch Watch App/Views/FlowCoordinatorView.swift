@@ -37,12 +37,7 @@ struct FlowCoordinatorView: View {
             }
           }
           ToolbarItem(placement: .confirmationAction) {
-            // Show Skip button for optional steps, but not when showing prompt
-            // (prompt has its own skip button)
-            if flowViewModel.currentStep == .secondaryEmotion, !showingSecondaryEmotionPicker {
-              // Don't show toolbar skip - SecondaryEmotionPromptView has its own
-              EmptyView()
-            } else if flowViewModel.currentStep == .strategySelection {
+            if shouldShowToolbarSkip {
               Button("Skip") {
                 flowViewModel.advanceStep()
               }
@@ -64,6 +59,23 @@ struct FlowCoordinatorView: View {
       "Strategy"
     case .review:
       "Review"
+    }
+  }
+
+  /// Whether to show the toolbar skip button for the current step.
+  ///
+  /// Skip button is hidden when:
+  /// - On primary emotion step (required selection)
+  /// - On secondary emotion prompt (prompt has its own skip button)
+  /// - On review step (final step)
+  private var shouldShowToolbarSkip: Bool {
+    switch flowViewModel.currentStep {
+    case .primaryEmotion, .review:
+      false
+    case .secondaryEmotion:
+      showingSecondaryEmotionPicker // Only show if in picker mode, not prompt
+    case .strategySelection:
+      true
     }
   }
 
@@ -98,7 +110,7 @@ struct FlowCoordinatorView: View {
           selectedLayerIndex: $secondaryLayerIndex,
           selectedPhaseIndex: $secondaryPhaseIndex,
           onPhaseCardTap: {
-            // TODO: Phase 3.2 - Navigate to curriculum detail view
+            // TODO: #81 (Phase 3.2) - Navigate to curriculum detail view
             // Calls flowViewModel.selectSecondaryCurriculum(id:)
           }
         )
@@ -127,7 +139,7 @@ struct FlowCoordinatorView: View {
       selectedLayerIndex: $strategyLayerIndex,
       selectedPhaseIndex: $strategyPhaseIndex,
       onPhaseCardTap: {
-        // TODO: Phase 1.3 - Navigate to strategy detail view
+        // TODO: #84 (Phase 4.2) - Navigate to strategy detail view
         // Calls flowViewModel.selectStrategy(id:)
       }
     )
