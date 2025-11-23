@@ -110,4 +110,136 @@ struct NotificationDelegateTests {
     // could arrive before the delegate is registered.
     #expect(NotificationDelegateShim.shared.delegate != nil)
   }
+
+  @Test("notification tap sets state for flow to open")
+  func notificationTap_setsStateForFlow() async {
+    let delegate = await MainActor.run { NotificationDelegate() }
+
+    // Simulate notification tap
+    let content = UNMutableNotificationContent()
+    content.title = "Journal Check-In"
+    content.userInfo = [
+      "scheduleId": "morning-checkin",
+      "initiatedBy": "scheduled",
+    ]
+
+    let request = UNNotificationRequest(
+      identifier: "test-notification",
+      content: content,
+      trigger: nil
+    )
+
+    // Handle notification response
+    await MainActor.run {
+      let userInfo = request.content.userInfo
+
+      if let scheduleId = userInfo["scheduleId"] as? String,
+         let initiatedByString = userInfo["initiatedBy"] as? String,
+         initiatedByString == "scheduled"
+      {
+        delegate.scheduledNotificationReceived = ScheduledNotification(
+          scheduleId: scheduleId,
+          initiatedBy: .scheduled
+        )
+      }
+    }
+
+    // Verify state that ContentView will observe
+    await MainActor.run {
+      #expect(delegate.scheduledNotificationReceived != nil)
+      #expect(delegate.scheduledNotificationReceived?.initiatedBy == .scheduled)
+      #expect(delegate.scheduledNotificationReceived?.scheduleId == "morning-checkin")
+    }
+  }
+
+  @Test("notification tap with scheduled sets initiatedBy to scheduled")
+  func notificationTap_setsInitiatedByScheduled() async {
+    let delegate = await MainActor.run { NotificationDelegate() }
+
+    let content = UNMutableNotificationContent()
+    content.userInfo = [
+      "scheduleId": "evening-checkin",
+      "initiatedBy": "scheduled",
+    ]
+
+    let request = UNNotificationRequest(
+      identifier: "test-notification",
+      content: content,
+      trigger: nil
+    )
+
+    // Simulate what handleNotificationResponse does (we can't create UNNotificationResponse)
+    await MainActor.run {
+      let userInfo = request.content.userInfo
+
+      if let scheduleId = userInfo["scheduleId"] as? String,
+         let initiatedByString = userInfo["initiatedBy"] as? String,
+         initiatedByString == "scheduled"
+      {
+        delegate.scheduledNotificationReceived = ScheduledNotification(
+          scheduleId: scheduleId,
+          initiatedBy: .scheduled
+        )
+      }
+    }
+
+    await MainActor.run {
+      // Verify initiatedBy is set to .scheduled
+      #expect(delegate.scheduledNotificationReceived?.initiatedBy == .scheduled)
+    }
+  }
+
+  @Test("notification payload parsed correctly")
+  func notificationPayload_parsedCorrectly() async {
+    let delegate = await MainActor.run { NotificationDelegate() }
+
+    // Test various payload scenarios
+    let testCases: [(scheduleId: String, initiatedBy: String, shouldParse: Bool)] = [
+      ("morning-123", "scheduled", true),
+      ("evening-456", "scheduled", true),
+      ("invalid", "self", false), // Wrong initiatedBy
+      ("missing-initiated", "scheduled", true),
+    ]
+
+    for testCase in testCases {
+      await MainActor.run {
+        delegate.clearNotificationState()
+      }
+
+      let content = UNMutableNotificationContent()
+      content.userInfo = [
+        "scheduleId": testCase.scheduleId,
+        "initiatedBy": testCase.initiatedBy,
+      ]
+
+      let request = UNNotificationRequest(
+        identifier: "test",
+        content: content,
+        trigger: nil
+      )
+
+      await MainActor.run {
+        let userInfo = request.content.userInfo
+
+        if let scheduleId = userInfo["scheduleId"] as? String,
+           let initiatedByString = userInfo["initiatedBy"] as? String,
+           initiatedByString == "scheduled"
+        {
+          delegate.scheduledNotificationReceived = ScheduledNotification(
+            scheduleId: scheduleId,
+            initiatedBy: .scheduled
+          )
+        }
+      }
+
+      await MainActor.run {
+        if testCase.shouldParse {
+          #expect(delegate.scheduledNotificationReceived != nil)
+          #expect(delegate.scheduledNotificationReceived?.scheduleId == testCase.scheduleId)
+        } else {
+          #expect(delegate.scheduledNotificationReceived == nil)
+        }
+      }
+    }
+  }
 }

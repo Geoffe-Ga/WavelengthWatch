@@ -54,6 +54,8 @@ struct ContentView: View {
   @State private var hideIndicatorTask: Task<Void, Never>?
   @State private var showingMenu = false
   @State private var isShowingDetailView = false
+  @State private var showingFlowFromNotification = false
+  @State private var notificationInitiatedBy: InitiatedBy = .self_initiated
 
   init() {
     let configuration = AppConfiguration()
@@ -163,7 +165,8 @@ struct ContentView: View {
         }
         .onChange(of: notificationDelegate.scheduledNotificationReceived) { _, newValue in
           if let notification = newValue {
-            viewModel.setInitiatedBy(notification.initiatedBy)
+            notificationInitiatedBy = notification.initiatedBy
+            showingFlowFromNotification = true
             notificationDelegate.clearNotificationState()
           }
         }
@@ -177,6 +180,16 @@ struct ContentView: View {
                   }
                 }
               }
+          }
+        }
+        .sheet(isPresented: $showingFlowFromNotification) {
+          if viewModel.layers.count > 0 {
+            FlowCoordinatorView(
+              catalog: CatalogResponseModel(phaseOrder: viewModel.phaseOrder, layers: viewModel.layers),
+              initiatedBy: notificationInitiatedBy,
+              journalClient: journalClient,
+              isPresented: $showingFlowFromNotification
+            )
           }
         }
       }
