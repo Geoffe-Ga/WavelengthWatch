@@ -204,12 +204,24 @@ struct ContentView: View {
                 }
               }
               .padding()
+              .onChange(of: viewModel.layers.count) { _, newCount in
+                // Auto-dismiss fallback and re-present flow when catalog loads
+                if newCount > 0 {
+                  showingFlowFromNotification = false
+                  // Re-trigger sheet presentation after a brief delay
+                  DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    showingFlowFromNotification = true
+                  }
+                }
+              }
             }
           }
         }
-        .onDisappear {
-          notificationDelegate.clearNotificationState()
-          notificationInitiatedBy = nil
+        .onChange(of: showingFlowFromNotification) { _, isShowing in
+          if !isShowing {
+            notificationDelegate.clearNotificationState()
+            notificationInitiatedBy = nil
+          }
         }
       }
       .environmentObject(viewModel)

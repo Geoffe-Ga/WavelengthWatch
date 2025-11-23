@@ -188,7 +188,7 @@ struct NotificationDelegateTests {
     let testCases: [(scheduleId: String, initiatedBy: String, shouldParse: Bool)] = [
       ("morning-123", "scheduled", true),
       ("evening-456", "scheduled", true),
-      ("invalid", "self", false), // Wrong initiatedBy
+      ("invalid", "self", false), // Not "scheduled" - should be ignored
       ("missing-initiated", "scheduled", true),
     ]
 
