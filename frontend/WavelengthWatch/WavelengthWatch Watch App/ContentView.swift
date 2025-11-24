@@ -102,6 +102,7 @@ struct ContentView: View {
           layeredContent
         }
       }
+      .ignoresSafeArea(edges: .bottom)
       .task { await viewModel.loadCatalog() }
       .onChange(of: viewModel.phaseOrder) {
         adjustPhaseSelection()
