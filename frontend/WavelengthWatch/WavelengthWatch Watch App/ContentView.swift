@@ -78,115 +78,110 @@ struct ContentView: View {
   }
 
   var body: some View {
-    ZStack {
-      NavigationStack {
-        ZStack {
-          if viewModel.layers.isEmpty {
-            if viewModel.isLoading {
-              ProgressView("Loading curriculum…")
-                .foregroundStyle(.white)
-            } else if let error = viewModel.loadErrorMessage {
-              VStack(spacing: 12) {
-                Text(error)
-                  .multilineTextAlignment(.center)
-                Button("Retry") {
-                  Task { await viewModel.retry() }
-                }
+    NavigationStack {
+      ZStack {
+        if viewModel.layers.isEmpty {
+          if viewModel.isLoading {
+            ProgressView("Loading curriculum…")
+              .foregroundStyle(.white)
+          } else if let error = viewModel.loadErrorMessage {
+            VStack(spacing: 12) {
+              Text(error)
+                .multilineTextAlignment(.center)
+              Button("Retry") {
+                Task { await viewModel.retry() }
               }
-              .padding()
-            } else {
-              ProgressView("Loading curriculum…")
             }
-          } else if viewModel.phaseOrder.isEmpty {
-            Text("No phase information available.")
+            .padding()
           } else {
-            layeredContent
+            ProgressView("Loading curriculum…")
+          }
+        } else if viewModel.phaseOrder.isEmpty {
+          Text("No phase information available.")
+        } else {
+          layeredContent
+        }
+      }
+      .ignoresSafeArea(edges: .bottom)
+      .task { await viewModel.loadCatalog() }
+      .onChange(of: viewModel.phaseOrder) {
+        adjustPhaseSelection()
+      }
+      .onChange(of: layerSelection) { _, newValue in
+        // Convert filtered index to layer ID
+        if let layerId = viewModel.filteredIndexToLayerId(newValue) {
+          viewModel.selectedLayerId = layerId
+          // Convert layer ID to full array index
+          if let fullIndex = viewModel.layerIdToIndex(layerId) {
+            viewModel.selectedLayerIndex = fullIndex
+            storedLayerIndex = fullIndex
           }
         }
-        .task { await viewModel.loadCatalog() }
-        .onChange(of: viewModel.phaseOrder) {
-          adjustPhaseSelection()
-        }
-        .onChange(of: layerSelection) { _, newValue in
-          // Convert filtered index to layer ID
-          if let layerId = viewModel.filteredIndexToLayerId(newValue) {
-            viewModel.selectedLayerId = layerId
-            // Convert layer ID to full array index
-            if let fullIndex = viewModel.layerIdToIndex(layerId) {
-              viewModel.selectedLayerIndex = fullIndex
-              storedLayerIndex = fullIndex
-            }
-          }
-          showLayerIndicator = true
-          scheduleLayerIndicatorHide()
-        }
-        .onChange(of: viewModel.selectedLayerId) { _, newLayerId in
-          // When selectedLayerId changes, update layerSelection to match in filtered array
-          guard let layerId = newLayerId else { return }
-          if let filteredIndex = viewModel.layerIdToFilteredIndex(layerId) {
-            if layerSelection != filteredIndex {
-              layerSelection = filteredIndex
-            }
-          }
-        }
-        .onChange(of: phaseSelection) { _, newValue in
-          guard viewModel.phaseOrder.count > 0 else { return }
-          let adjusted = PhaseNavigator.adjustedSelection(newValue, phaseCount: viewModel.phaseOrder.count)
-          if adjusted != newValue {
-            phaseSelection = adjusted
-          }
-          let normalized = PhaseNavigator.normalizedIndex(adjusted, phaseCount: viewModel.phaseOrder.count)
-          viewModel.selectedPhaseIndex = normalized
-          storedPhaseIndex = normalized
-        }
-        .onChange(of: viewModel.selectedPhaseIndex) { _, newValue in
-          let expected = newValue + 1
-          if phaseSelection != expected {
-            phaseSelection = expected
-          }
-        }
-        .alert(item: $viewModel.journalFeedback) { feedback in
-          switch feedback.kind {
-          case .success:
-            Alert(
-              title: Text("Entry Logged"),
-              message: Text("Thanks for checking in."),
-              dismissButton: .default(Text("OK")) { viewModel.journalFeedback = nil }
-            )
-          case let .failure(message):
-            Alert(
-              title: Text("Something went wrong"),
-              message: Text(message),
-              dismissButton: .default(Text("OK")) { viewModel.journalFeedback = nil }
-            )
-          }
-        }
-        .onChange(of: notificationDelegate.scheduledNotificationReceived) { _, newValue in
-          if let notification = newValue {
-            viewModel.setInitiatedBy(notification.initiatedBy)
-            notificationDelegate.clearNotificationState()
-          }
-        }
-        .sheet(isPresented: $showingMenu) {
-          NavigationStack {
-            MenuView(journalClient: journalClient)
-              .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                  Button("Done") {
-                    showingMenu = false
-                  }
-                }
-              }
+        showLayerIndicator = true
+        scheduleLayerIndicatorHide()
+      }
+      .onChange(of: viewModel.selectedLayerId) { _, newLayerId in
+        // When selectedLayerId changes, update layerSelection to match in filtered array
+        guard let layerId = newLayerId else { return }
+        if let filteredIndex = viewModel.layerIdToFilteredIndex(layerId) {
+          if layerSelection != filteredIndex {
+            layerSelection = filteredIndex
           }
         }
       }
-      .environmentObject(viewModel)
-      .environment(\.isShowingDetailView, $isShowingDetailView)
-
-      // Floating menu button overlay - only show on main view
-      if !isShowingDetailView {
-        VStack {
-          HStack {
+      .onChange(of: phaseSelection) { _, newValue in
+        guard viewModel.phaseOrder.count > 0 else { return }
+        let adjusted = PhaseNavigator.adjustedSelection(newValue, phaseCount: viewModel.phaseOrder.count)
+        if adjusted != newValue {
+          phaseSelection = adjusted
+        }
+        let normalized = PhaseNavigator.normalizedIndex(adjusted, phaseCount: viewModel.phaseOrder.count)
+        viewModel.selectedPhaseIndex = normalized
+        storedPhaseIndex = normalized
+      }
+      .onChange(of: viewModel.selectedPhaseIndex) { _, newValue in
+        let expected = newValue + 1
+        if phaseSelection != expected {
+          phaseSelection = expected
+        }
+      }
+      .alert(item: $viewModel.journalFeedback) { feedback in
+        switch feedback.kind {
+        case .success:
+          Alert(
+            title: Text("Entry Logged"),
+            message: Text("Thanks for checking in."),
+            dismissButton: .default(Text("OK")) { viewModel.journalFeedback = nil }
+          )
+        case let .failure(message):
+          Alert(
+            title: Text("Something went wrong"),
+            message: Text(message),
+            dismissButton: .default(Text("OK")) { viewModel.journalFeedback = nil }
+          )
+        }
+      }
+      .onChange(of: notificationDelegate.scheduledNotificationReceived) { _, newValue in
+        if let notification = newValue {
+          viewModel.setInitiatedBy(notification.initiatedBy)
+          notificationDelegate.clearNotificationState()
+        }
+      }
+      .sheet(isPresented: $showingMenu) {
+        NavigationStack {
+          MenuView(journalClient: journalClient)
+            .toolbar {
+              ToolbarItem(placement: .cancellationAction) {
+                Button("Done") {
+                  showingMenu = false
+                }
+              }
+            }
+        }
+      }
+      .toolbar {
+        if !isShowingDetailView {
+          ToolbarItem(placement: .topBarLeading) {
             Button {
               showingMenu = true
             } label: {
@@ -195,16 +190,14 @@ struct ContentView: View {
                 .foregroundColor(.white.opacity(0.7))
             }
             .buttonStyle(.plain)
-            .frame(minWidth: 44, minHeight: 44)
-            .contentShape(Rectangle())
-            .padding(.leading, 8)
-            .padding(.top, 4)
-            Spacer()
           }
-          Spacer()
         }
       }
+      .navigationBarTitleDisplayMode(.inline)
+      .navigationTitle("")
     }
+    .environmentObject(viewModel)
+    .environment(\.isShowingDetailView, $isShowingDetailView)
   }
 
   private var layeredContent: some View {
