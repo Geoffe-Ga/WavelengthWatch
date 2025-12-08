@@ -62,6 +62,20 @@ struct JournalFlowViewModelTests {
     #expect(filteredLayers.allSatisfy { $0.id != 0 })
   }
 
+  @Test func filteredLayers_returnsLayersInDescendingOrder() async {
+    let catalog = createTestCatalog()
+    let viewModel = JournalFlowViewModel(catalog: catalog)
+
+    // Filtered layers should be in descending ID order (highest ID first) to match main app navigation
+    // Catalog: [0,1,2] → init reverses → [2,1,0] → filter excludes 0 → [2,1]
+    // In production: [0,1,...,10] → reverse → [10,9,...,1,0] → filter → [10,9,...,1]
+    // This puts Clear Light (layer 10) at index 0 (top), Beige (layer 1) at last index (bottom)
+    let filteredLayers = viewModel.filteredLayers
+    #expect(filteredLayers.count == 2)
+    #expect(filteredLayers[0].id == 2) // Purple (highest in test catalog) appears first
+    #expect(filteredLayers[1].id == 1) // Beige (lowest emotion layer) appears last
+  }
+
   @Test func canProceed_fromPrimary_requiresSelection() async {
     let catalog = createTestCatalog()
     let viewModel = JournalFlowViewModel(catalog: catalog)

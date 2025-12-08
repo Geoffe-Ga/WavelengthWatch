@@ -11,7 +11,7 @@ struct PrimaryEmotionSelectionView: View {
   @ObservedObject var flowViewModel: JournalFlowViewModel
 
   @State private var selectedLayerIndex: Int = 0
-  @State private var selectedPhaseIndex: Int = 0
+  @State private var selectedPhaseIndex: Int = 1 // 1-based indexing for TabView
   @State private var showingDosagePicker: Bool = false
   @State private var advanceTask: Task<Void, Never>?
 

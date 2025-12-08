@@ -205,18 +205,35 @@ private struct FilteredLayerCardView: View {
   let geometry: GeometryProxy
   let onPhaseCardTap: () -> Void
 
+  /// Check if running on smaller watch (42mm/41mm) to simplify effects
+  private var isSmallWatch: Bool {
+    geometry.size.width < 180
+  }
+
   private var transformEffect: (scale: CGFloat, rotation: Double, offset: CGFloat, opacity: Double) {
     let distance = layerIndex - selectedLayerIndex
 
-    switch distance {
-    case 0:
-      return (scale: 1.0, rotation: 0, offset: 0, opacity: 1.0)
-    case 1:
-      return (scale: 0.95, rotation: -5, offset: 15, opacity: 0.3)
-    case -1:
-      return (scale: 0.95, rotation: 5, offset: -15, opacity: 0.3)
-    default:
-      return (scale: 0.85, rotation: 0, offset: 0, opacity: 0.0)
+    // Simplify effects on smaller watches to prevent rendering issues
+    if isSmallWatch {
+      switch distance {
+      case 0:
+        return (scale: 1.0, rotation: 0, offset: 0, opacity: 1.0)
+      case 1, -1:
+        return (scale: 0.95, rotation: 0, offset: 0, opacity: 0.4)
+      default:
+        return (scale: 0.9, rotation: 0, offset: 0, opacity: 0.0)
+      }
+    } else {
+      switch distance {
+      case 0:
+        return (scale: 1.0, rotation: 0, offset: 0, opacity: 1.0)
+      case 1:
+        return (scale: 0.95, rotation: -5, offset: 15, opacity: 0.3)
+      case -1:
+        return (scale: 0.95, rotation: 5, offset: -15, opacity: 0.3)
+      default:
+        return (scale: 0.85, rotation: 0, offset: 0, opacity: 0.0)
+      }
     }
   }
 
@@ -229,15 +246,32 @@ private struct FilteredLayerCardView: View {
     )
     .frame(width: geometry.size.width, height: geometry.size.height)
     .scaleEffect(transformEffect.scale)
-    .rotation3DEffect(
-      .degrees(transformEffect.rotation),
-      axis: (x: 1, y: 0, z: 0),
-      perspective: 0.8
-    )
-    .offset(y: transformEffect.offset)
+    .if(!isSmallWatch) { view in
+      // Only apply 3D rotation on larger watches - too expensive for 42mm/41mm
+      view.rotation3DEffect(
+        .degrees(transformEffect.rotation),
+        axis: (x: 1, y: 0, z: 0),
+        perspective: 0.8
+      )
+      .offset(y: transformEffect.offset)
+    }
     .opacity(transformEffect.opacity)
     .zIndex(layerIndex == selectedLayerIndex ? 10 : Double(10 - abs(layerIndex - selectedLayerIndex)))
     .animation(.interactiveSpring(response: 0.4, dampingFraction: 0.8), value: selectedLayerIndex)
+  }
+}
+
+// MARK: - View Extension for Conditional Modifiers
+
+extension View {
+  /// Conditionally apply a view modifier
+  @ViewBuilder
+  func `if`(_ condition: Bool, transform: (Self) -> some View) -> some View {
+    if condition {
+      transform(self)
+    } else {
+      self
+    }
   }
 }
 
@@ -332,8 +366,16 @@ private struct FilteredPhasePageView: View {
   let color: Color
   let onTap: () -> Void
 
+  /// Scale factor for responsive sizing based on screen size
+  /// Reference: 46mm watch (~195pt width), scale down for 42mm/41mm
+  private func scaleFactor(for geometry: GeometryProxy) -> CGFloat {
+    let referenceWidth: CGFloat = 195
+    return min(geometry.size.width / referenceWidth, 1.0)
+  }
+
   var body: some View {
     GeometryReader { geometry in
+      let scale = scaleFactor(for: geometry)
       ZStack {
         // Background
         VStack(spacing: 0) {
@@ -351,17 +393,17 @@ private struct FilteredPhasePageView: View {
                     Color.clear,
                   ]),
                   center: .center,
-                  startRadius: 20,
-                  endRadius: 80
+                  startRadius: 20 * scale,
+                  endRadius: 80 * scale
                 )
               )
-              .frame(width: 160, height: 160)
-              .blur(radius: 1)
+              .frame(width: 160 * scale, height: 160 * scale)
+              .blur(radius: 1 * scale)
 
             // Main content container - floating card
-            VStack(spacing: 12) {
+            VStack(spacing: 12 * scale) {
               // Layer context - minimal and elegant
-              VStack(spacing: 4) {
+              VStack(spacing: 4 * scale) {
                 Text(layer.title)
                   .font(.caption)
                   .fontWeight(.medium)
@@ -394,8 +436,8 @@ private struct FilteredPhasePageView: View {
                 // Outer glow
                 Capsule()
                   .fill(color.opacity(0.3))
-                  .frame(width: 60, height: 3)
-                  .blur(radius: 3)
+                  .frame(width: 60 * scale, height: 3 * scale)
+                  .blur(radius: 3 * scale)
 
                 // Inner crystal line
                 Capsule()
@@ -410,15 +452,15 @@ private struct FilteredPhasePageView: View {
                       endPoint: .trailing
                     )
                   )
-                  .frame(width: 50, height: 2)
-                  .shadow(color: color.opacity(0.8), radius: 4)
+                  .frame(width: 50 * scale, height: 2 * scale)
+                  .shadow(color: color.opacity(0.8), radius: 4 * scale)
               }
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
+            .padding(.horizontal, 20 * scale)
+            .padding(.vertical, 16 * scale)
             .background(
               // Floating card background
-              RoundedRectangle(cornerRadius: 16)
+              RoundedRectangle(cornerRadius: 16 * scale)
                 .fill(
                   LinearGradient(
                     gradient: Gradient(colors: [
@@ -430,7 +472,7 @@ private struct FilteredPhasePageView: View {
                   )
                 )
                 .overlay(
-                  RoundedRectangle(cornerRadius: 16)
+                  RoundedRectangle(cornerRadius: 16 * scale)
                     .stroke(
                       LinearGradient(
                         gradient: Gradient(colors: [
@@ -441,11 +483,11 @@ private struct FilteredPhasePageView: View {
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                       ),
-                      lineWidth: 1
+                      lineWidth: 1 * scale
                     )
                 )
-                .shadow(color: color.opacity(0.2), radius: 8)
-                .shadow(color: .black.opacity(0.3), radius: 4)
+                .shadow(color: color.opacity(0.2), radius: 8 * scale)
+                .shadow(color: .black.opacity(0.3), radius: 4 * scale)
             )
             .onTapGesture {
               onTap()

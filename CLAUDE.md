@@ -39,10 +39,9 @@ swiftformat --lint frontend  # Check formatting without modifying
 # Select Apple Watch target and build/run
 
 # Testing
-cd frontend/WavelengthWatch
-./run-tests-individually.sh                       # Run all test suites (optimized - single simulator)
-./run-tests-individually.sh --individual          # Run suites individually (legacy mode)
-./run-tests-individually.sh PhaseNavigatorTests   # Run specific suite
+frontend/WavelengthWatch/run-tests-individually.sh                       # Run all test suites (optimized - single simulator)
+frontend/WavelengthWatch/run-tests-individually.sh --individual          # Run suites individually (legacy mode)
+frontend/WavelengthWatch/run-tests-individually.sh PhaseNavigatorTests   # Run specific suite
 ```
 
 **Test Optimization (Nov 2025)**
@@ -53,6 +52,41 @@ After fixing the `@StateObject` initialization bug (commit 3945b6a), all test su
 pre-commit run --all-files   # Run all pre-commit hooks
 pre-commit install           # Install hooks (done by dev-setup.sh)
 ```
+
+## Command Execution Guidelines
+
+**CRITICAL RULES FOR ALL AGENTS:**
+
+### Never Use `cd` Commands
+All commands MUST be run with relative paths from the project root. **Never use `cd`.**
+
+❌ **WRONG:**
+```bash
+cd frontend/WavelengthWatch
+./run-tests-individually.sh
+```
+
+✅ **CORRECT:**
+```bash
+frontend/WavelengthWatch/run-tests-individually.sh
+```
+
+**Why:** Using `cd` creates hidden directory state that causes confusion, breaks command sequences, and makes debugging harder. Always specify full relative paths from project root.
+
+### Always Use Test Scripts, Not Direct Tool Invocation
+For frontend tests, **always use the test script** instead of direct `xcodebuild` or `xcrun` commands.
+
+❌ **WRONG:**
+```bash
+xcodebuild test -scheme "WavelengthWatch Watch App" -destination 'platform=watchOS Simulator,name=Apple Watch Series 10 (42mm)'
+```
+
+✅ **CORRECT:**
+```bash
+frontend/WavelengthWatch/run-tests-individually.sh
+```
+
+**Why:** Test scripts encapsulate proper configuration, simulator management, and cleanup. Direct invocation bypasses these safeguards and can leave simulators in bad states.
 
 ## Repository Directory Overview
 
