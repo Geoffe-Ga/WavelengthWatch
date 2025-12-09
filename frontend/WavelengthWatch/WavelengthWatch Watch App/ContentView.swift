@@ -1068,16 +1068,10 @@ struct MenuView: View {
     }
     .navigationTitle("Menu")
     .navigationBarTitleDisplayMode(.inline)
-    .sheet(isPresented: $showingLogEmotionFlow) {
-      if viewModel.layers.count > 0 {
-        FlowCoordinatorView(
-          catalog: CatalogResponseModel(phaseOrder: viewModel.phaseOrder, layers: viewModel.layers),
-          initiatedBy: .self_initiated,
-          journalClient: journalClient,
-          isPresented: $showingLogEmotionFlow
-        )
-      }
-    }
+    // TODO(#134): Restore emotion logging flow with new FlowCoordinator architecture
+    // .sheet(isPresented: $showingLogEmotionFlow) {
+    //   Streamlined flow will be implemented in #134
+    // }
   }
 }
 

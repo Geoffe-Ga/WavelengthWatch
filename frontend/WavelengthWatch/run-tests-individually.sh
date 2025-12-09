@@ -18,11 +18,15 @@
 
 set -e  # Exit on first failure
 
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
 SCHEME="WavelengthWatch Watch App"
 # Use a commonly available simulator across different Xcode/CI versions
 DESTINATION="platform=watchOS Simulator,name=Apple Watch Series 10 (46mm)"
 TEST_TARGET="WavelengthWatch Watch AppTests"
-DERIVED_DATA_PATH="$(pwd)/.test-cache"
+PROJECT_PATH="$SCRIPT_DIR/WavelengthWatch.xcodeproj"
+DERIVED_DATA_PATH="$SCRIPT_DIR/.test-cache"
 
 # All available test suites
 ALL_SUITES=(
@@ -40,15 +44,9 @@ ALL_SUITES=(
   "MysticalJournalIconTests"
   "LayerFilterModeTests"
   "EmotionSummaryCardTests"
-  "FilteredLayerNavigationViewTests"
   "ContentViewFilteringTests"
   "JournalFlowViewModelTests"
-  "FlowCoordinatorViewTests"
   "MenuViewTests"
-  "PrimaryEmotionSelectionViewTests"
-  "SecondaryEmotionPromptViewTests"
-  "SecondaryEmotionSelectionViewTests"
-  "StrategySelectionViewTests"
   "JournalReviewViewTests"
 )
 
@@ -77,6 +75,7 @@ fi
 # Build once for all tests - this is the slowest part (20-25 seconds)
 echo "Building for testing..."
 if ! xcodebuild build-for-testing \
+  -project "$PROJECT_PATH" \
   -scheme "$SCHEME" \
   -destination "$DESTINATION" \
   -derivedDataPath "$DERIVED_DATA_PATH" \
@@ -89,6 +88,7 @@ if ! xcodebuild build-for-testing \
   echo ""
   # Error path: omit -quiet for verbose debugging output
   xcodebuild build-for-testing \
+    -project "$PROJECT_PATH" \
     -scheme "$SCHEME" \
     -destination "$DESTINATION" \
     -derivedDataPath "$DERIVED_DATA_PATH" \
