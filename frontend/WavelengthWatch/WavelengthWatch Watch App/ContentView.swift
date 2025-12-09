@@ -46,6 +46,7 @@ struct ContentView: View {
   @AppStorage("selectedLayerIndex") private var storedLayerIndex = 0
   @AppStorage("selectedPhaseIndex") private var storedPhaseIndex = 0
   @StateObject private var viewModel: ContentViewModel
+  @StateObject private var flowCoordinator: FlowCoordinator
   @EnvironmentObject private var notificationDelegate: NotificationDelegate
   let journalClient: JournalClientProtocol
   @State private var layerSelection: Int
@@ -73,6 +74,8 @@ struct ContentView: View {
       initialPhaseIndex: initialPhase
     )
     _viewModel = StateObject(wrappedValue: model)
+    let coordinator = FlowCoordinator(contentViewModel: model)
+    _flowCoordinator = StateObject(wrappedValue: coordinator)
     _layerSelection = State(initialValue: initialLayer)
     _phaseSelection = State(initialValue: initialPhase + 1)
   }
@@ -161,6 +164,52 @@ struct ContentView: View {
           )
         }
       }
+      .alert("Primary emotion selected", isPresented: .constant(flowCoordinator.currentStep == .confirmingPrimary)) {
+        Button("Add Secondary Emotion") {
+          flowCoordinator.promptForSecondary()
+        }
+        Button("Skip to Review") {
+          flowCoordinator.showReview()
+        }
+        Button("Cancel", role: .cancel) {
+          flowCoordinator.cancel()
+        }
+      } message: {
+        if let primary = flowCoordinator.selections.primary {
+          Text("You selected \"\(primary.expression)\". Add a secondary emotion or skip to review?")
+        }
+      }
+      .alert("Secondary emotion selected", isPresented: .constant(flowCoordinator.currentStep == .confirmingSecondary)) {
+        Button("Add Strategy") {
+          flowCoordinator.promptForStrategy()
+        }
+        Button("Skip to Review") {
+          flowCoordinator.showReview()
+        }
+        Button("Cancel", role: .cancel) {
+          flowCoordinator.cancel()
+        }
+      } message: {
+        if let secondary = flowCoordinator.selections.secondary {
+          Text("You selected \"\(secondary.expression)\". Add a strategy or skip to review?")
+        } else {
+          Text("Add a strategy or skip to review?")
+        }
+      }
+      .alert("Strategy selected", isPresented: .constant(flowCoordinator.currentStep == .confirmingStrategy)) {
+        Button("Continue to Review") {
+          flowCoordinator.showReview()
+        }
+        Button("Cancel", role: .cancel) {
+          flowCoordinator.cancel()
+        }
+      } message: {
+        if let strategy = flowCoordinator.selections.strategy {
+          Text("You selected \"\(strategy.strategy)\". Continue to review?")
+        } else {
+          Text("Continue to review?")
+        }
+      }
       .onChange(of: notificationDelegate.scheduledNotificationReceived) { _, newValue in
         if let notification = newValue {
           viewModel.setInitiatedBy(notification.initiatedBy)
@@ -178,6 +227,9 @@ struct ContentView: View {
               }
             }
         }
+      }
+      .sheet(isPresented: .constant(flowCoordinator.currentStep == .review)) {
+        FlowReviewSheet(flowCoordinator: flowCoordinator)
       }
       .toolbar {
         if !isShowingDetailView {
@@ -197,6 +249,7 @@ struct ContentView: View {
       .navigationTitle("")
     }
     .environmentObject(viewModel)
+    .environmentObject(flowCoordinator)
     .environment(\.isShowingDetailView, $isShowingDetailView)
   }
 
@@ -690,6 +743,7 @@ struct StrategyListView: View {
   let phase: CatalogPhaseModel
   let color: Color
   @EnvironmentObject private var viewModel: ContentViewModel
+  @EnvironmentObject private var flowCoordinator: FlowCoordinator
   @Environment(\.isShowingDetailView) private var isShowingDetailView
   @State private var showingJournalConfirmation = false
   @State private var selectedStrategy: CatalogStrategyModel?
@@ -778,14 +832,7 @@ struct StrategyListView: View {
     )
     .alert("Log Strategy", isPresented: $showingJournalConfirmation) {
       Button("Yes") {
-        if let curriculumID = fallbackCurriculumID, let strategy = selectedStrategy {
-          Task {
-            await viewModel.journal(
-              curriculumID: curriculumID,
-              strategyID: strategy.id
-            )
-          }
-        }
+        handleLogAction()
       }
       Button("Cancel", role: .cancel) {}
     } message: {
@@ -798,6 +845,21 @@ struct StrategyListView: View {
       isShowingDetailView.wrappedValue = false
     }
   }
+
+  private func handleLogAction() {
+    if flowCoordinator.currentStep == .selectingStrategy {
+      flowCoordinator.captureStrategy(selectedStrategy)
+    } else {
+      if let curriculumID = fallbackCurriculumID, let strategy = selectedStrategy {
+        Task {
+          await viewModel.journal(
+            curriculumID: curriculumID,
+            strategyID: strategy.id
+          )
+        }
+      }
+    }
+  }
 }
 
 struct CurriculumDetailView: View {
@@ -805,6 +867,7 @@ struct CurriculumDetailView: View {
   let phase: CatalogPhaseModel
   let color: Color
   @EnvironmentObject private var viewModel: ContentViewModel
+  @EnvironmentObject private var flowCoordinator: FlowCoordinator
   @Environment(\.isShowingDetailView) private var isShowingDetailView
 
   var body: some View {
@@ -822,10 +885,9 @@ struct CurriculumDetailView: View {
               title: "MEDICINE",
               expression: entry.expression,
               accent: color,
-              actionTitle: "Log Medicinal"
-            ) {
-              Task { await viewModel.journal(curriculumID: entry.id) }
-            }
+              actionTitle: "Log Medicinal",
+              entry: entry
+            )
           }
 
           ForEach(phase.toxic) { entry in
@@ -833,10 +895,9 @@ struct CurriculumDetailView: View {
               title: "TOXIC",
               expression: entry.expression,
               accent: .red,
-              actionTitle: "Log Toxic"
-            ) {
-              Task { await viewModel.journal(curriculumID: entry.id) }
-            }
+              actionTitle: "Log Toxic",
+              entry: entry
+            )
           }
         }
         .padding(.horizontal, 8)
@@ -881,7 +942,9 @@ private struct CurriculumCard: View {
   let expression: String
   let accent: Color
   let actionTitle: String
-  let action: () -> Void
+  let entry: CatalogCurriculumEntryModel
+  @EnvironmentObject private var viewModel: ContentViewModel
+  @EnvironmentObject private var flowCoordinator: FlowCoordinator
   @State private var showingJournalConfirmation = false
 
   var body: some View {
@@ -929,11 +992,23 @@ private struct CurriculumCard: View {
     }
     .alert("Log \(title.capitalized)", isPresented: $showingJournalConfirmation) {
       Button("Yes") {
-        action()
+        handleLogAction()
       }
       Button("Cancel", role: .cancel) {}
     } message: {
       Text("Would you like to log \"\(expression)\"?")
+    }
+  }
+
+  private func handleLogAction() {
+    switch flowCoordinator.currentStep {
+    case .selectingPrimary:
+      flowCoordinator.capturePrimary(entry)
+    case .selectingSecondary:
+      flowCoordinator.captureSecondary(entry)
+    default:
+      // Normal mode: immediate logging
+      Task { await viewModel.journal(curriculumID: entry.id) }
     }
   }
 }
@@ -975,6 +1050,7 @@ struct StrategyCard: View {
   let color: Color
   let phase: CatalogPhaseModel
   @EnvironmentObject private var viewModel: ContentViewModel
+  @EnvironmentObject private var flowCoordinator: FlowCoordinator
   @State private var showingJournalConfirmation = false
 
   var body: some View {
@@ -997,13 +1073,13 @@ struct StrategyCard: View {
       )
       .onTapGesture {
         let primaryID = phase.medicinal.first?.id ?? phase.toxic.first?.id
-        if primaryID != nil {
+        if primaryID != nil || flowCoordinator.currentStep == .selectingStrategy {
           showingJournalConfirmation = true
         }
       }
 
       let primaryID = phase.medicinal.first?.id ?? phase.toxic.first?.id
-      if primaryID != nil {
+      if primaryID != nil || flowCoordinator.currentStep == .selectingStrategy {
         MysticalJournalIcon(color: color)
           .padding(.top, 6)
           .padding(.trailing, 8)
@@ -1014,19 +1090,27 @@ struct StrategyCard: View {
     }
     .alert("Log Strategy", isPresented: $showingJournalConfirmation) {
       Button("Yes") {
-        let primaryID = phase.medicinal.first?.id ?? phase.toxic.first?.id
-        if let primaryID {
-          Task {
-            await viewModel.journal(
-              curriculumID: primaryID,
-              strategyID: strategy.id
-            )
-          }
-        }
+        handleLogAction()
       }
       Button("Cancel", role: .cancel) {}
     } message: {
       Text("Would you like to log \"\(strategy.strategy)\"?")
+    }
+  }
+
+  private func handleLogAction() {
+    if flowCoordinator.currentStep == .selectingStrategy {
+      flowCoordinator.captureStrategy(strategy)
+    } else {
+      let primaryID = phase.medicinal.first?.id ?? phase.toxic.first?.id
+      if let primaryID {
+        Task {
+          await viewModel.journal(
+            curriculumID: primaryID,
+            strategyID: strategy.id
+          )
+        }
+      }
     }
   }
 }
@@ -1036,7 +1120,8 @@ struct StrategyCard: View {
 struct MenuView: View {
   let journalClient: JournalClientProtocol
   @EnvironmentObject private var viewModel: ContentViewModel
-  @State private var showingLogEmotionFlow = false
+  @EnvironmentObject private var flowCoordinator: FlowCoordinator
+  @State private var showingStartPrompt = false
 
   var body: some View {
     List {
@@ -1045,7 +1130,7 @@ struct MenuView: View {
       Button {
         // Guard: Ensure catalog hasn't been cleared between button tap and sheet presentation
         if viewModel.layers.count > 0 {
-          showingLogEmotionFlow = true
+          showingStartPrompt = true
         }
       } label: {
         Label("Log Emotion", systemImage: "heart.text.square")
@@ -1068,10 +1153,14 @@ struct MenuView: View {
     }
     .navigationTitle("Menu")
     .navigationBarTitleDisplayMode(.inline)
-    // TODO(#134): Restore emotion logging flow with new FlowCoordinator architecture
-    // .sheet(isPresented: $showingLogEmotionFlow) {
-    //   Streamlined flow will be implemented in #134
-    // }
+    .alert("Select your primary emotion", isPresented: $showingStartPrompt) {
+      Button("Continue") {
+        flowCoordinator.startPrimarySelection()
+      }
+      Button("Cancel", role: .cancel) {}
+    } message: {
+      Text("Navigate to any emotion and tap to log it.")
+    }
   }
 }
 
@@ -1159,6 +1248,164 @@ struct ConceptExplainerView: View {
     }
     .navigationTitle("About")
     .navigationBarTitleDisplayMode(.inline)
+  }
+}
+
+// MARK: - Flow Review Sheet
+
+struct FlowReviewSheet: View {
+  @ObservedObject var flowCoordinator: FlowCoordinator
+  @State private var isSubmitting = false
+  @State private var showingSuccess = false
+  @State private var showingError = false
+  @State private var errorMessage = ""
+
+  var body: some View {
+    NavigationStack {
+      ScrollView {
+        VStack(spacing: 20) {
+          Text("Review Your Entry")
+            .font(.title3)
+            .fontWeight(.semibold)
+            .padding(.top)
+
+          if let primary = flowCoordinator.selections.primary {
+            emotionCard(
+              label: "Primary Emotion",
+              expression: primary.expression,
+              dosage: primary.dosage
+            )
+          }
+
+          if let secondary = flowCoordinator.selections.secondary {
+            emotionCard(
+              label: "Secondary Emotion",
+              expression: secondary.expression,
+              dosage: secondary.dosage
+            )
+          }
+
+          if let strategy = flowCoordinator.selections.strategy {
+            strategyCard(strategy: strategy)
+          }
+
+          Button {
+            submitEntry()
+          } label: {
+            if isSubmitting {
+              ProgressView()
+            } else {
+              Text("Submit Entry")
+                .fontWeight(.semibold)
+            }
+          }
+          .disabled(isSubmitting)
+          .frame(maxWidth: .infinity)
+          .padding(.vertical, 12)
+          .background(isSubmitting ? Color.gray : Color.blue)
+          .foregroundColor(.white)
+          .cornerRadius(10)
+          .padding(.horizontal)
+        }
+        .padding()
+      }
+      .navigationTitle("Review")
+      .navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        ToolbarItem(placement: .cancellationAction) {
+          Button("Cancel") {
+            flowCoordinator.cancel()
+          }
+          .disabled(isSubmitting)
+        }
+      }
+      .alert("Success", isPresented: $showingSuccess) {
+        Button("OK") {
+          flowCoordinator.cancel()
+        }
+      } message: {
+        Text("Your journal entry has been saved.")
+      }
+      .alert("Error", isPresented: $showingError) {
+        Button("Retry") {
+          submitEntry()
+        }
+        Button("Cancel", role: .cancel) {}
+      } message: {
+        Text(errorMessage)
+      }
+    }
+  }
+
+  @ViewBuilder
+  private func emotionCard(label: String, expression: String, dosage: CatalogDosage) -> some View {
+    VStack(alignment: .leading, spacing: 8) {
+      Text(label)
+        .font(.caption)
+        .foregroundColor(.secondary)
+        .textCase(.uppercase)
+
+      HStack {
+        Circle()
+          .fill(dosage == .medicinal ? Color.green : Color.red)
+          .frame(width: 10, height: 10)
+
+        Text(expression)
+          .font(.body)
+          .fontWeight(.medium)
+
+        Spacer()
+
+        Text(dosage == .medicinal ? "Medicinal" : "Toxic")
+          .font(.caption)
+          .foregroundColor(.secondary)
+      }
+    }
+    .padding(.vertical, 12)
+    .padding(.horizontal, 16)
+    .background(Color.secondary.opacity(0.1))
+    .cornerRadius(10)
+  }
+
+  @ViewBuilder
+  private func strategyCard(strategy: CatalogStrategyModel) -> some View {
+    VStack(alignment: .leading, spacing: 8) {
+      Text("Strategy")
+        .font(.caption)
+        .foregroundColor(.secondary)
+        .textCase(.uppercase)
+
+      HStack {
+        Circle()
+          .fill(Color(stage: strategy.color))
+          .frame(width: 10, height: 10)
+
+        Text(strategy.strategy)
+          .font(.body)
+          .fontWeight(.medium)
+
+        Spacer()
+      }
+    }
+    .padding(.vertical, 12)
+    .padding(.horizontal, 16)
+    .background(Color.secondary.opacity(0.1))
+    .cornerRadius(10)
+  }
+
+  private func submitEntry() {
+    isSubmitting = true
+    Task {
+      do {
+        try await flowCoordinator.submit()
+        isSubmitting = false
+        showingSuccess = true
+      } catch {
+        isSubmitting = false
+        errorMessage = "Failed to submit: \(error.localizedDescription)"
+        showingError = true
+      }
+    }
   }
 }
 
