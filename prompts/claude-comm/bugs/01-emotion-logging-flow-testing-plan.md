@@ -163,76 +163,122 @@ curl http://127.0.0.1:8000/api/v1/journal | jq 'length'
 
 **Objective:** Verify primary emotion selection works correctly
 
-### Test 2.1: Layer Tab Navigation
+### Test 2.1: Layer Vertical Scrolling Navigation
 **Template:** `bug-template-navigation.md`
+
+**Note:** Original test incorrectly referred to "tabs". Actual UI uses vertical scrolling for layers.
+
+**Architecture:**
+- Vertical scroll (swipe up/down or Digital Crown) = Layer navigation
+- Horizontal scroll (swipe left/right) = Phase navigation
+- Phase card tap = Opens dosage picker
+
+**Test steps:**
 
 - [ ] Open flow via menu
 - [ ] Verify title: "How are you feeling?"
-- [ ] Verify layer tabs visible at top
-- [ ] Count tabs (should match number of layers in catalog)
-- [ ] Tap each layer tab:
-  - [ ] Beige
-  - [ ] Purple
-  - [ ] Red
-  - [ ] Blue
-  - [ ] Orange
-  - [ ] Green
-  - [ ] Yellow
-  - [ ] Teal
-  - [ ] (Any additional layers)
-- [ ] Verify emotion list updates for each layer
-- [ ] Verify tab selection indicator shows current layer
-- [ ] Verify scrolling works if many layers
+- [ ] Verify layer indicator visible on right side (colored dots)
+- [ ] Count layers by scrolling vertically through all layers
+- [ ] Scroll vertically through each layer (or use Digital Crown):
+  - [ ] Beige (Layer 1)
+  - [ ] Purple (Layer 2)
+  - [ ] Red (Layer 3)
+  - [ ] Blue (Layer 4)
+  - [ ] Orange (Layer 5)
+  - [ ] Green (Layer 6)
+  - [ ] Yellow (Layer 7)
+  - [ ] Teal (Layer 8)
+  - [ ] Ultraviolet (Layer 9)
+  - [ ] Clear Light (Layer 10)
+- [ ] Verify phase cards update for each layer
+- [ ] Verify layer selection indicator (sidebar) shows current layer with color
+- [ ] Verify vertical scrolling works smoothly
+- [ ] Verify Digital Crown scrolls through layers
 
 **Expected:**
-- All layers represented as tabs
-- Tapping tab switches to that layer's emotions
-- Visual indicator shows selected layer
-- Smooth transitions between tabs
+- All emotion layers (1-10) accessible via vertical scroll
+- Scrolling vertically switches to that layer's phase cards
+- Visual indicator (right sidebar) shows selected layer with color
+- Smooth transitions between layers
+- Digital Crown provides alternative navigation
 
-### Test 2.2: Emotion List Display
+### Test 2.2: Phase Card and Dosage Picker Display
 **Template:** `bug-template-layout.md`
 
-**For each layer:**
+**Note:** Original test misunderstood architecture. Emotions appear in dosage picker AFTER tapping phase card.
 
-- [ ] Verify emotions listed
-- [ ] Count emotions (compare with backend data)
-- [ ] Verify emotion names readable
-- [ ] Verify list scrolls if many emotions
-- [ ] Verify all emotions tappable
-- [ ] Verify no emotions cut off on 41mm watch
+**Phase card display (for each layer):**
+
+- [ ] Scroll horizontally through phases
+- [ ] Verify phase cards display correctly (layer title, subtitle, phase name)
+- [ ] Verify phase card text readable on 41mm watch
+- [ ] Verify no text clipping on phase cards
+- [ ] Count phases by scrolling horizontally (should match catalog)
+- [ ] Verify page indicator dots show at bottom during scroll
+
+**Dosage picker (after tapping phase card):**
+
+- [ ] Tap a phase card
+- [ ] Verify dosage picker sheet opens
+- [ ] Verify layer title and phase name shown at top
+- [ ] Verify "Medicinal" section visible (if data exists)
+- [ ] Verify "Toxic" section visible (if data exists)
+- [ ] Count emotions in each section (compare with backend data)
+- [ ] Verify emotion names readable and not clipped
+- [ ] Verify "Cancel" button visible
+- [ ] Verify all emotions tappable with adequate touch targets
 
 **Expected:**
-- All emotions for layer visible
-- Text not clipped
-- List scrollable
-- Proper spacing
+- Phase cards display layer/phase context clearly
+- Horizontal scrolling smooth between phases
+- Dosage picker shows all medicinal and toxic emotions for the phase
+- Text not clipped on 41mm watch
+- Proper spacing and readability
 
-### Test 2.3: Emotion Selection
+### Test 2.3: Emotion Selection via Dosage Picker
 **Template:** `bug-template-functional.md`
 
-- [ ] Select emotion from list
-- [ ] Verify visual feedback (highlight/checkmark)
+**Note:** Emotions are selected from dosage picker sheet, not directly from list.
+
+**Single selection:**
+
+- [ ] Scroll to a layer and phase
+- [ ] Tap phase card
+- [ ] Dosage picker opens
+- [ ] Select a medicinal emotion
+- [ ] Verify dosage picker closes
 - [ ] Verify transition to next step (secondary prompt)
 - [ ] Verify selected emotion remembered
 
 **Test multiple selections:**
 
-- [ ] Select emotion from Beige layer
+- [ ] Navigate to Beige layer
+- [ ] Scroll to a phase and tap card
+- [ ] Select medicinal emotion from dosage picker
 - [ ] Complete or cancel flow
 - [ ] Start new flow
-- [ ] Select emotion from Purple layer
-- [ ] Verify different layer works
+- [ ] Navigate to Purple layer
+- [ ] Scroll to a phase and tap card
+- [ ] Select toxic emotion from dosage picker
+- [ ] Verify different layer/dosage works
 - [ ] Complete or cancel flow
 - [ ] Start new flow
 - [ ] Select same emotion as first test
 - [ ] Verify selection still works
 
+**Test dosage types:**
+
+- [ ] Select medicinal emotion - verify works
+- [ ] Start new flow
+- [ ] Select toxic emotion - verify works
+
 **Expected:**
-- Immediate visual feedback on tap
+- Phase card tap opens dosage picker smoothly
+- Dosage picker displays all emotions for that phase
+- Selection closes picker with brief delay for animation
 - Smooth transition to secondary prompt
 - Selection persists through flow
-- No issues switching between layers/emotions
+- Both medicinal and toxic selections work correctly
 
 ### Test 2.4: Filter Mode Integration
 **Template:** `bug-template-functional.md`

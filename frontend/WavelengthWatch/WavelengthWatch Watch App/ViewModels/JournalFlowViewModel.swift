@@ -31,7 +31,7 @@ final class JournalFlowViewModel: ObservableObject {
 
   private let catalog: CatalogResponseModel
 
-  /// Layers array (reversed to match ContentViewModel's reversed() order)
+  /// Layers array in display order [10,9,...,1,0] - reversed to match main app navigation
   private var layers: [CatalogLayerModel]
 
   // MARK: - Initialization
@@ -39,6 +39,7 @@ final class JournalFlowViewModel: ObservableObject {
   @MainActor
   init(catalog: CatalogResponseModel, initiatedBy: InitiatedBy = .self_initiated) {
     self.catalog = catalog
+    // Reverse once at initialization to get display order (Clear Light first)
     self.layers = catalog.layers.reversed()
     self.initiatedBy = initiatedBy
   }
@@ -47,7 +48,8 @@ final class JournalFlowViewModel: ObservableObject {
 
   /// Returns layers filtered based on the current step.
   ///
-  /// Delegates to LayerFilterMode to ensure consistency with ContentViewModel filtering logic.
+  /// Layers are already in display order (Clear Light first, Beige last) from initialization,
+  /// so filtering maintains the correct order.
   var filteredLayers: [CatalogLayerModel] {
     filterMode.filter(layers)
   }

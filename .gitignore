@@ -36,3 +36,6 @@ fastlane/test_output/
 backend/database.db
 app.db
 .test-cache/
+
+# Claude agent system (copied from ml-odyssey, not checked in)
+.claude/
