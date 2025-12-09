@@ -98,23 +98,25 @@ final class FlowCoordinator: ObservableObject {
 
   /// Submits the journal entry to the backend
   ///
-  /// Validates that primary emotion is selected, then calls ContentViewModel's journal method.
-  /// On success, resets the flow state.
+  /// Validates that primary emotion is selected, then submits via ContentViewModel's throwing variant.
+  /// On success, resets the flow state. On error, preserves state for retry.
   /// - Throws: FlowError.missingPrimaryEmotion if no primary emotion is selected
+  /// - Throws: Network/API errors from journal client
   func submit() async throws {
     guard let primary = selections.primary else {
       throw FlowError.missingPrimaryEmotion
     }
 
-    // Use existing journal submission from ContentViewModel
-    try await contentViewModel.journal(
+    // Use throwing variant to allow error propagation
+    // (Normal journal() catches errors and converts to feedback)
+    try await contentViewModel.journalThrowing(
       curriculumID: primary.id,
       secondaryCurriculumID: selections.secondary?.id,
       strategyID: selections.strategy?.id,
       initiatedBy: .self_initiated
     )
 
-    // Reset flow on success
+    // Reset flow only on success (errors propagate to caller)
     reset()
   }
 
