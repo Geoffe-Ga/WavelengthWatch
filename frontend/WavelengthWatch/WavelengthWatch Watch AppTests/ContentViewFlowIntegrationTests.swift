@@ -347,7 +347,32 @@ struct ContentViewFlowIntegrationTests {
     }
   }
 
-  // TODO: Add test for error state preservation (#143)
-  // Test removed temporarily due to flaky behavior - need to investigate
-  // proper error handling in ContentViewModel.journal() async chain
+  @Test("Submit preserves state on network error")
+  func submitNetworkError_preservesState() async {
+    let catalog = CatalogTestHelper.createTestCatalog()
+    let repository = CatalogRepositoryMock(cached: catalog, result: .success(catalog))
+    let journalClient = JournalClientMock()
+    journalClient.shouldFail = true
+    let viewModel = ContentViewModel(repository: repository, journalClient: journalClient)
+    await viewModel.loadCatalog()
+    let coordinator = FlowCoordinator(contentViewModel: viewModel)
+
+    // Go through flow to review step
+    coordinator.startPrimarySelection()
+    let primaryEmotion = catalog.layers[1].phases[0].medicinal[0]
+    coordinator.capturePrimary(primaryEmotion)
+    coordinator.showReview()
+
+    #expect(coordinator.currentStep == FlowCoordinator.FlowStep.review)
+
+    // Attempt to submit - should throw error
+    do {
+      try await coordinator.submit()
+      Issue.record("Expected error to be thrown but submit() succeeded")
+    } catch {
+      // State should be preserved for retry (not reset)
+      #expect(coordinator.selections.primary == primaryEmotion)
+      #expect(coordinator.currentStep == FlowCoordinator.FlowStep.review)
+    }
+  }
 }
