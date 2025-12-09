@@ -114,21 +114,38 @@ final class ContentViewModel: ObservableObject {
     initiatedBy: InitiatedBy? = nil
   ) async {
     do {
-      let effectiveInitiatedBy = initiatedBy ?? currentInitiatedBy
-      _ = try await journalClient.submit(
+      try await journalThrowing(
         curriculumID: curriculumID,
         secondaryCurriculumID: secondaryCurriculumID,
         strategyID: strategyID,
-        initiatedBy: effectiveInitiatedBy
+        initiatedBy: initiatedBy
       )
       journalFeedback = JournalFeedback(kind: .success)
-      // Reset to self-initiated after successful submission
-      currentInitiatedBy = .self_initiated
     } catch {
       journalFeedback = JournalFeedback(kind: .failure("We couldn't log your entry. Please try again."))
-      // Reset to self-initiated after failure
-      currentInitiatedBy = .self_initiated
     }
+  }
+
+  /// Throwing variant of journal() for use by FlowCoordinator
+  ///
+  /// This variant throws errors instead of converting them to journalFeedback,
+  /// allowing callers to handle errors explicitly (e.g., preserve state for retry).
+  @MainActor
+  func journalThrowing(
+    curriculumID: Int,
+    secondaryCurriculumID: Int? = nil,
+    strategyID: Int? = nil,
+    initiatedBy: InitiatedBy? = nil
+  ) async throws {
+    let effectiveInitiatedBy = initiatedBy ?? currentInitiatedBy
+    _ = try await journalClient.submit(
+      curriculumID: curriculumID,
+      secondaryCurriculumID: secondaryCurriculumID,
+      strategyID: strategyID,
+      initiatedBy: effectiveInitiatedBy
+    )
+    // Reset to self-initiated after successful submission
+    currentInitiatedBy = .self_initiated
   }
 
   @MainActor
