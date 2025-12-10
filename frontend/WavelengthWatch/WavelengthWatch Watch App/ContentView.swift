@@ -1294,18 +1294,34 @@ struct FlowReviewSheet: View {
           } label: {
             if isSubmitting {
               ProgressView()
+                .progressViewStyle(.circular)
+                .tint(.white)
             } else {
               Text("Submit Entry")
+                .font(.body)
                 .fontWeight(.semibold)
             }
           }
           .disabled(isSubmitting)
           .frame(maxWidth: .infinity)
-          .padding(.vertical, 12)
-          .background(isSubmitting ? Color.gray : Color.blue)
+          .padding(.vertical, 14)
+          .background(
+            RoundedRectangle(cornerRadius: 12)
+              .fill(
+                LinearGradient(
+                  colors: isSubmitting
+                    ? [Color.secondary.opacity(0.3), Color.secondary.opacity(0.2)]
+                    : [Color.white.opacity(0.2), Color.white.opacity(0.1)],
+                  startPoint: .topLeading,
+                  endPoint: .bottomTrailing
+                )
+              )
+              .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                  .stroke(Color.white.opacity(0.2), lineWidth: 1)
+              )
+          )
           .foregroundColor(.white)
-          .cornerRadius(10)
-          .padding(.horizontal)
         }
         .padding()
       }
@@ -1340,31 +1356,37 @@ struct FlowReviewSheet: View {
   @ViewBuilder
   private func emotionCard(label: String, expression: String, dosage: CatalogDosage) -> some View {
     VStack(alignment: .leading, spacing: 8) {
+      // Label
       Text(label)
         .font(.caption)
         .foregroundColor(.secondary)
         .textCase(.uppercase)
+        .tracking(1.2)
 
-      HStack {
+      // Expression (main content)
+      Text(expression)
+        .font(.body)
+        .fontWeight(.bold)
+        .lineLimit(nil)
+
+      // Dosage tag underneath
+      HStack(spacing: 4) {
         Circle()
           .fill(dosage == .medicinal ? Color.green : Color.red)
-          .frame(width: 10, height: 10)
-
-        Text(expression)
-          .font(.body)
-          .fontWeight(.medium)
-
-        Spacer()
+          .frame(width: 6, height: 6)
 
         Text(dosage == .medicinal ? "Medicinal" : "Toxic")
-          .font(.caption)
+          .font(.caption2)
           .foregroundColor(.secondary)
+          .textCase(.uppercase)
       }
     }
-    .padding(.vertical, 12)
-    .padding(.horizontal, 16)
-    .background(Color.secondary.opacity(0.1))
-    .cornerRadius(10)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .padding(12)
+    .background(
+      RoundedRectangle(cornerRadius: 8)
+        .fill(Color.secondary.opacity(0.15))
+    )
   }
 
   @ViewBuilder
