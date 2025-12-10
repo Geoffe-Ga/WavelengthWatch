@@ -127,15 +127,16 @@ final class FlowCoordinator: ObservableObject {
   /// Clears selections, returns to idle state, and restores .all filter mode.
   func cancel() {
     reset()
-    contentViewModel.layerFilterMode = .all
   }
 
-  /// Resets the flow state without changing filter mode
+  /// Resets the flow state and filter mode
   ///
-  /// Clears all selections and returns to idle state.
+  /// Clears all selections, returns to idle state, and restores .all filter mode.
+  /// This ensures users can browse the full catalog after flow completion.
   func reset() {
     currentStep = .idle
     selections = .init()
+    contentViewModel.layerFilterMode = .all
   }
 
   // MARK: - Nested Types
