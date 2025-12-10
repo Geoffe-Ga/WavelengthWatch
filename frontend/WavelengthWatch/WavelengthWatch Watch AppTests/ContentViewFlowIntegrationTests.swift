@@ -375,4 +375,25 @@ struct ContentViewFlowIntegrationTests {
       #expect(coordinator.currentStep == FlowCoordinator.FlowStep.review)
     }
   }
+
+  @Test("Submit success resets filter mode to .all")
+  func submitSuccess_resetsFilterModeToAll() async throws {
+    let (viewModel, coordinator, catalog) = await createTestSetup()
+
+    // Start flow - filter mode changes to .emotionsOnly
+    coordinator.startPrimarySelection()
+    #expect(viewModel.layerFilterMode == LayerFilterMode.emotionsOnly)
+
+    // Complete flow with primary selection
+    let emotion = catalog.layers[1].phases[0].medicinal[0]
+    coordinator.capturePrimary(emotion)
+
+    // Submit
+    try await coordinator.submit()
+
+    // Filter mode should reset to .all
+    #expect(viewModel.layerFilterMode == LayerFilterMode.all)
+    #expect(coordinator.currentStep == FlowCoordinator.FlowStep.idle)
+    #expect(coordinator.selections.primary == nil)
+  }
 }
