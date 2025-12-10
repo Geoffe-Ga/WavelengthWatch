@@ -168,15 +168,23 @@ struct ContentView: View {
         Button("Add Secondary Emotion") {
           flowCoordinator.promptForSecondary()
         }
+        Button("Add Strategy") {
+          flowCoordinator.promptForStrategy()
+        }
         Button("Skip to Review") {
           flowCoordinator.showReview()
+        }
+        Button("Done") {
+          Task {
+            try? await flowCoordinator.submit()
+          }
         }
         Button("Cancel", role: .cancel) {
           flowCoordinator.cancel()
         }
       } message: {
         if let primary = flowCoordinator.selections.primary {
-          Text("You selected \"\(primary.expression)\". Add a secondary emotion or skip to review?")
+          Text("You selected \"\(primary.expression)\". What would you like to do next?")
         }
       }
       .alert("Secondary emotion selected", isPresented: .constant(flowCoordinator.currentStep == .confirmingSecondary)) {
@@ -1006,8 +1014,12 @@ private struct CurriculumCard: View {
       flowCoordinator.capturePrimary(entry)
     case .selectingSecondary:
       flowCoordinator.captureSecondary(entry)
+    case .idle:
+      // Auto-start flow when logging from normal mode
+      flowCoordinator.startPrimarySelection()
+      flowCoordinator.capturePrimary(entry)
     default:
-      // Normal mode: immediate logging
+      // Fallback: immediate logging
       Task { await viewModel.journal(curriculumID: entry.id) }
     }
   }
