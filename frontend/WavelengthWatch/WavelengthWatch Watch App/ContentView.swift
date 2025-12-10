@@ -171,12 +171,13 @@ struct ContentView: View {
         Button("Add Strategy") {
           flowCoordinator.promptForStrategy()
         }
-        Button("Skip to Review") {
-          flowCoordinator.showReview()
-        }
         Button("Done") {
           Task {
-            try? await flowCoordinator.submit()
+            do {
+              try await flowCoordinator.submit()
+            } catch {
+              viewModel.journalFeedback = .init(kind: .failure("Failed to log emotion: \(error.localizedDescription)"))
+            }
           }
         }
         Button("Cancel", role: .cancel) {
@@ -191,17 +192,23 @@ struct ContentView: View {
         Button("Add Strategy") {
           flowCoordinator.promptForStrategy()
         }
-        Button("Skip to Review") {
-          flowCoordinator.showReview()
+        Button("Done") {
+          Task {
+            do {
+              try await flowCoordinator.submit()
+            } catch {
+              viewModel.journalFeedback = .init(kind: .failure("Failed to log emotions: \(error.localizedDescription)"))
+            }
+          }
         }
         Button("Cancel", role: .cancel) {
           flowCoordinator.cancel()
         }
       } message: {
         if let secondary = flowCoordinator.selections.secondary {
-          Text("You selected \"\(secondary.expression)\". Add a strategy or skip to review?")
+          Text("You selected \"\(secondary.expression)\". What would you like to do next?")
         } else {
-          Text("Add a strategy or skip to review?")
+          Text("What would you like to do next?")
         }
       }
       .alert("Strategy selected", isPresented: .constant(flowCoordinator.currentStep == .confirmingStrategy)) {
@@ -1019,7 +1026,7 @@ private struct CurriculumCard: View {
       flowCoordinator.startPrimarySelection()
       flowCoordinator.capturePrimary(entry)
     default:
-      // Fallback: immediate logging
+      // Other states (confirming, review, selectingStrategy): immediate logging
       Task { await viewModel.journal(curriculumID: entry.id) }
     }
   }

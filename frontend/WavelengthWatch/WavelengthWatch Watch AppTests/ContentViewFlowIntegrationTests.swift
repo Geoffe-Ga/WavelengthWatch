@@ -506,4 +506,64 @@ struct ContentViewFlowIntegrationTests {
     #expect(viewModel.layerFilterMode == LayerFilterMode.all)
     #expect(coordinator.selections.primary == nil)
   }
+
+  @Test("Auto-start: Done button network error preserves flow state")
+  func autoStart_doneButtonNetworkErrorPreservesState() async {
+    let catalog = CatalogTestHelper.createTestCatalog()
+    let repository = CatalogRepositoryMock(cached: catalog, result: .success(catalog))
+    let journalClient = JournalClientMock()
+    journalClient.shouldFail = true
+    let viewModel = ContentViewModel(repository: repository, journalClient: journalClient)
+    await viewModel.loadCatalog()
+    let coordinator = FlowCoordinator(contentViewModel: viewModel)
+
+    // Auto-start flow with emotion
+    let emotion = catalog.layers[1].phases[0].medicinal[0]
+    coordinator.startPrimarySelection()
+    coordinator.capturePrimary(emotion)
+    #expect(coordinator.currentStep == FlowCoordinator.FlowStep.confirmingPrimary)
+
+    // User taps "Done" button - submission fails
+    do {
+      try await coordinator.submit()
+      Issue.record("Expected error to be thrown but submit() succeeded")
+    } catch {
+      // State should be preserved for retry (not reset)
+      #expect(coordinator.selections.primary == emotion)
+      #expect(coordinator.currentStep == FlowCoordinator.FlowStep.confirmingPrimary)
+      #expect(viewModel.layerFilterMode == LayerFilterMode.emotionsOnly)
+    }
+  }
+
+  @Test("Auto-start: Done button with secondary emotion handles error")
+  func autoStart_doneButtonWithSecondaryHandlesError() async {
+    let catalog = CatalogTestHelper.createTestCatalog()
+    let repository = CatalogRepositoryMock(cached: catalog, result: .success(catalog))
+    let journalClient = JournalClientMock()
+    journalClient.shouldFail = true
+    let viewModel = ContentViewModel(repository: repository, journalClient: journalClient)
+    await viewModel.loadCatalog()
+    let coordinator = FlowCoordinator(contentViewModel: viewModel)
+
+    // Auto-start and add secondary
+    let primaryEmotion = catalog.layers[1].phases[0].medicinal[0]
+    let secondaryEmotion = catalog.layers[2].phases[0].medicinal[0]
+    coordinator.startPrimarySelection()
+    coordinator.capturePrimary(primaryEmotion)
+    coordinator.promptForSecondary()
+    coordinator.captureSecondary(secondaryEmotion)
+    #expect(coordinator.currentStep == FlowCoordinator.FlowStep.confirmingSecondary)
+
+    // User taps "Done" button - submission fails
+    do {
+      try await coordinator.submit()
+      Issue.record("Expected error to be thrown but submit() succeeded")
+    } catch {
+      // State should be preserved with both emotions
+      #expect(coordinator.selections.primary == primaryEmotion)
+      #expect(coordinator.selections.secondary == secondaryEmotion)
+      #expect(coordinator.currentStep == FlowCoordinator.FlowStep.confirmingSecondary)
+      #expect(viewModel.layerFilterMode == LayerFilterMode.emotionsOnly)
+    }
+  }
 }
