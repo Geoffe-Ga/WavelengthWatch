@@ -249,14 +249,26 @@ struct ContentView: View {
       .toolbar {
         if !isShowingDetailView {
           ToolbarItem(placement: .topBarLeading) {
-            Button {
-              showingMenu = true
-            } label: {
-              Image(systemName: "ellipsis.circle")
-                .font(.system(size: UIConstants.menuButtonSize))
-                .foregroundColor(.white.opacity(0.7))
+            // Show back chevron when in flow mode, menu button otherwise
+            if flowCoordinator.currentStep != .idle {
+              Button {
+                flowCoordinator.cancel()
+              } label: {
+                Image(systemName: "chevron.left")
+                  .font(.system(size: UIConstants.menuButtonSize))
+                  .foregroundColor(.white.opacity(0.7))
+              }
+              .buttonStyle(.plain)
+            } else {
+              Button {
+                showingMenu = true
+              } label: {
+                Image(systemName: "ellipsis.circle")
+                  .font(.system(size: UIConstants.menuButtonSize))
+                  .foregroundColor(.white.opacity(0.7))
+              }
+              .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
           }
         }
       }
