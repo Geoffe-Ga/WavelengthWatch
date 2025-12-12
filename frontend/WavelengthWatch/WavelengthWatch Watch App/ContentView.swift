@@ -4,6 +4,24 @@ import SwiftUI
 
 private enum UIConstants {
   static let menuButtonSize: CGFloat = 20
+
+  // Reference screen width for scaling (Apple Watch Series 9 45mm = 198pt)
+  static let referenceScreenWidth: CGFloat = 198
+
+  // Calculate scale factor based on actual screen width
+  static func scaleFactor(for width: CGFloat) -> CGFloat {
+    width / referenceScreenWidth
+  }
+
+  // Phase card dimensions (at reference size)
+  static let phaseOrbSize: CGFloat = 160
+  static let phaseAccentOuterWidth: CGFloat = 60
+  static let phaseAccentOuterHeight: CGFloat = 3
+  static let phaseAccentInnerWidth: CGFloat = 50
+  static let phaseAccentInnerHeight: CGFloat = 2
+
+  // Analytics view dimensions
+  static let analyticsIconSize: CGFloat = 48
 }
 
 // Environment key for tracking detail view visibility
@@ -572,6 +590,8 @@ struct PhasePageView: View {
 
   var body: some View {
     GeometryReader { geometry in
+      let scale = UIConstants.scaleFactor(for: geometry.size.width)
+
       ZStack {
         // Background - non-tappable
         VStack(spacing: 0) {
@@ -590,17 +610,20 @@ struct PhasePageView: View {
                     Color.clear,
                   ]),
                   center: .center,
-                  startRadius: 20,
-                  endRadius: 80
+                  startRadius: 20 * scale,
+                  endRadius: 80 * scale
                 )
               )
-              .frame(width: 160, height: 160)
-              .blur(radius: 1)
+              .frame(
+                width: UIConstants.phaseOrbSize * scale,
+                height: UIConstants.phaseOrbSize * scale
+              )
+              .blur(radius: 1 * scale)
 
             // Main content container - floating card
-            VStack(spacing: 12) {
+            VStack(spacing: 12 * scale) {
               // Layer context - minimal and elegant
-              VStack(spacing: 4) {
+              VStack(spacing: 4 * scale) {
                 Text(layer.title)
                   .font(.caption)
                   .fontWeight(.medium)
@@ -625,16 +648,19 @@ struct PhasePageView: View {
                 .multilineTextAlignment(.center)
                 .lineLimit(1)
                 .minimumScaleFactor(0.4)
-                .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
-                .padding(.horizontal, 4)
+                .shadow(color: .black.opacity(0.3), radius: 2 * scale, x: 0, y: 1)
+                .padding(.horizontal, 4 * scale)
 
               // Mystical accent - geometric crystal element
               ZStack {
                 // Outer glow
                 Capsule()
                   .fill(color.opacity(0.3))
-                  .frame(width: 60, height: 3)
-                  .blur(radius: 3)
+                  .frame(
+                    width: UIConstants.phaseAccentOuterWidth * scale,
+                    height: UIConstants.phaseAccentOuterHeight * scale
+                  )
+                  .blur(radius: 3 * scale)
 
                 // Inner crystal line
                 Capsule()
@@ -649,11 +675,14 @@ struct PhasePageView: View {
                       endPoint: .trailing
                     )
                   )
-                  .frame(width: 50, height: 2)
-                  .shadow(color: color.opacity(0.8), radius: 4)
+                  .frame(
+                    width: UIConstants.phaseAccentInnerWidth * scale,
+                    height: UIConstants.phaseAccentInnerHeight * scale
+                  )
+                  .shadow(color: color.opacity(0.8), radius: 4 * scale)
               }
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 20 * scale)
             .padding(.vertical, 16)
             .background(
               // Floating card background
@@ -1185,26 +1214,31 @@ struct MenuView: View {
 
 struct AnalyticsView: View {
   var body: some View {
-    VStack(spacing: 16) {
-      Image(systemName: "chart.bar.fill")
-        .font(.system(size: 48))
-        .foregroundColor(.blue.opacity(0.6))
+    GeometryReader { geometry in
+      let scale = UIConstants.scaleFactor(for: geometry.size.width)
 
-      Text("Analytics")
-        .font(.title2)
-        .fontWeight(.thin)
+      VStack(spacing: 16 * scale) {
+        Image(systemName: "chart.bar.fill")
+          .font(.system(size: UIConstants.analyticsIconSize * scale))
+          .foregroundColor(.blue.opacity(0.6))
 
-      Text("Coming Soon")
-        .font(.caption)
-        .foregroundColor(.secondary)
+        Text("Analytics")
+          .font(.title2)
+          .fontWeight(.thin)
 
-      Text("View your journal history, patterns, and insights.")
-        .font(.caption)
-        .foregroundColor(.secondary)
-        .multilineTextAlignment(.center)
-        .padding(.horizontal)
+        Text("Coming Soon")
+          .font(.caption)
+          .foregroundColor(.secondary)
+
+        Text("View your journal history, patterns, and insights.")
+          .font(.caption)
+          .foregroundColor(.secondary)
+          .multilineTextAlignment(.center)
+          .padding(.horizontal)
+      }
+      .padding()
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-    .padding()
   }
 }
 
