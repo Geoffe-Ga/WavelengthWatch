@@ -99,7 +99,9 @@ final class FlowCoordinator: ObservableObject {
   /// Submits the journal entry to the backend
   ///
   /// Validates that primary emotion is selected, then submits via ContentViewModel's throwing variant.
-  /// On success, resets the flow state. On error, preserves state for retry.
+  /// On success, keeps the flow state intact to allow success alert to display.
+  /// Caller is responsible for calling reset() after user dismisses success confirmation.
+  /// On error, preserves state for retry.
   /// - Throws: FlowError.missingPrimaryEmotion if no primary emotion is selected
   /// - Throws: Network/API errors from journal client
   func submit() async throws {
@@ -116,8 +118,8 @@ final class FlowCoordinator: ObservableObject {
       initiatedBy: .self_initiated
     )
 
-    // Reset flow only on success (errors propagate to caller)
-    reset()
+    // Don't reset here - let caller handle reset after user dismisses success alert
+    // This fixes #161: sheet was dismissing before alert could be read
   }
 
   // MARK: - Cancellation

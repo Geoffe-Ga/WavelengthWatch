@@ -194,6 +194,8 @@ struct ContentView: View {
           Task {
             do {
               try await flowCoordinator.submit()
+              // Success - reset flow state (quick log doesn't use review sheet)
+              flowCoordinator.reset()
             } catch {
               viewModel.journalFeedback = .init(kind: .failure("Failed to log emotion: \(error.localizedDescription)"))
             }
@@ -215,6 +217,8 @@ struct ContentView: View {
           Task {
             do {
               try await flowCoordinator.submit()
+              // Success - reset flow state (quick log doesn't use review sheet)
+              flowCoordinator.reset()
             } catch {
               viewModel.journalFeedback = .init(kind: .failure("Failed to log emotions: \(error.localizedDescription)"))
             }

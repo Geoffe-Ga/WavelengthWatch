@@ -97,6 +97,8 @@ struct ContentViewFlowIntegrationTests {
     // Submit
     do {
       try await coordinator.submit()
+      // Mimic ContentView behavior: reset after successful submission
+      coordinator.reset()
     } catch {
       Issue.record("Submit should not fail: \(error)")
     }
@@ -296,6 +298,8 @@ struct ContentViewFlowIntegrationTests {
 
     // Submit
     try await coordinator.submit()
+    // Mimic ContentView behavior: reset after successful submission
+    coordinator.reset()
 
     // Verify backend was called with correct data
     #expect(journalClient.submissions.count == 1)
@@ -390,6 +394,8 @@ struct ContentViewFlowIntegrationTests {
 
     // Submit
     try await coordinator.submit()
+    // Mimic ContentView behavior: reset after successful submission
+    coordinator.reset()
 
     // Filter mode should reset to .all
     #expect(viewModel.layerFilterMode == LayerFilterMode.all)
@@ -435,6 +441,8 @@ struct ContentViewFlowIntegrationTests {
 
     // User taps "Done" button - immediate submit
     try await coordinator.submit()
+    // Mimic ContentView "Done" button behavior: reset after successful submission
+    coordinator.reset()
 
     // Verify backend received submission
     #expect(journalClient.submissions.count == 1)
