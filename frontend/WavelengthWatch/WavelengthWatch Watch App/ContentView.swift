@@ -1308,6 +1308,7 @@ struct FlowReviewSheet: View {
             strategyCard(strategy: strategy)
           }
 
+          // Submit button with celebratory gradient styling (fixes #160)
           Button {
             submitEntry()
           } label: {
@@ -1322,25 +1323,17 @@ struct FlowReviewSheet: View {
             }
           }
           .disabled(isSubmitting)
-          .frame(maxWidth: .infinity)
-          .padding(.vertical, 14)
-          .background(
-            RoundedRectangle(cornerRadius: 12)
-              .fill(
-                LinearGradient(
-                  colors: isSubmitting
-                    ? [Color.secondary.opacity(0.3), Color.secondary.opacity(0.2)]
-                    : [Color.white.opacity(0.2), Color.white.opacity(0.1)],
-                  startPoint: .topLeading,
-                  endPoint: .bottomTrailing
-                )
-              )
-              .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                  .stroke(Color.white.opacity(0.2), lineWidth: 1)
-              )
+          .buttonStyle(.borderedProminent)
+          .tint(
+            LinearGradient(
+              colors: isSubmitting
+                ? [Color.gray.opacity(0.6), Color.gray.opacity(0.4)]
+                : [Color.blue.opacity(0.8), Color.purple.opacity(0.6), Color.indigo.opacity(0.7)],
+              startPoint: .topLeading,
+              endPoint: .bottomTrailing
+            )
           )
-          .foregroundColor(.white)
+          .frame(maxWidth: .infinity)
         }
         .padding()
       }
@@ -1388,11 +1381,11 @@ struct FlowReviewSheet: View {
         .fontWeight(.bold)
         .lineLimit(nil)
 
-      // Dosage tag underneath
-      HStack(spacing: 4) {
+      // Dosage tag underneath (fixes #159: increased circle size for visibility)
+      HStack(spacing: 6) {
         Circle()
           .fill(dosage == .medicinal ? Color.green : Color.red)
-          .frame(width: 6, height: 6)
+          .frame(width: 10, height: 10)
 
         Text(dosage == .medicinal ? "Medicinal" : "Toxic")
           .font(.caption2)
