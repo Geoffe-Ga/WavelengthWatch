@@ -55,6 +55,7 @@ struct ContentView: View {
   @State private var hideIndicatorTask: Task<Void, Never>?
   @State private var showingMenu = false
   @State private var isShowingDetailView = false
+  @State private var navigationPath = NavigationPath()
 
   init() {
     let configuration = AppConfiguration()
@@ -81,7 +82,7 @@ struct ContentView: View {
   }
 
   var body: some View {
-    NavigationStack {
+    NavigationStack(path: $navigationPath) {
       ZStack {
         if viewModel.layers.isEmpty {
           if viewModel.isLoading {
@@ -231,9 +232,27 @@ struct ContentView: View {
           notificationDelegate.clearNotificationState()
         }
       }
+      .onChange(of: flowCoordinator.currentStep) { _, newStep in
+        // Pop navigation to root when flow state transitions
+        // This fixes #157, #162, #164: prevents user from being stuck in detail views
+        switch newStep {
+        case .selectingPrimary, .selectingSecondary, .selectingStrategy:
+          // When transitioning to selection steps, pop to root so user can navigate freely
+          if !navigationPath.isEmpty {
+            navigationPath.removeLast(navigationPath.count)
+          }
+        case .idle:
+          // When flow completes or is canceled, pop to root
+          if !navigationPath.isEmpty {
+            navigationPath.removeLast(navigationPath.count)
+          }
+        default:
+          break
+        }
+      }
       .sheet(isPresented: $showingMenu) {
         NavigationStack {
-          MenuView(journalClient: journalClient)
+          MenuView(journalClient: journalClient, isPresented: $showingMenu)
             .toolbar {
               ToolbarItem(placement: .cancellationAction) {
                 Button("Done") {
@@ -1138,6 +1157,7 @@ struct StrategyCard: View {
 
 struct MenuView: View {
   let journalClient: JournalClientProtocol
+  @Binding var isPresented: Bool
   @EnvironmentObject private var viewModel: ContentViewModel
   @EnvironmentObject private var flowCoordinator: FlowCoordinator
   @State private var showingStartPrompt = false
@@ -1175,6 +1195,8 @@ struct MenuView: View {
     .alert("Select your primary emotion", isPresented: $showingStartPrompt) {
       Button("Continue") {
         flowCoordinator.startPrimarySelection()
+        // Dismiss menu sheet when flow starts (fixes #156)
+        isPresented = false
       }
       Button("Cancel", role: .cancel) {}
     } message: {
