@@ -396,4 +396,174 @@ struct ContentViewFlowIntegrationTests {
     #expect(coordinator.currentStep == FlowCoordinator.FlowStep.idle)
     #expect(coordinator.selections.primary == nil)
   }
+
+  // MARK: - Auto-Start Flow Tests (#151)
+
+  @Test("Auto-start: Logging from idle auto-starts flow")
+  func autoStart_loggingFromIdleAutoStartsFlow() async {
+    let (viewModel, coordinator, catalog) = await createTestSetup()
+
+    // Verify starting in idle state
+    #expect(coordinator.currentStep == FlowCoordinator.FlowStep.idle)
+    #expect(viewModel.layerFilterMode == LayerFilterMode.all)
+
+    // Simulate user tapping "Log" button in normal browsing mode
+    let emotion = catalog.layers[1].phases[0].medicinal[0]
+    coordinator.startPrimarySelection()
+    coordinator.capturePrimary(emotion)
+
+    // Flow should auto-start and transition to confirmingPrimary
+    #expect(coordinator.currentStep == FlowCoordinator.FlowStep.confirmingPrimary)
+    #expect(coordinator.selections.primary == emotion)
+    #expect(viewModel.layerFilterMode == LayerFilterMode.emotionsOnly)
+  }
+
+  @Test("Auto-start: Quick logging with Done button")
+  func autoStart_quickLoggingWithDoneButton() async throws {
+    let catalog = CatalogTestHelper.createTestCatalog()
+    let repository = CatalogRepositoryMock(cached: catalog, result: .success(catalog))
+    let journalClient = JournalClientMock()
+    let viewModel = ContentViewModel(repository: repository, journalClient: journalClient)
+    await viewModel.loadCatalog()
+    let coordinator = FlowCoordinator(contentViewModel: viewModel)
+
+    // Auto-start flow with emotion
+    let emotion = catalog.layers[1].phases[0].medicinal[0]
+    coordinator.startPrimarySelection()
+    coordinator.capturePrimary(emotion)
+    #expect(coordinator.currentStep == FlowCoordinator.FlowStep.confirmingPrimary)
+
+    // User taps "Done" button - immediate submit
+    try await coordinator.submit()
+
+    // Verify backend received submission
+    #expect(journalClient.submissions.count == 1)
+    let submission = journalClient.submissions[0]
+    #expect(submission.0 == emotion.id)
+    #expect(submission.1 == nil)
+    #expect(submission.2 == nil)
+
+    // Flow should reset
+    #expect(coordinator.currentStep == FlowCoordinator.FlowStep.idle)
+    #expect(viewModel.layerFilterMode == LayerFilterMode.all)
+  }
+
+  @Test("Auto-start: Complete flow after auto-start")
+  func autoStart_completeFlowAfterAutoStart() async throws {
+    let catalog = CatalogTestHelper.createTestCatalog()
+    let repository = CatalogRepositoryMock(cached: catalog, result: .success(catalog))
+    let journalClient = JournalClientMock()
+    let viewModel = ContentViewModel(repository: repository, journalClient: journalClient)
+    await viewModel.loadCatalog()
+    let coordinator = FlowCoordinator(contentViewModel: viewModel)
+
+    // Auto-start with primary emotion
+    let primaryEmotion = catalog.layers[1].phases[0].medicinal[0]
+    coordinator.startPrimarySelection()
+    coordinator.capturePrimary(primaryEmotion)
+
+    // User chooses "Add Secondary Emotion"
+    coordinator.promptForSecondary()
+    let secondaryEmotion = catalog.layers[2].phases[0].medicinal[0]
+    coordinator.captureSecondary(secondaryEmotion)
+
+    // User chooses "Add Strategy"
+    coordinator.promptForStrategy()
+    let strategy = catalog.layers[0].phases[0].strategies[0]
+    coordinator.captureStrategy(strategy)
+
+    // Submit complete entry
+    coordinator.showReview()
+    try await coordinator.submit()
+
+    // Verify complete submission
+    #expect(journalClient.submissions.count == 1)
+    let submission = journalClient.submissions[0]
+    #expect(submission.0 == primaryEmotion.id)
+    #expect(submission.1 == secondaryEmotion.id)
+    #expect(submission.2 == strategy.id)
+  }
+
+  @Test("Auto-start: Flow maintains state through confirmation steps")
+  func autoStart_flowMaintainsStateThroughConfirmations() async {
+    let (viewModel, coordinator, catalog) = await createTestSetup()
+
+    // Auto-start flow
+    let emotion = catalog.layers[1].phases[0].medicinal[0]
+    coordinator.startPrimarySelection()
+    coordinator.capturePrimary(emotion)
+
+    // Should be in confirmingPrimary state
+    #expect(coordinator.currentStep == FlowCoordinator.FlowStep.confirmingPrimary)
+    #expect(coordinator.selections.primary == emotion)
+
+    // Filter mode should remain emotionsOnly during confirmation
+    #expect(viewModel.layerFilterMode == LayerFilterMode.emotionsOnly)
+
+    // Cancel should reset everything
+    coordinator.cancel()
+    #expect(coordinator.currentStep == FlowCoordinator.FlowStep.idle)
+    #expect(viewModel.layerFilterMode == LayerFilterMode.all)
+    #expect(coordinator.selections.primary == nil)
+  }
+
+  @Test("Auto-start: Done button network error preserves flow state")
+  func autoStart_doneButtonNetworkErrorPreservesState() async {
+    let catalog = CatalogTestHelper.createTestCatalog()
+    let repository = CatalogRepositoryMock(cached: catalog, result: .success(catalog))
+    let journalClient = JournalClientMock()
+    journalClient.shouldFail = true
+    let viewModel = ContentViewModel(repository: repository, journalClient: journalClient)
+    await viewModel.loadCatalog()
+    let coordinator = FlowCoordinator(contentViewModel: viewModel)
+
+    // Auto-start flow with emotion
+    let emotion = catalog.layers[1].phases[0].medicinal[0]
+    coordinator.startPrimarySelection()
+    coordinator.capturePrimary(emotion)
+    #expect(coordinator.currentStep == FlowCoordinator.FlowStep.confirmingPrimary)
+
+    // User taps "Done" button - submission fails
+    do {
+      try await coordinator.submit()
+      Issue.record("Expected error to be thrown but submit() succeeded")
+    } catch {
+      // State should be preserved for retry (not reset)
+      #expect(coordinator.selections.primary == emotion)
+      #expect(coordinator.currentStep == FlowCoordinator.FlowStep.confirmingPrimary)
+      #expect(viewModel.layerFilterMode == LayerFilterMode.emotionsOnly)
+    }
+  }
+
+  @Test("Auto-start: Done button with secondary emotion handles error")
+  func autoStart_doneButtonWithSecondaryHandlesError() async {
+    let catalog = CatalogTestHelper.createTestCatalog()
+    let repository = CatalogRepositoryMock(cached: catalog, result: .success(catalog))
+    let journalClient = JournalClientMock()
+    journalClient.shouldFail = true
+    let viewModel = ContentViewModel(repository: repository, journalClient: journalClient)
+    await viewModel.loadCatalog()
+    let coordinator = FlowCoordinator(contentViewModel: viewModel)
+
+    // Auto-start and add secondary
+    let primaryEmotion = catalog.layers[1].phases[0].medicinal[0]
+    let secondaryEmotion = catalog.layers[2].phases[0].medicinal[0]
+    coordinator.startPrimarySelection()
+    coordinator.capturePrimary(primaryEmotion)
+    coordinator.promptForSecondary()
+    coordinator.captureSecondary(secondaryEmotion)
+    #expect(coordinator.currentStep == FlowCoordinator.FlowStep.confirmingSecondary)
+
+    // User taps "Done" button - submission fails
+    do {
+      try await coordinator.submit()
+      Issue.record("Expected error to be thrown but submit() succeeded")
+    } catch {
+      // State should be preserved with both emotions
+      #expect(coordinator.selections.primary == primaryEmotion)
+      #expect(coordinator.selections.secondary == secondaryEmotion)
+      #expect(coordinator.currentStep == FlowCoordinator.FlowStep.confirmingSecondary)
+      #expect(viewModel.layerFilterMode == LayerFilterMode.emotionsOnly)
+    }
+  }
 }

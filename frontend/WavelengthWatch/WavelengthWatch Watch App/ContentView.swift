@@ -168,32 +168,47 @@ struct ContentView: View {
         Button("Add Secondary Emotion") {
           flowCoordinator.promptForSecondary()
         }
-        Button("Skip to Review") {
-          flowCoordinator.showReview()
+        Button("Add Strategy") {
+          flowCoordinator.promptForStrategy()
+        }
+        Button("Done") {
+          Task {
+            do {
+              try await flowCoordinator.submit()
+            } catch {
+              viewModel.journalFeedback = .init(kind: .failure("Failed to log emotion: \(error.localizedDescription)"))
+            }
+          }
         }
         Button("Cancel", role: .cancel) {
           flowCoordinator.cancel()
         }
       } message: {
         if let primary = flowCoordinator.selections.primary {
-          Text("You selected \"\(primary.expression)\". Add a secondary emotion or skip to review?")
+          Text("You selected \"\(primary.expression)\". What would you like to do next?")
         }
       }
       .alert("Secondary emotion selected", isPresented: .constant(flowCoordinator.currentStep == .confirmingSecondary)) {
         Button("Add Strategy") {
           flowCoordinator.promptForStrategy()
         }
-        Button("Skip to Review") {
-          flowCoordinator.showReview()
+        Button("Done") {
+          Task {
+            do {
+              try await flowCoordinator.submit()
+            } catch {
+              viewModel.journalFeedback = .init(kind: .failure("Failed to log emotions: \(error.localizedDescription)"))
+            }
+          }
         }
         Button("Cancel", role: .cancel) {
           flowCoordinator.cancel()
         }
       } message: {
         if let secondary = flowCoordinator.selections.secondary {
-          Text("You selected \"\(secondary.expression)\". Add a strategy or skip to review?")
+          Text("You selected \"\(secondary.expression)\". What would you like to do next?")
         } else {
-          Text("Add a strategy or skip to review?")
+          Text("What would you like to do next?")
         }
       }
       .alert("Strategy selected", isPresented: .constant(flowCoordinator.currentStep == .confirmingStrategy)) {
@@ -1006,8 +1021,12 @@ private struct CurriculumCard: View {
       flowCoordinator.capturePrimary(entry)
     case .selectingSecondary:
       flowCoordinator.captureSecondary(entry)
+    case .idle:
+      // Auto-start flow when logging from normal mode
+      flowCoordinator.startPrimarySelection()
+      flowCoordinator.capturePrimary(entry)
     default:
-      // Normal mode: immediate logging
+      // Other states (confirming, review, selectingStrategy): immediate logging
       Task { await viewModel.journal(curriculumID: entry.id) }
     }
   }
