@@ -1145,6 +1145,9 @@ struct CurriculumDetailView: View {
     }
     .onDisappear {
       isShowingDetailView.wrappedValue = false
+      // Clear cached emotions to prevent stale data and memory bloat
+      cachedMedicinalEmotions = []
+      cachedToxicEmotions = []
     }
   }
 }
