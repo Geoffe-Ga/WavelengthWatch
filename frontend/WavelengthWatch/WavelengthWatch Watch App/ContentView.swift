@@ -957,6 +957,18 @@ struct StrategyListView: View {
   }
 }
 
+/// Helper struct for displaying emotions with their source layer info (used in Clear Light view)
+private struct LayeredEmotion: Identifiable {
+  let id: Int
+  let entry: CatalogCurriculumEntryModel
+  let layerTitle: String
+  let layerColor: String
+
+  var sourceColor: Color {
+    Color(stage: layerColor)
+  }
+}
+
 struct CurriculumDetailView: View {
   let layer: CatalogLayerModel
   let phase: CatalogPhaseModel
@@ -965,53 +977,147 @@ struct CurriculumDetailView: View {
   @EnvironmentObject private var flowCoordinator: FlowCoordinator
   @Environment(\.isShowingDetailView) private var isShowingDetailView
 
+  /// Whether this is the Clear Light layer (shows all emotions from all layers)
+  private var isClearLight: Bool {
+    layer.color == "Clear Light"
+  }
+
+  /// All medicinal emotions from all layers (for Clear Light display)
+  private var allMedicinalEmotions: [LayeredEmotion] {
+    guard isClearLight else { return [] }
+    var emotions: [LayeredEmotion] = []
+    for sourceLayer in viewModel.layers where sourceLayer.id != 0 && sourceLayer.color != "Clear Light" {
+      for sourcePhase in sourceLayer.phases {
+        for entry in sourcePhase.medicinal {
+          emotions.append(LayeredEmotion(
+            id: entry.id,
+            entry: entry,
+            layerTitle: sourceLayer.title,
+            layerColor: sourceLayer.color
+          ))
+        }
+      }
+    }
+    return emotions
+  }
+
+  /// All toxic emotions from all layers (for Clear Light display)
+  private var allToxicEmotions: [LayeredEmotion] {
+    guard isClearLight else { return [] }
+    var emotions: [LayeredEmotion] = []
+    for sourceLayer in viewModel.layers where sourceLayer.id != 0 && sourceLayer.color != "Clear Light" {
+      for sourcePhase in sourceLayer.phases {
+        for entry in sourcePhase.toxic {
+          emotions.append(LayeredEmotion(
+            id: entry.id,
+            entry: entry,
+            layerTitle: sourceLayer.title,
+            layerColor: sourceLayer.color
+          ))
+        }
+      }
+    }
+    return emotions
+  }
+
   var body: some View {
     ScrollView {
       VStack(spacing: 16) {
-        Text(phase.name)
-          .font(.title2)
-          .fontWeight(.thin)
-          .foregroundColor(.white)
+        if isClearLight {
+          // Clear Light header - shows that all emotions are displayed
+          VStack(spacing: 4) {
+            Text(phase.name)
+              .font(.title2)
+              .fontWeight(.thin)
+              .foregroundColor(.white)
+            Text("All Emotions")
+              .font(.caption)
+              .foregroundColor(.white.opacity(0.6))
+          }
           .padding(.top, 8)
 
-        VStack(spacing: 20) {
-          ForEach(phase.medicinal) { entry in
-            CurriculumCard(
-              title: "MEDICINE",
-              expression: entry.expression,
-              accent: color,
-              actionTitle: "Log Medicinal",
-              entry: entry
-            )
+          // Medicinal section with all emotions from all layers
+          if !allMedicinalEmotions.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+              Text("MEDICINAL")
+                .font(.caption)
+                .foregroundColor(.white.opacity(0.7))
+                .tracking(1.5)
+                .padding(.horizontal, 16)
+
+              ForEach(allMedicinalEmotions) { emotion in
+                ClearLightEmotionCard(
+                  emotion: emotion,
+                  dosageType: .medicinal
+                )
+              }
+            }
           }
 
-          ForEach(phase.toxic) { entry in
-            CurriculumCard(
-              title: "TOXIC",
-              expression: entry.expression,
-              accent: .red,
-              actionTitle: "Log Toxic",
-              entry: entry
-            )
-          }
-        }
-        .padding(.horizontal, 8)
+          // Toxic section with all emotions from all layers
+          if !allToxicEmotions.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+              Text("TOXIC")
+                .font(.caption)
+                .foregroundColor(.white.opacity(0.7))
+                .tracking(1.5)
+                .padding(.horizontal, 16)
 
-        if !phase.strategies.isEmpty {
-          VStack(alignment: .leading, spacing: 12) {
-            Text("STRATEGIES")
-              .font(.caption)
-              .foregroundColor(.white.opacity(0.7))
-              .tracking(1.5)
-            ForEach(phase.strategies) { strategy in
-              StrategyCard(
-                strategy: strategy,
-                color: color,
-                phase: phase
+              ForEach(allToxicEmotions) { emotion in
+                ClearLightEmotionCard(
+                  emotion: emotion,
+                  dosageType: .toxic
+                )
+              }
+            }
+          }
+        } else {
+          // Normal layer display
+          Text(phase.name)
+            .font(.title2)
+            .fontWeight(.thin)
+            .foregroundColor(.white)
+            .padding(.top, 8)
+
+          VStack(spacing: 20) {
+            ForEach(phase.medicinal) { entry in
+              CurriculumCard(
+                title: "MEDICINE",
+                expression: entry.expression,
+                accent: color,
+                actionTitle: "Log Medicinal",
+                entry: entry
+              )
+            }
+
+            ForEach(phase.toxic) { entry in
+              CurriculumCard(
+                title: "TOXIC",
+                expression: entry.expression,
+                accent: .red,
+                actionTitle: "Log Toxic",
+                entry: entry
               )
             }
           }
-          .padding(.horizontal, 16)
+          .padding(.horizontal, 8)
+
+          if !phase.strategies.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+              Text("STRATEGIES")
+                .font(.caption)
+                .foregroundColor(.white.opacity(0.7))
+                .tracking(1.5)
+              ForEach(phase.strategies) { strategy in
+                StrategyCard(
+                  strategy: strategy,
+                  color: color,
+                  phase: phase
+                )
+              }
+            }
+            .padding(.horizontal, 16)
+          }
         }
       }
       .padding(.vertical, 16)
@@ -1028,6 +1134,94 @@ struct CurriculumDetailView: View {
     }
     .onDisappear {
       isShowingDetailView.wrappedValue = false
+    }
+  }
+}
+
+/// Card for displaying emotions in Clear Light view with source layer color coding
+private struct ClearLightEmotionCard: View {
+  let emotion: LayeredEmotion
+  let dosageType: CatalogDosage
+  @EnvironmentObject private var viewModel: ContentViewModel
+  @EnvironmentObject private var flowCoordinator: FlowCoordinator
+  @State private var showingJournalConfirmation = false
+
+  var body: some View {
+    ZStack(alignment: .topTrailing) {
+      HStack(spacing: 10) {
+        // Color indicator for source layer
+        Circle()
+          .fill(emotion.sourceColor)
+          .frame(width: 10, height: 10)
+          .shadow(color: emotion.sourceColor, radius: 2)
+
+        VStack(alignment: .leading, spacing: 2) {
+          Text(emotion.entry.expression)
+            .font(.body)
+            .fontWeight(.medium)
+            .foregroundColor(dosageType == .medicinal ? emotion.sourceColor : .red)
+
+          Text(emotion.layerTitle)
+            .font(.caption2)
+            .foregroundColor(.white.opacity(0.5))
+        }
+
+        Spacer()
+      }
+      .padding(.horizontal, 16)
+      .padding(.vertical, 10)
+      .background(
+        RoundedRectangle(cornerRadius: 12)
+          .fill(
+            LinearGradient(
+              gradient: Gradient(colors: [
+                emotion.sourceColor.opacity(0.2),
+                emotion.sourceColor.opacity(0.1),
+              ]),
+              startPoint: .topLeading,
+              endPoint: .bottomTrailing
+            )
+          )
+          .overlay(
+            RoundedRectangle(cornerRadius: 12)
+              .stroke(emotion.sourceColor.opacity(0.3), lineWidth: 0.5)
+          )
+      )
+      .padding(.horizontal, 8)
+      .onTapGesture {
+        showingJournalConfirmation = true
+      }
+
+      MysticalJournalIcon(color: emotion.sourceColor)
+        .padding(.top, 8)
+        .padding(.trailing, 20)
+        .onTapGesture {
+          showingJournalConfirmation = true
+        }
+    }
+    .alert("Log \(dosageType == .medicinal ? "Medicinal" : "Toxic")", isPresented: $showingJournalConfirmation) {
+      Button("Yes") {
+        handleLogAction()
+      }
+      Button("Cancel", role: .cancel) {}
+    } message: {
+      Text("Would you like to log \"\(emotion.entry.expression)\"?")
+    }
+  }
+
+  private func handleLogAction() {
+    switch flowCoordinator.currentStep {
+    case .selectingPrimary:
+      flowCoordinator.capturePrimary(emotion.entry)
+    case .selectingSecondary:
+      flowCoordinator.captureSecondary(emotion.entry)
+    case .idle:
+      // Auto-start flow when logging from normal mode
+      flowCoordinator.startPrimarySelection()
+      flowCoordinator.capturePrimary(emotion.entry)
+    default:
+      // Other states: immediate logging
+      Task { await viewModel.journal(curriculumID: emotion.entry.id) }
     }
   }
 }
