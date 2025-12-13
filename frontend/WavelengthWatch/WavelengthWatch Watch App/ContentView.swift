@@ -1008,7 +1008,7 @@ struct CurriculumDetailView: View {
   private func computeAllMedicinalEmotions() -> [LayeredEmotion] {
     var emotions: [LayeredEmotion] = []
     for sourceLayer in viewModel.layers where sourceLayer.id != 0 && sourceLayer.id != Self.clearLightLayerID {
-      for sourcePhase in sourceLayer.phases {
+      for sourcePhase in sourceLayer.phases where sourcePhase.name == phase.name {
         for entry in sourcePhase.medicinal {
           emotions.append(LayeredEmotion(
             layerId: sourceLayer.id,
@@ -1026,7 +1026,7 @@ struct CurriculumDetailView: View {
   private func computeAllToxicEmotions() -> [LayeredEmotion] {
     var emotions: [LayeredEmotion] = []
     for sourceLayer in viewModel.layers where sourceLayer.id != 0 && sourceLayer.id != Self.clearLightLayerID {
-      for sourcePhase in sourceLayer.phases {
+      for sourcePhase in sourceLayer.phases where sourcePhase.name == phase.name {
         for entry in sourcePhase.toxic {
           emotions.append(LayeredEmotion(
             layerId: sourceLayer.id,
