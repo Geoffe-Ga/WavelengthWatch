@@ -42,6 +42,13 @@ extension Comparable {
   }
 }
 
+/// Navigation destinations for programmatic navigation control
+/// Using value-based navigation allows NavigationPath to track pushed views
+enum DetailDestination: Hashable {
+  case curriculum(layer: CatalogLayerModel, phase: CatalogPhaseModel, colorName: String)
+  case strategy(phase: CatalogPhaseModel, colorName: String)
+}
+
 extension Color {
   init(stage: String) {
     switch stage {
@@ -315,6 +322,14 @@ struct ContentView: View {
       }
       .navigationBarTitleDisplayMode(.inline)
       .navigationTitle("")
+      .navigationDestination(for: DetailDestination.self) { destination in
+        switch destination {
+        case let .curriculum(layer, phase, colorName):
+          CurriculumDetailView(layer: layer, phase: phase, color: Color(stage: colorName))
+        case let .strategy(phase, colorName):
+          StrategyListView(phase: phase, color: Color(stage: colorName))
+        }
+      }
     }
     .environmentObject(viewModel)
     .environmentObject(flowCoordinator)
@@ -790,7 +805,7 @@ struct PhasePageView: View {
           Spacer()
           HStack {
             Spacer()
-            NavigationLink(destination: destinationView) {
+            NavigationLink(value: navigationDestination) {
               Image(systemName: "chevron.right.circle.fill")
                 .foregroundColor(.white.opacity(0.8))
                 .font(.title2)
@@ -809,11 +824,12 @@ struct PhasePageView: View {
     }
   }
 
-  @ViewBuilder private var destinationView: some View {
+  /// Value-based navigation destination for NavigationPath tracking
+  private var navigationDestination: DetailDestination {
     if layer.id == 0 {
-      StrategyListView(phase: phase, color: color)
+      .strategy(phase: phase, colorName: layer.color)
     } else {
-      CurriculumDetailView(layer: layer, phase: phase, color: color)
+      .curriculum(layer: layer, phase: phase, colorName: layer.color)
     }
   }
 }

@@ -1,23 +1,23 @@
 import Foundation
 
-struct CatalogStrategyModel: Codable, Identifiable, Equatable {
+struct CatalogStrategyModel: Codable, Identifiable, Equatable, Hashable {
   let id: Int
   let strategy: String
   let color: String
 }
 
-enum CatalogDosage: String, Codable {
+enum CatalogDosage: String, Codable, Hashable {
   case medicinal = "Medicinal"
   case toxic = "Toxic"
 }
 
-struct CatalogCurriculumEntryModel: Codable, Identifiable, Equatable {
+struct CatalogCurriculumEntryModel: Codable, Identifiable, Equatable, Hashable {
   let id: Int
   let dosage: CatalogDosage
   let expression: String
 }
 
-struct CatalogPhaseModel: Codable, Identifiable, Equatable {
+struct CatalogPhaseModel: Codable, Identifiable, Equatable, Hashable {
   let id: Int
   let name: String
   let medicinal: [CatalogCurriculumEntryModel]
@@ -25,7 +25,7 @@ struct CatalogPhaseModel: Codable, Identifiable, Equatable {
   let strategies: [CatalogStrategyModel]
 }
 
-struct CatalogLayerModel: Codable, Identifiable, Equatable {
+struct CatalogLayerModel: Codable, Identifiable, Equatable, Hashable {
   let id: Int
   let color: String
   let title: String
