@@ -958,7 +958,7 @@ struct StrategyListView: View {
 }
 
 /// Helper struct for displaying emotions with their source layer info (used in Clear Light view)
-private struct LayeredEmotion: Identifiable {
+private struct LayeredEmotion: Identifiable, Hashable {
   let id: Int
   let entry: CatalogCurriculumEntryModel
   let layerTitle: String
@@ -970,6 +970,9 @@ private struct LayeredEmotion: Identifiable {
 }
 
 struct CurriculumDetailView: View {
+  /// Clear Light layer ID constant (layer 10)
+  private static let clearLightLayerID = 10
+
   let layer: CatalogLayerModel
   let phase: CatalogPhaseModel
   let color: Color
@@ -977,16 +980,20 @@ struct CurriculumDetailView: View {
   @EnvironmentObject private var flowCoordinator: FlowCoordinator
   @Environment(\.isShowingDetailView) private var isShowingDetailView
 
+  /// Cached medicinal emotions (computed once on appear for performance)
+  @State private var cachedMedicinalEmotions: [LayeredEmotion] = []
+  /// Cached toxic emotions (computed once on appear for performance)
+  @State private var cachedToxicEmotions: [LayeredEmotion] = []
+
   /// Whether this is the Clear Light layer (shows all emotions from all layers)
   private var isClearLight: Bool {
-    layer.color == "Clear Light"
+    layer.id == Self.clearLightLayerID
   }
 
-  /// All medicinal emotions from all layers (for Clear Light display)
-  private var allMedicinalEmotions: [LayeredEmotion] {
-    guard isClearLight else { return [] }
+  /// Computes all medicinal emotions from all layers (for Clear Light display)
+  private func computeAllMedicinalEmotions() -> [LayeredEmotion] {
     var emotions: [LayeredEmotion] = []
-    for sourceLayer in viewModel.layers where sourceLayer.id != 0 && sourceLayer.color != "Clear Light" {
+    for sourceLayer in viewModel.layers where sourceLayer.id != 0 && sourceLayer.id != Self.clearLightLayerID {
       for sourcePhase in sourceLayer.phases {
         for entry in sourcePhase.medicinal {
           emotions.append(LayeredEmotion(
@@ -1001,11 +1008,10 @@ struct CurriculumDetailView: View {
     return emotions
   }
 
-  /// All toxic emotions from all layers (for Clear Light display)
-  private var allToxicEmotions: [LayeredEmotion] {
-    guard isClearLight else { return [] }
+  /// Computes all toxic emotions from all layers (for Clear Light display)
+  private func computeAllToxicEmotions() -> [LayeredEmotion] {
     var emotions: [LayeredEmotion] = []
-    for sourceLayer in viewModel.layers where sourceLayer.id != 0 && sourceLayer.color != "Clear Light" {
+    for sourceLayer in viewModel.layers where sourceLayer.id != 0 && sourceLayer.id != Self.clearLightLayerID {
       for sourcePhase in sourceLayer.phases {
         for entry in sourcePhase.toxic {
           emotions.append(LayeredEmotion(
@@ -1037,7 +1043,7 @@ struct CurriculumDetailView: View {
           .padding(.top, 8)
 
           // Medicinal section with all emotions from all layers
-          if !allMedicinalEmotions.isEmpty {
+          if !cachedMedicinalEmotions.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
               Text("MEDICINAL")
                 .font(.caption)
@@ -1045,7 +1051,7 @@ struct CurriculumDetailView: View {
                 .tracking(1.5)
                 .padding(.horizontal, 16)
 
-              ForEach(allMedicinalEmotions) { emotion in
+              ForEach(cachedMedicinalEmotions) { emotion in
                 ClearLightEmotionCard(
                   emotion: emotion,
                   dosageType: .medicinal
@@ -1055,7 +1061,7 @@ struct CurriculumDetailView: View {
           }
 
           // Toxic section with all emotions from all layers
-          if !allToxicEmotions.isEmpty {
+          if !cachedToxicEmotions.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
               Text("TOXIC")
                 .font(.caption)
@@ -1063,7 +1069,7 @@ struct CurriculumDetailView: View {
                 .tracking(1.5)
                 .padding(.horizontal, 16)
 
-              ForEach(allToxicEmotions) { emotion in
+              ForEach(cachedToxicEmotions) { emotion in
                 ClearLightEmotionCard(
                   emotion: emotion,
                   dosageType: .toxic
@@ -1131,6 +1137,11 @@ struct CurriculumDetailView: View {
     )
     .onAppear {
       isShowingDetailView.wrappedValue = true
+      // Cache aggregated emotions once for Clear Light (avoids re-computation on every render)
+      if isClearLight {
+        cachedMedicinalEmotions = computeAllMedicinalEmotions()
+        cachedToxicEmotions = computeAllToxicEmotions()
+      }
     }
     .onDisappear {
       isShowingDetailView.wrappedValue = false
