@@ -959,10 +959,19 @@ struct StrategyListView: View {
 
 /// Helper struct for displaying emotions with their source layer info (used in Clear Light view)
 private struct LayeredEmotion: Identifiable, Hashable {
-  let id: Int
+  /// Unique identifier combining layer ID and entry ID to handle potential duplicates
+  let id: String
   let entry: CatalogCurriculumEntryModel
   let layerTitle: String
   let layerColor: String
+
+  init(layerId: Int, entry: CatalogCurriculumEntryModel, layerTitle: String, layerColor: String) {
+    // Composite key ensures uniqueness even if same entry appears in multiple contexts
+    self.id = "\(layerId)-\(entry.id)"
+    self.entry = entry
+    self.layerTitle = layerTitle
+    self.layerColor = layerColor
+  }
 
   var sourceColor: Color {
     Color(stage: layerColor)
@@ -997,7 +1006,7 @@ struct CurriculumDetailView: View {
       for sourcePhase in sourceLayer.phases {
         for entry in sourcePhase.medicinal {
           emotions.append(LayeredEmotion(
-            id: entry.id,
+            layerId: sourceLayer.id,
             entry: entry,
             layerTitle: sourceLayer.title,
             layerColor: sourceLayer.color
@@ -1015,7 +1024,7 @@ struct CurriculumDetailView: View {
       for sourcePhase in sourceLayer.phases {
         for entry in sourcePhase.toxic {
           emotions.append(LayeredEmotion(
-            id: entry.id,
+            layerId: sourceLayer.id,
             entry: entry,
             layerTitle: sourceLayer.title,
             layerColor: sourceLayer.color
