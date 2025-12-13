@@ -112,7 +112,7 @@ enum SampleData {
       CatalogLayerModel(id: 7, color: "Yellow", title: "YELLOW", subtitle: "(Integral)", phases: [phase]),
       CatalogLayerModel(id: 8, color: "Turquoise", title: "TURQUOISE", subtitle: "(Holistic)", phases: [phase]),
       CatalogLayerModel(id: 9, color: "Coral", title: "CORAL", subtitle: "(Transpersonal)", phases: [phase]),
-      CatalogLayerModel(id: 10, color: "Teal", title: "TEAL", subtitle: "(Unitive)", phases: [phase]),
+      CatalogLayerModel(id: 10, color: "Clear Light", title: "CLEAR LIGHT", subtitle: "(Unitive)", phases: []),
     ]
 
     return CatalogResponseModel(phaseOrder: ["Rising"], layers: layers)
