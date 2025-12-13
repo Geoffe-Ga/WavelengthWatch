@@ -20,6 +20,10 @@ private enum UIConstants {
   static let phaseAccentInnerWidth: CGFloat = 50
   static let phaseAccentInnerHeight: CGFloat = 2
 
+  // Phase card minimum width - sized to fit longest phase name "Bottoming Out"
+  // Ensures consistent card width across all phases for visual uniformity
+  static let phaseCardMinWidth: CGFloat = 145
+
   // Analytics view dimensions
   static let analyticsIconSize: CGFloat = 48
 }
@@ -734,6 +738,7 @@ struct PhasePageView: View {
             }
             .padding(.horizontal, 20 * scale)
             .padding(.vertical, 16)
+            .frame(minWidth: UIConstants.phaseCardMinWidth * scale)
             .background(
               // Floating card background
               RoundedRectangle(cornerRadius: 16)
