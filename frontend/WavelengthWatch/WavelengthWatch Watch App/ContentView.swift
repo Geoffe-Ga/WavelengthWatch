@@ -20,9 +20,13 @@ private enum UIConstants {
   static let phaseAccentInnerWidth: CGFloat = 50
   static let phaseAccentInnerHeight: CGFloat = 2
 
-  // Phase card minimum width - sized to fit longest phase name "Bottoming Out"
-  // Ensures consistent card width across all phases for visual uniformity
-  static let phaseCardMinWidth: CGFloat = 145
+  // Phase card fixed width - sized to fit longest phase name "Bottoming Out"
+  // All phase cards use this exact width for visual uniformity
+  static let phaseCardWidth: CGFloat = 145
+
+  // Phase name text width - constrains text to fixed width so all phase names
+  // scale identically (shorter names like "Rising" match "Bottoming Out" sizing)
+  static let phaseNameWidth: CGFloat = 120
 
   // Analytics view dimensions
   static let analyticsIconSize: CGFloat = 48
@@ -702,6 +706,7 @@ struct PhasePageView: View {
             }
 
             // Hero phase name with sophisticated treatment
+            // Fixed width ensures all phase names scale identically
             Text(phase.name)
               .font(.largeTitle)
               .fontWeight(.light)
@@ -709,8 +714,8 @@ struct PhasePageView: View {
               .multilineTextAlignment(.center)
               .lineLimit(1)
               .minimumScaleFactor(0.4)
+              .frame(width: UIConstants.phaseNameWidth * scale)
               .shadow(color: .black.opacity(0.3), radius: 2 * scale, x: 0, y: 1)
-              .padding(.horizontal, 4 * scale)
 
             // Mystical accent - geometric crystal element
             ZStack {
@@ -745,7 +750,7 @@ struct PhasePageView: View {
           }
           .padding(.horizontal, 20 * scale)
           .padding(.vertical, 16)
-          .frame(minWidth: UIConstants.phaseCardMinWidth * scale)
+          .frame(width: UIConstants.phaseCardWidth * scale)
           .background(
             // Floating card background
             RoundedRectangle(cornerRadius: 16)
