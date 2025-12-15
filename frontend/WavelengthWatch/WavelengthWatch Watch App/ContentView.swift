@@ -701,15 +701,14 @@ struct PhasePageView: View {
             }
 
             // Hero phase name - fixed font size for uniform appearance
-            // Uses .title2 which fits "Bottoming Out" without scaling
+            // Uses .title3 which fits "Bottoming Out" on all watch sizes without truncation
             Text(phase.name)
-              .font(.title2)
-              .fontWeight(.light)
+              .font(.title3)
+              .fontWeight(.medium)
               .foregroundColor(.white)
               .multilineTextAlignment(.center)
-              .lineLimit(1)
               .shadow(color: .black.opacity(0.3), radius: 2 * scale, x: 0, y: 1)
-              .padding(.horizontal, 4 * scale)
+              .padding(.horizontal, 8 * scale)
 
             // Mystical accent - geometric crystal element
             ZStack {
