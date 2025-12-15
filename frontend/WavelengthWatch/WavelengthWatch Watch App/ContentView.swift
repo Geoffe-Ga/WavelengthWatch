@@ -353,7 +353,8 @@ struct ContentView: View {
                 selection: $phaseSelection,
                 layerIndex: index,
                 selectedLayerIndex: layerSelection,
-                geometry: geometry
+                geometry: geometry,
+                screenWidth: geometry.size.width
               )
               .id(index)
             }
@@ -513,6 +514,7 @@ struct LayerCardView: View {
   let layerIndex: Int
   let selectedLayerIndex: Int
   let geometry: GeometryProxy
+  let screenWidth: CGFloat // Stable width from parent GeometryReader
   @EnvironmentObject private var viewModel: ContentViewModel
 
   private var transformEffect: (scale: CGFloat, rotation: Double, offset: CGFloat, opacity: Double) {
@@ -534,7 +536,8 @@ struct LayerCardView: View {
     LayerView(
       layer: layer,
       phaseCount: phaseCount,
-      selection: $selection
+      selection: $selection,
+      screenWidth: screenWidth
     )
     .frame(width: geometry.size.width, height: geometry.size.height)
     .scaleEffect(transformEffect.scale)
@@ -554,6 +557,7 @@ struct LayerView: View {
   let layer: CatalogLayerModel
   let phaseCount: Int
   @Binding var selection: Int
+  let screenWidth: CGFloat // Stable width from parent GeometryReader
   @EnvironmentObject private var viewModel: ContentViewModel
   @State private var showPageIndicator = false
   @State private var hideIndicatorTask: Task<Void, Never>?
@@ -568,7 +572,8 @@ struct LayerView: View {
           PhasePageView(
             layer: layer,
             phase: phase,
-            color: Color(stage: layer.color)
+            color: Color(stage: layer.color),
+            screenWidth: screenWidth
           )
           .tag(index)
         }
@@ -641,190 +646,191 @@ struct PhasePageView: View {
   let layer: CatalogLayerModel
   let phase: CatalogPhaseModel
   let color: Color
+  let screenWidth: CGFloat // Stable width from parent GeometryReader
 
   var body: some View {
-    GeometryReader { geometry in
-      let scale = UIConstants.scaleFactor(for: geometry.size.width)
+    // Use screenWidth from parent to avoid nested GeometryReader race conditions
+    // during LayerFilterMode transitions (fixes #119, #158, #165)
+    let scale = UIConstants.scaleFactor(for: screenWidth)
 
-      ZStack {
-        // Background - non-tappable
-        VStack(spacing: 0) {
-          // Top gutter for vertical scroll
-          Spacer()
+    ZStack {
+      // Background - non-tappable
+      VStack(spacing: 0) {
+        // Top gutter for vertical scroll
+        Spacer()
 
-          // Mystical floating crystal interface
-          ZStack {
-            // Mystical background orb with layer color
-            Circle()
-              .fill(
-                RadialGradient(
-                  gradient: Gradient(colors: [
-                    color.opacity(0.3),
-                    color.opacity(0.1),
-                    Color.clear,
-                  ]),
-                  center: .center,
-                  startRadius: 20 * scale,
-                  endRadius: 80 * scale
-                )
+        // Mystical floating crystal interface
+        ZStack {
+          // Mystical background orb with layer color
+          Circle()
+            .fill(
+              RadialGradient(
+                gradient: Gradient(colors: [
+                  color.opacity(0.3),
+                  color.opacity(0.1),
+                  Color.clear,
+                ]),
+                center: .center,
+                startRadius: 20 * scale,
+                endRadius: 80 * scale
               )
-              .frame(
-                width: UIConstants.phaseOrbSize * scale,
-                height: UIConstants.phaseOrbSize * scale
-              )
-              .blur(radius: 1 * scale)
+            )
+            .frame(
+              width: UIConstants.phaseOrbSize * scale,
+              height: UIConstants.phaseOrbSize * scale
+            )
+            .blur(radius: 1 * scale)
 
-            // Main content container - floating card
-            VStack(spacing: 12 * scale) {
-              // Layer context - minimal and elegant
-              VStack(spacing: 4 * scale) {
-                Text(layer.title)
-                  .font(.caption)
-                  .fontWeight(.medium)
-                  .foregroundColor(.white.opacity(0.7))
-                  .tracking(1.5)
-                  .textCase(.uppercase)
-                  .lineLimit(1)
-                  .minimumScaleFactor(0.8)
-
-                Text(layer.subtitle)
-                  .font(.caption2)
-                  .foregroundColor(.white.opacity(0.5))
-                  .lineLimit(1)
-                  .minimumScaleFactor(0.8)
-              }
-
-              // Hero phase name with sophisticated treatment
-              Text(phase.name)
-                .font(.largeTitle)
-                .fontWeight(.light)
-                .foregroundColor(.white)
-                .multilineTextAlignment(.center)
+          // Main content container - floating card
+          VStack(spacing: 12 * scale) {
+            // Layer context - minimal and elegant
+            VStack(spacing: 4 * scale) {
+              Text(layer.title)
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundColor(.white.opacity(0.7))
+                .tracking(1.5)
+                .textCase(.uppercase)
                 .lineLimit(1)
-                .minimumScaleFactor(0.4)
-                .shadow(color: .black.opacity(0.3), radius: 2 * scale, x: 0, y: 1)
-                .padding(.horizontal, 4 * scale)
+                .minimumScaleFactor(0.8)
 
-              // Mystical accent - geometric crystal element
-              ZStack {
-                // Outer glow
-                Capsule()
-                  .fill(color.opacity(0.3))
-                  .frame(
-                    width: UIConstants.phaseAccentOuterWidth * scale,
-                    height: UIConstants.phaseAccentOuterHeight * scale
-                  )
-                  .blur(radius: 3 * scale)
-
-                // Inner crystal line
-                Capsule()
-                  .fill(
-                    LinearGradient(
-                      gradient: Gradient(colors: [
-                        color.opacity(0.6),
-                        color,
-                        color.opacity(0.6),
-                      ]),
-                      startPoint: .leading,
-                      endPoint: .trailing
-                    )
-                  )
-                  .frame(
-                    width: UIConstants.phaseAccentInnerWidth * scale,
-                    height: UIConstants.phaseAccentInnerHeight * scale
-                  )
-                  .shadow(color: color.opacity(0.8), radius: 4 * scale)
-              }
+              Text(layer.subtitle)
+                .font(.caption2)
+                .foregroundColor(.white.opacity(0.5))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
             }
-            .padding(.horizontal, 20 * scale)
-            .padding(.vertical, 16)
-            .frame(minWidth: UIConstants.phaseCardMinWidth * scale)
-            .background(
-              // Floating card background
-              RoundedRectangle(cornerRadius: 16)
+
+            // Hero phase name with sophisticated treatment
+            Text(phase.name)
+              .font(.largeTitle)
+              .fontWeight(.light)
+              .foregroundColor(.white)
+              .multilineTextAlignment(.center)
+              .lineLimit(1)
+              .minimumScaleFactor(0.4)
+              .shadow(color: .black.opacity(0.3), radius: 2 * scale, x: 0, y: 1)
+              .padding(.horizontal, 4 * scale)
+
+            // Mystical accent - geometric crystal element
+            ZStack {
+              // Outer glow
+              Capsule()
+                .fill(color.opacity(0.3))
+                .frame(
+                  width: UIConstants.phaseAccentOuterWidth * scale,
+                  height: UIConstants.phaseAccentOuterHeight * scale
+                )
+                .blur(radius: 3 * scale)
+
+              // Inner crystal line
+              Capsule()
                 .fill(
                   LinearGradient(
                     gradient: Gradient(colors: [
-                      Color.black.opacity(0.4),
-                      Color.black.opacity(0.6),
+                      color.opacity(0.6),
+                      color,
+                      color.opacity(0.6),
                     ]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
+                    startPoint: .leading,
+                    endPoint: .trailing
                   )
                 )
-                .overlay(
-                  RoundedRectangle(cornerRadius: 16)
-                    .stroke(
-                      LinearGradient(
-                        gradient: Gradient(colors: [
-                          color.opacity(0.3),
-                          Color.white.opacity(0.1),
-                          color.opacity(0.2),
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                      ),
-                      lineWidth: 1
-                    )
+                .frame(
+                  width: UIConstants.phaseAccentInnerWidth * scale,
+                  height: UIConstants.phaseAccentInnerHeight * scale
                 )
-                .shadow(color: color.opacity(0.2), radius: 8)
-                .shadow(color: .black.opacity(0.3), radius: 4)
-            )
+                .shadow(color: color.opacity(0.8), radius: 4 * scale)
+            }
           }
-          .frame(maxWidth: .infinity)
-
-          Spacer()
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-          // Bottom gutter for page indicators
-          Spacer()
-            .frame(height: 16)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(
-          LinearGradient(
-            gradient: Gradient(colors: [
-              Color.black.opacity(0.98),
-              Color.black.opacity(0.9),
-              Color.black,
-            ]),
-            startPoint: .top,
-            endPoint: .bottom
+          .padding(.horizontal, 20 * scale)
+          .padding(.vertical, 16)
+          .frame(minWidth: UIConstants.phaseCardMinWidth * scale)
+          .background(
+            // Floating card background
+            RoundedRectangle(cornerRadius: 16)
+              .fill(
+                LinearGradient(
+                  gradient: Gradient(colors: [
+                    Color.black.opacity(0.4),
+                    Color.black.opacity(0.6),
+                  ]),
+                  startPoint: .topLeading,
+                  endPoint: .bottomTrailing
+                )
+              )
+              .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                  .stroke(
+                    LinearGradient(
+                      gradient: Gradient(colors: [
+                        color.opacity(0.3),
+                        Color.white.opacity(0.1),
+                        color.opacity(0.2),
+                      ]),
+                      startPoint: .topLeading,
+                      endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                  )
+              )
+              .shadow(color: color.opacity(0.2), radius: 8)
+              .shadow(color: .black.opacity(0.3), radius: 4)
           )
-          .overlay(
-            RadialGradient(
-              gradient: Gradient(colors: [
-                color.opacity(0.18),
-                Color.clear,
-              ]),
-              center: .center,
-              startRadius: 20,
-              endRadius: min(geometry.size.width, geometry.size.height) * 0.9
-            )
+        }
+        .frame(maxWidth: .infinity)
+
+        Spacer()
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+        // Bottom gutter for page indicators
+        Spacer()
+          .frame(height: 16)
+      }
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
+      .background(
+        LinearGradient(
+          gradient: Gradient(colors: [
+            Color.black.opacity(0.98),
+            Color.black.opacity(0.9),
+            Color.black,
+          ]),
+          startPoint: .top,
+          endPoint: .bottom
+        )
+        .overlay(
+          RadialGradient(
+            gradient: Gradient(colors: [
+              color.opacity(0.18),
+              Color.clear,
+            ]),
+            center: .center,
+            startRadius: 20,
+            endRadius: screenWidth * 0.9
           )
         )
-        .ignoresSafeArea(.all)
+      )
+      .ignoresSafeArea(.all)
 
-        // Small tappable navigation button - bottom right
-        VStack {
+      // Small tappable navigation button - bottom right
+      VStack {
+        Spacer()
+        HStack {
           Spacer()
-          HStack {
-            Spacer()
-            NavigationLink(value: navigationDestination) {
-              Image(systemName: "chevron.right.circle.fill")
-                .foregroundColor(.white.opacity(0.8))
-                .font(.title2)
-                .background(
-                  Circle()
-                    .fill(color.opacity(0.3))
-                    .frame(width: 32, height: 32)
-                )
-            }
-            .buttonStyle(.plain)
-            .padding(.trailing, 12)
+          NavigationLink(value: navigationDestination) {
+            Image(systemName: "chevron.right.circle.fill")
+              .foregroundColor(.white.opacity(0.8))
+              .font(.title2)
+              .background(
+                Circle()
+                  .fill(color.opacity(0.3))
+                  .frame(width: 32, height: 32)
+              )
           }
-          .padding(.bottom, 20)
+          .buttonStyle(.plain)
+          .padding(.trailing, 12)
         }
+        .padding(.bottom, 20)
       }
     }
   }
