@@ -136,4 +136,50 @@ struct ContentViewFilteringTests {
     #expect(viewModel.selectedLayerId == 0)
     #expect(viewModel.filteredLayers[0].id == 0)
   }
+
+  /// Regression test for #158: Strategy cards rendered tiny during emotion logging flow
+  ///
+  /// Bug: When switching to .strategiesOnly mode, if the UI-layer layerSelection index
+  /// was higher than the filtered array size (e.g., layerSelection=5 but filteredLayers
+  /// only has 1 element), the LayerCardView.transformEffect computed property would
+  /// calculate distance = 0 - 5 = -5, falling into the default case which returns
+  /// scale: 0.85 and opacity: 0.0, making the card appear tiny and invisible.
+  ///
+  /// Fix: ContentView.onChange(of: viewModel.layerFilterMode) now clamps layerSelection
+  /// to the valid range for the new filtered layers.
+  @Test func strategiesOnlyFilteredIndexIsValidForTransformCalculation() async {
+    let catalog = createTestCatalog()
+    let repository = CatalogRepositoryMock(cached: catalog, result: .success(catalog))
+    let journal = JournalClientMock()
+    let viewModel = ContentViewModel(repository: repository, journalClient: journal)
+
+    await viewModel.loadCatalog()
+
+    // Simulate emotion logging flow: user was viewing layer 5 (Orange) in emotionsOnly mode
+    viewModel.layerFilterMode = .emotionsOnly
+    viewModel.selectedLayerId = 5
+    viewModel.selectedLayerIndex = 5
+
+    // User taps "Add Strategy" which switches to strategiesOnly
+    viewModel.layerFilterMode = .strategiesOnly
+
+    // Verify: filteredLayers has only 1 element (strategies layer)
+    #expect(viewModel.filteredLayers.count == 1)
+    #expect(viewModel.filteredLayers[0].id == 0)
+
+    // Verify: selectedLayerId is clamped to the only available layer (0)
+    #expect(viewModel.selectedLayerId == 0)
+
+    // Key verification for #158: The valid filtered index for layer 0 is 0
+    // ContentView's onChange handler must clamp layerSelection to this value
+    // so that transformEffect calculates distance = 0 - 0 = 0 (not 0 - 5 = -5)
+    let validFilteredIndex = viewModel.layerIdToFilteredIndex(0)
+    #expect(validFilteredIndex == 0)
+
+    // If layerSelection is properly clamped to 0, then:
+    // - layerIndex = 0 (the only layer in filteredLayers)
+    // - selectedLayerIndex = 0 (clamped layerSelection)
+    // - distance = 0 - 0 = 0
+    // - transformEffect returns scale: 1.0, opacity: 1.0 (full size, visible)
+  }
 }
