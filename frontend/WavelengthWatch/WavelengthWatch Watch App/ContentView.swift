@@ -354,12 +354,16 @@ struct ContentView: View {
           LazyVStack(spacing: -20) {
             ForEach(viewModel.filteredLayers.indices, id: \.self) { index in
               let layer = viewModel.filteredLayers[index]
+              // Clamp selectedLayerIndex to valid range for current filteredLayers
+              // This fixes #180: onChange handlers may fire after view renders,
+              // so we must ensure the value is valid at the point of use
+              let clampedSelection = min(layerSelection, max(0, viewModel.filteredLayers.count - 1))
               LayerCardView(
                 layer: layer,
                 phaseCount: viewModel.phaseOrder.count,
                 selection: $phaseSelection,
                 layerIndex: index,
-                selectedLayerIndex: layerSelection,
+                selectedLayerIndex: clampedSelection,
                 geometry: geometry,
                 screenWidth: geometry.size.width
               )
