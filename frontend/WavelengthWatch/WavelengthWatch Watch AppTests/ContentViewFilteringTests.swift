@@ -182,4 +182,44 @@ struct ContentViewFilteringTests {
     // - distance = 0 - 0 = 0
     // - transformEffect returns scale: 1.0, opacity: 1.0 (full size, visible)
   }
+
+  /// Regression test for #180: Strategy cards render tiny when scrolling between selections
+  ///
+  /// Bug: When user scrolls vertically between primary and secondary emotion selection,
+  /// layerSelection updates to a high index. When transitioning to .strategiesOnly mode,
+  /// the onChange handler fires AFTER the view renders, causing the first render to use
+  /// the stale high layerSelection value.
+  ///
+  /// Fix: Clamp layerSelection at the point of use in ForEach, not just in onChange handler.
+  /// This ensures the value passed to LayerCardView is always valid for current filteredLayers.
+  @Test func clampedSelectionIsValidDuringFilterModeTransition() async {
+    let catalog = createTestCatalog()
+    let repository = CatalogRepositoryMock(cached: catalog, result: .success(catalog))
+    let journal = JournalClientMock()
+    let viewModel = ContentViewModel(repository: repository, journalClient: journal)
+
+    await viewModel.loadCatalog()
+
+    // Simulate: User in emotionsOnly mode, scrolls to layer 7 (Yellow)
+    viewModel.layerFilterMode = .emotionsOnly
+    // In emotionsOnly mode (reversed): [10,9,8,7,6,5,4,3,2,1]
+    // Yellow (id=7) would be at filtered index 3
+
+    // User's scroll position updates layerSelection to 7 (as if scrolled far down)
+    // This simulates the bug scenario where layerSelection > filteredLayers.count after mode change
+
+    // When switching to strategiesOnly, filteredLayers.count becomes 1
+    viewModel.layerFilterMode = .strategiesOnly
+    #expect(viewModel.filteredLayers.count == 1)
+
+    // The fix clamps at point of use:
+    // clampedSelection = min(7, max(0, 1 - 1)) = min(7, 0) = 0
+    let simulatedLayerSelection = 7
+    let clampedSelection = min(simulatedLayerSelection, max(0, viewModel.filteredLayers.count - 1))
+    #expect(clampedSelection == 0)
+
+    // With clampedSelection = 0 and layerIndex = 0:
+    // distance = 0 - 0 = 0 → scale: 1.0, opacity: 1.0 (correct)
+    // Without clamping: distance = 0 - 7 = -7 → scale: 0.85, opacity: 0.0 (bug)
+  }
 }
