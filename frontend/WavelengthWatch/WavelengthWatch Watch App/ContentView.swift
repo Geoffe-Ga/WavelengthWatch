@@ -161,6 +161,14 @@ struct ContentView: View {
           }
         }
       }
+      .onChange(of: viewModel.layerFilterMode) { _, _ in
+        // When filter mode changes, clamp layerSelection to valid range for new filtered layers
+        // This fixes #158: strategy cards rendering tiny because layerSelection was out of bounds
+        let maxIndex = max(0, viewModel.filteredLayers.count - 1)
+        if layerSelection > maxIndex {
+          layerSelection = maxIndex
+        }
+      }
       .onChange(of: phaseSelection) { _, newValue in
         guard viewModel.phaseOrder.count > 0 else { return }
         let adjusted = PhaseNavigator.adjustedSelection(newValue, phaseCount: viewModel.phaseOrder.count)
