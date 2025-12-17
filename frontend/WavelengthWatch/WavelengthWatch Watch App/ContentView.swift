@@ -109,6 +109,14 @@ struct ContentView: View {
     _phaseSelection = State(initialValue: initialPhase + 1)
   }
 
+  /// Clamped layer selection that's always valid for the current filteredLayers
+  /// This fixes #183: scroll position and digital crown bindings must return valid indices
+  /// even when layerSelection is stale (e.g., after filter mode change)
+  private var clampedLayerSelection: Int {
+    guard viewModel.filteredLayers.count > 0 else { return 0 }
+    return min(layerSelection, viewModel.filteredLayers.count - 1)
+  }
+
   var body: some View {
     NavigationStack(path: $navigationPath) {
       ZStack {
@@ -359,7 +367,7 @@ struct ContentView: View {
                 phaseCount: viewModel.phaseOrder.count,
                 selection: $phaseSelection,
                 layerIndex: index,
-                selectedLayerIndex: layerSelection,
+                selectedLayerIndex: clampedLayerSelection,
                 geometry: geometry,
                 screenWidth: geometry.size.width
               )
@@ -371,7 +379,7 @@ struct ContentView: View {
         .scrollTargetBehavior(.viewAligned)
         .scrollDisabled(false)
         .scrollPosition(id: .init(
-          get: { layerSelection },
+          get: { clampedLayerSelection },
           set: { newId in
             if let newId = newId as? Int, newId != layerSelection {
               layerSelection = newId
@@ -380,7 +388,7 @@ struct ContentView: View {
         ))
         .digitalCrownRotation(
           .init(
-            get: { Double(layerSelection) },
+            get: { Double(clampedLayerSelection) },
             set: { newValue in
               guard viewModel.filteredLayers.count > 0 else { return }
               let clampedValue = Int(round(newValue)).clamped(to: 0 ... (viewModel.filteredLayers.count - 1))
@@ -449,8 +457,8 @@ struct ContentView: View {
         VStack(spacing: 2) {
           ForEach(viewModel.filteredLayers.indices, id: \.self) { index in
             let layer = viewModel.filteredLayers[index]
-            let isSelected = index == layerSelection
-            let distance = abs(index - layerSelection)
+            let isSelected = index == clampedLayerSelection
+            let distance = abs(index - clampedLayerSelection)
 
             Capsule()
               .fill(
