@@ -507,7 +507,7 @@ struct ContentView: View {
               )
               .scaleEffect(distance > 2 ? 0.6 : 1.0)
               .opacity(distance > 3 ? 0 : 1)
-              .animation(.interactiveSpring(response: 0.3, dampingFraction: 0.7), value: layerSelection)
+              .animation(.interactiveSpring(response: 0.3, dampingFraction: 0.7), value: clampedLayerSelection)
           }
         }
       }
