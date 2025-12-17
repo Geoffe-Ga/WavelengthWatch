@@ -110,8 +110,14 @@ struct ContentView: View {
   }
 
   /// Clamped layer selection that's always valid for the current filteredLayers
+  ///
   /// This fixes #183: scroll position and digital crown bindings must return valid indices
-  /// even when layerSelection is stale (e.g., after filter mode change)
+  /// even when layerSelection is stale (e.g., after filter mode change).
+  ///
+  /// **Timing note:** `layerSelection` itself gets updated to the clamped value in
+  /// `onChange(of: viewModel.layerFilterMode)`, but that handler fires AFTER the initial
+  /// render. This computed property ensures bindings always return valid values even
+  /// during that timing window, preventing SwiftUI from rendering with invalid state.
   private var clampedLayerSelection: Int {
     guard viewModel.filteredLayers.count > 0 else { return 0 }
     return min(layerSelection, viewModel.filteredLayers.count - 1)
@@ -419,6 +425,10 @@ struct ContentView: View {
         .overlay(alignment: .trailing) {
           enhancedLayerIndicator(in: geometry.size)
         }
+        // Note: DragGesture uses raw layerSelection for bounds checking because we're
+        // setting a new value (not reading for display). The bounds check against
+        // filteredLayers.count is safe because we're modifying layerSelection, which
+        // will then be clamped via clampedLayerSelection for any binding reads.
         .simultaneousGesture(
           DragGesture()
             .onEnded { value in
