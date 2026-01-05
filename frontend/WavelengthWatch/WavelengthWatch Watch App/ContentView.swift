@@ -109,6 +109,20 @@ struct ContentView: View {
     _phaseSelection = State(initialValue: initialPhase + 1)
   }
 
+  /// Clamped layer selection that's always valid for the current filteredLayers
+  ///
+  /// This fixes #183: scroll position and digital crown bindings must return valid indices
+  /// even when layerSelection is stale (e.g., after filter mode change).
+  ///
+  /// **Timing note:** `layerSelection` itself gets updated to the clamped value in
+  /// `onChange(of: viewModel.layerFilterMode)`, but that handler fires AFTER the initial
+  /// render. This computed property ensures bindings always return valid values even
+  /// during that timing window, preventing SwiftUI from rendering with invalid state.
+  private var clampedLayerSelection: Int {
+    guard viewModel.filteredLayers.count > 0 else { return 0 }
+    return min(layerSelection, viewModel.filteredLayers.count - 1)
+  }
+
   var body: some View {
     NavigationStack(path: $navigationPath) {
       ZStack {
@@ -366,16 +380,12 @@ struct ContentView: View {
           LazyVStack(spacing: -20) {
             ForEach(viewModel.filteredLayers.indices, id: \.self) { index in
               let layer = viewModel.filteredLayers[index]
-              // Clamp selectedLayerIndex to valid range for current filteredLayers
-              // This fixes #180: onChange handlers may fire after view renders,
-              // so we must ensure the value is valid at the point of use
-              let clampedSelection = min(layerSelection, max(0, viewModel.filteredLayers.count - 1))
               LayerCardView(
                 layer: layer,
                 phaseCount: viewModel.phaseOrder.count,
                 selection: $phaseSelection,
                 layerIndex: index,
-                selectedLayerIndex: clampedSelection,
+                selectedLayerIndex: clampedLayerSelection,
                 geometry: geometry,
                 screenWidth: geometry.size.width
               )
@@ -387,7 +397,7 @@ struct ContentView: View {
         .scrollTargetBehavior(.viewAligned)
         .scrollDisabled(false)
         .scrollPosition(id: .init(
-          get: { layerSelection },
+          get: { clampedLayerSelection },
           set: { newId in
             if let newId = newId as? Int, newId != layerSelection {
               layerSelection = newId
@@ -396,7 +406,7 @@ struct ContentView: View {
         ))
         .digitalCrownRotation(
           .init(
-            get: { Double(layerSelection) },
+            get: { Double(clampedLayerSelection) },
             set: { newValue in
               guard viewModel.filteredLayers.count > 0 else { return }
               let clampedValue = Int(round(newValue)).clamped(to: 0 ... (viewModel.filteredLayers.count - 1))
@@ -427,6 +437,10 @@ struct ContentView: View {
         .overlay(alignment: .trailing) {
           enhancedLayerIndicator(in: geometry.size)
         }
+        // Note: DragGesture uses raw layerSelection for bounds checking because we're
+        // setting a new value (not reading for display). The bounds check against
+        // filteredLayers.count is safe because we're modifying layerSelection, which
+        // will then be clamped via clampedLayerSelection for any binding reads.
         .simultaneousGesture(
           DragGesture()
             .onEnded { value in
@@ -465,8 +479,8 @@ struct ContentView: View {
         VStack(spacing: 2) {
           ForEach(viewModel.filteredLayers.indices, id: \.self) { index in
             let layer = viewModel.filteredLayers[index]
-            let isSelected = index == layerSelection
-            let distance = abs(index - layerSelection)
+            let isSelected = index == clampedLayerSelection
+            let distance = abs(index - clampedLayerSelection)
 
             Capsule()
               .fill(
@@ -505,7 +519,7 @@ struct ContentView: View {
               )
               .scaleEffect(distance > 2 ? 0.6 : 1.0)
               .opacity(distance > 3 ? 0 : 1)
-              .animation(.interactiveSpring(response: 0.3, dampingFraction: 0.7), value: layerSelection)
+              .animation(.interactiveSpring(response: 0.3, dampingFraction: 0.7), value: clampedLayerSelection)
           }
         }
       }
