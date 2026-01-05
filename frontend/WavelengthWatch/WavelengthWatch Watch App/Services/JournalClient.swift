@@ -139,11 +139,13 @@ final class JournalClient: JournalClientProtocol {
         try repository.update(entry)
       } catch {
         // Sync failed - mark as failed for retry
+        print("⚠️ Journal sync failed for entry \(entry.id): \(error). Entry saved locally with failed sync status.")
         entry.syncStatus = .failed
         entry.lastSyncAttempt = dateProvider()
         try repository.update(entry)
 
         // Don't throw - entry is still saved locally
+        // TODO: Consider adding user-visible feedback (notification badge or status indicator)
       }
     }
 

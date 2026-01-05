@@ -47,9 +47,11 @@ protocol JournalRepositoryProtocol {
 /// ```
 ///
 /// ## Thread Safety
-/// The repository is not thread-safe. Callers must ensure operations
-/// are performed on the same queue/thread. Consider using an actor
-/// or dispatch queue for concurrent access.
+/// SQLite is opened with FULLMUTEX for database-level thread safety,
+/// preventing corruption from concurrent access. However, business logic
+/// operations (read-modify-write sequences) are not atomic. Callers should
+/// coordinate repository operations through a single queue or actor to
+/// ensure consistent application state.
 final class JournalRepository: JournalRepositoryProtocol {
   private let database: JournalDatabase
   private var isOpen = false

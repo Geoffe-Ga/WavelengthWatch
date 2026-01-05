@@ -184,7 +184,11 @@ struct JournalRepositoryTests {
     #expect(fetched?.syncStatus == .pending)
 
     // Cleanup
-    try? FileManager.default.removeItem(atPath: tempPath)
+    do {
+      try FileManager.default.removeItem(atPath: tempPath)
+    } catch {
+      print("⚠️ Test cleanup failed to remove temp database at \(tempPath): \(error)")
+    }
   }
 
   @Test func sqliteUpdatesEntry() throws {
@@ -210,7 +214,11 @@ struct JournalRepositoryTests {
     #expect(fetched?.serverId == 456)
 
     // Cleanup
-    try? FileManager.default.removeItem(atPath: tempPath)
+    do {
+      try FileManager.default.removeItem(atPath: tempPath)
+    } catch {
+      print("⚠️ Test cleanup failed to remove temp database at \(tempPath): \(error)")
+    }
   }
 
   @Test func sqliteDeletesEntry() throws {
@@ -232,7 +240,11 @@ struct JournalRepositoryTests {
     #expect(fetched == nil)
 
     // Cleanup
-    try? FileManager.default.removeItem(atPath: tempPath)
+    do {
+      try FileManager.default.removeItem(atPath: tempPath)
+    } catch {
+      print("⚠️ Test cleanup failed to remove temp database at \(tempPath): \(error)")
+    }
   }
 
   @Test func sqliteFetchAllReturnsNewestFirst() throws {
@@ -263,7 +275,11 @@ struct JournalRepositoryTests {
     #expect(all[1].id == entry1.id)
 
     // Cleanup
-    try? FileManager.default.removeItem(atPath: tempPath)
+    do {
+      try FileManager.default.removeItem(atPath: tempPath)
+    } catch {
+      print("⚠️ Test cleanup failed to remove temp database at \(tempPath): \(error)")
+    }
   }
 
   @Test func sqliteFetchPendingSyncReturnsPendingAndFailed() throws {
@@ -308,7 +324,11 @@ struct JournalRepositoryTests {
     #expect(pendingEntries.contains { $0.id == failed.id })
 
     // Cleanup
-    try? FileManager.default.removeItem(atPath: tempPath)
+    do {
+      try FileManager.default.removeItem(atPath: tempPath)
+    } catch {
+      print("⚠️ Test cleanup failed to remove temp database at \(tempPath): \(error)")
+    }
   }
 
   @Test func sqliteCountReturnsCorrectNumber() throws {
@@ -333,6 +353,10 @@ struct JournalRepositoryTests {
     #expect(count == 2)
 
     // Cleanup
-    try? FileManager.default.removeItem(atPath: tempPath)
+    do {
+      try FileManager.default.removeItem(atPath: tempPath)
+    } catch {
+      print("⚠️ Test cleanup failed to remove temp database at \(tempPath): \(error)")
+    }
   }
 }
