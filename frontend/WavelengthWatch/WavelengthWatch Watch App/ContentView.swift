@@ -92,7 +92,14 @@ struct ContentView: View {
       remote: CatalogAPIService(apiClient: apiClient),
       cache: FileCatalogCacheStore()
     )
-    let journalClient = JournalClient(apiClient: apiClient)
+    let journalRepository = JournalRepository()
+    try? journalRepository.open()
+    let syncSettings = SyncSettings()
+    let journalClient = JournalClient(
+      apiClient: apiClient,
+      repository: journalRepository,
+      syncSettings: syncSettings
+    )
     self.journalClient = journalClient
     let initialLayer = UserDefaults.standard.integer(forKey: "selectedLayerIndex")
     let initialPhase = UserDefaults.standard.integer(forKey: "selectedPhaseIndex")
@@ -1509,6 +1516,10 @@ struct MenuView: View {
 
       NavigationLink(destination: AnalyticsView()) {
         Label("Analytics", systemImage: "chart.bar")
+      }
+
+      NavigationLink(destination: SyncSettingsView()) {
+        Label("Sync Settings", systemImage: "arrow.triangle.2.circlepath")
       }
 
       NavigationLink(destination: ConceptExplainerView()) {

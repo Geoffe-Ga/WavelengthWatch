@@ -292,10 +292,11 @@ struct JournalReviewView: View {
       secondaryCurriculumID: Int?,
       strategyID: Int?,
       initiatedBy: InitiatedBy
-    ) async throws -> JournalResponseModel {
+    ) async throws -> LocalJournalEntry {
       try await Task.sleep(nanoseconds: 500_000_000) // Simulate network delay
-      return JournalResponseModel(
-        id: 1,
+      return LocalJournalEntry(
+        createdAt: Date(),
+        userID: 123,
         curriculumID: curriculumID,
         secondaryCurriculumID: secondaryCurriculumID,
         strategyID: strategyID,
