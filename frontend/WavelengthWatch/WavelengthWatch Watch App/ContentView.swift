@@ -162,11 +162,23 @@ struct ContentView: View {
         }
       }
       .onChange(of: viewModel.layerFilterMode) { _, _ in
-        // When filter mode changes, clamp layerSelection to valid range for new filtered layers
-        // This fixes #158: strategy cards rendering tiny because layerSelection was out of bounds
-        let maxIndex = max(0, viewModel.filteredLayers.count - 1)
-        if layerSelection > maxIndex {
-          layerSelection = maxIndex
+        // When filter mode changes, actively sync layerSelection to the correct filtered index
+        // for the current selectedLayerId. This fixes #180: strategy cards rendering tiny after
+        // flow completion because layerSelection wasn't synced to the new filtered index.
+        guard let layerId = viewModel.selectedLayerId,
+              let filteredIndex = viewModel.layerIdToFilteredIndex(layerId)
+        else {
+          // Fallback: clamp to valid range if no selected layer ID
+          let maxIndex = max(0, viewModel.filteredLayers.count - 1)
+          if layerSelection > maxIndex {
+            layerSelection = maxIndex
+          }
+          return
+        }
+
+        // Actively set layerSelection to the correct filtered index for the selected layer
+        if layerSelection != filteredIndex {
+          layerSelection = filteredIndex
         }
       }
       .onChange(of: phaseSelection) { _, newValue in
@@ -354,12 +366,16 @@ struct ContentView: View {
           LazyVStack(spacing: -20) {
             ForEach(viewModel.filteredLayers.indices, id: \.self) { index in
               let layer = viewModel.filteredLayers[index]
+              // Clamp selectedLayerIndex to valid range for current filteredLayers
+              // This fixes #180: onChange handlers may fire after view renders,
+              // so we must ensure the value is valid at the point of use
+              let clampedSelection = min(layerSelection, max(0, viewModel.filteredLayers.count - 1))
               LayerCardView(
                 layer: layer,
                 phaseCount: viewModel.phaseOrder.count,
                 selection: $phaseSelection,
                 layerIndex: index,
-                selectedLayerIndex: layerSelection,
+                selectedLayerIndex: clampedSelection,
                 geometry: geometry,
                 screenWidth: geometry.size.width
               )
