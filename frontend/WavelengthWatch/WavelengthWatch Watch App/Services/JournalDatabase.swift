@@ -19,8 +19,9 @@ enum JournalDatabaseError: Error, Equatable {
 /// It's designed to be lightweight and efficient for watchOS constraints.
 ///
 /// ## Thread Safety
-/// All database operations must be performed on the same thread/queue.
-/// The repository layer is responsible for thread coordination.
+/// The database is opened with SQLITE_OPEN_FULLMUTEX for multi-threaded safety.
+/// However, operations should be coordinated through the repository layer
+/// to ensure consistent state and avoid race conditions in business logic.
 ///
 /// ## Schema Version
 /// The database includes a version table for future migrations.
@@ -67,9 +68,17 @@ final class JournalDatabase {
     let flags = SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE | SQLITE_OPEN_FULLMUTEX
     let result = sqlite3_open_v2(databasePath, &dbPointer, flags, nil)
 
-    guard result == SQLITE_OK, let dbPointer else {
-      let message = String(cString: sqlite3_errmsg(dbPointer))
+    guard result == SQLITE_OK else {
+      let message = dbPointer != nil ? String(cString: sqlite3_errmsg(dbPointer)) : "Unknown error"
+      // Clean up the pointer if it was allocated despite the error
+      if let dbPointer {
+        sqlite3_close(dbPointer)
+      }
       throw JournalDatabaseError.failedToOpenDatabase(message)
+    }
+
+    guard let dbPointer else {
+      throw JournalDatabaseError.failedToOpenDatabase("Database pointer is nil despite SQLITE_OK")
     }
 
     db = dbPointer
@@ -118,6 +127,9 @@ final class JournalDatabase {
 
       CREATE INDEX IF NOT EXISTS idx_journal_curriculum
         ON journal_entry(curriculum_id);
+
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_journal_server_id
+        ON journal_entry(server_id) WHERE server_id IS NOT NULL;
     """
 
     var errorMessage: UnsafeMutablePointer<CChar>?

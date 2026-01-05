@@ -92,12 +92,14 @@ struct ContentView: View {
       remote: CatalogAPIService(apiClient: apiClient),
       cache: FileCatalogCacheStore()
     )
-    let journalRepository = JournalRepository()
+    let journalRepository: JournalRepositoryProtocol
+    let persistentRepo = JournalRepository()
     do {
-      try journalRepository.open()
+      try persistentRepo.open()
+      journalRepository = persistentRepo
     } catch {
       print("⚠️ Failed to open journal database: \(error). Falling back to in-memory storage.")
-      // Note: In production, consider showing user-facing error or using InMemoryJournalRepository
+      journalRepository = InMemoryJournalRepository()
     }
     let syncSettings = SyncSettings()
     let journalClient = JournalClient(
