@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 > **Communication files**: Store any Markdown you author for coordination or planning in `prompts/claude-comm/` so future agents can locate prior discussions quickly.
 
-**Deployment status**: The project has not yet been deployed to production. Shipping to the App Store is on the roadmap, so database migrations are not currently required.
+**Deployment status**: The project has not yet been deployed to production. Shipping to the App Store is on the roadmap.
 
 ## Development Commands
 
@@ -129,10 +129,11 @@ WavelengthWatch is a **watch-only app** that displays the Archetypal Wavelength 
 - `backend/schemas.py`: Pydantic models that coerce timestamps to UTC and validate foreign keys via the service layer.
 
 ### Journal System Notes
-- **Data model**: A single `Journal` row ties back to `Curriculum` (required) and optionally `Strategy`/`secondary_curriculum` using SQLModel relationships. The `InitiatedBy` enum tracks whether the entry was self-started or triggered by automation.
-- **Request lifecycle**: The watch sends `created_at`, `user_id`, curriculum IDs, and optional strategy data. The router guards referential integrity and re-queries with joined relationships before returning the hydrated response.
-- **Strengths**: Minimal schema surface, strong alignment with existing catalog tables, and straightforward to extend with analytics queries. Because joins happen on the server, clients can stay slim and reuse the same curriculum models.
-- **Trade-offs**: No offline queue or retry buffer yet, so failures must be retried manually. Additional relationships (e.g., multiple secondary feelings) will require schema evolution once migrations become part of the deployment story.
+- **Data model**: Journal entries are stored locally in SQLite with `LocalJournalEntry` (UUID-based). Backend `Journal` rows use integer IDs. The `InitiatedBy` enum tracks whether entries were self-started or triggered by automation.
+- **Local-first architecture**: All entries save to SQLite first with sync status tracking (pending/synced/failed). Cloud sync is opt-in via `SyncSettings`.
+- **Request lifecycle**: Watch creates `LocalJournalEntry`, saves to SQLite, then optionally syncs to backend if cloud sync enabled. Backend guards referential integrity and returns hydrated response with joined relationships.
+- **Strengths**: Offline-first (works without connectivity), privacy-first (sync opt-in), minimal backend schema surface, strong alignment with existing catalog tables, and straightforward to extend with analytics queries.
+- **Trade-offs**: Automatic retry for failed sync not yet implemented. Additional relationships (e.g., multiple secondary feelings) will require schema evolution and migration planning.
 
 ### Data Flow
 1. The watch renders bundled JSON immediately.

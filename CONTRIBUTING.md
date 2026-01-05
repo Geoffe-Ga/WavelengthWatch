@@ -13,11 +13,12 @@ Thanks for helping evolve WavelengthWatch! This guide summarizes the expectation
 
 Understanding the shipping journal flow prevents redundant rewrites:
 
-- **Data model**: `backend/models.py` exposes a `Journal` SQLModel table referencing `Curriculum` and optional `Strategy` rows. The `InitiatedBy` enum differentiates self-started entries from scheduled ones.
+- **Local storage**: `LocalJournalEntry` models are saved to SQLite via `JournalRepository` with sync status tracking (pending/synced/failed). Cloud sync is opt-in via `SyncSettings`.
+- **Backend data model**: `backend/models.py` exposes a `Journal` SQLModel table referencing `Curriculum` and optional `Strategy` rows. The `InitiatedBy` enum differentiates self-started entries from scheduled ones.
 - **Schemas & validation**: `backend/schemas.py` validates timestamps (UTC-normalized) and defers foreign-key checks to `backend/routers/journal.py`, which re-queries with `joinedload` so responses come back hydrated.
-- **Watch client**: `JournalClient` (Swift) derives a pseudo-user ID from `UserDefaults`, stamps `createdAt`, and posts to `/api/v1/journal`. UI alerts trigger submissions and present success/failure feedback immediately.
-- **Strengths**: Simple schema, reusable joins with existing catalog data, and production-friendly HTTP contracts.
-- **Trade-offs**: No queued retries or batch submission yet; expanding to multi-combo journaling will require additional schema changes and eventual migrations.
+- **Watch client**: `JournalClient` (Swift) derives a pseudo-user ID from `UserDefaults`, saves entries to local SQLite first, then optionally syncs to `/api/v1/journal` if cloud sync is enabled. UI alerts trigger submissions and present success/failure feedback immediately.
+- **Strengths**: Offline-first (works without connectivity), privacy-first (sync opt-in), simple backend schema, reusable joins with existing catalog data, and production-friendly HTTP contracts.
+- **Trade-offs**: Automatic retry for failed sync not yet implemented; expanding to multi-combo journaling will require additional schema changes and migration planning.
 
 Bring proposals that build on these merits or explicitly outline how you plan to mitigate the known trade-offs.
 

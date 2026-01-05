@@ -93,7 +93,12 @@ struct ContentView: View {
       cache: FileCatalogCacheStore()
     )
     let journalRepository = JournalRepository()
-    try? journalRepository.open()
+    do {
+      try journalRepository.open()
+    } catch {
+      print("⚠️ Failed to open journal database: \(error). Falling back to in-memory storage.")
+      // Note: In production, consider showing user-facing error or using InMemoryJournalRepository
+    }
     let syncSettings = SyncSettings()
     let journalClient = JournalClient(
       apiClient: apiClient,
