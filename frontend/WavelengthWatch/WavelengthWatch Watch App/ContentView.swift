@@ -523,7 +523,7 @@ struct ContentView: View {
           }
         }
       }
-      .padding(.trailing, 6)
+      .offset(x: -6) // Use offset instead of padding to avoid layout impact when opacity changes
       Spacer()
     }
     .opacity(showLayerIndicator ? 1 : 0)
