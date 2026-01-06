@@ -75,8 +75,10 @@ struct ContentView: View {
   @AppStorage("selectedPhaseIndex") private var storedPhaseIndex = 0
   @StateObject private var viewModel: ContentViewModel
   @StateObject private var flowCoordinator: FlowCoordinator
+  @StateObject private var syncSettingsViewModel: SyncSettingsViewModel
   @EnvironmentObject private var notificationDelegate: NotificationDelegate
   let journalClient: JournalClientProtocol
+  let journalRepository: JournalRepositoryProtocol
   @State private var layerSelection: Int
   @State private var phaseSelection: Int
   @State private var showLayerIndicator = false
@@ -92,7 +94,22 @@ struct ContentView: View {
       remote: CatalogAPIService(apiClient: apiClient),
       cache: FileCatalogCacheStore()
     )
-    let journalClient = JournalClient(apiClient: apiClient)
+    let persistentRepo = JournalRepository()
+    let journalRepository: JournalRepositoryProtocol
+    do {
+      try persistentRepo.open()
+      journalRepository = persistentRepo
+    } catch {
+      print("⚠️ Failed to open journal database: \(error). Falling back to in-memory storage.")
+      journalRepository = InMemoryJournalRepository()
+    }
+    self.journalRepository = journalRepository
+    let syncSettings = SyncSettings()
+    let journalClient = JournalClient(
+      apiClient: apiClient,
+      repository: journalRepository,
+      syncSettings: syncSettings
+    )
     self.journalClient = journalClient
     let initialLayer = UserDefaults.standard.integer(forKey: "selectedLayerIndex")
     let initialPhase = UserDefaults.standard.integer(forKey: "selectedPhaseIndex")
@@ -103,6 +120,7 @@ struct ContentView: View {
       initialPhaseIndex: initialPhase
     )
     _viewModel = StateObject(wrappedValue: model)
+    _syncSettingsViewModel = StateObject(wrappedValue: SyncSettingsViewModel(syncSettings: syncSettings))
     let coordinator = FlowCoordinator(contentViewModel: model)
     _flowCoordinator = StateObject(wrappedValue: coordinator)
     _layerSelection = State(initialValue: initialLayer)
@@ -318,14 +336,18 @@ struct ContentView: View {
       }
       .sheet(isPresented: $showingMenu) {
         NavigationStack {
-          MenuView(journalClient: journalClient, isPresented: $showingMenu)
-            .toolbar {
-              ToolbarItem(placement: .cancellationAction) {
-                Button("Done") {
-                  showingMenu = false
-                }
+          MenuView(
+            journalClient: journalClient,
+            syncSettingsViewModel: syncSettingsViewModel,
+            isPresented: $showingMenu
+          )
+          .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+              Button("Done") {
+                showingMenu = false
               }
             }
+          }
         }
       }
       .sheet(isPresented: .constant(flowCoordinator.currentStep == .review)) {
@@ -1482,6 +1504,7 @@ struct StrategyCard: View {
 
 struct MenuView: View {
   let journalClient: JournalClientProtocol
+  @ObservedObject var syncSettingsViewModel: SyncSettingsViewModel
   @Binding var isPresented: Bool
   @EnvironmentObject private var viewModel: ContentViewModel
   @EnvironmentObject private var flowCoordinator: FlowCoordinator
@@ -1509,6 +1532,10 @@ struct MenuView: View {
 
       NavigationLink(destination: AnalyticsView()) {
         Label("Analytics", systemImage: "chart.bar")
+      }
+
+      NavigationLink(destination: SyncSettingsView(viewModel: syncSettingsViewModel)) {
+        Label("Sync Settings", systemImage: "arrow.triangle.2.circlepath")
       }
 
       NavigationLink(destination: ConceptExplainerView()) {

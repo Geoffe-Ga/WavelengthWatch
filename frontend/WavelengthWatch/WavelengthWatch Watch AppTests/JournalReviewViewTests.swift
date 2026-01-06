@@ -140,15 +140,16 @@ struct JournalReviewViewTests {
         secondaryCurriculumID: Int?,
         strategyID: Int?,
         initiatedBy: InitiatedBy
-      ) async throws -> JournalResponseModel {
+      ) async throws -> LocalJournalEntry {
         submittedCurriculumID = curriculumID
         submittedSecondaryCurriculumID = secondaryCurriculumID
         submittedStrategyID = strategyID
         submittedInitiatedBy = initiatedBy
 
         if shouldSucceed {
-          return JournalResponseModel(
-            id: 1,
+          return LocalJournalEntry(
+            createdAt: Date(),
+            userID: 123,
             curriculumID: curriculumID,
             secondaryCurriculumID: secondaryCurriculumID,
             strategyID: strategyID,
@@ -175,7 +176,7 @@ struct JournalReviewViewTests {
     #expect(mockClient.submittedSecondaryCurriculumID == 3)
     #expect(mockClient.submittedStrategyID == 10)
     #expect(mockClient.submittedInitiatedBy == .self_initiated)
-    #expect(response.id == 1)
+    #expect(response.curriculumID == 1)
   }
 
   @Test("log entry on error allows retry")
@@ -188,7 +189,7 @@ struct JournalReviewViewTests {
         secondaryCurriculumID: Int?,
         strategyID: Int?,
         initiatedBy: InitiatedBy
-      ) async throws -> JournalResponseModel {
+      ) async throws -> LocalJournalEntry {
         submitCount += 1
         throw NSError(domain: "test", code: 500, userInfo: nil)
       }
@@ -234,10 +235,11 @@ struct JournalReviewViewTests {
         secondaryCurriculumID: Int?,
         strategyID: Int?,
         initiatedBy: InitiatedBy
-      ) async throws -> JournalResponseModel {
+      ) async throws -> LocalJournalEntry {
         submitCalled = true
-        return JournalResponseModel(
-          id: 1,
+        return LocalJournalEntry(
+          createdAt: Date(),
+          userID: 123,
           curriculumID: curriculumID,
           secondaryCurriculumID: secondaryCurriculumID,
           strategyID: strategyID,

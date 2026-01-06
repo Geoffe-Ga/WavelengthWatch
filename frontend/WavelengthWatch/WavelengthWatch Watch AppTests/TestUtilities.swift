@@ -159,13 +159,20 @@ final class JournalClientMock: JournalClientProtocol {
     secondaryCurriculumID: Int?,
     strategyID: Int?,
     initiatedBy: InitiatedBy
-  ) async throws -> JournalResponseModel {
+  ) async throws -> LocalJournalEntry {
     submissions.append((curriculumID, secondaryCurriculumID, strategyID))
     submittedInitiatedBy = initiatedBy
     if shouldFail {
       throw ErrorStub()
     }
-    return JournalResponseModel(id: 1, curriculumID: curriculumID, secondaryCurriculumID: secondaryCurriculumID, strategyID: strategyID, initiatedBy: initiatedBy)
+    return LocalJournalEntry(
+      createdAt: Date(),
+      userID: 123,
+      curriculumID: curriculumID,
+      secondaryCurriculumID: secondaryCurriculumID,
+      strategyID: strategyID,
+      initiatedBy: initiatedBy
+    )
   }
 }
 

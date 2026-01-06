@@ -4,12 +4,12 @@
 
 WavelengthWatch is a watchOS-only companion for the Archetypal Wavelength. The watch app lets you browse every layer and phase, surfaces “medicinal” and “toxic” expressions side-by-side, and offers context-aware self-care strategies. Background refresh keeps the content current, while offline storage guarantees the curriculum is always available from your wrist.
 
-_Status_: The project has not yet been deployed to production. An eventual App Store launch is planned, so formal database migrations are not currently required.
+_Status_: The project has not yet been deployed to production. An eventual App Store launch is planned.
 
 - **watchOS SwiftUI app** – The `frontend/WavelengthWatch/WavelengthWatch.xcodeproj` target drives the UI with `ContentViewModel`, coordinating catalog loading, user selections, and journal submission feedback for the active layer and phase state.
 - **Aggregated curriculum API** – The FastAPI service (`backend/app.py`) mounts routers for catalog, layer, phase, curriculum, strategy, and journal data, seeding its SQLite database on startup before serving `/api/v1/*` routes.
 - **Disk-backed catalog caching** – `CatalogRepository` persists the aggregated `/api/v1/catalog` payload to the watch’s caches directory with a 24-hour TTL, instantly replaying saved data before attempting a refresh.
-- **Journal logging loop** – `JournalClient` stamps a stable pseudo-user ID, posts the selected curriculum, secondary curriculum (when relevant), and strategy IDs to `/api/v1/journal`, and surfaces success or retry messaging in the UI. The backend validates those references and returns hydrated curriculum/strategy objects.
+- **Journal logging loop** – `JournalClient` stamps a stable pseudo-user ID, saves entries to local SQLite first, then optionally syncs to `/api/v1/journal` if cloud sync is enabled. The backend validates references and returns hydrated curriculum/strategy objects. Local storage ensures offline functionality and privacy-first design (cloud sync is opt-in).
 - **Configurable networking** – `AppConfiguration` reads the API base URL from `APIConfiguration.plist`, asserting in debug builds when the placeholder host is still active so local development misconfigurations are caught early.
 
 ## Implementation Snapshot

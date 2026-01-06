@@ -92,7 +92,16 @@ struct JournalClientTests {
     defaults.removePersistentDomain(forName: "JournalClientTests")
     defaults.set("12345678-1234-1234-1234-1234567890ab", forKey: "com.wavelengthwatch.userIdentifier")
     let date = Date(timeIntervalSince1970: 1000)
-    let client = JournalClient(apiClient: spy, dateProvider: { date }, userDefaults: defaults)
+    let repository = InMemoryJournalRepository()
+    let syncSettings = SyncSettings()
+    syncSettings.cloudSyncEnabled = true
+    let client = JournalClient(
+      apiClient: spy,
+      repository: repository,
+      syncSettings: syncSettings,
+      dateProvider: { date },
+      userDefaults: defaults
+    )
 
     _ = try await client.submit(curriculumID: 5, secondaryCurriculumID: 7, strategyID: 9, initiatedBy: .scheduled)
 

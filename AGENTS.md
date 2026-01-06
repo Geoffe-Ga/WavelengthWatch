@@ -6,7 +6,7 @@ To set up the full development environment, run:
 bash dev-setup.sh
 ```
 
-**Deployment status**: WavelengthWatch has not yet been deployed to production. The team plans to ship to the App Store in the future, so schema migrations are not currently required.
+**Deployment status**: WavelengthWatch has not yet been deployed to production. The team plans to ship to the App Store in the future.
 
 Agents working on this project must abide by the following operating principles:
 
@@ -74,11 +74,12 @@ Agents working on this project must abide by the following operating principles:
 
 ### Journal Implementation Snapshot
 
+- **Local storage**: `LocalJournalEntry` models are stored in SQLite via `JournalRepository` with sync status tracking (pending/synced/failed). Cloud sync is opt-in via `SyncSettings`.
 - **Backend schema**: `backend/models.py` defines a `Journal` SQLModel table linked to curriculum and optional strategy rows with an `InitiatedBy` enum tracking self vs. scheduled entries.
 - **Validation surface**: Pydantic schemas in `backend/schemas.py` coerce incoming timestamps to UTC and ensure required fields exist before writes. `backend/routers/journal.py` rehydrates responses with joined curriculum/strategy payloads so clients stay simple.
-- **Watch client**: `JournalClient` builds a stable pseudo-user ID from `UserDefaults`, stamps the current time, and posts to `/api/v1/journal`. Alerts inside `ContentView` trigger submissions and surface success/failure feedback.
-- **Merits**: Minimal schema footprint, single endpoint for create/read/update/delete, and strong reuse of existing curriculum relationships.
-- **Trade-offs**: No offline queue or retry buffer yet; analytics beyond the existing joins will require additional persistence decisions when production migrations begin.
+- **Watch client**: `JournalClient` builds a stable pseudo-user ID from `UserDefaults`, saves entries to local SQLite first, then optionally syncs to backend if cloud sync is enabled. Alerts inside `ContentView` trigger submissions and surface success/failure feedback.
+- **Merits**: Offline-first (works without connectivity), privacy-first (sync opt-in), minimal backend schema footprint, single endpoint for create/read/update/delete, and strong reuse of existing curriculum relationships.
+- **Trade-offs**: Automatic retry for failed sync not yet implemented; analytics beyond the existing joins will require additional persistence decisions and migration planning.
 
 Keep this baseline in mind when evaluating new prompts—most redesign requests start from this already-functional flow.
 
