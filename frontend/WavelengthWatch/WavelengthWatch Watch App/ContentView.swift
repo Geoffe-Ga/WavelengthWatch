@@ -78,6 +78,7 @@ struct ContentView: View {
   @StateObject private var syncSettingsViewModel: SyncSettingsViewModel
   @EnvironmentObject private var notificationDelegate: NotificationDelegate
   let journalClient: JournalClientProtocol
+  let journalRepository: JournalRepositoryProtocol
   @State private var layerSelection: Int
   @State private var phaseSelection: Int
   @State private var showLayerIndicator = false
@@ -93,8 +94,8 @@ struct ContentView: View {
       remote: CatalogAPIService(apiClient: apiClient),
       cache: FileCatalogCacheStore()
     )
-    let journalRepository: JournalRepositoryProtocol
     let persistentRepo = JournalRepository()
+    let journalRepository: JournalRepositoryProtocol
     do {
       try persistentRepo.open()
       journalRepository = persistentRepo
@@ -102,6 +103,7 @@ struct ContentView: View {
       print("⚠️ Failed to open journal database: \(error). Falling back to in-memory storage.")
       journalRepository = InMemoryJournalRepository()
     }
+    self.journalRepository = journalRepository
     let syncSettings = SyncSettings()
     let journalClient = JournalClient(
       apiClient: apiClient,
