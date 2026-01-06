@@ -75,6 +75,7 @@ struct ContentView: View {
   @AppStorage("selectedPhaseIndex") private var storedPhaseIndex = 0
   @StateObject private var viewModel: ContentViewModel
   @StateObject private var flowCoordinator: FlowCoordinator
+  @StateObject private var syncSettingsViewModel: SyncSettingsViewModel
   @EnvironmentObject private var notificationDelegate: NotificationDelegate
   let journalClient: JournalClientProtocol
   @State private var layerSelection: Int
@@ -117,6 +118,7 @@ struct ContentView: View {
       initialPhaseIndex: initialPhase
     )
     _viewModel = StateObject(wrappedValue: model)
+    _syncSettingsViewModel = StateObject(wrappedValue: SyncSettingsViewModel(syncSettings: syncSettings))
     let coordinator = FlowCoordinator(contentViewModel: model)
     _flowCoordinator = StateObject(wrappedValue: coordinator)
     _layerSelection = State(initialValue: initialLayer)
@@ -332,14 +334,18 @@ struct ContentView: View {
       }
       .sheet(isPresented: $showingMenu) {
         NavigationStack {
-          MenuView(journalClient: journalClient, isPresented: $showingMenu)
-            .toolbar {
-              ToolbarItem(placement: .cancellationAction) {
-                Button("Done") {
-                  showingMenu = false
-                }
+          MenuView(
+            journalClient: journalClient,
+            syncSettingsViewModel: syncSettingsViewModel,
+            isPresented: $showingMenu
+          )
+          .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+              Button("Done") {
+                showingMenu = false
               }
             }
+          }
         }
       }
       .sheet(isPresented: .constant(flowCoordinator.currentStep == .review)) {
@@ -1496,6 +1502,7 @@ struct StrategyCard: View {
 
 struct MenuView: View {
   let journalClient: JournalClientProtocol
+  @ObservedObject var syncSettingsViewModel: SyncSettingsViewModel
   @Binding var isPresented: Bool
   @EnvironmentObject private var viewModel: ContentViewModel
   @EnvironmentObject private var flowCoordinator: FlowCoordinator
@@ -1525,7 +1532,7 @@ struct MenuView: View {
         Label("Analytics", systemImage: "chart.bar")
       }
 
-      NavigationLink(destination: SyncSettingsView()) {
+      NavigationLink(destination: SyncSettingsView(viewModel: syncSettingsViewModel)) {
         Label("Sync Settings", systemImage: "arrow.triangle.2.circlepath")
       }
 

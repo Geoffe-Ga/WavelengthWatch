@@ -41,6 +41,7 @@ ALL_SUITES=(
   "JournalUIInteractionTests"
   "JournalScheduleTests"
   "JournalClientTests"
+  "JournalClientLocalFirstTests"
   "LocalJournalEntryTests"
   "JournalRepositoryTests"
   "SyncSettingsTests"

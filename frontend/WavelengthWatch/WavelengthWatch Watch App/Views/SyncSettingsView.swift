@@ -9,8 +9,12 @@ import SwiftUI
 /// ## Privacy Design
 /// Cloud sync is opt-in by default. This view makes the choice explicit
 /// and provides context about what data is shared.
+///
+/// ## Shared State
+/// This view uses the shared SyncSettings instance from ContentView to ensure
+/// changes take effect immediately without requiring app restart.
 struct SyncSettingsView: View {
-  @StateObject private var viewModel = SyncSettingsViewModel()
+  @ObservedObject var viewModel: SyncSettingsViewModel
   @Environment(\.dismiss) private var dismiss
 
   var body: some View {
@@ -37,7 +41,7 @@ struct SyncSettingsView: View {
 struct SyncSettingsView_Previews: PreviewProvider {
   static var previews: some View {
     NavigationView {
-      SyncSettingsView()
+      SyncSettingsView(viewModel: SyncSettingsViewModel())
     }
   }
 }
