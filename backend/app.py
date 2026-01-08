@@ -12,7 +12,7 @@ from sqlmodel import Session
 
 from . import database
 from .logging_config import configure_logging
-from .routers import catalog, curriculum, journal, layer, phase, strategy
+from .routers import analytics, catalog, curriculum, journal, layer, phase, strategy
 from .tools.seed_data import seed_database
 
 API_V1_PREFIX = "/api/v1"
@@ -77,6 +77,7 @@ def create_application() -> FastAPI:
     )
 
     api_router = APIRouter(prefix=API_V1_PREFIX)
+    api_router.include_router(analytics.router)
     api_router.include_router(catalog.router)
     api_router.include_router(layer.router)
     api_router.include_router(phase.router)
