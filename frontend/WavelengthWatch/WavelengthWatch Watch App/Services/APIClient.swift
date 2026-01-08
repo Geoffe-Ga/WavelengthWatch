@@ -3,6 +3,7 @@ import Foundation
 enum APIPath {
   static let catalog = "/api/v1/catalog"
   static let journal = "/api/v1/journal"
+  static let analyticsOverview = "/api/v1/analytics/overview"
 }
 
 protocol APIClientProtocol {
