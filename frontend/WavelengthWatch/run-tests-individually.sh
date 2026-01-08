@@ -52,6 +52,7 @@ ALL_SUITES=(
   "JournalFlowViewModelTests"
   "MenuViewTests"
   "JournalReviewViewTests"
+  "StreakDisplayViewTests"
 )
 
 # Parse arguments
