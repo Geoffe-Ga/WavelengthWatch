@@ -1558,15 +1558,14 @@ struct MenuView: View {
 }
 
 struct AnalyticsView: View {
-  @StateObject private var viewModel: AnalyticsViewModel
-  @EnvironmentObject private var contentViewModel: ContentViewModel
-
-  init() {
+  @StateObject private var viewModel: AnalyticsViewModel = {
     let configuration = AppConfiguration()
     let apiClient = APIClient(baseURL: configuration.apiBaseURL)
     let analyticsService = AnalyticsService(apiClient: apiClient)
-    _viewModel = StateObject(wrappedValue: AnalyticsViewModel(analyticsService: analyticsService))
-  }
+    return AnalyticsViewModel(analyticsService: analyticsService)
+  }()
+
+  @EnvironmentObject private var contentViewModel: ContentViewModel
 
   var body: some View {
     ScrollView {
