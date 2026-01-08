@@ -41,6 +41,16 @@ struct StreakDisplayView: View {
     longestStreak: Int,
     consistencyScore: Double? = nil
   ) {
+    precondition(currentStreak >= 0, "Current streak cannot be negative")
+    precondition(longestStreak >= 0, "Longest streak cannot be negative")
+    precondition(
+      currentStreak <= longestStreak,
+      "Current streak (\(currentStreak)) cannot exceed longest streak (\(longestStreak)). Caller must update longestStreak when record is broken."
+    )
+    if let score = consistencyScore {
+      precondition((0 ... 100).contains(score), "Consistency score must be between 0 and 100")
+    }
+
     self.currentStreak = currentStreak
     self.longestStreak = longestStreak
     self.consistencyScore = consistencyScore
@@ -108,21 +118,20 @@ struct StreakDisplayView: View {
   }
 
   /// Trend indicator based on current vs longest streak comparison
+  ///
+  /// Note: `.improving` case removed after adding validation that currentStreak <= longestStreak.
+  /// When a new record is achieved, the caller must update longestStreak to match currentStreak.
   var trendIndicator: TrendIndicator {
-    if currentStreak > longestStreak {
-      .improving
-    } else if currentStreak == longestStreak {
-      .stable
+    if currentStreak == longestStreak {
+      .stable // At personal record
     } else {
-      .declining
+      .declining // Working back toward record
     }
   }
 
   /// Arrow symbol for trend direction
   var trendArrow: String {
     switch trendIndicator {
-    case .improving:
-      "↑"
     case .stable:
       "→"
     case .declining:
@@ -133,12 +142,10 @@ struct StreakDisplayView: View {
   /// Color for trend indicator
   private var trendColor: Color {
     switch trendIndicator {
-    case .improving:
-      .green
     case .stable:
-      .blue
+      .green // At personal best - positive!
     case .declining:
-      .orange
+      .orange // Working back - motivational
     }
   }
 }
@@ -146,9 +153,12 @@ struct StreakDisplayView: View {
 // MARK: - Supporting Types
 
 /// Represents the trend of current streak relative to longest streak
+///
+/// Note: `.improving` case removed because currentStreak cannot exceed longestStreak
+/// (enforced by precondition in init). When a new record is achieved, the caller
+/// must update longestStreak to match currentStreak, resulting in `.stable` status.
 enum TrendIndicator: Equatable {
-  case improving // Current > Longest (new record)
-  case stable // Current == Longest (maintaining record)
+  case stable // Current == Longest (at personal record)
   case declining // Current < Longest (working back toward record)
 }
 
@@ -163,14 +173,14 @@ enum TrendIndicator: Equatable {
   .previewDisplayName("Active Streak")
 }
 
-#Preview("New Record") {
+#Preview("At Record") {
   StreakDisplayView(
     currentStreak: 15,
-    longestStreak: 12,
+    longestStreak: 15,
     consistencyScore: 93.3
   )
   .padding()
-  .previewDisplayName("New Record")
+  .previewDisplayName("At Personal Record")
 }
 
 #Preview("Perfect Consistency") {

@@ -50,15 +50,10 @@ struct StreakDisplayViewTests {
 
   // MARK: - Trend Indicator Tests
 
-  @Test("view shows improving trend when current exceeds longest")
-  func view_showsImprovingTrendWhenCurrentExceedsLongest() {
-    let view = StreakDisplayView(
-      currentStreak: 15,
-      longestStreak: 12
-    )
-
-    #expect(view.trendIndicator == .improving)
-  }
+  // NOTE: Test for currentStreak > longestStreak removed because this now triggers
+  // a precondition failure (cannot be tested). The component enforces that
+  // currentStreak <= longestStreak. When a record is broken, the caller must
+  // update longestStreak to match currentStreak before creating the view.
 
   @Test("view shows stable trend when current equals longest")
   func view_showsStableTrendWhenCurrentEqualsLongest() {
@@ -103,14 +98,17 @@ struct StreakDisplayViewTests {
     #expect(view.longestStreak == 12)
   }
 
+  // NOTE: Test for currentStreak > longestStreak removed because this violates
+  // the precondition that currentStreak <= longestStreak. This edge case is now
+  // semantically invalid and properly caught by the precondition.
   @Test("view handles zero longest streak")
   func view_handlesZeroLongestStreak() {
     let view = StreakDisplayView(
-      currentStreak: 5,
+      currentStreak: 0,
       longestStreak: 0
     )
 
-    #expect(view.currentStreak == 5)
+    #expect(view.currentStreak == 0)
     #expect(view.longestStreak == 0)
   }
 
@@ -211,15 +209,8 @@ struct StreakDisplayViewTests {
 
   // MARK: - Trend Arrow Tests
 
-  @Test("view returns up arrow for improving trend")
-  func view_returnsUpArrowForImprovingTrend() {
-    let view = StreakDisplayView(
-      currentStreak: 15,
-      longestStreak: 12
-    )
-
-    #expect(view.trendArrow == "↑")
-  }
+  // NOTE: Test for up arrow (↑) removed because .improving trend no longer exists.
+  // Component now only supports .stable (→) and .declining (↓) trends.
 
   @Test("view returns right arrow for stable trend")
   func view_returnsRightArrowForStableTrend() {
