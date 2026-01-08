@@ -1558,31 +1558,337 @@ struct MenuView: View {
 }
 
 struct AnalyticsView: View {
+  @StateObject private var viewModel: AnalyticsViewModel
+  @EnvironmentObject private var contentViewModel: ContentViewModel
+
+  init() {
+    let configuration = AppConfiguration()
+    let apiClient = APIClient(baseURL: configuration.apiBaseURL)
+    let analyticsService = AnalyticsService(apiClient: apiClient)
+    _viewModel = StateObject(wrappedValue: AnalyticsViewModel(analyticsService: analyticsService))
+  }
+
   var body: some View {
-    GeometryReader { geometry in
-      let scale = UIConstants.scaleFactor(for: geometry.size.width)
-
-      VStack(spacing: 16 * scale) {
-        Image(systemName: "chart.bar.fill")
-          .font(.system(size: UIConstants.analyticsIconSize * scale))
-          .foregroundColor(.blue.opacity(0.6))
-
-        Text("Analytics")
-          .font(.title2)
-          .fontWeight(.thin)
-
-        Text("Coming Soon")
-          .font(.caption)
-          .foregroundColor(.secondary)
-
-        Text("View your journal history, patterns, and insights.")
-          .font(.caption)
-          .foregroundColor(.secondary)
-          .multilineTextAlignment(.center)
-          .padding(.horizontal)
+    ScrollView {
+      VStack(spacing: 16) {
+        switch viewModel.state {
+        case .idle, .loading:
+          loadingView
+        case let .loaded(overview):
+          loadedView(overview: overview)
+        case let .error(message):
+          errorView(message: message)
+        }
       }
       .padding()
-      .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+    .navigationTitle("Analytics")
+    .navigationBarTitleDisplayMode(.inline)
+    .task {
+      if case .idle = viewModel.state {
+        await viewModel.loadAnalytics()
+      }
+    }
+  }
+
+  // MARK: - Loading View
+
+  private var loadingView: some View {
+    VStack(spacing: 16) {
+      ProgressView()
+        .progressViewStyle(.circular)
+        .tint(.white)
+
+      Text("Loading analytics...")
+        .font(.caption)
+        .foregroundColor(.secondary)
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .padding(.top, 40)
+  }
+
+  // MARK: - Error View
+
+  private func errorView(message: String) -> some View {
+    VStack(spacing: 16) {
+      Image(systemName: "exclamationmark.triangle")
+        .font(.system(size: 40))
+        .foregroundColor(.orange)
+
+      Text("Error")
+        .font(.headline)
+
+      Text(message)
+        .font(.caption)
+        .foregroundColor(.secondary)
+        .multilineTextAlignment(.center)
+
+      Button("Retry") {
+        Task { await viewModel.retry() }
+      }
+      .buttonStyle(.borderedProminent)
+    }
+    .padding(.top, 40)
+  }
+
+  // MARK: - Loaded View
+
+  private func loadedView(overview: AnalyticsOverview) -> some View {
+    VStack(spacing: 20) {
+      // Empty state
+      if overview.totalEntries == 0 {
+        emptyStateView
+      } else {
+        // Check-In Activity
+        checkInActivitySection(overview: overview)
+
+        // Emotional Health
+        emotionalHealthSection(overview: overview)
+
+        // Current State
+        if let layerId = overview.dominantLayerId,
+           let phaseId = overview.dominantPhaseId
+        {
+          currentStateSection(layerId: layerId, phaseId: phaseId)
+        }
+
+        // Quick Stats
+        quickStatsSection(overview: overview)
+      }
+    }
+  }
+
+  // MARK: - Empty State
+
+  private var emptyStateView: some View {
+    VStack(spacing: 16) {
+      Image(systemName: "chart.bar")
+        .font(.system(size: 48))
+        .foregroundColor(.blue.opacity(0.6))
+
+      Text("No Data Yet")
+        .font(.headline)
+
+      Text("Start logging your emotions to see insights and patterns.")
+        .font(.caption)
+        .foregroundColor(.secondary)
+        .multilineTextAlignment(.center)
+    }
+    .padding(.top, 40)
+  }
+
+  // MARK: - Check-In Activity Section
+
+  private func checkInActivitySection(overview: AnalyticsOverview) -> some View {
+    VStack(alignment: .leading, spacing: 12) {
+      Text("CHECK-IN ACTIVITY")
+        .font(.caption)
+        .foregroundColor(.secondary)
+        .tracking(1.5)
+
+      HStack(spacing: 16) {
+        VStack(alignment: .leading, spacing: 4) {
+          Text("\(overview.totalEntries)")
+            .font(.title2)
+            .fontWeight(.semibold)
+
+          Text("Total Entries")
+            .font(.caption2)
+            .foregroundColor(.secondary)
+        }
+
+        Divider()
+          .frame(height: 30)
+
+        VStack(alignment: .leading, spacing: 4) {
+          Text(String(format: "%.1f", overview.avgFrequency))
+            .font(.title2)
+            .fontWeight(.semibold)
+
+          Text("Per Day")
+            .font(.caption2)
+            .foregroundColor(.secondary)
+        }
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .padding(12)
+      .background(
+        RoundedRectangle(cornerRadius: 8)
+          .fill(Color.secondary.opacity(0.15))
+      )
+
+      // Streak Display
+      if overview.currentStreak > 0 || overview.totalEntries >= 2 {
+        StreakDisplayView(
+          currentStreak: overview.currentStreak,
+          longestStreak: max(overview.currentStreak, 0)
+        )
+      }
+
+      // Last Check-In
+      if let lastCheckIn = overview.lastCheckIn {
+        HStack(spacing: 6) {
+          Image(systemName: "clock")
+            .font(.caption)
+            .foregroundColor(.secondary)
+
+          Text("Last check-in: \(lastCheckIn, style: .relative) ago")
+            .font(.caption)
+            .foregroundColor(.secondary)
+        }
+      }
+    }
+  }
+
+  // MARK: - Emotional Health Section
+
+  private func emotionalHealthSection(overview: AnalyticsOverview) -> some View {
+    VStack(alignment: .leading, spacing: 12) {
+      Text("EMOTIONAL HEALTH")
+        .font(.caption)
+        .foregroundColor(.secondary)
+        .tracking(1.5)
+
+      VStack(spacing: 12) {
+        CircularProgressView(
+          percentage: overview.medicinalRatio * 100,
+          size: 100
+        )
+
+        Text("Medicinal Ratio")
+          .font(.caption)
+          .foregroundColor(.secondary)
+
+        // Trend Indicator
+        if overview.medicinalTrend != 0 {
+          HStack(spacing: 4) {
+            Image(systemName: overview.medicinalTrend > 0 ? "arrow.up" : "arrow.down")
+              .font(.caption2)
+              .foregroundColor(overview.medicinalTrend > 0 ? .green : .orange)
+
+            Text(String(format: "%.1f%% this period", abs(overview.medicinalTrend * 100)))
+              .font(.caption2)
+              .foregroundColor(.secondary)
+          }
+        }
+      }
+      .frame(maxWidth: .infinity)
+      .padding(16)
+      .background(
+        RoundedRectangle(cornerRadius: 8)
+          .fill(Color.secondary.opacity(0.15))
+      )
+    }
+  }
+
+  // MARK: - Current State Section
+
+  private func currentStateSection(layerId: Int, phaseId: Int) -> some View {
+    VStack(alignment: .leading, spacing: 12) {
+      Text("CURRENT STATE (LAST 7 DAYS)")
+        .font(.caption)
+        .foregroundColor(.secondary)
+        .tracking(1.5)
+
+      VStack(alignment: .leading, spacing: 8) {
+        if let layer = contentViewModel.layers.first(where: { $0.id == layerId }),
+           let phase = layer.phases.first(where: { $0.id == phaseId })
+        {
+          HStack(spacing: 8) {
+            Circle()
+              .fill(Color(stage: layer.color))
+              .frame(width: 12, height: 12)
+              .shadow(color: Color(stage: layer.color), radius: 2)
+
+            VStack(alignment: .leading, spacing: 2) {
+              Text("Dominant Mode")
+                .font(.caption2)
+                .foregroundColor(.secondary)
+
+              Text(layer.title)
+                .font(.body)
+                .fontWeight(.medium)
+            }
+          }
+
+          HStack(spacing: 8) {
+            Image(systemName: "waveform")
+              .font(.caption)
+              .foregroundColor(.secondary)
+
+            VStack(alignment: .leading, spacing: 2) {
+              Text("Dominant Phase")
+                .font(.caption2)
+                .foregroundColor(.secondary)
+
+              Text(phase.name)
+                .font(.body)
+                .fontWeight(.medium)
+            }
+          }
+        }
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .padding(12)
+      .background(
+        RoundedRectangle(cornerRadius: 8)
+          .fill(Color.secondary.opacity(0.15))
+      )
+    }
+  }
+
+  // MARK: - Quick Stats Section
+
+  private func quickStatsSection(overview: AnalyticsOverview) -> some View {
+    VStack(alignment: .leading, spacing: 12) {
+      Text("QUICK STATS")
+        .font(.caption)
+        .foregroundColor(.secondary)
+        .tracking(1.5)
+
+      VStack(spacing: 8) {
+        quickStatRow(
+          icon: "heart.text.square",
+          label: "Unique Emotions",
+          value: "\(overview.uniqueEmotions)"
+        )
+
+        quickStatRow(
+          icon: "leaf",
+          label: "Strategies Used",
+          value: "\(overview.strategiesUsed)"
+        )
+
+        quickStatRow(
+          icon: "arrow.triangle.branch",
+          label: "With Secondary Emotion",
+          value: String(format: "%.0f%%", overview.secondaryEmotionsPct * 100)
+        )
+      }
+      .padding(12)
+      .background(
+        RoundedRectangle(cornerRadius: 8)
+          .fill(Color.secondary.opacity(0.15))
+      )
+    }
+  }
+
+  private func quickStatRow(icon: String, label: String, value: String) -> some View {
+    HStack {
+      Image(systemName: icon)
+        .font(.body)
+        .foregroundColor(.secondary)
+        .frame(width: 24)
+
+      Text(label)
+        .font(.caption)
+        .foregroundColor(.secondary)
+
+      Spacer()
+
+      Text(value)
+        .font(.body)
+        .fontWeight(.semibold)
     }
   }
 }
