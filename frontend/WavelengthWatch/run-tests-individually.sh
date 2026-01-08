@@ -53,6 +53,7 @@ ALL_SUITES=(
   "MenuViewTests"
   "JournalReviewViewTests"
   "CircularProgressViewTests"
+  "StreakDisplayViewTests"
 )
 
 # Parse arguments
