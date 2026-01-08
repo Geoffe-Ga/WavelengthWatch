@@ -147,3 +147,24 @@ class JournalRead(JournalBase):
     curriculum: CurriculumRead | None = None
     secondary_curriculum: CurriculumRead | None = None
     strategy: StrategyRead | None = None
+
+
+class AnalyticsOverview(SQLModel):
+    """Analytics overview response model."""
+
+    total_entries: int
+    current_streak: int
+    avg_frequency: float
+    last_check_in: datetime | None
+    medicinal_ratio: float
+    medicinal_trend: float
+    dominant_layer_id: int | None
+    dominant_phase_id: int | None
+    unique_emotions: int
+    strategies_used: int
+    secondary_emotions_pct: float
+
+    @field_validator("last_check_in", mode="before")
+    @classmethod
+    def _validate_last_check_in(cls, value: datetime | str | None) -> datetime | None:
+        return _coerce_datetime(value)
