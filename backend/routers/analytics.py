@@ -315,6 +315,31 @@ def get_analytics_overview(
     )
 
 
+def _accumulate_emotion_counts(
+    emotion_counts: dict[int, tuple[str, int, int, Dosage, int]],
+    results: list[tuple[int, str, int, int, Dosage, int]],
+) -> None:
+    """Accumulate emotion counts from query results into the counts dictionary.
+
+    Args:
+        emotion_counts: Dictionary to accumulate counts into
+        results: Query results (curr_id, expression, layer_id, phase_id, dosage, count)
+    """
+    for curr_id, expression, layer_id, phase_id, dosage, count in results:
+        if curr_id not in emotion_counts:
+            emotion_counts[curr_id] = (expression, layer_id, phase_id, dosage, 0)
+        expression_curr, layer_curr, phase_curr, dosage_curr, count_curr = (
+            emotion_counts[curr_id]
+        )
+        emotion_counts[curr_id] = (
+            expression_curr,
+            layer_curr,
+            phase_curr,
+            dosage_curr,
+            count_curr + count,
+        )
+
+
 @router.get("/emotional-landscape", response_model=EmotionalLandscape)
 def get_emotional_landscape(
     *,
@@ -322,6 +347,7 @@ def get_emotional_landscape(
     user_id: Annotated[int, Query()],
     start_date: Annotated[datetime | None, Query()] = None,
     end_date: Annotated[datetime | None, Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 10,
 ) -> EmotionalLandscape:
     """Get emotional landscape analytics for a user.
 
@@ -330,6 +356,7 @@ def get_emotional_landscape(
         user_id: User ID to fetch analytics for
         start_date: Start date for analytics (defaults to 30 days ago)
         end_date: End date for analytics (defaults to now)
+        limit: Max number of top emotions to return (default 10, max 100)
 
     Returns:
         Emotional landscape with layer/phase distribution and top emotions
@@ -343,22 +370,20 @@ def get_emotional_landscape(
     if start_date is None:
         start_date = end_date - timedelta(days=30)
 
-    # Get all journal entries for the user in the date range
-    created_at = cast(ColumnElement[datetime], Journal.created_at)
-    statement: SelectOfScalar[Journal] = (
-        select(Journal)
+    # Check if user has any entries in the date range (efficient COUNT query)
+    count_stmt = (
+        select(func.count())
+        .select_from(Journal)
         .where(
             cast(ColumnElement[bool], Journal.user_id == user_id),
             cast(ColumnElement[bool], Journal.created_at >= start_date),
             cast(ColumnElement[bool], Journal.created_at <= end_date),
         )
-        .order_by(desc(created_at))
     )
 
-    result = session.exec(statement)
-    entries = result.all()
+    total_entries = session.exec(count_stmt).one()
 
-    if not entries:
+    if total_entries == 0:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No journal entries found for user",
@@ -381,7 +406,6 @@ def get_emotional_landscape(
     )
 
     layer_results = session.exec(layer_stmt).all()
-    total_entries = len(entries)
 
     layer_distribution = [
         LayerDistributionItem(
@@ -421,7 +445,9 @@ def get_emotional_landscape(
 
     # Calculate top emotions (combine primary + secondary)
     # First, get primary emotions
-    # SQLAlchemy select() type inference limitation with mixed columns
+    # NOTE: type: ignore below - SQLAlchemy 2.0 cannot infer types for select() with
+    # 6+ mixed column types (model attributes + func.count()). This is a known
+    # third-party limitation. See: https://github.com/sqlalchemy/sqlalchemy/issues/9150
     primary_stmt = (
         select(  # type: ignore[call-overload]
             Curriculum.id,
@@ -453,7 +479,8 @@ def get_emotional_landscape(
     primary_results = session.exec(primary_stmt).all()
 
     # Get secondary emotions
-    # SQLAlchemy select() type inference limitation with mixed columns
+    # NOTE: type: ignore below - Same SQLAlchemy 2.0 type inference limitation as
+    # primary_stmt (select() with 6+ mixed column types). See comment above.
     secondary_stmt = (
         select(  # type: ignore[call-overload]
             Curriculum.id,
@@ -489,34 +516,8 @@ def get_emotional_landscape(
 
     # Combine primary and secondary counts
     emotion_counts: dict[int, tuple[str, int, int, Dosage, int]] = {}
-
-    for curr_id, expression, layer_id, phase_id, dosage, count in primary_results:
-        if curr_id not in emotion_counts:
-            emotion_counts[curr_id] = (expression, layer_id, phase_id, dosage, 0)
-        expression_curr, layer_curr, phase_curr, dosage_curr, count_curr = (
-            emotion_counts[curr_id]
-        )
-        emotion_counts[curr_id] = (
-            expression_curr,
-            layer_curr,
-            phase_curr,
-            dosage_curr,
-            count_curr + count,
-        )
-
-    for curr_id, expression, layer_id, phase_id, dosage, count in secondary_results:
-        if curr_id not in emotion_counts:
-            emotion_counts[curr_id] = (expression, layer_id, phase_id, dosage, 0)
-        expression_curr, layer_curr, phase_curr, dosage_curr, count_curr = (
-            emotion_counts[curr_id]
-        )
-        emotion_counts[curr_id] = (
-            expression_curr,
-            layer_curr,
-            phase_curr,
-            dosage_curr,
-            count_curr + count,
-        )
+    _accumulate_emotion_counts(emotion_counts, primary_results)
+    _accumulate_emotion_counts(emotion_counts, secondary_results)
 
     # Sort by count descending
     sorted_emotions = sorted(
@@ -545,5 +546,5 @@ def get_emotional_landscape(
     return EmotionalLandscape(
         layer_distribution=layer_distribution,
         phase_distribution=phase_distribution,
-        top_emotions=top_emotions,
+        top_emotions=top_emotions[:limit],
     )

@@ -812,3 +812,44 @@ def test_emotional_landscape_date_filtering(client) -> None:
     top_emotions = data["top_emotions"]
     assert len(top_emotions) == 1
     assert top_emotions[0]["curriculum_id"] == 1
+
+
+def test_emotional_landscape_default_dates(client) -> None:
+    """Test emotional landscape uses 30-day default when dates not provided."""
+    base_date = datetime.now(UTC)
+
+    # Create entry today
+    client.post(
+        "/api/v1/journal",
+        json={
+            "created_at": base_date.isoformat(),
+            "user_id": 206,
+            "curriculum_id": 1,
+        },
+    )
+
+    # Create entry 31 days ago (outside default 30-day window)
+    old_date = base_date - timedelta(days=31)
+    client.post(
+        "/api/v1/journal",
+        json={
+            "created_at": old_date.isoformat(),
+            "user_id": 206,
+            "curriculum_id": 2,
+        },
+    )
+
+    # Call without date parameters (should default to 30 days)
+    response = client.get(
+        "/api/v1/analytics/emotional-landscape",
+        params={"user_id": 206},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    # Should only include today's entry (curriculum_id 1)
+    # not the 31-day-old entry (curriculum_id 2)
+    top_emotions = data["top_emotions"]
+    assert len(top_emotions) == 1
+    assert top_emotions[0]["curriculum_id"] == 1
