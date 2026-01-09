@@ -60,6 +60,37 @@ def _calculate_streak(entries: list[datetime], end_date: datetime) -> int:
     return streak
 
 
+def _calculate_longest_streak(entries: list[datetime]) -> int:
+    """Calculate the longest streak of consecutive days with entries.
+
+    Args:
+        entries: List of entry timestamps
+
+    Returns:
+        Longest consecutive day count in the history
+    """
+    if not entries:
+        return 0
+
+    # Extract unique dates sorted chronologically
+    dates = sorted({entry.date() for entry in entries})
+
+    if not dates:
+        return 0
+
+    longest = 1
+    current = 1
+
+    for i in range(1, len(dates)):
+        if dates[i] - dates[i - 1] == timedelta(days=1):
+            current += 1
+            longest = max(longest, current)
+        else:
+            current = 1
+
+    return longest
+
+
 def _calculate_medicinal_ratio(
     session: Session, user_id: int, start_date: datetime, end_date: datetime
 ) -> float:
@@ -242,6 +273,9 @@ def get_analytics_overview(
     entry_timestamps = [entry.created_at for entry in entries]
     current_streak = _calculate_streak(entry_timestamps, end_date)
 
+    # Calculate longest streak across all history
+    longest_streak = _calculate_longest_streak(entry_timestamps)
+
     # Average frequency (entries per day)
     days_in_period = (end_date - start_date).days + 1
     avg_frequency = total_entries / days_in_period if days_in_period > 0 else 0.0
@@ -297,6 +331,7 @@ def get_analytics_overview(
     return AnalyticsOverview(
         total_entries=total_entries,
         current_streak=current_streak,
+        longest_streak=longest_streak,
         avg_frequency=avg_frequency,
         last_check_in=last_check_in,
         medicinal_ratio=medicinal_ratio,
