@@ -18,14 +18,19 @@ bash dev-setup.sh  # Complete dev environment setup (Python venv, pre-commit, Sw
 # Development server
 uvicorn backend.app:app --reload
 
-# Testing
-pytest -q                    # Run all tests
-pytest tests/backend/ -v     # Verbose backend tests
+# Quality Checks (PREFERRED - use this script for all checks)
+scripts/check-backend.sh             # Run all checks (lint, format, type, test)
+scripts/check-backend.sh --fix       # Auto-fix formatting issues
+scripts/check-backend.sh --test      # Run only tests
+scripts/check-backend.sh --lint      # Run only linting
+scripts/check-backend.sh --type      # Run only type checks
 
-# Linting & Type Checking
-ruff check backend tests/backend        # Lint Python code
-ruff format backend tests/backend       # Format Python code
-mypy --config-file mypy.ini backend     # Type check
+# Individual Commands (use script above instead when possible)
+pytest -q                            # Run all tests
+pytest tests/backend/ -v             # Verbose backend tests
+ruff check backend tests/backend     # Lint Python code
+ruff format backend tests/backend    # Format Python code
+mypy --config-file mypy.ini backend  # Type check
 ```
 
 ### Frontend (watchOS SwiftUI)

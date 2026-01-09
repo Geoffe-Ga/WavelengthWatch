@@ -14,7 +14,13 @@ from sqlmodel.sql.expression import SelectOfScalar
 
 from ..database import get_session
 from ..models import Curriculum, Dosage, Journal
-from ..schemas import AnalyticsOverview
+from ..schemas import (
+    AnalyticsOverview,
+    EmotionalLandscape,
+    LayerDistributionItem,
+    PhaseDistributionItem,
+    TopEmotionItem,
+)
 
 SessionDep = Annotated[Session, Depends(get_session)]
 
@@ -306,4 +312,238 @@ def get_analytics_overview(
         unique_emotions=unique_emotions,
         strategies_used=strategies_used,
         secondary_emotions_pct=secondary_emotions_pct,
+    )
+
+
+@router.get("/emotional-landscape", response_model=EmotionalLandscape)
+def get_emotional_landscape(
+    *,
+    session: SessionDep,
+    user_id: Annotated[int, Query()],
+    start_date: Annotated[datetime | None, Query()] = None,
+    end_date: Annotated[datetime | None, Query()] = None,
+) -> EmotionalLandscape:
+    """Get emotional landscape analytics for a user.
+
+    Args:
+        session: Database session
+        user_id: User ID to fetch analytics for
+        start_date: Start date for analytics (defaults to 30 days ago)
+        end_date: End date for analytics (defaults to now)
+
+    Returns:
+        Emotional landscape with layer/phase distribution and top emotions
+
+    Raises:
+        HTTPException: 404 if user has no journal entries
+    """
+    # Set defaults
+    if end_date is None:
+        end_date = datetime.now(UTC)
+    if start_date is None:
+        start_date = end_date - timedelta(days=30)
+
+    # Get all journal entries for the user in the date range
+    created_at = cast(ColumnElement[datetime], Journal.created_at)
+    statement: SelectOfScalar[Journal] = (
+        select(Journal)
+        .where(
+            cast(ColumnElement[bool], Journal.user_id == user_id),
+            cast(ColumnElement[bool], Journal.created_at >= start_date),
+            cast(ColumnElement[bool], Journal.created_at <= end_date),
+        )
+        .order_by(desc(created_at))
+    )
+
+    result = session.exec(statement)
+    entries = result.all()
+
+    if not entries:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No journal entries found for user",
+        )
+
+    # Calculate layer distribution
+    layer_stmt = (
+        select(Curriculum.layer_id, func.count().label("cnt"))
+        .select_from(Journal)
+        .join(
+            Curriculum,
+            cast(ColumnElement[bool], Journal.curriculum_id == Curriculum.id),
+        )
+        .where(
+            cast(ColumnElement[bool], Journal.user_id == user_id),
+            cast(ColumnElement[bool], Journal.created_at >= start_date),
+            cast(ColumnElement[bool], Journal.created_at <= end_date),
+        )
+        .group_by(cast(ColumnElement[int], Curriculum.layer_id))
+    )
+
+    layer_results = session.exec(layer_stmt).all()
+    total_entries = len(entries)
+
+    layer_distribution = [
+        LayerDistributionItem(
+            layer_id=layer_id,
+            count=count,
+            percentage=(count / total_entries) * 100 if total_entries > 0 else 0.0,
+        )
+        for layer_id, count in layer_results
+    ]
+
+    # Calculate phase distribution
+    phase_stmt = (
+        select(Curriculum.phase_id, func.count().label("cnt"))
+        .select_from(Journal)
+        .join(
+            Curriculum,
+            cast(ColumnElement[bool], Journal.curriculum_id == Curriculum.id),
+        )
+        .where(
+            cast(ColumnElement[bool], Journal.user_id == user_id),
+            cast(ColumnElement[bool], Journal.created_at >= start_date),
+            cast(ColumnElement[bool], Journal.created_at <= end_date),
+        )
+        .group_by(cast(ColumnElement[int], Curriculum.phase_id))
+    )
+
+    phase_results = session.exec(phase_stmt).all()
+
+    phase_distribution = [
+        PhaseDistributionItem(
+            phase_id=phase_id,
+            count=count,
+            percentage=(count / total_entries) * 100 if total_entries > 0 else 0.0,
+        )
+        for phase_id, count in phase_results
+    ]
+
+    # Calculate top emotions (combine primary + secondary)
+    # First, get primary emotions
+    # SQLAlchemy select() type inference limitation with mixed columns
+    primary_stmt = (
+        select(  # type: ignore[call-overload]
+            Curriculum.id,
+            Curriculum.expression,
+            Curriculum.layer_id,
+            Curriculum.phase_id,
+            Curriculum.dosage,
+            func.count().label("cnt"),
+        )
+        .select_from(Journal)
+        .join(
+            Curriculum,
+            cast(ColumnElement[bool], Journal.curriculum_id == Curriculum.id),
+        )
+        .where(
+            cast(ColumnElement[bool], Journal.user_id == user_id),
+            cast(ColumnElement[bool], Journal.created_at >= start_date),
+            cast(ColumnElement[bool], Journal.created_at <= end_date),
+        )
+        .group_by(
+            Curriculum.id,
+            Curriculum.expression,
+            Curriculum.layer_id,
+            Curriculum.phase_id,
+            Curriculum.dosage,
+        )
+    )
+
+    primary_results = session.exec(primary_stmt).all()
+
+    # Get secondary emotions
+    # SQLAlchemy select() type inference limitation with mixed columns
+    secondary_stmt = (
+        select(  # type: ignore[call-overload]
+            Curriculum.id,
+            Curriculum.expression,
+            Curriculum.layer_id,
+            Curriculum.phase_id,
+            Curriculum.dosage,
+            func.count().label("cnt"),
+        )
+        .select_from(Journal)
+        .join(
+            Curriculum,
+            cast(ColumnElement[bool], Journal.secondary_curriculum_id == Curriculum.id),
+        )
+        .where(
+            cast(ColumnElement[bool], Journal.user_id == user_id),
+            cast(ColumnElement[bool], Journal.created_at >= start_date),
+            cast(ColumnElement[bool], Journal.created_at <= end_date),
+            cast(ColumnElement[int | None], Journal.secondary_curriculum_id).is_not(
+                None
+            ),
+        )
+        .group_by(
+            Curriculum.id,
+            Curriculum.expression,
+            Curriculum.layer_id,
+            Curriculum.phase_id,
+            Curriculum.dosage,
+        )
+    )
+
+    secondary_results = session.exec(secondary_stmt).all()
+
+    # Combine primary and secondary counts
+    emotion_counts: dict[int, tuple[str, int, int, Dosage, int]] = {}
+
+    for curr_id, expression, layer_id, phase_id, dosage, count in primary_results:
+        if curr_id not in emotion_counts:
+            emotion_counts[curr_id] = (expression, layer_id, phase_id, dosage, 0)
+        expression_curr, layer_curr, phase_curr, dosage_curr, count_curr = (
+            emotion_counts[curr_id]
+        )
+        emotion_counts[curr_id] = (
+            expression_curr,
+            layer_curr,
+            phase_curr,
+            dosage_curr,
+            count_curr + count,
+        )
+
+    for curr_id, expression, layer_id, phase_id, dosage, count in secondary_results:
+        if curr_id not in emotion_counts:
+            emotion_counts[curr_id] = (expression, layer_id, phase_id, dosage, 0)
+        expression_curr, layer_curr, phase_curr, dosage_curr, count_curr = (
+            emotion_counts[curr_id]
+        )
+        emotion_counts[curr_id] = (
+            expression_curr,
+            layer_curr,
+            phase_curr,
+            dosage_curr,
+            count_curr + count,
+        )
+
+    # Sort by count descending
+    sorted_emotions = sorted(
+        [
+            (curr_id, expression, layer_id, phase_id, dosage, count)
+            for curr_id, (expression, layer_id, phase_id, dosage, count) in (
+                emotion_counts.items()
+            )
+        ],
+        key=lambda x: x[5],
+        reverse=True,
+    )
+
+    top_emotions = [
+        TopEmotionItem(
+            curriculum_id=curr_id,
+            expression=expression,
+            layer_id=layer_id,
+            phase_id=phase_id,
+            dosage=dosage,
+            count=count,
+        )
+        for curr_id, expression, layer_id, phase_id, dosage, count in sorted_emotions
+    ]
+
+    return EmotionalLandscape(
+        layer_distribution=layer_distribution,
+        phase_distribution=phase_distribution,
+        top_emotions=top_emotions,
     )

@@ -168,3 +168,38 @@ class AnalyticsOverview(SQLModel):
     @classmethod
     def _validate_last_check_in(cls, value: datetime | str | None) -> datetime | None:
         return _coerce_datetime(value)
+
+
+class LayerDistributionItem(SQLModel):
+    """Layer distribution item for emotional landscape."""
+
+    layer_id: int
+    count: int
+    percentage: float
+
+
+class PhaseDistributionItem(SQLModel):
+    """Phase distribution item for emotional landscape."""
+
+    phase_id: int
+    count: int
+    percentage: float
+
+
+class TopEmotionItem(SQLModel):
+    """Top emotion item for emotional landscape."""
+
+    curriculum_id: int
+    expression: str
+    layer_id: int
+    phase_id: int
+    dosage: Dosage
+    count: int
+
+
+class EmotionalLandscape(SQLModel):
+    """Emotional landscape response model."""
+
+    layer_distribution: list[LayerDistributionItem]
+    phase_distribution: list[PhaseDistributionItem]
+    top_emotions: list[TopEmotionItem]
