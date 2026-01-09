@@ -48,6 +48,7 @@ struct AnalyticsViewModelTests {
     let mockOverview = AnalyticsOverview(
       totalEntries: 10,
       currentStreak: 5,
+      longestStreak: 12,
       avgFrequency: 2.0,
       lastCheckIn: Date(),
       medicinalRatio: 0.75,
@@ -98,6 +99,7 @@ struct AnalyticsViewModelTests {
     mockService.overviewToReturn = AnalyticsOverview(
       totalEntries: 0,
       currentStreak: 0,
+      longestStreak: 0,
       avgFrequency: 0,
       lastCheckIn: nil,
       medicinalRatio: 0,
@@ -149,6 +151,7 @@ struct AnalyticsViewModelTests {
     mockService.overviewToReturn = AnalyticsOverview(
       totalEntries: 5,
       currentStreak: 2,
+      longestStreak: 2,
       avgFrequency: 1.0,
       lastCheckIn: nil,
       medicinalRatio: 0.5,
@@ -179,6 +182,7 @@ struct AnalyticsViewModelTests {
     mockService.overviewToReturn = AnalyticsOverview(
       totalEntries: 0,
       currentStreak: 0,
+      longestStreak: 0,
       avgFrequency: 0,
       lastCheckIn: nil,
       medicinalRatio: 0,

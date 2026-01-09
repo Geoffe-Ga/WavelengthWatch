@@ -1721,7 +1721,7 @@ struct AnalyticsView: View {
       if overview.currentStreak > 0 || overview.totalEntries >= 2 {
         StreakDisplayView(
           currentStreak: overview.currentStreak,
-          longestStreak: max(overview.currentStreak, 0)
+          longestStreak: overview.longestStreak
         )
       }
 
