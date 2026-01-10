@@ -8,8 +8,10 @@ struct AnalyticsViewModelTests {
 
   final class MockAnalyticsService: AnalyticsServiceProtocol {
     var overviewToReturn: AnalyticsOverview?
+    var emotionalLandscapeToReturn: EmotionalLandscape?
     var errorToThrow: Error?
     var getOverviewCallCount = 0
+    var getEmotionalLandscapeCallCount = 0
     var lastUserId: Int?
 
     func getOverview(userId: Int) async throws -> AnalyticsOverview {
@@ -25,6 +27,21 @@ struct AnalyticsViewModelTests {
       }
 
       return overview
+    }
+
+    func getEmotionalLandscape(userId: Int) async throws -> EmotionalLandscape {
+      getEmotionalLandscapeCallCount += 1
+      lastUserId = userId
+
+      if let error = errorToThrow {
+        throw error
+      }
+
+      guard let landscape = emotionalLandscapeToReturn else {
+        throw NSError(domain: "test", code: -1)
+      }
+
+      return landscape
     }
   }
 
