@@ -154,6 +154,7 @@ class AnalyticsOverview(SQLModel):
 
     total_entries: int
     current_streak: int
+    longest_streak: int
     avg_frequency: float
     last_check_in: datetime | None
     medicinal_ratio: float

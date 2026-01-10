@@ -4,6 +4,7 @@ import Foundation
 struct AnalyticsOverview: Codable, Equatable {
   let totalEntries: Int
   let currentStreak: Int
+  let longestStreak: Int
   let avgFrequency: Double
   let lastCheckIn: Date?
   let medicinalRatio: Double
@@ -17,6 +18,7 @@ struct AnalyticsOverview: Codable, Equatable {
   enum CodingKeys: String, CodingKey {
     case totalEntries = "total_entries"
     case currentStreak = "current_streak"
+    case longestStreak = "longest_streak"
     case avgFrequency = "avg_frequency"
     case lastCheckIn = "last_check_in"
     case medicinalRatio = "medicinal_ratio"
