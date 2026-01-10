@@ -17,8 +17,11 @@ from ..models import Curriculum, Dosage, Journal
 from ..schemas import (
     AnalyticsOverview,
     EmotionalLandscape,
+    GrowthIndicators,
+    HourlyDistributionItem,
     LayerDistributionItem,
     PhaseDistributionItem,
+    TemporalPatterns,
     TopEmotionItem,
 )
 
@@ -582,4 +585,95 @@ def get_emotional_landscape(
         layer_distribution=layer_distribution,
         phase_distribution=phase_distribution,
         top_emotions=top_emotions[:limit],
+    )
+
+
+@router.get("/temporal", response_model=TemporalPatterns)
+def get_temporal_patterns(
+    *,
+    session: SessionDep,
+    user_id: Annotated[int, Query()],
+    start_date: Annotated[datetime | None, Query()] = None,
+    end_date: Annotated[datetime | None, Query()] = None,
+) -> TemporalPatterns:
+    """Get temporal patterns for a user."""
+    if end_date is None:
+        end_date = datetime.now(UTC)
+    if start_date is None:
+        start_date = end_date - timedelta(days=30)
+
+    # Get all entries in range
+    statement: SelectOfScalar[Journal] = select(Journal).where(
+        cast(ColumnElement[bool], Journal.user_id == user_id),
+        cast(ColumnElement[bool], Journal.created_at >= start_date),
+        cast(ColumnElement[bool], Journal.created_at <= end_date),
+    )
+    entries = session.exec(statement).all()
+
+    # Calculate hourly distribution
+    hour_counts: dict[int, int] = {}
+    for entry in entries:
+        hour = entry.created_at.hour
+        hour_counts[hour] = hour_counts.get(hour, 0) + 1
+
+    hourly_distribution = [
+        HourlyDistributionItem(hour=hour, count=count)
+        for hour, count in sorted(hour_counts.items())
+    ]
+
+    # Calculate consistency score (days with entries / total days)
+    if entries:
+        unique_dates = {entry.created_at.date() for entry in entries}
+        total_days = (end_date.date() - start_date.date()).days + 1
+        consistency_score = (len(unique_dates) / total_days) * 100
+    else:
+        consistency_score = 0.0
+
+    return TemporalPatterns(
+        hourly_distribution=hourly_distribution,
+        consistency_score=consistency_score,
+    )
+
+
+@router.get("/growth", response_model=GrowthIndicators)
+def get_growth_indicators(
+    *,
+    session: SessionDep,
+    user_id: Annotated[int, Query()],
+    start_date: Annotated[datetime | None, Query()] = None,
+    end_date: Annotated[datetime | None, Query()] = None,
+) -> GrowthIndicators:
+    """Get growth indicators for a user."""
+    if end_date is None:
+        end_date = datetime.now(UTC)
+    if start_date is None:
+        start_date = end_date - timedelta(days=30)
+
+    # Get medicinal trend
+    medicinal_trend = _calculate_medicinal_trend(session, user_id, start_date, end_date)
+
+    # Get layer and phase diversity
+    statement: SelectOfScalar[Journal] = select(Journal).where(
+        cast(ColumnElement[bool], Journal.user_id == user_id),
+        cast(ColumnElement[bool], Journal.created_at >= start_date),
+        cast(ColumnElement[bool], Journal.created_at <= end_date),
+    )
+    entries = session.exec(statement).all()
+
+    # Count unique layers and phases from curriculum
+    unique_layers = set()
+    unique_phases = set()
+    for entry in entries:
+        curriculum_stmt = select(Curriculum).where(
+            cast(ColumnElement[bool], Curriculum.id == entry.curriculum_id)
+        )
+        curriculum = session.exec(curriculum_stmt).first()
+        if curriculum:
+            unique_layers.add(curriculum.layer_id)
+            unique_phases.add(curriculum.phase_id)
+
+    return GrowthIndicators(
+        medicinal_trend=medicinal_trend,
+        layer_diversity=len(unique_layers),
+        phase_coverage=len(unique_phases),
     )

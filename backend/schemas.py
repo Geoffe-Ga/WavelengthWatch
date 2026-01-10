@@ -204,3 +204,25 @@ class EmotionalLandscape(SQLModel):
     layer_distribution: list[LayerDistributionItem]
     phase_distribution: list[PhaseDistributionItem]
     top_emotions: list[TopEmotionItem]
+
+
+class HourlyDistributionItem(SQLModel):
+    """Hourly distribution for temporal analytics."""
+
+    hour: int
+    count: int
+
+
+class TemporalPatterns(SQLModel):
+    """Temporal patterns response model."""
+
+    hourly_distribution: list[HourlyDistributionItem]
+    consistency_score: float
+
+
+class GrowthIndicators(SQLModel):
+    """Growth indicators response model."""
+
+    medicinal_trend: float
+    layer_diversity: int
+    phase_coverage: int
