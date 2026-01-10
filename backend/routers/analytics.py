@@ -13,13 +13,15 @@ from sqlmodel import Session, select
 from sqlmodel.sql.expression import SelectOfScalar
 
 from ..database import get_session
-from ..models import Curriculum, Dosage, Journal
+from ..models import Curriculum, Dosage, Journal, Strategy
 from ..schemas import (
     AnalyticsOverview,
     EmotionalLandscape,
     LayerDistributionItem,
     PhaseDistributionItem,
+    SelfCareAnalytics,
     TopEmotionItem,
+    TopStrategyItem,
 )
 
 SessionDep = Annotated[Session, Depends(get_session)]
@@ -582,4 +584,94 @@ def get_emotional_landscape(
         layer_distribution=layer_distribution,
         phase_distribution=phase_distribution,
         top_emotions=top_emotions[:limit],
+    )
+
+
+@router.get("/self-care", response_model=SelfCareAnalytics)
+def get_self_care_analytics(
+    *,
+    session: SessionDep,
+    user_id: Annotated[int, Query()],
+    start_date: Annotated[datetime | None, Query()] = None,
+    end_date: Annotated[datetime | None, Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 5,
+) -> SelfCareAnalytics:
+    """Get self-care analytics for a user.
+
+    Args:
+        session: Database session
+        user_id: User ID to fetch analytics for
+        start_date: Start date for analytics (defaults to 30 days ago)
+        end_date: End date for analytics (defaults to now)
+        limit: Max number of top strategies to return (default 5, max 100)
+
+    Returns:
+        Self-care analytics with top strategies and diversity score
+    """
+    # Set defaults
+    if end_date is None:
+        end_date = datetime.now(UTC)
+    if start_date is None:
+        start_date = end_date - timedelta(days=30)
+
+    # Get entries with strategies in the date range
+    strategy_id_col = cast(ColumnElement[int | None], Journal.strategy_id)
+    statement: SelectOfScalar[Journal] = select(Journal).where(
+        cast(ColumnElement[bool], Journal.user_id == user_id),
+        cast(ColumnElement[bool], Journal.created_at >= start_date),
+        cast(ColumnElement[bool], Journal.created_at <= end_date),
+        strategy_id_col.is_not(None),
+    )
+
+    result = session.exec(statement)
+    entries_with_strategies = result.all()
+
+    total_strategy_entries = len(entries_with_strategies)
+
+    if total_strategy_entries == 0:
+        return SelfCareAnalytics(
+            top_strategies=[],
+            diversity_score=0.0,
+            total_strategy_entries=0,
+        )
+
+    # Count strategy usage
+    strategy_counts: dict[int, int] = {}
+    for entry in entries_with_strategies:
+        if entry.strategy_id is not None:
+            strategy_counts[entry.strategy_id] = (
+                strategy_counts.get(entry.strategy_id, 0) + 1
+            )
+
+    # Calculate diversity score
+    unique_strategies = len(strategy_counts)
+    diversity_score = (unique_strategies / total_strategy_entries) * 100
+
+    # Get strategy details and build top strategies list
+    strategy_id_to_text: dict[int, str] = {}
+    for strategy_id in strategy_counts:
+        strategy_stmt = select(Strategy).where(
+            cast(ColumnElement[bool], Strategy.id == strategy_id)
+        )
+        strategy = session.exec(strategy_stmt).first()
+        if strategy:
+            strategy_id_to_text[strategy_id] = strategy.strategy
+
+    # Build and sort top strategies
+    top_strategies_list = [
+        TopStrategyItem(
+            strategy_id=strategy_id,
+            strategy=strategy_id_to_text.get(strategy_id, "Unknown"),
+            count=count,
+            percentage=(count / total_strategy_entries) * 100,
+        )
+        for strategy_id, count in strategy_counts.items()
+    ]
+
+    top_strategies_list.sort(key=lambda x: x.count, reverse=True)
+
+    return SelfCareAnalytics(
+        top_strategies=top_strategies_list[:limit],
+        diversity_score=diversity_score,
+        total_strategy_entries=total_strategy_entries,
     )
