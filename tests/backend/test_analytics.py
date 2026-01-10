@@ -556,3 +556,355 @@ def test_analytics_overview_longest_streak_zero_for_no_entries(client) -> None:
         params={"user_id": 99999},
     )
     assert response.status_code == 404
+
+
+# MARK: - Emotional Landscape Tests
+
+
+def test_emotional_landscape_basic_structure(client) -> None:
+    """Test emotional landscape endpoint returns correct structure."""
+    base_date = datetime(2025, 9, 20, 12, 0, 0, tzinfo=UTC)
+
+    # Create sample entries
+    for i in range(5):
+        client.post(
+            "/api/v1/journal",
+            json={
+                "created_at": (base_date + timedelta(hours=i)).isoformat(),
+                "user_id": 200,
+                "curriculum_id": 1,
+            },
+        )
+
+    response = client.get(
+        "/api/v1/analytics/emotional-landscape",
+        params={
+            "user_id": 200,
+            "start_date": base_date.isoformat(),
+            "end_date": (base_date + timedelta(hours=6)).isoformat(),
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    # Verify structure
+    assert "layer_distribution" in data
+    assert "phase_distribution" in data
+    assert "top_emotions" in data
+    assert isinstance(data["layer_distribution"], list)
+    assert isinstance(data["phase_distribution"], list)
+    assert isinstance(data["top_emotions"], list)
+
+
+def test_emotional_landscape_layer_distribution(client) -> None:
+    """Test layer distribution calculation."""
+    base_date = datetime(2025, 9, 20, 12, 0, 0, tzinfo=UTC)
+
+    # Create entries across different layers
+    # curriculum_id 1 is in layer 1 (Beige)
+    # curriculum_id 2 is in layer 2 (Purple)
+    # curriculum_id 3 is in layer 3 (Red)
+
+    # 2 Beige entries (both curriculum 1)
+    for i in range(2):
+        client.post(
+            "/api/v1/journal",
+            json={
+                "created_at": (base_date + timedelta(hours=i)).isoformat(),
+                "user_id": 201,
+                "curriculum_id": 1,
+            },
+        )
+
+    # 1 Purple entry (curriculum 2)
+    client.post(
+        "/api/v1/journal",
+        json={
+            "created_at": (base_date + timedelta(hours=2)).isoformat(),
+            "user_id": 201,
+            "curriculum_id": 2,
+        },
+    )
+
+    # 1 Red entry (curriculum 3)
+    client.post(
+        "/api/v1/journal",
+        json={
+            "created_at": (base_date + timedelta(hours=3)).isoformat(),
+            "user_id": 201,
+            "curriculum_id": 3,
+        },
+    )
+
+    response = client.get(
+        "/api/v1/analytics/emotional-landscape",
+        params={
+            "user_id": 201,
+            "start_date": base_date.isoformat(),
+            "end_date": (base_date + timedelta(hours=6)).isoformat(),
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    layer_dist = data["layer_distribution"]
+    assert len(layer_dist) > 0
+
+    # Find Beige layer (layer_id 1)
+    beige_layer = next((item for item in layer_dist if item["layer_id"] == 1), None)
+    assert beige_layer is not None
+    assert beige_layer["count"] == 2
+    assert beige_layer["percentage"] == 50.0  # 2 out of 4 total
+
+
+def test_emotional_landscape_phase_distribution(client) -> None:
+    """Test phase distribution calculation."""
+    base_date = datetime(2025, 9, 20, 12, 0, 0, tzinfo=UTC)
+
+    # Create entries with different phases
+    # curriculum_id 1 is in phase 1 (Rising)
+    # curriculum_id 2 is in phase 1 (Rising)
+    # curriculum_id 3 is in phase 1 (Rising)
+    # Need to find curriculum items in different phases
+
+    # For now, create 3 entries with same curriculum
+    # (will update once we understand phase mapping)
+    for i in range(3):
+        client.post(
+            "/api/v1/journal",
+            json={
+                "created_at": (base_date + timedelta(hours=i)).isoformat(),
+                "user_id": 202,
+                "curriculum_id": 1,
+            },
+        )
+
+    response = client.get(
+        "/api/v1/analytics/emotional-landscape",
+        params={
+            "user_id": 202,
+            "start_date": base_date.isoformat(),
+            "end_date": (base_date + timedelta(hours=6)).isoformat(),
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    phase_dist = data["phase_distribution"]
+    assert len(phase_dist) > 0
+
+    # At least one phase should have count=3 and percentage=100
+    phase_with_all = next((p for p in phase_dist if p["count"] == 3), None)
+    assert phase_with_all is not None
+    assert phase_with_all["percentage"] == 100.0
+
+
+def test_emotional_landscape_top_emotions(client) -> None:
+    """Test top emotions ranking."""
+    base_date = datetime(2025, 9, 20, 12, 0, 0, tzinfo=UTC)
+
+    # Create entries with different emotions
+    # curriculum_id 1 appears 3 times (most frequent)
+    # curriculum_id 2 appears 2 times
+    # curriculum_id 3 appears 1 time
+
+    for _ in range(3):
+        client.post(
+            "/api/v1/journal",
+            json={
+                "created_at": (base_date + timedelta(hours=_)).isoformat(),
+                "user_id": 203,
+                "curriculum_id": 1,
+            },
+        )
+
+    for _ in range(2):
+        client.post(
+            "/api/v1/journal",
+            json={
+                "created_at": (base_date + timedelta(hours=_ + 3)).isoformat(),
+                "user_id": 203,
+                "curriculum_id": 2,
+            },
+        )
+
+    client.post(
+        "/api/v1/journal",
+        json={
+            "created_at": (base_date + timedelta(hours=5)).isoformat(),
+            "user_id": 203,
+            "curriculum_id": 3,
+        },
+    )
+
+    response = client.get(
+        "/api/v1/analytics/emotional-landscape",
+        params={
+            "user_id": 203,
+            "start_date": base_date.isoformat(),
+            "end_date": (base_date + timedelta(hours=6)).isoformat(),
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    top_emotions = data["top_emotions"]
+    assert len(top_emotions) >= 3
+
+    # Top emotion should be curriculum_id 1 with count 3
+    assert top_emotions[0]["curriculum_id"] == 1
+    assert top_emotions[0]["count"] == 3
+
+    # Second should be curriculum_id 2 with count 2
+    assert top_emotions[1]["curriculum_id"] == 2
+    assert top_emotions[1]["count"] == 2
+
+
+def test_emotional_landscape_top_emotions_includes_secondary(client) -> None:
+    """Test that top emotions includes secondary emotions."""
+    base_date = datetime(2025, 9, 20, 12, 0, 0, tzinfo=UTC)
+
+    # Create entry with secondary emotion
+    client.post(
+        "/api/v1/journal",
+        json={
+            "created_at": base_date.isoformat(),
+            "user_id": 204,
+            "curriculum_id": 1,
+            "secondary_curriculum_id": 2,
+        },
+    )
+
+    response = client.get(
+        "/api/v1/analytics/emotional-landscape",
+        params={
+            "user_id": 204,
+            "start_date": base_date.isoformat(),
+            "end_date": (base_date + timedelta(hours=1)).isoformat(),
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    top_emotions = data["top_emotions"]
+    curriculum_ids = [e["curriculum_id"] for e in top_emotions]
+
+    # Both primary (1) and secondary (2) should appear in top emotions
+    assert 1 in curriculum_ids
+    assert 2 in curriculum_ids
+
+
+def test_emotional_landscape_empty_user(client) -> None:
+    """Test emotional landscape for user with no entries."""
+    base_date = datetime(2025, 9, 20, 12, 0, 0, tzinfo=UTC)
+
+    response = client.get(
+        "/api/v1/analytics/emotional-landscape",
+        params={
+            "user_id": 999,
+            "start_date": base_date.isoformat(),
+            "end_date": (base_date + timedelta(hours=1)).isoformat(),
+        },
+    )
+
+    # Should return 404 for user with no entries
+    assert response.status_code == 404
+
+
+def test_emotional_landscape_date_filtering(client) -> None:
+    """Test emotional landscape respects date range filter."""
+    base_date = datetime(2025, 9, 20, 12, 0, 0, tzinfo=UTC)
+
+    # Create entries across different time periods
+    # Inside range
+    client.post(
+        "/api/v1/journal",
+        json={
+            "created_at": base_date.isoformat(),
+            "user_id": 205,
+            "curriculum_id": 1,
+        },
+    )
+
+    # Outside range (before)
+    client.post(
+        "/api/v1/journal",
+        json={
+            "created_at": (base_date - timedelta(days=2)).isoformat(),
+            "user_id": 205,
+            "curriculum_id": 2,
+        },
+    )
+
+    # Outside range (after)
+    client.post(
+        "/api/v1/journal",
+        json={
+            "created_at": (base_date + timedelta(days=2)).isoformat(),
+            "user_id": 205,
+            "curriculum_id": 3,
+        },
+    )
+
+    response = client.get(
+        "/api/v1/analytics/emotional-landscape",
+        params={
+            "user_id": 205,
+            "start_date": base_date.isoformat(),
+            "end_date": (base_date + timedelta(hours=1)).isoformat(),
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    # Should only count the entry within range (curriculum_id 1)
+    top_emotions = data["top_emotions"]
+    assert len(top_emotions) == 1
+    assert top_emotions[0]["curriculum_id"] == 1
+
+
+def test_emotional_landscape_default_dates(client) -> None:
+    """Test emotional landscape uses 30-day default when dates not provided."""
+    base_date = datetime.now(UTC)
+
+    # Create entry today
+    client.post(
+        "/api/v1/journal",
+        json={
+            "created_at": base_date.isoformat(),
+            "user_id": 206,
+            "curriculum_id": 1,
+        },
+    )
+
+    # Create entry 31 days ago (outside default 30-day window)
+    old_date = base_date - timedelta(days=31)
+    client.post(
+        "/api/v1/journal",
+        json={
+            "created_at": old_date.isoformat(),
+            "user_id": 206,
+            "curriculum_id": 2,
+        },
+    )
+
+    # Call without date parameters (should default to 30 days)
+    response = client.get(
+        "/api/v1/analytics/emotional-landscape",
+        params={"user_id": 206},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    # Should only include today's entry (curriculum_id 1)
+    # not the 31-day-old entry (curriculum_id 2)
+    top_emotions = data["top_emotions"]
+    assert len(top_emotions) == 1
+    assert top_emotions[0]["curriculum_id"] == 1
