@@ -19,7 +19,7 @@ struct PhaseJourneyView: View {
     }
   }
 
-  private var barChartItems: [HorizontalBarChart.BarChartItem] {
+  var barChartItems: [HorizontalBarChart.BarChartItem] {
     phaseDistribution.compactMap { item in
       guard let phase = phases.first(where: { $0.id == item.phaseId }) else {
         return nil
