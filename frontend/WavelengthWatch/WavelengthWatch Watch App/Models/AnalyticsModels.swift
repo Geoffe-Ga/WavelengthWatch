@@ -90,3 +90,70 @@ struct EmotionalLandscape: Codable, Equatable {
     case topEmotions = "top_emotions"
   }
 }
+
+// MARK: - Self-Care Analytics Models
+
+/// Top strategy item for self-care analytics
+struct TopStrategyItem: Codable, Equatable {
+  let strategyId: Int
+  let strategy: String
+  let count: Int
+  let percentage: Double
+
+  enum CodingKeys: String, CodingKey {
+    case strategyId = "strategy_id"
+    case strategy
+    case count
+    case percentage
+  }
+}
+
+/// Response model for /api/v1/analytics/self-care endpoint
+struct SelfCareAnalytics: Codable, Equatable {
+  let topStrategies: [TopStrategyItem]
+  let diversityScore: Double
+  let totalStrategyEntries: Int
+
+  enum CodingKeys: String, CodingKey {
+    case topStrategies = "top_strategies"
+    case diversityScore = "diversity_score"
+    case totalStrategyEntries = "total_strategy_entries"
+  }
+}
+
+// MARK: - Temporal Patterns Models
+
+// Note: Backend endpoints for temporal and growth analytics added in PR #235
+// Corresponding views will be added in follow-up PRs (#207, #208)
+
+/// Hourly distribution item for temporal analytics
+struct HourlyDistributionItem: Codable, Equatable {
+  let hour: Int
+  let count: Int
+}
+
+/// Response model for /api/v1/analytics/temporal endpoint
+struct TemporalPatterns: Codable, Equatable {
+  let hourlyDistribution: [HourlyDistributionItem]
+  let consistencyScore: Double
+
+  enum CodingKeys: String, CodingKey {
+    case hourlyDistribution = "hourly_distribution"
+    case consistencyScore = "consistency_score"
+  }
+}
+
+// MARK: - Growth Indicators Models
+
+/// Response model for /api/v1/analytics/growth endpoint
+struct GrowthIndicators: Codable, Equatable {
+  let medicinalTrend: Double
+  let layerDiversity: Int
+  let phaseCoverage: Int
+
+  enum CodingKeys: String, CodingKey {
+    case medicinalTrend = "medicinal_trend"
+    case layerDiversity = "layer_diversity"
+    case phaseCoverage = "phase_coverage"
+  }
+}
