@@ -60,14 +60,36 @@ done
 
 cd "$PROJECT_ROOT"
 
+# Run import sorting
+if [ "$TEST_ONLY" = false ] && [ "$TYPE_ONLY" = false ]; then
+    echo -e "${YELLOW}Running isort (import sorting)...${NC}"
+    if [ "$FIX_MODE" = true ]; then
+        isort backend tests/backend --settings-path=pyproject.toml
+        echo -e "${GREEN}✅ Import sorting applied${NC}"
+    else
+        if isort backend tests/backend --settings-path=pyproject.toml --check; then
+            echo -e "${GREEN}✅ Import sorting check passed${NC}"
+        else
+            echo -e "${RED}❌ Import sorting check failed. Run with --fix to auto-format.${NC}"
+            exit 1
+        fi
+    fi
+    echo ""
+fi
+
 # Run linting
 if [ "$TEST_ONLY" = false ] && [ "$TYPE_ONLY" = false ]; then
     echo -e "${YELLOW}Running ruff linting...${NC}"
-    if ruff check backend tests/backend; then
-        echo -e "${GREEN}✅ Linting passed${NC}"
+    if [ "$FIX_MODE" = true ]; then
+        ruff check backend tests/backend --fix
+        echo -e "${GREEN}✅ Linting applied${NC}"
     else
-        echo -e "${RED}❌ Linting failed${NC}"
-        exit 1
+        if ruff check backend tests/backend; then
+            echo -e "${GREEN}✅ Linting passed${NC}"
+        else
+            echo -e "${RED}❌ Linting failed${NC}"
+            exit 1
+        fi
     fi
     echo ""
 fi

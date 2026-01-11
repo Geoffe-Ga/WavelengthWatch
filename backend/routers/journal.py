@@ -13,6 +13,7 @@ from sqlalchemy.sql.elements import ColumnElement
 from sqlmodel import Session, select
 from sqlmodel.sql.expression import SelectOfScalar
 
+from ..cache import analytics_cache
 from ..database import get_session
 from ..models import Curriculum, Journal, Strategy
 from ..schemas import JournalCreate, JournalRead, JournalUpdate
@@ -133,6 +134,10 @@ def create_journal(payload: JournalCreate, session: SessionDep) -> JournalRead:
     session.add(journal)
     session.commit()
     session.refresh(journal)
+
+    # Invalidate analytics cache for this user since their data changed
+    analytics_cache.invalidate_user(payload.user_id)
+
     journal_id = _ensure_journal_id(journal)
     return _serialize_journal(_get_journal_or_404(journal_id, session))
 

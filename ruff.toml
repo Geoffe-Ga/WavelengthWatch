@@ -3,6 +3,7 @@ target-version = "py312"
 extend-exclude = ["frontend"]
 
 [lint]
-select = ["E", "F", "W", "I", "B", "UP", "SIM", "C4"]
+# Note: "I" (isort) is excluded - we use standalone isort instead
+select = ["E", "F", "W", "B", "UP", "SIM", "C4"]
 ignore = ["E203"]
 fixable = ["ALL"]

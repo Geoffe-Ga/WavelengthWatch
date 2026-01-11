@@ -12,6 +12,7 @@ from sqlalchemy.sql.elements import ColumnElement
 from sqlmodel import Session, select
 from sqlmodel.sql.expression import SelectOfScalar
 
+from ..cache import analytics_cache, make_cache_key
 from ..database import get_session
 from ..models import Curriculum, Dosage, Journal, Strategy
 from ..schemas import (
@@ -617,48 +618,65 @@ def get_self_care_analytics(
     if start_date is None:
         start_date = end_date - timedelta(days=30)
 
-    # Get entries with strategies in the date range
+    # Check cache first
+    cache_key = make_cache_key(
+        user_id=user_id,
+        endpoint="self-care",
+        start_date=start_date.isoformat(),
+        end_date=end_date.isoformat(),
+        limit=limit,
+    )
+    cached = analytics_cache.get(cache_key)
+    if cached is not None:
+        return cached  # type: ignore[no-any-return]
+
+    # Use SQL aggregation to count strategies efficiently (avoids N+1)
+    # This query counts strategy usage in a single database round-trip
     strategy_id_col = cast(ColumnElement[int | None], Journal.strategy_id)
-    statement: SelectOfScalar[Journal] = select(Journal).where(
-        cast(ColumnElement[bool], Journal.user_id == user_id),
-        cast(ColumnElement[bool], Journal.created_at >= start_date),
-        cast(ColumnElement[bool], Journal.created_at <= end_date),
-        strategy_id_col.is_not(None),
+    count_stmt = (
+        select(Journal.strategy_id, func.count().label("cnt"))
+        .where(
+            cast(ColumnElement[bool], Journal.user_id == user_id),
+            cast(ColumnElement[bool], Journal.created_at >= start_date),
+            cast(ColumnElement[bool], Journal.created_at <= end_date),
+            strategy_id_col.is_not(None),
+        )
+        .group_by(cast(ColumnElement[int], Journal.strategy_id))
     )
 
-    result = session.exec(statement)
-    entries_with_strategies = result.all()
+    strategy_counts_results = session.exec(count_stmt).all()
 
-    total_strategy_entries = len(entries_with_strategies)
-
-    if total_strategy_entries == 0:
-        return SelfCareAnalytics(
+    if not strategy_counts_results:
+        result = SelfCareAnalytics(
             top_strategies=[],
             diversity_score=0.0,
             total_strategy_entries=0,
         )
+        analytics_cache.set(cache_key, result)
+        return result
 
-    # Count strategy usage
+    # Build strategy counts dict and calculate totals
     strategy_counts: dict[int, int] = {}
-    for entry in entries_with_strategies:
-        if entry.strategy_id is not None:
-            strategy_counts[entry.strategy_id] = (
-                strategy_counts.get(entry.strategy_id, 0) + 1
-            )
+    total_strategy_entries = 0
+    for strategy_id, count in strategy_counts_results:
+        if strategy_id is not None:
+            strategy_counts[strategy_id] = count
+            total_strategy_entries += count
 
     # Calculate diversity score
     unique_strategies = len(strategy_counts)
-    diversity_score = (unique_strategies / total_strategy_entries) * 100
+    diversity_score = (
+        (unique_strategies / total_strategy_entries) * 100
+        if total_strategy_entries > 0
+        else 0.0
+    )
 
-    # Get strategy details and build top strategies list
-    strategy_id_to_text: dict[int, str] = {}
-    for strategy_id in strategy_counts:
-        strategy_stmt = select(Strategy).where(
-            cast(ColumnElement[bool], Strategy.id == strategy_id)
-        )
-        strategy = session.exec(strategy_stmt).first()
-        if strategy:
-            strategy_id_to_text[strategy_id] = strategy.strategy
+    # Batch fetch all needed strategies in ONE query (fixes N+1)
+    strategy_ids = list(strategy_counts.keys())
+    strategy_id_col_filter = cast(ColumnElement[int], Strategy.id)
+    strategies_stmt = select(Strategy).where(strategy_id_col_filter.in_(strategy_ids))
+    strategies = session.exec(strategies_stmt).all()
+    strategy_id_to_text = {s.id: s.strategy for s in strategies if s.id is not None}
 
     # Build and sort top strategies
     top_strategies_list = [
@@ -673,11 +691,15 @@ def get_self_care_analytics(
 
     top_strategies_list.sort(key=lambda x: x.count, reverse=True)
 
-    return SelfCareAnalytics(
+    result = SelfCareAnalytics(
         top_strategies=top_strategies_list[:limit],
         diversity_score=diversity_score,
         total_strategy_entries=total_strategy_entries,
     )
+
+    # Cache the result
+    analytics_cache.set(cache_key, result)
+    return result
 
 
 @router.get("/temporal", response_model=TemporalPatterns)
@@ -735,37 +757,68 @@ def get_growth_indicators(
     start_date: Annotated[datetime | None, Query()] = None,
     end_date: Annotated[datetime | None, Query()] = None,
 ) -> GrowthIndicators:
-    """Get growth indicators for a user."""
+    """Get growth indicators for a user.
+
+    Performance: Uses eager loading to fetch curriculum in single query,
+    avoiding N+1 queries when counting unique layers/phases.
+    """
     if end_date is None:
         end_date = datetime.now(UTC)
     if start_date is None:
         start_date = end_date - timedelta(days=30)
 
+    # Check cache first
+    cache_key = make_cache_key(
+        user_id=user_id,
+        endpoint="growth",
+        start_date=start_date.isoformat(),
+        end_date=end_date.isoformat(),
+    )
+    cached = analytics_cache.get(cache_key)
+    if cached is not None:
+        return cached  # type: ignore[no-any-return]
+
     # Get medicinal trend
     medicinal_trend = _calculate_medicinal_trend(session, user_id, start_date, end_date)
 
-    # Get layer and phase diversity
-    statement: SelectOfScalar[Journal] = select(Journal).where(
-        cast(ColumnElement[bool], Journal.user_id == user_id),
-        cast(ColumnElement[bool], Journal.created_at >= start_date),
-        cast(ColumnElement[bool], Journal.created_at <= end_date),
-    )
-    entries = session.exec(statement).all()
-
-    # Count unique layers and phases from curriculum
-    unique_layers = set()
-    unique_phases = set()
-    for entry in entries:
-        curriculum_stmt = select(Curriculum).where(
-            cast(ColumnElement[bool], Curriculum.id == entry.curriculum_id)
+    # Use SQL aggregation to get unique layers and phases directly
+    # This avoids loading all journal entries and N+1 curriculum lookups
+    layer_stmt = (
+        select(func.count(func.distinct(Curriculum.layer_id)))
+        .select_from(Journal)
+        .join(
+            Curriculum,
+            cast(ColumnElement[bool], Journal.curriculum_id == Curriculum.id),
         )
-        curriculum = session.exec(curriculum_stmt).first()
-        if curriculum:
-            unique_layers.add(curriculum.layer_id)
-            unique_phases.add(curriculum.phase_id)
-
-    return GrowthIndicators(
-        medicinal_trend=medicinal_trend,
-        layer_diversity=len(unique_layers),
-        phase_coverage=len(unique_phases),
+        .where(
+            cast(ColumnElement[bool], Journal.user_id == user_id),
+            cast(ColumnElement[bool], Journal.created_at >= start_date),
+            cast(ColumnElement[bool], Journal.created_at <= end_date),
+        )
     )
+    layer_diversity = session.exec(layer_stmt).one() or 0
+
+    phase_stmt = (
+        select(func.count(func.distinct(Curriculum.phase_id)))
+        .select_from(Journal)
+        .join(
+            Curriculum,
+            cast(ColumnElement[bool], Journal.curriculum_id == Curriculum.id),
+        )
+        .where(
+            cast(ColumnElement[bool], Journal.user_id == user_id),
+            cast(ColumnElement[bool], Journal.created_at >= start_date),
+            cast(ColumnElement[bool], Journal.created_at <= end_date),
+        )
+    )
+    phase_coverage = session.exec(phase_stmt).one() or 0
+
+    result = GrowthIndicators(
+        medicinal_trend=medicinal_trend,
+        layer_diversity=layer_diversity,
+        phase_coverage=phase_coverage,
+    )
+
+    # Cache the result
+    analytics_cache.set(cache_key, result)
+    return result
