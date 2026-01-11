@@ -23,6 +23,7 @@ struct TemporalPatternsView: View {
   }
 
   var barChartItems: [HorizontalBarChart.BarChartItem] {
+    // Guard ensures totalCount is always > 0, preventing division by zero
     guard !patterns.hourlyDistribution.isEmpty else { return [] }
 
     let totalCount = patterns.hourlyDistribution.reduce(0) { $0 + $1.count }
@@ -70,6 +71,10 @@ private struct ConsistencyScoreView: View {
     let imageName: String
     let color: Color
 
+    // Consistency score thresholds:
+    // 80%+: High consistency (check-ins on most days)
+    // 50-80%: Moderate consistency (room for improvement)
+    // <50%: Low consistency (infrequent check-ins)
     switch score {
     case 80...:
       imageName = "checkmark.circle.fill"
