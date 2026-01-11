@@ -206,6 +206,23 @@ class EmotionalLandscape(SQLModel):
     top_emotions: list[TopEmotionItem]
 
 
+class TopStrategyItem(SQLModel):
+    """Top strategy item for self-care analytics."""
+
+    strategy_id: int
+    strategy: str
+    count: int
+    percentage: float
+
+
+class SelfCareAnalytics(SQLModel):
+    """Self-care analytics response model."""
+
+    top_strategies: list[TopStrategyItem]
+    diversity_score: float
+    total_strategy_entries: int
+
+
 class HourlyDistributionItem(SQLModel):
     """Hourly distribution for temporal analytics."""
 

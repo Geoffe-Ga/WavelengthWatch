@@ -910,7 +910,267 @@ def test_emotional_landscape_default_dates(client) -> None:
     assert top_emotions[0]["curriculum_id"] == 1
 
 
-# MARK: - Temporal Patterns & Growth Tests
+# MARK: - Self-Care Analytics Tests
+
+
+def test_self_care_analytics_basic_structure(client) -> None:
+    """Test self-care analytics endpoint returns correct structure."""
+    base_date = datetime(2025, 9, 20, 12, 0, 0, tzinfo=UTC)
+
+    # Create entries with strategies
+    for i in range(3):
+        client.post(
+            "/api/v1/journal",
+            json={
+                "created_at": (base_date + timedelta(hours=i)).isoformat(),
+                "user_id": 300,
+                "curriculum_id": 1,
+                "strategy_id": 1,
+            },
+        )
+
+    response = client.get(
+        "/api/v1/analytics/self-care",
+        params={
+            "user_id": 300,
+            "start_date": base_date.isoformat(),
+            "end_date": (base_date + timedelta(hours=4)).isoformat(),
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    # Verify structure
+    assert "top_strategies" in data
+    assert "diversity_score" in data
+    assert "total_strategy_entries" in data
+    assert isinstance(data["top_strategies"], list)
+    assert isinstance(data["diversity_score"], int | float)
+    assert isinstance(data["total_strategy_entries"], int)
+
+
+def test_self_care_top_strategies(client) -> None:
+    """Test top strategies ranking by usage count."""
+    base_date = datetime(2025, 9, 20, 12, 0, 0, tzinfo=UTC)
+
+    # Strategy 1: 4 times
+    for i in range(4):
+        client.post(
+            "/api/v1/journal",
+            json={
+                "created_at": (base_date + timedelta(hours=i)).isoformat(),
+                "user_id": 301,
+                "curriculum_id": 1,
+                "strategy_id": 1,
+            },
+        )
+
+    # Strategy 2: 2 times
+    for i in range(2):
+        client.post(
+            "/api/v1/journal",
+            json={
+                "created_at": (base_date + timedelta(hours=i + 4)).isoformat(),
+                "user_id": 301,
+                "curriculum_id": 1,
+                "strategy_id": 2,
+            },
+        )
+
+    # Strategy 3: 1 time
+    client.post(
+        "/api/v1/journal",
+        json={
+            "created_at": (base_date + timedelta(hours=6)).isoformat(),
+            "user_id": 301,
+            "curriculum_id": 1,
+            "strategy_id": 3,
+        },
+    )
+
+    response = client.get(
+        "/api/v1/analytics/self-care",
+        params={
+            "user_id": 301,
+            "start_date": base_date.isoformat(),
+            "end_date": (base_date + timedelta(hours=7)).isoformat(),
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    top_strategies = data["top_strategies"]
+    assert len(top_strategies) >= 3
+
+    # First should be strategy 1 with 4 uses (57.14%)
+    assert top_strategies[0]["strategy_id"] == 1
+    assert top_strategies[0]["count"] == 4
+    assert abs(top_strategies[0]["percentage"] - 57.14) < 0.1
+
+    # Second should be strategy 2 with 2 uses (28.57%)
+    assert top_strategies[1]["strategy_id"] == 2
+    assert top_strategies[1]["count"] == 2
+    assert abs(top_strategies[1]["percentage"] - 28.57) < 0.1
+
+
+def test_self_care_diversity_score(client) -> None:
+    """Test strategy diversity score calculation."""
+    base_date = datetime(2025, 9, 20, 12, 0, 0, tzinfo=UTC)
+
+    # Use 3 unique strategies across 6 total entries
+    # Diversity = 3/6 = 0.5 (50%)
+    for strategy_id in [1, 2, 3]:
+        for i in range(2):
+            entry_date = base_date + timedelta(hours=strategy_id * 2 + i)
+            client.post(
+                "/api/v1/journal",
+                json={
+                    "created_at": entry_date.isoformat(),
+                    "user_id": 302,
+                    "curriculum_id": 1,
+                    "strategy_id": strategy_id,
+                },
+            )
+
+    response = client.get(
+        "/api/v1/analytics/self-care",
+        params={
+            "user_id": 302,
+            "start_date": base_date.isoformat(),
+            "end_date": (base_date + timedelta(hours=10)).isoformat(),
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    # 3 unique / 6 total = 50%
+    assert abs(data["diversity_score"] - 50.0) < 0.1
+    assert data["total_strategy_entries"] == 6
+
+
+def test_self_care_no_strategies(client) -> None:
+    """Test self-care analytics when no strategies used."""
+    base_date = datetime(2025, 9, 20, 12, 0, 0, tzinfo=UTC)
+
+    # Create entries without strategies
+    for i in range(3):
+        client.post(
+            "/api/v1/journal",
+            json={
+                "created_at": (base_date + timedelta(hours=i)).isoformat(),
+                "user_id": 303,
+                "curriculum_id": 1,
+            },
+        )
+
+    response = client.get(
+        "/api/v1/analytics/self-care",
+        params={
+            "user_id": 303,
+            "start_date": base_date.isoformat(),
+            "end_date": (base_date + timedelta(hours=4)).isoformat(),
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["top_strategies"] == []
+    assert data["diversity_score"] == 0.0
+    assert data["total_strategy_entries"] == 0
+
+
+def test_self_care_empty_user(client) -> None:
+    """Test self-care analytics for user with no entries."""
+    response = client.get(
+        "/api/v1/analytics/self-care",
+        params={"user_id": 99999},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    # Empty user should return empty results, not 404
+    assert data["top_strategies"] == []
+    assert data["diversity_score"] == 0.0
+    assert data["total_strategy_entries"] == 0
+
+
+def test_self_care_strategy_includes_text(client) -> None:
+    """Test top strategies include strategy text from catalog."""
+    base_date = datetime(2025, 9, 20, 12, 0, 0, tzinfo=UTC)
+
+    # Create entry with strategy
+    client.post(
+        "/api/v1/journal",
+        json={
+            "created_at": base_date.isoformat(),
+            "user_id": 304,
+            "curriculum_id": 1,
+            "strategy_id": 1,
+        },
+    )
+
+    response = client.get(
+        "/api/v1/analytics/self-care",
+        params={
+            "user_id": 304,
+            "start_date": base_date.isoformat(),
+            "end_date": (base_date + timedelta(hours=1)).isoformat(),
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    top_strategies = data["top_strategies"]
+    assert len(top_strategies) == 1
+    assert "strategy" in top_strategies[0]
+    assert isinstance(top_strategies[0]["strategy"], str)
+    assert len(top_strategies[0]["strategy"]) > 0
+
+
+def test_self_care_default_dates(client) -> None:
+    """Test self-care analytics uses 30-day default."""
+    base_date = datetime.now(UTC)
+
+    # Entry today
+    client.post(
+        "/api/v1/journal",
+        json={
+            "created_at": base_date.isoformat(),
+            "user_id": 305,
+            "curriculum_id": 1,
+            "strategy_id": 1,
+        },
+    )
+
+    # Entry 31 days ago (outside default window)
+    old_date = base_date - timedelta(days=31)
+    client.post(
+        "/api/v1/journal",
+        json={
+            "created_at": old_date.isoformat(),
+            "user_id": 305,
+            "curriculum_id": 1,
+            "strategy_id": 2,
+        },
+    )
+
+    response = client.get(
+        "/api/v1/analytics/self-care",
+        params={"user_id": 305},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    # Should only include today's entry
+    assert data["total_strategy_entries"] == 1
+    assert data["top_strategies"][0]["strategy_id"] == 1
 
 
 def test_temporal_patterns_structure(client) -> None:
