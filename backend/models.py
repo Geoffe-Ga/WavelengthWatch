@@ -5,6 +5,7 @@ from enum import Enum
 
 from sqlalchemy import Column, DateTime
 from sqlalchemy import Enum as SAEnum
+from sqlalchemy import Index
 from sqlalchemy.orm import Mapped
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -118,11 +119,16 @@ class Strategy(SQLModel, table=True):
 
 
 class Journal(SQLModel, table=True):
-    """User journal entries representing runtime activity."""
+    """User journal entries representing runtime activity.
+
+    Performance note: The composite index on (user_id, created_at) optimizes
+    analytics queries that filter by user and date range.
+    """
 
     id: int | None = Field(default=None, primary_key=True)
+    # Index on created_at for efficient date range queries in analytics
     created_at: datetime = Field(
-        sa_column=Column(DateTime(timezone=True), nullable=False)
+        sa_column=Column(DateTime(timezone=True), nullable=False, index=True)
     )
     user_id: int = Field(index=True)
     curriculum_id: int = Field(foreign_key="curriculum.id", nullable=False, index=True)
@@ -160,6 +166,10 @@ class Journal(SQLModel, table=True):
             "foreign_keys": "Journal.strategy_id",
         },
     )
+
+    # Composite index for analytics queries: user_id + created_at (DESC)
+    # This covers the common query pattern: WHERE user_id = ? AND created_at >= ?
+    __table_args__ = (Index("ix_journal_user_created", "user_id", "created_at"),)
 
 
 __all__ = [
