@@ -54,6 +54,17 @@ ALL_SUITES=(
   "JournalReviewViewTests"
   "CircularProgressViewTests"
   "StreakDisplayViewTests"
+  "HorizontalBarChartTests"
+  "AnalyticsViewModelTests"
+  "LocalAnalyticsCalculatorTests"
+  "EmotionalLandscapeModelsTests"
+  "EmotionalLandscapeViewModelTests"
+  "ModeDistributionViewTests"
+  "PhaseJourneyViewTests"
+  "DosageDeepDiveViewTests"
+  "StrategyUsageViewTests"
+  "TemporalPatternsViewTests"
+  "GrowthIndicatorsViewTests"
 )
 
 # Parse arguments
