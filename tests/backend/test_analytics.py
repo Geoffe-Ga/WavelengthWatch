@@ -1171,3 +1171,54 @@ def test_self_care_default_dates(client) -> None:
     # Should only include today's entry
     assert data["total_strategy_entries"] == 1
     assert data["top_strategies"][0]["strategy_id"] == 1
+
+
+def test_temporal_patterns_structure(client) -> None:
+    """Test temporal patterns endpoint structure."""
+    base_date = datetime(2025, 9, 20, 12, 0, 0, tzinfo=UTC)
+
+    for i in range(3):
+        client.post(
+            "/api/v1/journal",
+            json={
+                "created_at": (base_date + timedelta(hours=i)).isoformat(),
+                "user_id": 400,
+                "curriculum_id": 1,
+            },
+        )
+
+    response = client.get(
+        "/api/v1/analytics/temporal",
+        params={"user_id": 400},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "hourly_distribution" in data
+    assert "consistency_score" in data
+
+
+def test_growth_indicators_structure(client) -> None:
+    """Test growth indicators endpoint structure."""
+    base_date = datetime(2025, 9, 1, 12, 0, 0, tzinfo=UTC)
+
+    for day in range(10):
+        client.post(
+            "/api/v1/journal",
+            json={
+                "created_at": (base_date + timedelta(days=day)).isoformat(),
+                "user_id": 500,
+                "curriculum_id": 1,
+            },
+        )
+
+    response = client.get(
+        "/api/v1/analytics/growth",
+        params={"user_id": 500},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "medicinal_trend" in data
+    assert "layer_diversity" in data
+    assert "phase_coverage" in data
