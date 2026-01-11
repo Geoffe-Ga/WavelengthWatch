@@ -221,3 +221,25 @@ class SelfCareAnalytics(SQLModel):
     top_strategies: list[TopStrategyItem]
     diversity_score: float
     total_strategy_entries: int
+
+
+class HourlyDistributionItem(SQLModel):
+    """Hourly distribution for temporal analytics."""
+
+    hour: int
+    count: int
+
+
+class TemporalPatterns(SQLModel):
+    """Temporal patterns response model."""
+
+    hourly_distribution: list[HourlyDistributionItem]
+    consistency_score: float
+
+
+class GrowthIndicators(SQLModel):
+    """Growth indicators response model."""
+
+    medicinal_trend: float
+    layer_diversity: int
+    phase_coverage: int
