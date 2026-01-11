@@ -90,3 +90,22 @@ struct EmotionalLandscape: Codable, Equatable {
     case topEmotions = "top_emotions"
   }
 }
+
+// MARK: - Temporal Patterns Models
+
+/// Hourly distribution item for temporal analytics
+struct HourlyDistributionItem: Codable, Equatable {
+  let hour: Int
+  let count: Int
+}
+
+/// Response model for /api/v1/analytics/temporal endpoint
+struct TemporalPatterns: Codable, Equatable {
+  let hourlyDistribution: [HourlyDistributionItem]
+  let consistencyScore: Double
+
+  enum CodingKeys: String, CodingKey {
+    case hourlyDistribution = "hourly_distribution"
+    case consistencyScore = "consistency_score"
+  }
+}
