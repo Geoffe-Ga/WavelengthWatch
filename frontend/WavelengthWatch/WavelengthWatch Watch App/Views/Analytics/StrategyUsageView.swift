@@ -48,6 +48,8 @@ private struct DiversityScoreView: View {
         .foregroundColor(.secondary)
 
       HStack(spacing: 8) {
+        // Diversity score: (unique strategies / total uses) * 100
+        // Matches backend calculation at analytics.py:648
         Text(String(format: "%.1f%%", score))
           .font(.title3)
           .fontWeight(.semibold)

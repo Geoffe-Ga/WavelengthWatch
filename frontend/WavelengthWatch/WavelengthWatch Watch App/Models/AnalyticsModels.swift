@@ -123,6 +123,9 @@ struct SelfCareAnalytics: Codable, Equatable {
 
 // MARK: - Temporal Patterns Models
 
+// Note: Backend endpoints for temporal and growth analytics added in PR #235
+// Corresponding views will be added in follow-up PRs (#207, #208)
+
 /// Hourly distribution item for temporal analytics
 struct HourlyDistributionItem: Codable, Equatable {
   let hour: Int
