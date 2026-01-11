@@ -97,6 +97,9 @@ private struct BarRow: View {
         animatedPercentage = item.percentage
       }
     }
+    .accessibilityElement(children: .combine)
+    .accessibilityLabel("\(item.label): \(formattedPercentage(item.percentage))")
+    .accessibilityValue("Bar chart showing \(formattedPercentage(item.percentage))")
   }
 
   /// Calculates the bar width based on percentage
