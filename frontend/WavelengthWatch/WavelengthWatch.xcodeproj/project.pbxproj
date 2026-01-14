@@ -8,6 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		676DA3B12E7204A500C63894 /* WavelengthWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 676DA3B02E7204A500C63894 /* WavelengthWatch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		6B59430F9B17B963D285CDCA /* about-content.md in Resources */ = {isa = PBXBuildFile; fileRef = 083C4C94BE7830F181629413 /* about-content.md */; };
+		6BB841BE8FAD7C4822787010 /* MarkdownContentLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC8D428C86376A4366376E90 /* MarkdownContentLoader.swift */; };
+		87384054807E17D319151940 /* ConceptExplainerViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD0143ABA6DC64FCFCAA3FF9 /* ConceptExplainerViewTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -49,28 +52,19 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		083C4C94BE7830F181629413 /* about-content.md */ = {isa = PBXFileReference; lastKnownFileType = text; name = "about-content.md"; path = "WavelengthWatch Watch App/Resources/about-content.md"; sourceTree = SOURCE_ROOT; };
 		676DA3AA2E7204A500C63894 /* WavelengthWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WavelengthWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		676DA3B02E7204A500C63894 /* WavelengthWatch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "WavelengthWatch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		676DA3BF2E7204A600C63894 /* WavelengthWatch Watch AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "WavelengthWatch Watch AppTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		676DA3C92E7204A600C63894 /* WavelengthWatch Watch AppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "WavelengthWatch Watch AppUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		BD0143ABA6DC64FCFCAA3FF9 /* ConceptExplainerViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ConceptExplainerViewTests.swift; path = "WavelengthWatch Watch AppTests/ConceptExplainerViewTests.swift"; sourceTree = SOURCE_ROOT; };
+		EC8D428C86376A4366376E90 /* MarkdownContentLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MarkdownContentLoader.swift; path = "WavelengthWatch Watch App/Services/MarkdownContentLoader.swift"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		676DA3B42E7204A500C63894 /* WavelengthWatch Watch App */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "WavelengthWatch Watch App";
-			sourceTree = "<group>";
-		};
-		676DA3C22E7204A600C63894 /* WavelengthWatch Watch AppTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "WavelengthWatch Watch AppTests";
-			sourceTree = "<group>";
-		};
-		676DA3CC2E7204A600C63894 /* WavelengthWatch Watch AppUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "WavelengthWatch Watch AppUITests";
-			sourceTree = "<group>";
-		};
+		676DA3B42E7204A500C63894 /* WavelengthWatch Watch App */ = {isa = PBXFileSystemSynchronizedRootGroup; path = "WavelengthWatch Watch App"; sourceTree = "<group>"; };
+		676DA3C22E7204A600C63894 /* WavelengthWatch Watch AppTests */ = {isa = PBXFileSystemSynchronizedRootGroup; path = "WavelengthWatch Watch AppTests"; sourceTree = "<group>"; };
+		676DA3CC2E7204A600C63894 /* WavelengthWatch Watch AppUITests */ = {isa = PBXFileSystemSynchronizedRootGroup; path = "WavelengthWatch Watch AppUITests"; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -105,6 +99,9 @@
 				676DA3C22E7204A600C63894 /* WavelengthWatch Watch AppTests */,
 				676DA3CC2E7204A600C63894 /* WavelengthWatch Watch AppUITests */,
 				676DA3AB2E7204A500C63894 /* Products */,
+				EC8D428C86376A4366376E90 /* MarkdownContentLoader.swift */,
+				083C4C94BE7830F181629413 /* about-content.md */,
+				BD0143ABA6DC64FCFCAA3FF9 /* ConceptExplainerViewTests.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -269,6 +266,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6B59430F9B17B963D285CDCA /* about-content.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -293,6 +291,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6BB841BE8FAD7C4822787010 /* MarkdownContentLoader.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -300,6 +299,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				87384054807E17D319151940 /* ConceptExplainerViewTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
