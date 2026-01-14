@@ -13,7 +13,7 @@ struct FlowCoordinatorTests {
     let catalog = CatalogTestHelper.createTestCatalog()
     let repository = CatalogRepositoryMock(cached: catalog, result: .success(catalog))
     let journalClient = JournalClientMock()
-    let viewModel = ContentViewModel(repository: repository, journalClient: journalClient)
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journalClient)
     await viewModel.loadCatalog()
     let coordinator = FlowCoordinator(contentViewModel: viewModel)
     return (viewModel, coordinator, catalog)

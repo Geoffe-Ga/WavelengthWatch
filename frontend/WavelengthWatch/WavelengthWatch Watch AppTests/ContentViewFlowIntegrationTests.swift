@@ -13,7 +13,7 @@ struct ContentViewFlowIntegrationTests {
     let catalog = CatalogTestHelper.createTestCatalog()
     let repository = CatalogRepositoryMock(cached: catalog, result: .success(catalog))
     let journalClient = JournalClientMock()
-    let viewModel = ContentViewModel(repository: repository, journalClient: journalClient)
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journalClient)
     await viewModel.loadCatalog()
     let coordinator = FlowCoordinator(contentViewModel: viewModel)
     return (viewModel, coordinator, catalog)
@@ -283,7 +283,7 @@ struct ContentViewFlowIntegrationTests {
     let catalog = CatalogTestHelper.createTestCatalog()
     let repository = CatalogRepositoryMock(cached: catalog, result: .success(catalog))
     let journalClient = JournalClientMock()
-    let viewModel = ContentViewModel(repository: repository, journalClient: journalClient)
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journalClient)
     await viewModel.loadCatalog()
     let coordinator = FlowCoordinator(contentViewModel: viewModel)
 
@@ -318,7 +318,7 @@ struct ContentViewFlowIntegrationTests {
     let catalog = CatalogTestHelper.createTestCatalog()
     let repository = CatalogRepositoryMock(cached: catalog, result: .success(catalog))
     let journalClient = JournalClientMock()
-    let viewModel = ContentViewModel(repository: repository, journalClient: journalClient)
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journalClient)
     await viewModel.loadCatalog()
     let coordinator = FlowCoordinator(contentViewModel: viewModel)
 
@@ -357,7 +357,7 @@ struct ContentViewFlowIntegrationTests {
     let repository = CatalogRepositoryMock(cached: catalog, result: .success(catalog))
     let journalClient = JournalClientMock()
     journalClient.shouldFail = true
-    let viewModel = ContentViewModel(repository: repository, journalClient: journalClient)
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journalClient)
     await viewModel.loadCatalog()
     let coordinator = FlowCoordinator(contentViewModel: viewModel)
 
@@ -429,7 +429,7 @@ struct ContentViewFlowIntegrationTests {
     let catalog = CatalogTestHelper.createTestCatalog()
     let repository = CatalogRepositoryMock(cached: catalog, result: .success(catalog))
     let journalClient = JournalClientMock()
-    let viewModel = ContentViewModel(repository: repository, journalClient: journalClient)
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journalClient)
     await viewModel.loadCatalog()
     let coordinator = FlowCoordinator(contentViewModel: viewModel)
 
@@ -461,7 +461,7 @@ struct ContentViewFlowIntegrationTests {
     let catalog = CatalogTestHelper.createTestCatalog()
     let repository = CatalogRepositoryMock(cached: catalog, result: .success(catalog))
     let journalClient = JournalClientMock()
-    let viewModel = ContentViewModel(repository: repository, journalClient: journalClient)
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journalClient)
     await viewModel.loadCatalog()
     let coordinator = FlowCoordinator(contentViewModel: viewModel)
 
@@ -521,7 +521,7 @@ struct ContentViewFlowIntegrationTests {
     let repository = CatalogRepositoryMock(cached: catalog, result: .success(catalog))
     let journalClient = JournalClientMock()
     journalClient.shouldFail = true
-    let viewModel = ContentViewModel(repository: repository, journalClient: journalClient)
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journalClient)
     await viewModel.loadCatalog()
     let coordinator = FlowCoordinator(contentViewModel: viewModel)
 
@@ -549,7 +549,7 @@ struct ContentViewFlowIntegrationTests {
     let repository = CatalogRepositoryMock(cached: catalog, result: .success(catalog))
     let journalClient = JournalClientMock()
     journalClient.shouldFail = true
-    let viewModel = ContentViewModel(repository: repository, journalClient: journalClient)
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journalClient)
     await viewModel.loadCatalog()
     let coordinator = FlowCoordinator(contentViewModel: viewModel)
 

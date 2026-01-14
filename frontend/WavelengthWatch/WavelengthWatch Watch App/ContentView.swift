@@ -79,6 +79,7 @@ struct ContentView: View {
   @EnvironmentObject private var notificationDelegate: NotificationDelegate
   let journalClient: JournalClientProtocol
   let journalRepository: JournalRepositoryProtocol
+  let catalogRepository: CatalogRepositoryProtocol
   @State private var layerSelection: Int
   @State private var phaseSelection: Int
   @State private var showLayerIndicator = false
@@ -104,6 +105,7 @@ struct ContentView: View {
       journalRepository = InMemoryJournalRepository()
     }
     self.journalRepository = journalRepository
+    self.catalogRepository = repository
     let syncSettings = SyncSettings()
     let journalClient = JournalClient(
       apiClient: apiClient,
@@ -114,7 +116,8 @@ struct ContentView: View {
     let initialLayer = UserDefaults.standard.integer(forKey: "selectedLayerIndex")
     let initialPhase = UserDefaults.standard.integer(forKey: "selectedPhaseIndex")
     let model = ContentViewModel(
-      repository: repository,
+      catalogRepository: repository,
+      journalRepository: journalRepository,
       journalClient: journalClient,
       initialLayerIndex: initialLayer,
       initialPhaseIndex: initialPhase
@@ -1530,7 +1533,10 @@ struct MenuView: View {
         Label("Schedules", systemImage: "clock")
       }
 
-      NavigationLink(destination: AnalyticsView()) {
+      NavigationLink(destination: AnalyticsView(
+        journalRepository: viewModel.journalRepository,
+        catalogRepository: viewModel.catalogRepository
+      )) {
         Label("Analytics", systemImage: "chart.bar")
       }
 
@@ -1561,11 +1567,30 @@ struct AnalyticsView: View {
   @StateObject private var viewModel: AnalyticsViewModel
   @EnvironmentObject private var contentViewModel: ContentViewModel
 
-  init() {
+  init(
+    journalRepository: JournalRepositoryProtocol,
+    catalogRepository: CatalogRepositoryProtocol
+  ) {
     let configuration = AppConfiguration()
     let apiClient = APIClient(baseURL: configuration.apiBaseURL)
     let analyticsService = AnalyticsService(apiClient: apiClient)
-    _viewModel = StateObject(wrappedValue: AnalyticsViewModel(analyticsService: analyticsService))
+
+    // Create local calculator with cached catalog for offline support
+    let localCalculator: LocalAnalyticsCalculatorProtocol? = {
+      guard let catalog = catalogRepository.cachedCatalog() else {
+        return nil
+      }
+      return LocalAnalyticsCalculator(catalog: catalog)
+    }()
+
+    _viewModel = StateObject(
+      wrappedValue: AnalyticsViewModel(
+        analyticsService: analyticsService,
+        localCalculator: localCalculator,
+        journalRepository: journalRepository,
+        catalogRepository: catalogRepository
+      )
+    )
   }
 
   var body: some View {

@@ -33,7 +33,7 @@ struct MenuViewTests {
     )
     let repository = CatalogRepositoryMock(cached: catalog, result: .success(catalog))
     let journal = JournalClientMock()
-    let viewModel = ContentViewModel(repository: repository, journalClient: journal)
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journal)
     return viewModel
   }
 
