@@ -88,6 +88,7 @@ final class AnalyticsViewModel: ObservableObject {
         endDate: endDate
       )
     } catch {
+      print("⚠️ Local analytics calculation failed: \(error.localizedDescription)")
       return nil
     }
   }

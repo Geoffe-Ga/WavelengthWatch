@@ -101,6 +101,10 @@ struct ContentView: View {
       try persistentRepo.open()
       journalRepository = persistentRepo
     } catch {
+      // Fallback to in-memory storage when SQLite fails (e.g., in SwiftUI previews,
+      // during testing, or if database is corrupted). This keeps the app functional
+      // but data won't persist. Analytics will show empty until journal entries are
+      // logged in this session.
       print("⚠️ Failed to open journal database: \(error). Falling back to in-memory storage.")
       journalRepository = InMemoryJournalRepository()
     }
@@ -1567,6 +1571,15 @@ struct AnalyticsView: View {
   @StateObject private var viewModel: AnalyticsViewModel
   @EnvironmentObject private var contentViewModel: ContentViewModel
 
+  /// Creates an AnalyticsView with offline analytics support.
+  ///
+  /// Offline analytics require a cached catalog. If `catalogRepository.cachedCatalog()`
+  /// returns nil, analytics will only work when the backend is reachable. For full
+  /// offline functionality, ensure the catalog is loaded before navigating to analytics.
+  ///
+  /// - Parameters:
+  ///   - journalRepository: Repository for fetching local journal entries
+  ///   - catalogRepository: Repository with cached catalog (required for offline analytics)
   init(
     journalRepository: JournalRepositoryProtocol,
     catalogRepository: CatalogRepositoryProtocol
