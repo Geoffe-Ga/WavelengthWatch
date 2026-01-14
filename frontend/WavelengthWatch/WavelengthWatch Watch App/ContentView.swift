@@ -1894,64 +1894,74 @@ struct AnalyticsView: View {
 }
 
 struct ConceptExplainerView: View {
+  @State private var content: AttributedString?
+  @State private var errorMessage: String?
+  private let loader = MarkdownContentLoader()
+
   var body: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: 16) {
-        Text("Archetypal Wavelength")
-          .font(.title2)
-          .fontWeight(.bold)
+        if let content {
+          Text(content)
+            .padding()
+        } else if let errorMessage {
+          // Error state
+          VStack(spacing: 12) {
+            Image(systemName: "exclamationmark.triangle")
+              .font(.largeTitle)
+              .foregroundColor(.orange)
 
-        Text("The Archetypal Wavelength is a framework for understanding emotional and developmental patterns.")
-          .font(.body)
+            Text("Unable to Load Content")
+              .font(.headline)
 
-        Group {
-          Text("Layers")
-            .font(.headline)
-            .padding(.top, 8)
+            Text(errorMessage)
+              .font(.caption)
+              .foregroundColor(.secondary)
+              .multilineTextAlignment(.center)
+          }
+          .padding()
+        } else {
+          // Loading state
+          VStack(spacing: 12) {
+            ProgressView()
+              .progressViewStyle(.circular)
 
-          Text("Each color represents a developmental stage, from Beige (survival) through Purple (tribal), Red (power), and beyond.")
-            .font(.caption)
-        }
-
-        Group {
-          Text("Phases")
-            .font(.headline)
-            .padding(.top, 8)
-
-          Text("Each layer cycles through phases: Rising, Peaking, Falling, Recovering, Integrating, and Embodying.")
-            .font(.caption)
-        }
-
-        Group {
-          Text("Dosages")
-            .font(.headline)
-            .padding(.top, 8)
-
-          Text("Each feeling exists in two forms:")
-            .font(.caption)
-
-          Text("• Medicinal: The healthy expression")
-            .font(.caption)
-            .padding(.leading)
-
-          Text("• Toxic: The shadow or excessive form")
-            .font(.caption)
-            .padding(.leading)
-        }
-
-        Group {
-          Text("Self-Care Strategies")
-            .font(.headline)
-            .padding(.top, 8)
-
-          Text("Each phase has specific strategies to help you navigate that emotional territory with grace.")
-            .font(.caption)
+            Text("Loading...")
+              .font(.caption)
+              .foregroundColor(.secondary)
+          }
+          .padding()
+          .frame(maxWidth: .infinity)
         }
       }
-      .padding()
     }
     .navigationTitle("About")
     .navigationBarTitleDisplayMode(.inline)
+    .task {
+      await loadMarkdown()
+    }
+  }
+
+  private func loadMarkdown() async {
+    let result = await loader.loadContent(fileName: "about-content")
+
+    switch result {
+    case let .success(attributedString):
+      content = attributedString
+    case let .failure(error):
+      errorMessage = errorMessageFor(error)
+    }
+  }
+
+  private func errorMessageFor(_ error: MarkdownLoadError) -> String {
+    switch error {
+    case .fileNotFound:
+      "Content file not found"
+    case .readFailed:
+      "Unable to read content file"
+    case .parsingFailed:
+      "Unable to parse content"
+    }
   }
 }
 
