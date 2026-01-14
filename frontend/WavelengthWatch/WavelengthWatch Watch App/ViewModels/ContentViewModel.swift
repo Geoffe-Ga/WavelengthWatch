@@ -44,7 +44,8 @@ final class ContentViewModel: ObservableObject {
     }
   }
 
-  private let repository: CatalogRepositoryProtocol
+  let catalogRepository: CatalogRepositoryProtocol
+  let journalRepository: JournalRepositoryProtocol
   private let journalClient: JournalClientProtocol
 
   /// Returns layers filtered according to the current filter mode.
@@ -68,12 +69,14 @@ final class ContentViewModel: ObservableObject {
   }
 
   nonisolated init(
-    repository: CatalogRepositoryProtocol,
+    catalogRepository: CatalogRepositoryProtocol,
+    journalRepository: JournalRepositoryProtocol,
     journalClient: JournalClientProtocol,
     initialLayerIndex: Int = 0,
     initialPhaseIndex: Int = 0
   ) {
-    self.repository = repository
+    self.catalogRepository = catalogRepository
+    self.journalRepository = journalRepository
     self.journalClient = journalClient
     self.selectedLayerIndex = initialLayerIndex
     self.selectedPhaseIndex = initialPhaseIndex
@@ -85,12 +88,12 @@ final class ContentViewModel: ObservableObject {
     isLoading = true
     loadErrorMessage = nil
 
-    if layers.isEmpty, let cached = repository.cachedCatalog() {
+    if layers.isEmpty, let cached = catalogRepository.cachedCatalog() {
       applyCatalog(cached)
     }
 
     do {
-      let catalog = try await repository.loadCatalog(forceRefresh: forceRefresh)
+      let catalog = try await catalogRepository.loadCatalog(forceRefresh: forceRefresh)
       applyCatalog(catalog)
     } catch {
       if layers.isEmpty {

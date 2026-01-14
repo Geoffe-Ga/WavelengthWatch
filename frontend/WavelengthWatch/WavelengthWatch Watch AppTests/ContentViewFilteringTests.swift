@@ -41,7 +41,7 @@ struct ContentViewFilteringTests {
     let catalog = createTestCatalog()
     let repository = CatalogRepositoryMock(cached: catalog, result: .success(catalog))
     let journal = JournalClientMock()
-    let viewModel = ContentViewModel(repository: repository, journalClient: journal)
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journal)
 
     await viewModel.loadCatalog()
 
@@ -69,7 +69,7 @@ struct ContentViewFilteringTests {
     let catalog = createTestCatalog()
     let repository = CatalogRepositoryMock(cached: catalog, result: .success(catalog))
     let journal = JournalClientMock()
-    let viewModel = ContentViewModel(repository: repository, journalClient: journal)
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journal)
 
     await viewModel.loadCatalog()
 
@@ -97,7 +97,7 @@ struct ContentViewFilteringTests {
     let catalog = createTestCatalog()
     let repository = CatalogRepositoryMock(cached: catalog, result: .success(catalog))
     let journal = JournalClientMock()
-    let viewModel = ContentViewModel(repository: repository, journalClient: journal)
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journal)
 
     await viewModel.loadCatalog()
 
@@ -119,7 +119,7 @@ struct ContentViewFilteringTests {
     let catalog = createTestCatalog()
     let repository = CatalogRepositoryMock(cached: catalog, result: .success(catalog))
     let journal = JournalClientMock()
-    let viewModel = ContentViewModel(repository: repository, journalClient: journal)
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journal)
 
     await viewModel.loadCatalog()
 
@@ -151,7 +151,7 @@ struct ContentViewFilteringTests {
     let catalog = createTestCatalog()
     let repository = CatalogRepositoryMock(cached: catalog, result: .success(catalog))
     let journal = JournalClientMock()
-    let viewModel = ContentViewModel(repository: repository, journalClient: journal)
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journal)
 
     await viewModel.loadCatalog()
 
@@ -196,7 +196,7 @@ struct ContentViewFilteringTests {
     let catalog = createTestCatalog()
     let repository = CatalogRepositoryMock(cached: catalog, result: .success(catalog))
     let journal = JournalClientMock()
-    let viewModel = ContentViewModel(repository: repository, journalClient: journal)
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journal)
 
     await viewModel.loadCatalog()
 

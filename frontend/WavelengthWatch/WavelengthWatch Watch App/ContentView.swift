@@ -79,6 +79,7 @@ struct ContentView: View {
   @EnvironmentObject private var notificationDelegate: NotificationDelegate
   let journalClient: JournalClientProtocol
   let journalRepository: JournalRepositoryProtocol
+  let catalogRepository: CatalogRepositoryProtocol
   @State private var layerSelection: Int
   @State private var phaseSelection: Int
   @State private var showLayerIndicator = false
@@ -100,10 +101,15 @@ struct ContentView: View {
       try persistentRepo.open()
       journalRepository = persistentRepo
     } catch {
+      // Fallback to in-memory storage when SQLite fails (e.g., in SwiftUI previews,
+      // during testing, or if database is corrupted). This keeps the app functional
+      // but data won't persist. Analytics will show empty until journal entries are
+      // logged in this session.
       print("⚠️ Failed to open journal database: \(error). Falling back to in-memory storage.")
       journalRepository = InMemoryJournalRepository()
     }
     self.journalRepository = journalRepository
+    self.catalogRepository = repository
     let syncSettings = SyncSettings()
     let journalClient = JournalClient(
       apiClient: apiClient,
@@ -114,7 +120,8 @@ struct ContentView: View {
     let initialLayer = UserDefaults.standard.integer(forKey: "selectedLayerIndex")
     let initialPhase = UserDefaults.standard.integer(forKey: "selectedPhaseIndex")
     let model = ContentViewModel(
-      repository: repository,
+      catalogRepository: repository,
+      journalRepository: journalRepository,
       journalClient: journalClient,
       initialLayerIndex: initialLayer,
       initialPhaseIndex: initialPhase
@@ -1530,7 +1537,10 @@ struct MenuView: View {
         Label("Schedules", systemImage: "clock")
       }
 
-      NavigationLink(destination: AnalyticsView()) {
+      NavigationLink(destination: AnalyticsView(
+        journalRepository: viewModel.journalRepository,
+        catalogRepository: viewModel.catalogRepository
+      )) {
         Label("Analytics", systemImage: "chart.bar")
       }
 
@@ -1561,11 +1571,39 @@ struct AnalyticsView: View {
   @StateObject private var viewModel: AnalyticsViewModel
   @EnvironmentObject private var contentViewModel: ContentViewModel
 
-  init() {
+  /// Creates an AnalyticsView with offline analytics support.
+  ///
+  /// Offline analytics require a cached catalog. If `catalogRepository.cachedCatalog()`
+  /// returns nil, analytics will only work when the backend is reachable. For full
+  /// offline functionality, ensure the catalog is loaded before navigating to analytics.
+  ///
+  /// - Parameters:
+  ///   - journalRepository: Repository for fetching local journal entries
+  ///   - catalogRepository: Repository with cached catalog (required for offline analytics)
+  init(
+    journalRepository: JournalRepositoryProtocol,
+    catalogRepository: CatalogRepositoryProtocol
+  ) {
     let configuration = AppConfiguration()
     let apiClient = APIClient(baseURL: configuration.apiBaseURL)
     let analyticsService = AnalyticsService(apiClient: apiClient)
-    _viewModel = StateObject(wrappedValue: AnalyticsViewModel(analyticsService: analyticsService))
+
+    // Create local calculator with cached catalog for offline support
+    let localCalculator: LocalAnalyticsCalculatorProtocol? = {
+      guard let catalog = catalogRepository.cachedCatalog() else {
+        return nil
+      }
+      return LocalAnalyticsCalculator(catalog: catalog)
+    }()
+
+    _viewModel = StateObject(
+      wrappedValue: AnalyticsViewModel(
+        analyticsService: analyticsService,
+        localCalculator: localCalculator,
+        journalRepository: journalRepository,
+        catalogRepository: catalogRepository
+      )
+    )
   }
 
   var body: some View {

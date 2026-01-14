@@ -8,7 +8,7 @@ struct ContentViewModelTests {
   @Test func loadsCatalogSuccessfully() async throws {
     let repository = CatalogRepositoryMock(cached: SampleData.catalog, result: .success(SampleData.catalog))
     let journal = JournalClientMock()
-    let viewModel = ContentViewModel(repository: repository, journalClient: journal)
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journal)
 
     await viewModel.loadCatalog()
 
@@ -21,7 +21,7 @@ struct ContentViewModelTests {
     enum TestError: Error { case failure }
     let repository = CatalogRepositoryMock(result: .failure(TestError.failure))
     let journal = JournalClientMock()
-    let viewModel = ContentViewModel(repository: repository, journalClient: journal)
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journal)
 
     await viewModel.loadCatalog()
 
@@ -33,7 +33,7 @@ struct ContentViewModelTests {
     enum TestError: Error { case failure }
     let repository = CatalogRepositoryMock(result: .failure(TestError.failure))
     let journal = JournalClientMock()
-    let viewModel = ContentViewModel(repository: repository, journalClient: journal)
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journal)
 
     await viewModel.loadCatalog()
     #expect(viewModel.layers.isEmpty)
@@ -48,7 +48,7 @@ struct ContentViewModelTests {
   @Test func reportsJournalOutcome() async {
     let repository = CatalogRepositoryMock(cached: SampleData.catalog, result: .success(SampleData.catalog))
     let journal = JournalClientMock()
-    let viewModel = ContentViewModel(repository: repository, journalClient: journal)
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journal)
 
     await viewModel.journal(curriculumID: 1)
     switch viewModel.journalFeedback?.kind {
@@ -68,7 +68,7 @@ struct ContentViewModelTests {
   @Test func logsJournalEntriesWithStrategy() async {
     let repository = CatalogRepositoryMock(cached: SampleData.catalog, result: .success(SampleData.catalog))
     let journal = JournalClientMock()
-    let viewModel = ContentViewModel(repository: repository, journalClient: journal)
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journal)
 
     await viewModel.journal(curriculumID: 1, strategyID: 3)
 
@@ -82,7 +82,7 @@ struct ContentViewModelTests {
   @Test func logsJournalEntriesWithSecondaryCurriculum() async {
     let repository = CatalogRepositoryMock(cached: SampleData.catalog, result: .success(SampleData.catalog))
     let journal = JournalClientMock()
-    let viewModel = ContentViewModel(repository: repository, journalClient: journal)
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journal)
 
     await viewModel.journal(curriculumID: 1, secondaryCurriculumID: 2)
 
@@ -98,7 +98,7 @@ struct ContentViewModelTests {
   @Test func filteredLayersDefaultsToAll() async {
     let repository = CatalogRepositoryMock(cached: SampleData.catalog, result: .success(SampleData.catalog))
     let journal = JournalClientMock()
-    let viewModel = ContentViewModel(repository: repository, journalClient: journal)
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journal)
 
     await viewModel.loadCatalog()
 
@@ -110,7 +110,7 @@ struct ContentViewModelTests {
   @Test func filteredLayersWithEmotionsOnlyExcludesLayerZero() async {
     let repository = CatalogRepositoryMock(cached: SampleData.catalog, result: .success(SampleData.catalog))
     let journal = JournalClientMock()
-    let viewModel = ContentViewModel(repository: repository, journalClient: journal)
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journal)
 
     await viewModel.loadCatalog()
 
@@ -126,7 +126,7 @@ struct ContentViewModelTests {
   @Test func filteredLayersWithStrategiesOnlyIncludesOnlyLayerZero() async {
     let repository = CatalogRepositoryMock(cached: SampleData.catalog, result: .success(SampleData.catalog))
     let journal = JournalClientMock()
-    let viewModel = ContentViewModel(repository: repository, journalClient: journal)
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journal)
 
     await viewModel.loadCatalog()
 
@@ -141,7 +141,7 @@ struct ContentViewModelTests {
   @Test func filteredLayersReactsToModeChange() async {
     let repository = CatalogRepositoryMock(cached: SampleData.catalog, result: .success(SampleData.catalog))
     let journal = JournalClientMock()
-    let viewModel = ContentViewModel(repository: repository, journalClient: journal)
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journal)
 
     await viewModel.loadCatalog()
 
@@ -166,7 +166,7 @@ struct ContentViewModelTests {
   @Test func filteredLayersWhenLayersEmptyReturnsEmpty() {
     let repository = CatalogRepositoryMock(result: .success(SampleData.catalog))
     let journal = JournalClientMock()
-    let viewModel = ContentViewModel(repository: repository, journalClient: journal)
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journal)
 
     // Don't load catalog, layers should be empty
     #expect(viewModel.layers.isEmpty)

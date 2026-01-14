@@ -124,7 +124,7 @@ struct ContentViewModelInitiationContextTests {
   @Test func usesCurrentInitiatedByWhenNotOverridden() async {
     let repository = CatalogRepositoryMock(cached: SampleData.catalog, result: .success(SampleData.catalog))
     let journal = JournalClientMock()
-    let viewModel = ContentViewModel(repository: repository, journalClient: journal)
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journal)
 
     viewModel.setInitiatedBy(.scheduled)
     await viewModel.journal(curriculumID: 1)
@@ -137,7 +137,7 @@ struct ContentViewModelInitiationContextTests {
   @Test func resetsToSelfInitiatedAfterSubmission() async {
     let repository = CatalogRepositoryMock(cached: SampleData.catalog, result: .success(SampleData.catalog))
     let journal = JournalClientMock()
-    let viewModel = ContentViewModel(repository: repository, journalClient: journal)
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journal)
 
     viewModel.setInitiatedBy(.scheduled)
     await viewModel.journal(curriculumID: 1)
@@ -149,7 +149,7 @@ struct ContentViewModelInitiationContextTests {
   @Test func allowsExplicitOverrideOfInitiatedBy() async {
     let repository = CatalogRepositoryMock(cached: SampleData.catalog, result: .success(SampleData.catalog))
     let journal = JournalClientMock()
-    let viewModel = ContentViewModel(repository: repository, journalClient: journal)
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journal)
 
     viewModel.setInitiatedBy(.scheduled)
     await viewModel.journal(curriculumID: 1, initiatedBy: .self_initiated)
