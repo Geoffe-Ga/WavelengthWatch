@@ -11,6 +11,15 @@ enum MarkdownLoadError: Error, Equatable {
 /// Loads and parses markdown content files from the app bundle
 @MainActor
 class MarkdownContentLoader {
+  private let bundle: Bundle
+
+  /// Initialize the loader with a specific bundle
+  ///
+  /// - Parameter bundle: The bundle to load resources from (defaults to .main)
+  init(bundle: Bundle = .main) {
+    self.bundle = bundle
+  }
+
   /// Loads markdown content from a file in the app bundle
   ///
   /// - Parameter fileName: The name of the markdown file (without .md extension)
@@ -22,7 +31,7 @@ class MarkdownContentLoader {
     }
 
     // Locate file in bundle
-    guard let url = Bundle.main.url(forResource: fileName, withExtension: "md") else {
+    guard let url = bundle.url(forResource: fileName, withExtension: "md") else {
       return .failure(.fileNotFound)
     }
 

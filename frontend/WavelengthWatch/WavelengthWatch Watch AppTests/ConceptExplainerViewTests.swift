@@ -48,22 +48,19 @@ struct ConceptExplainerViewTests {
     }
   }
 
-  @Test func markdownLoader_invalidMarkdown_handlesGracefully() async {
-    // Given a file with invalid markdown content
+  @Test func markdownLoader_emptyFilename_returnsFileNotFound() async {
+    // Given an empty filename
     let loader = MarkdownContentLoader()
 
-    // When loading content that can't be parsed
-    // (This is hard to trigger with SwiftUI's AttributedString(markdown:)
-    // as it's quite forgiving, but we test the error path)
+    // When loading content with empty filename
     let result = await loader.loadContent(fileName: "")
 
-    // Then it should return an error
+    // Then it should return fileNotFound error
     switch result {
     case .success:
       Issue.record("Expected failure for empty filename, got success")
-    case .failure:
-      // Error is expected - could be fileNotFound or parsingFailed
-      #expect(true)
+    case let .failure(error):
+      #expect(error == .fileNotFound)
     }
   }
 
