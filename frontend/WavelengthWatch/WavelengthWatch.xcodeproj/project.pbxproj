@@ -62,9 +62,21 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		676DA3B42E7204A500C63894 /* WavelengthWatch Watch App */ = {isa = PBXFileSystemSynchronizedRootGroup; path = "WavelengthWatch Watch App"; sourceTree = "<group>"; };
-		676DA3C22E7204A600C63894 /* WavelengthWatch Watch AppTests */ = {isa = PBXFileSystemSynchronizedRootGroup; path = "WavelengthWatch Watch AppTests"; sourceTree = "<group>"; };
-		676DA3CC2E7204A600C63894 /* WavelengthWatch Watch AppUITests */ = {isa = PBXFileSystemSynchronizedRootGroup; path = "WavelengthWatch Watch AppUITests"; sourceTree = "<group>"; };
+		676DA3B42E7204A500C63894 /* WavelengthWatch Watch App */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "WavelengthWatch Watch App";
+			sourceTree = "<group>";
+		};
+		676DA3C22E7204A600C63894 /* WavelengthWatch Watch AppTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "WavelengthWatch Watch AppTests";
+			sourceTree = "<group>";
+		};
+		676DA3CC2E7204A600C63894 /* WavelengthWatch Watch AppUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "WavelengthWatch Watch AppUITests";
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */

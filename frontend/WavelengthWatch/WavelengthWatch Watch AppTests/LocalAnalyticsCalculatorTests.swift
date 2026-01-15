@@ -131,11 +131,11 @@ struct LocalAnalyticsCalculatorTests {
     #expect(result.totalEntries == 3)
   }
 
-  @Test("calculateOverview calculates medicinal ratio correctly")
+  @Test("calculateOverview calculates medicinal ratio as decimal (0-1 range)")
   func calculateOverview_calculatesMedicinalRatio() {
     let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
     let now = Date()
-    // 2 medicinal (IDs 1, 3), 1 toxic (ID 2) = 66.67%
+    // 2 medicinal (IDs 1, 3), 1 toxic (ID 2) = 0.6667 (66.67% when displayed)
     let entries = [
       LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 1), // Medicinal
       LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 2), // Toxic
@@ -148,7 +148,98 @@ struct LocalAnalyticsCalculatorTests {
       endDate: now
     )
 
-    #expect(abs(result.medicinalRatio - 66.67) < 0.1)
+    // Should return decimal fraction, not percentage
+    #expect(abs(result.medicinalRatio - 0.6667) < 0.01)
+  }
+
+  @Test("calculateOverview calculates secondary emotions percentage as decimal (0-1 range)")
+  func calculateOverview_calculatesSecondaryEmotionsPct() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let now = Date()
+    // 2 entries with secondary (out of 5 total) = 0.40 (40% when displayed)
+    let entries = [
+      LocalJournalEntry(
+        createdAt: now,
+        userID: 1,
+        curriculumID: 1,
+        secondaryCurriculumID: 2
+      ), // Has secondary
+      LocalJournalEntry(
+        createdAt: now,
+        userID: 1,
+        curriculumID: 2,
+        secondaryCurriculumID: nil
+      ), // No secondary
+      LocalJournalEntry(
+        createdAt: now,
+        userID: 1,
+        curriculumID: 3,
+        secondaryCurriculumID: 1
+      ), // Has secondary
+      LocalJournalEntry(
+        createdAt: now,
+        userID: 1,
+        curriculumID: 1,
+        secondaryCurriculumID: nil
+      ), // No secondary
+      LocalJournalEntry(
+        createdAt: now,
+        userID: 1,
+        curriculumID: 2,
+        secondaryCurriculumID: nil
+      ), // No secondary
+    ]
+
+    let result = calculator.calculateOverview(
+      entries: entries,
+      startDate: now.addingTimeInterval(-86400),
+      endDate: now
+    )
+
+    // Should return decimal fraction, not percentage
+    #expect(abs(result.secondaryEmotionsPct - 0.40) < 0.01)
+  }
+
+  @Test("calculateOverview calculates medicinal trend as decimal difference")
+  func calculateOverview_calculatesMedicinalTrend() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let now = Date()
+
+    // Current period: 2 medicinal (IDs 1, 3), 1 toxic (ID 2) = 0.6667
+    // Previous period: 1 medicinal (ID 1), 1 toxic (ID 2) = 0.50
+    // Expected trend: 0.6667 - 0.50 = 0.1667
+
+    let prevStart = now.addingTimeInterval(-14 * 86400)
+    let prevEnd = now.addingTimeInterval(-7 * 86400)
+    let currentStart = now.addingTimeInterval(-7 * 86400)
+
+    let entries = [
+      // Previous period: 1 medicinal, 1 toxic
+      LocalJournalEntry(createdAt: prevStart, userID: 1, curriculumID: 1), // Medicinal
+      LocalJournalEntry(
+        createdAt: prevStart.addingTimeInterval(3600),
+        userID: 1,
+        curriculumID: 2
+      ), // Toxic
+
+      // Current period: 2 medicinal, 1 toxic
+      LocalJournalEntry(createdAt: currentStart, userID: 1, curriculumID: 1), // Medicinal
+      LocalJournalEntry(
+        createdAt: currentStart.addingTimeInterval(3600),
+        userID: 1,
+        curriculumID: 2
+      ), // Toxic
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 3), // Medicinal
+    ]
+
+    let result = calculator.calculateOverview(
+      entries: entries,
+      startDate: currentStart,
+      endDate: now
+    )
+
+    // Trend should be decimal difference (0-1 range), not percentage
+    #expect(abs(result.medicinalTrend - 0.1667) < 0.01)
   }
 
   @Test("calculateOverview finds last check-in")

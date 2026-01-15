@@ -106,7 +106,7 @@ def _calculate_longest_streak(entries: list[datetime]) -> int:
 def _calculate_medicinal_ratio(
     session: Session, user_id: int, start_date: datetime, end_date: datetime
 ) -> float:
-    """Calculate percentage of medicinal entries."""
+    """Calculate ratio of medicinal entries (returns 0.0-1.0, not 0-100)."""
     statement = (
         select(Curriculum.dosage, func.count())
         .select_from(Journal)
@@ -129,7 +129,8 @@ def _calculate_medicinal_ratio(
     total = sum(count for _, count in results)
     medicinal = sum(count for dosage, count in results if dosage == Dosage.MEDICINAL)
 
-    return (medicinal / total) * 100 if total > 0 else 0.0
+    # Return decimal fraction (0-1 range), not percentage (0-100)
+    return (medicinal / total) if total > 0 else 0.0
 
 
 def _calculate_medicinal_trend(
@@ -336,8 +337,9 @@ def get_analytics_overview(
         )
     )
     entries_with_secondary = session.exec(total_entries_with_secondary_stmt).one()
+    # Return decimal fraction (0-1 range), not percentage (0-100)
     secondary_emotions_pct = (
-        (entries_with_secondary / total_entries) * 100 if total_entries > 0 else 0.0
+        (entries_with_secondary / total_entries) if total_entries > 0 else 0.0
     )
 
     return AnalyticsOverview(

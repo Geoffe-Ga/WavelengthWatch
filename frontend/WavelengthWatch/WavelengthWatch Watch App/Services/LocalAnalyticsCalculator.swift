@@ -128,10 +128,10 @@ final class LocalAnalyticsCalculator: LocalAnalyticsCalculatorProtocol {
     // Strategies used (distinct strategy IDs, excluding nil)
     let strategiesUsed = Set(entries.compactMap(\.strategyID)).count
 
-    // Secondary emotions percentage
+    // Secondary emotions percentage (as decimal 0-1, not 0-100)
     let entriesWithSecondary = entries.count(where: { $0.secondaryCurriculumID != nil })
     let secondaryEmotionsPct = totalEntries > 0
-      ? (Double(entriesWithSecondary) / Double(totalEntries)) * 100
+      ? Double(entriesWithSecondary) / Double(totalEntries)
       : 0.0
 
     return AnalyticsOverview(
@@ -305,6 +305,7 @@ final class LocalAnalyticsCalculator: LocalAnalyticsCalculatorProtocol {
   }
 
   /// Calculates percentage of medicinal entries.
+  /// Calculates ratio of medicinal entries as decimal (0-1 range, not 0-100).
   private func calculateMedicinalRatio(entries: [LocalJournalEntry]) -> Double {
     guard !entries.isEmpty else { return 0.0 }
 
@@ -320,7 +321,7 @@ final class LocalAnalyticsCalculator: LocalAnalyticsCalculatorProtocol {
       }
     }
 
-    return totalCount > 0 ? (Double(medicinalCount) / Double(totalCount)) * 100 : 0.0
+    return totalCount > 0 ? Double(medicinalCount) / Double(totalCount) : 0.0
   }
 
   /// Calculates change in medicinal ratio from previous period.
