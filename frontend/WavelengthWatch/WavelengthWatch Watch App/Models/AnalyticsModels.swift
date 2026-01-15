@@ -1,18 +1,39 @@
 import Foundation
 
 /// Response model for /api/v1/analytics/overview endpoint
+///
+/// # API Contract: Ratio and Percentage Value Ranges
+///
+/// Properties representing ratios and percentages use decimal fractions (0.0-1.0 range),
+/// **not** percentages (0-100 range). The display layer is responsible for multiplying
+/// by 100 when showing percentage values to users.
+///
+/// For example:
+/// - A medicinal ratio of 0.6667 should display as "66.67%"
+/// - A secondary emotions percentage of 0.40 should display as "40%"
+/// - A medicinal trend of 0.1667 should display as "16.67% increase"
+///
+/// This contract applies to both local calculations (`LocalAnalyticsCalculator`) and
+/// backend API responses (`/api/v1/analytics/overview`).
 struct AnalyticsOverview: Codable, Equatable {
   let totalEntries: Int
   let currentStreak: Int
   let longestStreak: Int
   let avgFrequency: Double
   let lastCheckIn: Date?
+
+  /// Ratio of medicinal entries (0.0-1.0, multiply by 100 for percentage display)
   let medicinalRatio: Double
+
+  /// Change in medicinal ratio from previous period (decimal difference, not percentage)
   let medicinalTrend: Double
+
   let dominantLayerId: Int?
   let dominantPhaseId: Int?
   let uniqueEmotions: Int
   let strategiesUsed: Int
+
+  /// Percentage of entries with secondary emotions (0.0-1.0, multiply by 100 for display)
   let secondaryEmotionsPct: Double
 
   enum CodingKeys: String, CodingKey {
