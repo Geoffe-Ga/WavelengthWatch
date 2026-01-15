@@ -8,9 +8,9 @@ Each cycles moves through 6 phases, representing a sine curve cut into six segme
 
 ## Frequencies
 
-Each color represents a Frequency through which the Wavelength can express. Note: Higher is not better. Specific colors chosen don't signify anything. 
+Each color represents a Frequency through which the Wavelength can express. Note: Higher is not better. Specific colors chosen don't signify anything.
 
-- **Beige** (Agency): Inhabit, Do 
+- **Beige** (Agency): Inhabit, Do
 - **Purple** (Receptivity): Inhabit, Feel
 - **Red** (Self-Love): Express, Do
 - **Blue** (Community Love): Express, Feel
@@ -19,7 +19,7 @@ Each color represents a Frequency through which the Wavelength can express. Note
 - **Yellow** (Systems Wisdom): Integrate, Do
 - **Teal** (Higher Self Wisdom): Integrate, Feel
 - **Ultraviolet** (Union): Absorb, Both Do/Feel
-- **Clear Light** (Emptiness): Be, Neither/All 
+- **Clear Light** (Emptiness): Be, Neither/All
 
 ## Dosages
 
