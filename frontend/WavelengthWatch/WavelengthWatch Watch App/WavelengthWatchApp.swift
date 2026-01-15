@@ -20,6 +20,16 @@ struct WavelengthWatch_Watch_AppApp: App {
 
   init() {
     configureNotificationCategories()
+    configureTestMode()
+  }
+
+  private func configureTestMode() {
+    #if DEBUG
+    // Reset onboarding for UI tests
+    if ProcessInfo.processInfo.arguments.contains("RESET_ONBOARDING") {
+      SyncSettings().reset()
+    }
+    #endif
   }
 
   private func configureNotificationCategories() {

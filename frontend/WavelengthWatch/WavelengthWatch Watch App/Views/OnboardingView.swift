@@ -1,0 +1,171 @@
+import SwiftUI
+
+/// Onboarding view shown on first launch.
+///
+/// Educates users about storage modes and privacy implications,
+/// allowing them to choose between local-only and cloud-synced storage.
+///
+/// ## Design Principles
+/// - Privacy-first: Default to local-only mode
+/// - Clear explanations: Use simple language to explain trade-offs
+/// - User control: Make it easy to change later in settings
+/// - Accessible: Support VoiceOver and Dynamic Type
+///
+/// ## Analytics Tracking
+/// This view does NOT track analytics events because:
+/// 1. Analytics infrastructure is read-only (fetches data, doesn't send events)
+/// 2. The `AnalyticsService` is designed for displaying journal insights, not tracking user actions
+/// 3. Onboarding completion is already persisted in `SyncSettings.hasCompletedOnboarding`
+/// 4. Storage preference is tracked in `SyncSettings.cloudSyncEnabled`
+/// 5. Future event tracking should be implemented via a dedicated telemetry service, not the analytics API
+struct OnboardingView: View {
+  @ObservedObject var viewModel: SyncSettingsViewModel
+  @Binding var isPresented: Bool
+
+  @State private var selectedMode: StorageMode = .localOnly
+
+  /// Storage mode options for onboarding.
+  ///
+  /// **Location Decision**: This enum is defined inside `OnboardingView` rather than as a
+  /// separate model type because:
+  /// 1. It's only used for onboarding UI presentation logic
+  /// 2. The actual persistence model is `SyncSettings.cloudSyncEnabled` (Boolean)
+  /// 3. Keeping it local avoids polluting the Models/ directory with view-specific types
+  /// 4. The enum's purpose is purely presentational - mapping UI choices to the underlying
+  ///    Boolean setting
+  ///
+  /// If this type is needed elsewhere in the future, it can be extracted to a shared location.
+  enum StorageMode {
+    case localOnly
+    case cloudSynced
+
+    var title: String {
+      switch self {
+      case .localOnly: "Privacy First"
+      case .cloudSynced: "Cloud Backup"
+      }
+    }
+
+    var icon: String {
+      switch self {
+      case .localOnly: "lock.shield"
+      case .cloudSynced: "icloud"
+      }
+    }
+
+    var description: String {
+      switch self {
+      case .localOnly:
+        "Your journal stays on this watch. Complete privacy, no data transmission."
+      case .cloudSynced:
+        "Journal backed up to cloud for safe keeping and future device transfers."
+      }
+    }
+  }
+
+  var body: some View {
+    ScrollView {
+      VStack(spacing: 20) {
+        Text("Welcome to WavelengthWatch")
+          .font(.headline)
+          .multilineTextAlignment(.center)
+          .accessibilityIdentifier("onboarding_welcome_title")
+
+        Text("How would you like to store your journal?")
+          .font(.caption)
+          .foregroundColor(.secondary)
+          .multilineTextAlignment(.center)
+          .accessibilityIdentifier("onboarding_storage_question")
+
+        VStack(spacing: 12) {
+          storageOption(.localOnly)
+          storageOption(.cloudSynced)
+        }
+        .accessibilityIdentifier("onboarding_storage_options")
+
+        Button {
+          completeOnboarding()
+        } label: {
+          Text("Continue")
+            .font(.headline)
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.borderedProminent)
+        .accessibilityLabel("Continue with selected storage mode")
+        .accessibilityIdentifier("onboarding_continue_button")
+
+        Text("You can change this anytime in Settings")
+          .font(.caption2)
+          .foregroundColor(.secondary)
+          .multilineTextAlignment(.center)
+          .accessibilityIdentifier("onboarding_settings_hint")
+      }
+      .padding()
+    }
+  }
+
+  @ViewBuilder
+  private func storageOption(_ mode: StorageMode) -> some View {
+    Button {
+      selectedMode = mode
+    } label: {
+      HStack(spacing: 12) {
+        Image(systemName: mode.icon)
+          .font(.title2)
+          .foregroundColor(selectedMode == mode ? .accentColor : .secondary)
+          .frame(width: 30)
+
+        VStack(alignment: .leading, spacing: 4) {
+          Text(mode.title)
+            .font(.headline)
+            .foregroundColor(.primary)
+
+          Text(mode.description)
+            .font(.caption2)
+            .foregroundColor(.secondary)
+            .multilineTextAlignment(.leading)
+        }
+
+        Spacer()
+
+        if selectedMode == mode {
+          Image(systemName: "checkmark.circle.fill")
+            .foregroundColor(.accentColor)
+        } else {
+          Image(systemName: "circle")
+            .foregroundColor(.secondary)
+        }
+      }
+      .padding(12)
+      .background(
+        RoundedRectangle(cornerRadius: 12)
+          .fill(selectedMode == mode ? Color.accentColor.opacity(0.15) : Color.clear)
+          .overlay(
+            RoundedRectangle(cornerRadius: 12)
+              .stroke(selectedMode == mode ? Color.accentColor : Color.secondary.opacity(0.3), lineWidth: 1)
+          )
+      )
+    }
+    .buttonStyle(.plain)
+    .accessibilityLabel("\(mode.title): \(mode.description)")
+    .accessibilityAddTraits(selectedMode == mode ? [.isSelected] : [])
+    .accessibilityIdentifier("onboarding_option_\(mode == .localOnly ? "local" : "cloud")")
+  }
+
+  private func completeOnboarding() {
+    viewModel.cloudSyncEnabled = (selectedMode == .cloudSynced)
+    viewModel.completeOnboarding()
+    isPresented = false
+  }
+}
+
+#if DEBUG
+struct OnboardingView_Previews: PreviewProvider {
+  static var previews: some View {
+    OnboardingView(
+      viewModel: SyncSettingsViewModel(),
+      isPresented: .constant(true)
+    )
+  }
+}
+#endif
