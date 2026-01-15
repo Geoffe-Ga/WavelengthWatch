@@ -16,6 +16,17 @@ struct OnboardingView: View {
 
   @State private var selectedMode: StorageMode = .localOnly
 
+  /// Storage mode options for onboarding.
+  ///
+  /// **Location Decision**: This enum is defined inside `OnboardingView` rather than as a
+  /// separate model type because:
+  /// 1. It's only used for onboarding UI presentation logic
+  /// 2. The actual persistence model is `SyncSettings.cloudSyncEnabled` (Boolean)
+  /// 3. Keeping it local avoids polluting the Models/ directory with view-specific types
+  /// 4. The enum's purpose is purely presentational - mapping UI choices to the underlying
+  ///    Boolean setting
+  ///
+  /// If this type is needed elsewhere in the future, it can be extracted to a shared location.
   enum StorageMode {
     case localOnly
     case cloudSynced
@@ -88,7 +99,7 @@ struct OnboardingView: View {
       HStack(spacing: 12) {
         Image(systemName: mode.icon)
           .font(.title2)
-          .foregroundColor(selectedMode == mode ? .blue : .secondary)
+          .foregroundColor(selectedMode == mode ? .accentColor : .secondary)
           .frame(width: 30)
 
         VStack(alignment: .leading, spacing: 4) {
@@ -106,7 +117,7 @@ struct OnboardingView: View {
 
         if selectedMode == mode {
           Image(systemName: "checkmark.circle.fill")
-            .foregroundColor(.blue)
+            .foregroundColor(.accentColor)
         } else {
           Image(systemName: "circle")
             .foregroundColor(.secondary)
@@ -115,10 +126,10 @@ struct OnboardingView: View {
       .padding(12)
       .background(
         RoundedRectangle(cornerRadius: 12)
-          .fill(selectedMode == mode ? Color.blue.opacity(0.15) : Color.clear)
+          .fill(selectedMode == mode ? Color.accentColor.opacity(0.15) : Color.clear)
           .overlay(
             RoundedRectangle(cornerRadius: 12)
-              .stroke(selectedMode == mode ? Color.blue : Color.secondary.opacity(0.3), lineWidth: 1)
+              .stroke(selectedMode == mode ? Color.accentColor : Color.secondary.opacity(0.3), lineWidth: 1)
           )
       )
     }

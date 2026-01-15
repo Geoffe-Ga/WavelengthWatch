@@ -198,4 +198,15 @@ struct SyncSettingsViewModelTests {
     #expect(viewModel.cloudSyncEnabled == false)
     #expect(settings.cloudSyncEnabled == false)
   }
+
+  @Test func completeOnboardingMarksOnboardingAsComplete() {
+    let persistence = MockSyncSettingsPersistence()
+    let viewModel = SyncSettingsViewModel(
+      syncSettings: SyncSettings(persistence: persistence)
+    )
+
+    viewModel.completeOnboarding()
+
+    #expect(viewModel.hasCompletedOnboarding == true)
+  }
 }

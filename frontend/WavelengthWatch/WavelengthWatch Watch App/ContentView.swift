@@ -368,7 +368,8 @@ struct ContentView: View {
       .sheet(isPresented: .constant(flowCoordinator.currentStep == .review)) {
         FlowReviewSheet(flowCoordinator: flowCoordinator)
       }
-      .onAppear {
+      .task {
+        // Check onboarding completion once when view appears
         if !syncSettingsViewModel.hasCompletedOnboarding {
           showingOnboarding = true
         }
