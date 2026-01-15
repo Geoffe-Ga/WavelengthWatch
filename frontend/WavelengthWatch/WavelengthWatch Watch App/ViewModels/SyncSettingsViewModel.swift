@@ -19,6 +19,12 @@ final class SyncSettingsViewModel: ObservableObject {
     }
   }
 
+  /// Whether the user has completed onboarding.
+  ///
+  /// Published to trigger UI updates when onboarding completes.
+  /// Private setter ensures only the view model can mark onboarding complete.
+  @Published private(set) var hasCompletedOnboarding: Bool
+
   private let syncSettings: SyncSettings
 
   /// Creates a view model with the specified sync settings.
@@ -27,11 +33,7 @@ final class SyncSettingsViewModel: ObservableObject {
   init(syncSettings: SyncSettings = SyncSettings()) {
     self.syncSettings = syncSettings
     self.cloudSyncEnabled = syncSettings.cloudSyncEnabled
-  }
-
-  /// Whether the user has completed onboarding.
-  var hasCompletedOnboarding: Bool {
-    syncSettings.hasCompletedOnboarding
+    self.hasCompletedOnboarding = syncSettings.hasCompletedOnboarding
   }
 
   /// Marks onboarding as complete.
@@ -39,6 +41,7 @@ final class SyncSettingsViewModel: ObservableObject {
   /// Called when user finishes the first-run onboarding flow.
   func completeOnboarding() {
     syncSettings.hasCompletedOnboarding = true
+    hasCompletedOnboarding = true
   }
 
   /// Resets all sync settings to defaults.
@@ -48,5 +51,6 @@ final class SyncSettingsViewModel: ObservableObject {
   func reset() {
     syncSettings.reset()
     cloudSyncEnabled = false
+    hasCompletedOnboarding = false
   }
 }

@@ -10,6 +10,14 @@ import SwiftUI
 /// - Clear explanations: Use simple language to explain trade-offs
 /// - User control: Make it easy to change later in settings
 /// - Accessible: Support VoiceOver and Dynamic Type
+///
+/// ## Analytics Tracking
+/// This view does NOT track analytics events because:
+/// 1. Analytics infrastructure is read-only (fetches data, doesn't send events)
+/// 2. The `AnalyticsService` is designed for displaying journal insights, not tracking user actions
+/// 3. Onboarding completion is already persisted in `SyncSettings.hasCompletedOnboarding`
+/// 4. Storage preference is tracked in `SyncSettings.cloudSyncEnabled`
+/// 5. Future event tracking should be implemented via a dedicated telemetry service, not the analytics API
 struct OnboardingView: View {
   @ObservedObject var viewModel: SyncSettingsViewModel
   @Binding var isPresented: Bool
@@ -61,16 +69,19 @@ struct OnboardingView: View {
         Text("Welcome to WavelengthWatch")
           .font(.headline)
           .multilineTextAlignment(.center)
+          .accessibilityIdentifier("onboarding_welcome_title")
 
         Text("How would you like to store your journal?")
           .font(.caption)
           .foregroundColor(.secondary)
           .multilineTextAlignment(.center)
+          .accessibilityIdentifier("onboarding_storage_question")
 
         VStack(spacing: 12) {
           storageOption(.localOnly)
           storageOption(.cloudSynced)
         }
+        .accessibilityIdentifier("onboarding_storage_options")
 
         Button {
           completeOnboarding()
@@ -81,11 +92,13 @@ struct OnboardingView: View {
         }
         .buttonStyle(.borderedProminent)
         .accessibilityLabel("Continue with selected storage mode")
+        .accessibilityIdentifier("onboarding_continue_button")
 
         Text("You can change this anytime in Settings")
           .font(.caption2)
           .foregroundColor(.secondary)
           .multilineTextAlignment(.center)
+          .accessibilityIdentifier("onboarding_settings_hint")
       }
       .padding()
     }
@@ -136,6 +149,7 @@ struct OnboardingView: View {
     .buttonStyle(.plain)
     .accessibilityLabel("\(mode.title): \(mode.description)")
     .accessibilityAddTraits(selectedMode == mode ? [.isSelected] : [])
+    .accessibilityIdentifier("onboarding_option_\(mode == .localOnly ? "local" : "cloud")")
   }
 
   private func completeOnboarding() {

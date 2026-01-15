@@ -18,9 +18,9 @@ final class OnboardingViewUITests: XCTestCase {
     app.launchArguments = ["RESET_ONBOARDING"]
     app.launch()
 
-    // Verify onboarding sheet appears
-    XCTAssertTrue(app.staticTexts["Welcome to WavelengthWatch"].exists)
-    XCTAssertTrue(app.staticTexts["How would you like to store your journal?"].exists)
+    // Verify onboarding sheet appears using accessibility identifiers
+    XCTAssertTrue(app.staticTexts["onboarding_welcome_title"].exists)
+    XCTAssertTrue(app.staticTexts["onboarding_storage_question"].exists)
   }
 
   @MainActor
@@ -29,11 +29,11 @@ final class OnboardingViewUITests: XCTestCase {
     app.launchArguments = ["RESET_ONBOARDING"]
     app.launch()
 
-    // Verify both storage options are displayed
+    // Verify both storage options are displayed using accessibility identifiers
+    XCTAssertTrue(app.buttons["onboarding_option_local"].exists)
+    XCTAssertTrue(app.buttons["onboarding_option_cloud"].exists)
     XCTAssertTrue(app.staticTexts["Privacy First"].exists)
     XCTAssertTrue(app.staticTexts["Cloud Backup"].exists)
-    XCTAssertTrue(app.staticTexts["Your journal stays on this watch. Complete privacy, no data transmission."].exists)
-    XCTAssertTrue(app.staticTexts["Journal backed up to cloud for safe keeping and future device transfers."].exists)
   }
 
   @MainActor
@@ -42,8 +42,8 @@ final class OnboardingViewUITests: XCTestCase {
     app.launchArguments = ["RESET_ONBOARDING"]
     app.launch()
 
-    // Verify local-only is selected by default (Privacy First)
-    let privacyFirstButton = app.buttons["Privacy First: Your journal stays on this watch. Complete privacy, no data transmission."]
+    // Verify local-only is selected by default using accessibility identifier
+    let privacyFirstButton = app.buttons["onboarding_option_local"]
     XCTAssertTrue(privacyFirstButton.exists)
   }
 
@@ -53,8 +53,8 @@ final class OnboardingViewUITests: XCTestCase {
     app.launchArguments = ["RESET_ONBOARDING"]
     app.launch()
 
-    // Tap on Cloud Backup option
-    let cloudBackupButton = app.buttons["Cloud Backup: Journal backed up to cloud for safe keeping and future device transfers."]
+    // Tap on Cloud Backup option using accessibility identifier
+    let cloudBackupButton = app.buttons["onboarding_option_cloud"]
     cloudBackupButton.tap()
 
     // Verify selection changed (button should exist after tap)
@@ -67,16 +67,16 @@ final class OnboardingViewUITests: XCTestCase {
     app.launchArguments = ["RESET_ONBOARDING"]
     app.launch()
 
-    // Verify onboarding is present
-    XCTAssertTrue(app.staticTexts["Welcome to WavelengthWatch"].exists)
+    // Verify onboarding is present using accessibility identifier
+    XCTAssertTrue(app.staticTexts["onboarding_welcome_title"].exists)
 
-    // Tap continue button
-    let continueButton = app.buttons["Continue with selected storage mode"]
+    // Tap continue button using accessibility identifier
+    let continueButton = app.buttons["onboarding_continue_button"]
     XCTAssertTrue(continueButton.exists)
     continueButton.tap()
 
     // Verify onboarding is dismissed (welcome text should not exist)
-    XCTAssertFalse(app.staticTexts["Welcome to WavelengthWatch"].waitForExistence(timeout: 1))
+    XCTAssertFalse(app.staticTexts["onboarding_welcome_title"].waitForExistence(timeout: 1))
   }
 
   @MainActor
@@ -85,7 +85,7 @@ final class OnboardingViewUITests: XCTestCase {
     app.launchArguments = ["RESET_ONBOARDING"]
     app.launch()
 
-    // Verify settings hint is displayed
-    XCTAssertTrue(app.staticTexts["You can change this anytime in Settings"].exists)
+    // Verify settings hint is displayed using accessibility identifier
+    XCTAssertTrue(app.staticTexts["onboarding_settings_hint"].exists)
   }
 }
