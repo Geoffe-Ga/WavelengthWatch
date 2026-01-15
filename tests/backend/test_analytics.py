@@ -189,8 +189,8 @@ def test_analytics_overview_medicinal_ratio(client) -> None:
     assert response.status_code == 200
     data = response.json()
 
-    # 3 medicinal out of 4 total = 75%
-    assert data["medicinal_ratio"] == 75.0
+    # 3 medicinal out of 4 total = 0.75 (75% when displayed)
+    assert data["medicinal_ratio"] == 0.75
 
 
 def test_analytics_overview_dominant_layer(client) -> None:
@@ -386,8 +386,8 @@ def test_analytics_overview_secondary_emotions_pct(client) -> None:
     assert response.status_code == 200
     data = response.json()
 
-    # 3 out of 5 = 60%
-    assert data["secondary_emotions_pct"] == 60.0
+    # 3 out of 5 = 0.60 (60% when displayed)
+    assert data["secondary_emotions_pct"] == 0.60
 
 
 def test_analytics_overview_last_check_in(client) -> None:
