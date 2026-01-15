@@ -29,6 +29,18 @@ final class SyncSettingsViewModel: ObservableObject {
     self.cloudSyncEnabled = syncSettings.cloudSyncEnabled
   }
 
+  /// Whether the user has completed onboarding.
+  var hasCompletedOnboarding: Bool {
+    syncSettings.hasCompletedOnboarding
+  }
+
+  /// Marks onboarding as complete.
+  ///
+  /// Called when user finishes the first-run onboarding flow.
+  func completeOnboarding() {
+    syncSettings.hasCompletedOnboarding = true
+  }
+
   /// Resets all sync settings to defaults.
   ///
   /// Used for testing or when user wants to start fresh.

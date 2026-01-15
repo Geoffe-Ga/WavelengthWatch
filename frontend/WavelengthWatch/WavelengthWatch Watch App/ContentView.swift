@@ -85,6 +85,7 @@ struct ContentView: View {
   @State private var showLayerIndicator = false
   @State private var hideIndicatorTask: Task<Void, Never>?
   @State private var showingMenu = false
+  @State private var showingOnboarding = false
   @State private var isShowingDetailView = false
   @State private var navigationPath = NavigationPath()
 
@@ -357,8 +358,20 @@ struct ContentView: View {
           }
         }
       }
+      .sheet(isPresented: $showingOnboarding) {
+        OnboardingView(
+          viewModel: syncSettingsViewModel,
+          isPresented: $showingOnboarding
+        )
+        .interactiveDismissDisabled()
+      }
       .sheet(isPresented: .constant(flowCoordinator.currentStep == .review)) {
         FlowReviewSheet(flowCoordinator: flowCoordinator)
+      }
+      .onAppear {
+        if !syncSettingsViewModel.hasCompletedOnboarding {
+          showingOnboarding = true
+        }
       }
       .toolbar {
         if !isShowingDetailView {

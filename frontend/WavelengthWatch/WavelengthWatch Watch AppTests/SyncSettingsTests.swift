@@ -122,6 +122,42 @@ struct SyncSettingsTests {
 
     #expect(settings.lastSyncTimestamp == nil)
   }
+
+  @Test func hasCompletedOnboardingDefaultsToFalse() {
+    let persistence = MockSyncSettingsPersistence()
+    let settings = SyncSettings(persistence: persistence)
+
+    #expect(settings.hasCompletedOnboarding == false)
+  }
+
+  @Test func hasCompletedOnboardingCanBeSet() {
+    let persistence = MockSyncSettingsPersistence()
+    let settings = SyncSettings(persistence: persistence)
+
+    settings.hasCompletedOnboarding = true
+
+    #expect(settings.hasCompletedOnboarding == true)
+  }
+
+  @Test func hasCompletedOnboardingPersists() {
+    let persistence = MockSyncSettingsPersistence()
+    let settings1 = SyncSettings(persistence: persistence)
+
+    settings1.hasCompletedOnboarding = true
+
+    let settings2 = SyncSettings(persistence: persistence)
+    #expect(settings2.hasCompletedOnboarding == true)
+  }
+
+  @Test func resetClearsOnboardingFlag() {
+    let persistence = MockSyncSettingsPersistence()
+    let settings = SyncSettings(persistence: persistence)
+
+    settings.hasCompletedOnboarding = true
+    settings.reset()
+
+    #expect(settings.hasCompletedOnboarding == false)
+  }
 }
 
 // MARK: - SyncSettingsViewModel Tests

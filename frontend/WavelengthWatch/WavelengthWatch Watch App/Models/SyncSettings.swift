@@ -22,6 +22,7 @@ extension UserDefaults: SyncSettingsPersisting {}
 /// ## Default Behavior
 /// - `cloudSyncEnabled`: `false` (local-only by default, per spec)
 /// - `hasCompletedInitialMigration`: `false` (triggers migration check on first launch)
+/// - `hasCompletedOnboarding`: `false` (shows onboarding on first launch)
 ///
 /// ## Privacy Design
 /// Cloud sync is opt-in, respecting user privacy. Journal entries are stored
@@ -35,6 +36,9 @@ final class SyncSettings {
 
   /// UserDefaults key for tracking last sync timestamp.
   static let lastSyncTimestampKey = "com.wavelengthwatch.lastSyncTimestamp"
+
+  /// UserDefaults key for tracking onboarding completion.
+  static let onboardingCompletedKey = "com.wavelengthwatch.onboardingCompleted"
 
   private let persistence: SyncSettingsPersisting
 
@@ -82,6 +86,18 @@ final class SyncSettings {
     }
   }
 
+  /// Whether the user has completed the onboarding flow.
+  ///
+  /// On first launch, the app shows an onboarding screen that explains
+  /// the privacy implications of local-only vs cloud-synced storage.
+  /// This flag tracks whether the user has seen and completed onboarding.
+  ///
+  /// Default: `false` (shows onboarding on first launch)
+  var hasCompletedOnboarding: Bool {
+    get { persistence.bool(forKey: Self.onboardingCompletedKey) }
+    set { persistence.set(newValue, forKey: Self.onboardingCompletedKey) }
+  }
+
   /// Resets all sync settings to defaults.
   ///
   /// Used for testing and when user wants to start fresh.
@@ -89,5 +105,6 @@ final class SyncSettings {
     persistence.removeObject(forKey: Self.cloudSyncEnabledKey)
     persistence.removeObject(forKey: Self.initialMigrationCompletedKey)
     persistence.removeObject(forKey: Self.lastSyncTimestampKey)
+    persistence.removeObject(forKey: Self.onboardingCompletedKey)
   }
 }
