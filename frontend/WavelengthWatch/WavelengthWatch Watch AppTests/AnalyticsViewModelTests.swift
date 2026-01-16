@@ -263,6 +263,17 @@ struct AnalyticsViewModelTests {
         topEmotions: []
       )
     }
+
+    func calculateSelfCare(
+      entries: [LocalJournalEntry],
+      limit: Int
+    ) -> SelfCareAnalytics {
+      SelfCareAnalytics(
+        topStrategies: [],
+        diversityScore: 0.0,
+        totalStrategyEntries: 0
+      )
+    }
   }
 
   final class MockJournalRepository: JournalRepositoryProtocol {

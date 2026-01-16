@@ -24,7 +24,10 @@ struct LocalAnalyticsCalculatorTests {
             toxic: [
               CatalogCurriculumEntryModel(id: 2, dosage: .toxic, expression: "Confused"),
             ],
-            strategies: []
+            strategies: [
+              CatalogStrategyModel(id: 101, strategy: "Deep breathing", color: "#F5DEB3"),
+              CatalogStrategyModel(id: 102, strategy: "Mindful walking", color: "#F5DEB3"),
+            ]
           ),
         ]
       ),
@@ -43,7 +46,9 @@ struct LocalAnalyticsCalculatorTests {
             toxic: [
               CatalogCurriculumEntryModel(id: 4, dosage: .toxic, expression: "Anxious"),
             ],
-            strategies: []
+            strategies: [
+              CatalogStrategyModel(id: 103, strategy: "Meditation", color: "#800080"),
+            ]
           ),
         ]
       ),
@@ -462,5 +467,193 @@ struct LocalAnalyticsCalculatorTests {
 
     #expect(emotion1?.count == 2)
     #expect(emotion2?.count == 2)
+  }
+
+  // MARK: - Self-Care Analytics Tests
+
+  @Test("calculateSelfCare returns empty analytics for empty entries")
+  func calculateSelfCare_returnsEmptyForEmpty() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let entries: [LocalJournalEntry] = []
+
+    let result = calculator.calculateSelfCare(entries: entries, limit: 5)
+
+    #expect(result.topStrategies.isEmpty)
+    #expect(result.diversityScore == 0.0)
+    #expect(result.totalStrategyEntries == 0)
+  }
+
+  @Test("calculateSelfCare returns empty analytics for entries with no strategies")
+  func calculateSelfCare_returnsEmptyForNoStrategies() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let now = Date()
+    let entries = [
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 1, strategyID: nil),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 2, strategyID: nil),
+    ]
+
+    let result = calculator.calculateSelfCare(entries: entries, limit: 5)
+
+    #expect(result.topStrategies.isEmpty)
+    #expect(result.diversityScore == 0.0)
+    #expect(result.totalStrategyEntries == 0)
+  }
+
+  @Test("calculateSelfCare counts strategy occurrences correctly")
+  func calculateSelfCare_countsStrategies() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let now = Date()
+    // Strategy 101: 3 times, Strategy 102: 2 times, Strategy 103: 1 time
+    let entries = [
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 1, strategyID: 101),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 1, strategyID: 101),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 1, strategyID: 101),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 2, strategyID: 102),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 2, strategyID: 102),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 3, strategyID: 103),
+    ]
+
+    let result = calculator.calculateSelfCare(entries: entries, limit: 5)
+
+    #expect(result.totalStrategyEntries == 6)
+    #expect(result.topStrategies.count == 3)
+
+    // Verify counts
+    let strategy101 = result.topStrategies.first { $0.strategyId == 101 }
+    let strategy102 = result.topStrategies.first { $0.strategyId == 102 }
+    let strategy103 = result.topStrategies.first { $0.strategyId == 103 }
+
+    #expect(strategy101?.count == 3)
+    #expect(strategy102?.count == 2)
+    #expect(strategy103?.count == 1)
+  }
+
+  @Test("calculateSelfCare calculates diversity score correctly")
+  func calculateSelfCare_calculatesDiversityScore() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let now = Date()
+    // 3 unique strategies out of 6 total entries = (3/6) * 100 = 50.0
+    let entries = [
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 1, strategyID: 101),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 1, strategyID: 101),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 1, strategyID: 101),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 2, strategyID: 102),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 2, strategyID: 102),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 3, strategyID: 103),
+    ]
+
+    let result = calculator.calculateSelfCare(entries: entries, limit: 5)
+
+    #expect(abs(result.diversityScore - 50.0) < 0.01)
+  }
+
+  @Test("calculateSelfCare sorts strategies by count descending")
+  func calculateSelfCare_sortsByCount() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let now = Date()
+    // Strategy 103: 4 times, Strategy 101: 2 times, Strategy 102: 1 time
+    let entries = [
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 3, strategyID: 103),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 3, strategyID: 103),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 3, strategyID: 103),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 3, strategyID: 103),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 1, strategyID: 101),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 1, strategyID: 101),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 2, strategyID: 102),
+    ]
+
+    let result = calculator.calculateSelfCare(entries: entries, limit: 5)
+
+    #expect(result.topStrategies.count == 3)
+    #expect(result.topStrategies[0].strategyId == 103) // Highest count
+    #expect(result.topStrategies[0].count == 4)
+    #expect(result.topStrategies[1].strategyId == 101)
+    #expect(result.topStrategies[1].count == 2)
+    #expect(result.topStrategies[2].strategyId == 102) // Lowest count
+    #expect(result.topStrategies[2].count == 1)
+  }
+
+  @Test("calculateSelfCare respects limit parameter")
+  func calculateSelfCare_respectsLimit() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let now = Date()
+    let entries = [
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 1, strategyID: 101),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 1, strategyID: 101),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 2, strategyID: 102),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 3, strategyID: 103),
+    ]
+
+    let result = calculator.calculateSelfCare(entries: entries, limit: 2)
+
+    #expect(result.topStrategies.count == 2)
+  }
+
+  @Test("calculateSelfCare handles unknown strategy IDs")
+  func calculateSelfCare_handlesUnknownStrategyIds() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let now = Date()
+    // Strategy ID 999 doesn't exist in catalog
+    let entries = [
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 1, strategyID: 101),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 1, strategyID: 999),
+    ]
+
+    let result = calculator.calculateSelfCare(entries: entries, limit: 5)
+
+    #expect(result.topStrategies.count == 2)
+    #expect(result.totalStrategyEntries == 2)
+
+    // Unknown strategy should have "Unknown" text
+    let unknownStrategy = result.topStrategies.first { $0.strategyId == 999 }
+    #expect(unknownStrategy?.strategy == "Unknown")
+  }
+
+  @Test("calculateSelfCare populates strategy text from catalog")
+  func calculateSelfCare_populatesStrategyText() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let now = Date()
+    let entries = [
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 1, strategyID: 101),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 1, strategyID: 102),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 3, strategyID: 103),
+    ]
+
+    let result = calculator.calculateSelfCare(entries: entries, limit: 5)
+
+    let strategy101 = result.topStrategies.first { $0.strategyId == 101 }
+    let strategy102 = result.topStrategies.first { $0.strategyId == 102 }
+    let strategy103 = result.topStrategies.first { $0.strategyId == 103 }
+
+    #expect(strategy101?.strategy == "Deep breathing")
+    #expect(strategy102?.strategy == "Mindful walking")
+    #expect(strategy103?.strategy == "Meditation")
+  }
+
+  @Test("calculateSelfCare calculates percentage correctly")
+  func calculateSelfCare_calculatesPercentage() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let now = Date()
+    // 3 of strategy 101 out of 6 total = 50%
+    // 2 of strategy 102 out of 6 total = 33.33%
+    // 1 of strategy 103 out of 6 total = 16.67%
+    let entries = [
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 1, strategyID: 101),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 1, strategyID: 101),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 1, strategyID: 101),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 2, strategyID: 102),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 2, strategyID: 102),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 3, strategyID: 103),
+    ]
+
+    let result = calculator.calculateSelfCare(entries: entries, limit: 5)
+
+    let strategy101 = result.topStrategies.first { $0.strategyId == 101 }
+    let strategy102 = result.topStrategies.first { $0.strategyId == 102 }
+    let strategy103 = result.topStrategies.first { $0.strategyId == 103 }
+
+    #expect(abs(strategy101!.percentage - 50.0) < 0.01)
+    #expect(abs(strategy102!.percentage - 33.33) < 0.1)
+    #expect(abs(strategy103!.percentage - 16.67) < 0.1)
   }
 }
