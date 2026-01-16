@@ -8,6 +8,11 @@ struct CurriculumInfo {
   let dosage: CatalogDosage
 }
 
+/// Metadata for strategy items needed for analytics calculations.
+struct StrategyInfo {
+  let strategy: String
+}
+
 /// Protocol for local analytics calculation operations.
 protocol LocalAnalyticsCalculatorProtocol {
   func calculateOverview(
@@ -20,6 +25,11 @@ protocol LocalAnalyticsCalculatorProtocol {
     entries: [LocalJournalEntry],
     limit: Int
   ) -> EmotionalLandscape
+
+  func calculateSelfCare(
+    entries: [LocalJournalEntry],
+    limit: Int
+  ) -> SelfCareAnalytics
 }
 
 /// Calculates analytics from local journal entries without backend dependency.
@@ -39,27 +49,36 @@ protocol LocalAnalyticsCalculatorProtocol {
 /// ```
 final class LocalAnalyticsCalculator: LocalAnalyticsCalculatorProtocol {
   private let curriculumLookup: [Int: CurriculumInfo]
+  private let strategyLookup: [Int: StrategyInfo]
 
-  /// Creates a calculator with catalog-based curriculum lookup.
+  /// Creates a calculator with catalog-based curriculum and strategy lookup.
   ///
   /// - Parameter catalog: The catalog response model containing all curriculum data.
   init(catalog: CatalogResponseModel) {
-    var lookup: [Int: CurriculumInfo] = [:]
+    var curriculumDict: [Int: CurriculumInfo] = [:]
+    var strategyDict: [Int: StrategyInfo] = [:]
 
     for layer in catalog.layers {
       for phase in layer.phases {
         for entry in phase.medicinal + phase.toxic {
-          lookup[entry.id] = CurriculumInfo(
+          curriculumDict[entry.id] = CurriculumInfo(
             expression: entry.expression,
             layerId: layer.id,
             phaseId: phase.id,
             dosage: entry.dosage
           )
         }
+
+        for strategy in phase.strategies {
+          strategyDict[strategy.id] = StrategyInfo(
+            strategy: strategy.strategy
+          )
+        }
       }
     }
 
-    self.curriculumLookup = lookup
+    self.curriculumLookup = curriculumDict
+    self.strategyLookup = strategyDict
   }
 
   // MARK: - Public API
@@ -232,6 +251,58 @@ final class LocalAnalyticsCalculator: LocalAnalyticsCalculatorProtocol {
       layerDistribution: layerDistribution,
       phaseDistribution: phaseDistribution,
       topEmotions: topEmotions
+    )
+  }
+
+  func calculateSelfCare(
+    entries: [LocalJournalEntry],
+    limit: Int
+  ) -> SelfCareAnalytics {
+    // Filter entries with non-nil strategy IDs
+    let strategyEntries = entries.filter { $0.strategyID != nil }
+
+    guard !strategyEntries.isEmpty else {
+      return SelfCareAnalytics(
+        topStrategies: [],
+        diversityScore: 0.0,
+        totalStrategyEntries: 0
+      )
+    }
+
+    // Count strategy occurrences
+    var strategyCounts: [Int: Int] = [:]
+    for entry in strategyEntries {
+      if let strategyId = entry.strategyID {
+        strategyCounts[strategyId, default: 0] += 1
+      }
+    }
+
+    let totalStrategyEntries = strategyEntries.count
+
+    // Calculate diversity score: (unique strategies / total entries) * 100
+    let uniqueStrategies = strategyCounts.count
+    let diversityScore = (Double(uniqueStrategies) / Double(totalStrategyEntries)) * 100
+
+    // Build top strategies list with strategy text from lookup
+    let topStrategiesList = strategyCounts.map { strategyId, count in
+      let strategyText = strategyLookup[strategyId]?.strategy ?? "Unknown"
+      let percentage = (Double(count) / Double(totalStrategyEntries)) * 100
+
+      return TopStrategyItem(
+        strategyId: strategyId,
+        strategy: strategyText,
+        count: count,
+        percentage: percentage
+      )
+    }
+    .sorted { $0.count > $1.count } // Sort by count descending
+    .prefix(limit) // Apply limit
+    .map(\.self) // Convert back to array
+
+    return SelfCareAnalytics(
+      topStrategies: topStrategiesList,
+      diversityScore: diversityScore,
+      totalStrategyEntries: totalStrategyEntries
     )
   }
 
