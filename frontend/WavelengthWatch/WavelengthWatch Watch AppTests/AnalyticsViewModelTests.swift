@@ -274,6 +274,17 @@ struct AnalyticsViewModelTests {
         totalStrategyEntries: 0
       )
     }
+
+    func calculateTemporalPatterns(
+      entries: [LocalJournalEntry],
+      startDate: Date,
+      endDate: Date
+    ) -> TemporalPatterns {
+      TemporalPatterns(
+        hourlyDistribution: [],
+        consistencyScore: 0.0
+      )
+    }
   }
 
   final class MockJournalRepository: JournalRepositoryProtocol {
