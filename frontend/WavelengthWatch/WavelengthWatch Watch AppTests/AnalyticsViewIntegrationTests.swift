@@ -28,6 +28,10 @@ struct AnalyticsViewIntegrationTests {
     func getEmotionalLandscape(userId: Int) async throws -> EmotionalLandscape {
       throw NSError(domain: "test", code: -1)
     }
+
+    func getSelfCare(userId: Int, limit: Int) async throws -> SelfCareAnalytics {
+      throw NSError(domain: "test", code: -1)
+    }
   }
 
   final class MockJournalRepository: JournalRepositoryProtocol {

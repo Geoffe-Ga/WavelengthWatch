@@ -5,6 +5,7 @@ enum APIPath {
   static let journal = "/api/v1/journal"
   static let analyticsOverview = "/api/v1/analytics/overview"
   static let analyticsEmotionalLandscape = "/api/v1/analytics/emotional-landscape"
+  static let analyticsSelfCare = "/api/v1/analytics/self-care"
 }
 
 protocol APIClientProtocol {
