@@ -40,6 +40,14 @@ struct AnalyticsViewIntegrationTests {
     ) async throws -> TemporalPatterns {
       throw NSError(domain: "test", code: -1)
     }
+
+    func getGrowthIndicators(
+      userId: Int,
+      startDate: Date,
+      endDate: Date
+    ) async throws -> GrowthIndicators {
+      throw NSError(domain: "test", code: -1)
+    }
   }
 
   final class MockJournalRepository: JournalRepositoryProtocol {

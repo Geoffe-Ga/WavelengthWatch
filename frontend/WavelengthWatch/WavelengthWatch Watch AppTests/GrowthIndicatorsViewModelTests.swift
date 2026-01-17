@@ -2,14 +2,14 @@ import Foundation
 import Testing
 @testable import WavelengthWatch_Watch_App
 
-@Suite("TemporalPatternsViewModel Tests")
-struct TemporalPatternsViewModelTests {
+@Suite("GrowthIndicatorsViewModel Tests")
+struct GrowthIndicatorsViewModelTests {
   // MARK: - Mock Service
 
   final class MockAnalyticsService: AnalyticsServiceProtocol {
-    var temporalPatternsToReturn: TemporalPatterns?
+    var growthIndicatorsToReturn: GrowthIndicators?
     var errorToThrow: Error?
-    var getTemporalPatternsCallCount = 0
+    var getGrowthIndicatorsCallCount = 0
     var lastUserId: Int?
     var lastStartDate: Date?
     var lastEndDate: Date?
@@ -31,7 +31,15 @@ struct TemporalPatternsViewModelTests {
       startDate: Date,
       endDate: Date
     ) async throws -> TemporalPatterns {
-      getTemporalPatternsCallCount += 1
+      fatalError("Not implemented in this test")
+    }
+
+    func getGrowthIndicators(
+      userId: Int,
+      startDate: Date,
+      endDate: Date
+    ) async throws -> GrowthIndicators {
+      getGrowthIndicatorsCallCount += 1
       lastUserId = userId
       lastStartDate = startDate
       lastEndDate = endDate
@@ -40,27 +48,19 @@ struct TemporalPatternsViewModelTests {
         throw error
       }
 
-      guard let patterns = temporalPatternsToReturn else {
+      guard let indicators = growthIndicatorsToReturn else {
         throw NSError(domain: "test", code: -1)
       }
 
-      return patterns
-    }
-
-    func getGrowthIndicators(
-      userId: Int,
-      startDate: Date,
-      endDate: Date
-    ) async throws -> GrowthIndicators {
-      fatalError("Not implemented in this test")
+      return indicators
     }
   }
 
   // MARK: - Mock Local Calculator
 
   final class MockLocalAnalyticsCalculator: LocalAnalyticsCalculatorProtocol {
-    var temporalPatternsToReturn: TemporalPatterns?
-    var calculateTemporalPatternsCallCount = 0
+    var growthIndicatorsToReturn: GrowthIndicators?
+    var calculateGrowthIndicatorsCallCount = 0
     var lastEntries: [LocalJournalEntry]?
     var lastStartDate: Date?
     var lastEndDate: Date?
@@ -92,14 +92,7 @@ struct TemporalPatternsViewModelTests {
       startDate: Date,
       endDate: Date
     ) -> TemporalPatterns {
-      calculateTemporalPatternsCallCount += 1
-      lastEntries = entries
-      lastStartDate = startDate
-      lastEndDate = endDate
-      return temporalPatternsToReturn ?? TemporalPatterns(
-        hourlyDistribution: [],
-        consistencyScore: 0.0
-      )
+      fatalError("Not implemented in this test")
     }
 
     func calculateGrowthIndicators(
@@ -107,7 +100,15 @@ struct TemporalPatternsViewModelTests {
       startDate: Date,
       endDate: Date
     ) -> GrowthIndicators {
-      fatalError("Not implemented in this test")
+      calculateGrowthIndicatorsCallCount += 1
+      lastEntries = entries
+      lastStartDate = startDate
+      lastEndDate = endDate
+      return growthIndicatorsToReturn ?? GrowthIndicators(
+        medicinalTrend: 0.0,
+        layerDiversity: 0,
+        phaseCoverage: 0
+      )
     }
   }
 
@@ -180,11 +181,6 @@ struct TemporalPatternsViewModelTests {
     }
   }
 
-  // MARK: - Test Fixtures
-
-  static let testStartDate = Date(timeIntervalSince1970: 1_704_067_200) // 2024-01-01
-  static let testEndDate = Date(timeIntervalSince1970: 1_706_745_600) // 2024-02-01
-
   // MARK: - Initialization Tests
 
   @Test("viewModel starts in idle state")
@@ -193,7 +189,7 @@ struct TemporalPatternsViewModelTests {
     let mockService = MockAnalyticsService()
     let mockPersistence = MockSyncSettingsPersistence()
     let syncSettings = SyncSettings(persistence: mockPersistence)
-    let viewModel = TemporalPatternsViewModel(
+    let viewModel = GrowthIndicatorsViewModel(
       analyticsService: mockService,
       syncSettings: syncSettings
     )
@@ -203,40 +199,37 @@ struct TemporalPatternsViewModelTests {
 
   // MARK: - Loading Tests (Cloud Sync Enabled)
 
-  @Test("viewModel loads temporal patterns from backend when cloud sync enabled")
+  @Test("viewModel loads growth indicators from backend when cloud sync enabled")
   @MainActor
   func viewModel_loadsFromBackendWhenCloudSyncEnabled() async {
     let mockService = MockAnalyticsService()
-    let mockPatterns = TemporalPatterns(
-      hourlyDistribution: [
-        HourlyDistributionItem(hour: 9, count: 5),
-        HourlyDistributionItem(hour: 14, count: 3),
-      ],
-      consistencyScore: 75.0
+    let startDate = Date()
+    let endDate = Date().addingTimeInterval(86400)
+    let mockIndicators = GrowthIndicators(
+      medicinalTrend: 0.15,
+      layerDiversity: 3,
+      phaseCoverage: 5
     )
-    mockService.temporalPatternsToReturn = mockPatterns
+    mockService.growthIndicatorsToReturn = mockIndicators
 
     let mockPersistence = MockSyncSettingsPersistence()
     mockPersistence.boolValues[SyncSettings.cloudSyncEnabledKey] = true
     let syncSettings = SyncSettings(persistence: mockPersistence)
 
-    let viewModel = TemporalPatternsViewModel(
+    let viewModel = GrowthIndicatorsViewModel(
       analyticsService: mockService,
       syncSettings: syncSettings,
       userId: 123
     )
 
-    await viewModel.loadTemporalPatterns(
-      startDate: Self.testStartDate,
-      endDate: Self.testEndDate
-    )
+    await viewModel.loadGrowthIndicators(startDate: startDate, endDate: endDate)
 
-    if case let .loaded(patterns) = viewModel.state {
-      #expect(patterns == mockPatterns)
-      #expect(mockService.getTemporalPatternsCallCount == 1)
+    if case let .loaded(indicators) = viewModel.state {
+      #expect(indicators == mockIndicators)
+      #expect(mockService.getGrowthIndicatorsCallCount == 1)
       #expect(mockService.lastUserId == 123)
-      #expect(mockService.lastStartDate == Self.testStartDate)
-      #expect(mockService.lastEndDate == Self.testEndDate)
+      #expect(mockService.lastStartDate == startDate)
+      #expect(mockService.lastEndDate == endDate)
     } else {
       Issue.record("Expected loaded state, got \(viewModel.state)")
     }
@@ -249,13 +242,12 @@ struct TemporalPatternsViewModelTests {
     mockService.errorToThrow = NSError(domain: "test", code: -1)
 
     let mockCalculator = MockLocalAnalyticsCalculator()
-    let localPatterns = TemporalPatterns(
-      hourlyDistribution: [
-        HourlyDistributionItem(hour: 10, count: 2),
-      ],
-      consistencyScore: 50.0
+    let localIndicators = GrowthIndicators(
+      medicinalTrend: 0.20,
+      layerDiversity: 4,
+      phaseCoverage: 6
     )
-    mockCalculator.temporalPatternsToReturn = localPatterns
+    mockCalculator.growthIndicatorsToReturn = localIndicators
 
     let mockRepository = MockJournalRepository()
     mockRepository.entriesToReturn = [
@@ -266,22 +258,22 @@ struct TemporalPatternsViewModelTests {
     mockPersistence.boolValues[SyncSettings.cloudSyncEnabledKey] = true
     let syncSettings = SyncSettings(persistence: mockPersistence)
 
-    let viewModel = TemporalPatternsViewModel(
+    let startDate = Date()
+    let endDate = Date().addingTimeInterval(86400)
+
+    let viewModel = GrowthIndicatorsViewModel(
       analyticsService: mockService,
       localCalculator: mockCalculator,
       journalRepository: mockRepository,
       syncSettings: syncSettings
     )
 
-    await viewModel.loadTemporalPatterns(
-      startDate: Self.testStartDate,
-      endDate: Self.testEndDate
-    )
+    await viewModel.loadGrowthIndicators(startDate: startDate, endDate: endDate)
 
-    if case let .loaded(patterns) = viewModel.state {
-      #expect(patterns == localPatterns)
-      #expect(mockService.getTemporalPatternsCallCount == 1)
-      #expect(mockCalculator.calculateTemporalPatternsCallCount == 1)
+    if case let .loaded(indicators) = viewModel.state {
+      #expect(indicators == localIndicators)
+      #expect(mockService.getGrowthIndicatorsCallCount == 1)
+      #expect(mockCalculator.calculateGrowthIndicatorsCallCount == 1)
       #expect(mockRepository.fetchAllCallCount == 1)
     } else {
       Issue.record("Expected loaded state with local data, got \(viewModel.state)")
@@ -294,20 +286,19 @@ struct TemporalPatternsViewModelTests {
   @MainActor
   func viewModel_usesLocalOnlyWhenCloudSyncDisabled() async {
     let mockService = MockAnalyticsService()
-    mockService.temporalPatternsToReturn = TemporalPatterns(
-      hourlyDistribution: [],
-      consistencyScore: 0.0
+    mockService.growthIndicatorsToReturn = GrowthIndicators(
+      medicinalTrend: 0.0,
+      layerDiversity: 0,
+      phaseCoverage: 0
     )
 
     let mockCalculator = MockLocalAnalyticsCalculator()
-    let localPatterns = TemporalPatterns(
-      hourlyDistribution: [
-        HourlyDistributionItem(hour: 8, count: 7),
-        HourlyDistributionItem(hour: 20, count: 4),
-      ],
-      consistencyScore: 85.0
+    let localIndicators = GrowthIndicators(
+      medicinalTrend: 0.25,
+      layerDiversity: 5,
+      phaseCoverage: 7
     )
-    mockCalculator.temporalPatternsToReturn = localPatterns
+    mockCalculator.growthIndicatorsToReturn = localIndicators
 
     let mockRepository = MockJournalRepository()
     mockRepository.entriesToReturn = [
@@ -318,22 +309,22 @@ struct TemporalPatternsViewModelTests {
     mockPersistence.boolValues[SyncSettings.cloudSyncEnabledKey] = false
     let syncSettings = SyncSettings(persistence: mockPersistence)
 
-    let viewModel = TemporalPatternsViewModel(
+    let startDate = Date()
+    let endDate = Date().addingTimeInterval(86400)
+
+    let viewModel = GrowthIndicatorsViewModel(
       analyticsService: mockService,
       localCalculator: mockCalculator,
       journalRepository: mockRepository,
       syncSettings: syncSettings
     )
 
-    await viewModel.loadTemporalPatterns(
-      startDate: Self.testStartDate,
-      endDate: Self.testEndDate
-    )
+    await viewModel.loadGrowthIndicators(startDate: startDate, endDate: endDate)
 
-    if case let .loaded(patterns) = viewModel.state {
-      #expect(patterns == localPatterns)
-      #expect(mockService.getTemporalPatternsCallCount == 0) // Backend NOT called
-      #expect(mockCalculator.calculateTemporalPatternsCallCount == 1)
+    if case let .loaded(indicators) = viewModel.state {
+      #expect(indicators == localIndicators)
+      #expect(mockService.getGrowthIndicatorsCallCount == 0) // Backend NOT called
+      #expect(mockCalculator.calculateGrowthIndicatorsCallCount == 1)
       #expect(mockRepository.fetchAllCallCount == 1)
     } else {
       Issue.record("Expected loaded state, got \(viewModel.state)")
@@ -355,21 +346,21 @@ struct TemporalPatternsViewModelTests {
     mockPersistence.boolValues[SyncSettings.cloudSyncEnabledKey] = true
     let syncSettings = SyncSettings(persistence: mockPersistence)
 
-    let viewModel = TemporalPatternsViewModel(
+    let startDate = Date()
+    let endDate = Date().addingTimeInterval(86400)
+
+    let viewModel = GrowthIndicatorsViewModel(
       analyticsService: mockService,
       localCalculator: nil,
       journalRepository: mockRepository,
       syncSettings: syncSettings
     )
 
-    await viewModel.loadTemporalPatterns(
-      startDate: Self.testStartDate,
-      endDate: Self.testEndDate
-    )
+    await viewModel.loadGrowthIndicators(startDate: startDate, endDate: endDate)
 
     if case let .error(message) = viewModel.state {
       #expect(message.contains("Failed to load"))
-      #expect(mockService.getTemporalPatternsCallCount == 1)
+      #expect(mockService.getGrowthIndicatorsCallCount == 1)
     } else {
       Issue.record("Expected error state, got \(viewModel.state)")
     }
@@ -384,17 +375,17 @@ struct TemporalPatternsViewModelTests {
     mockPersistence.boolValues[SyncSettings.cloudSyncEnabledKey] = false
     let syncSettings = SyncSettings(persistence: mockPersistence)
 
-    let viewModel = TemporalPatternsViewModel(
+    let startDate = Date()
+    let endDate = Date().addingTimeInterval(86400)
+
+    let viewModel = GrowthIndicatorsViewModel(
       analyticsService: mockService,
       localCalculator: nil,
       journalRepository: nil,
       syncSettings: syncSettings
     )
 
-    await viewModel.loadTemporalPatterns(
-      startDate: Self.testStartDate,
-      endDate: Self.testEndDate
-    )
+    await viewModel.loadGrowthIndicators(startDate: startDate, endDate: endDate)
 
     if case let .error(message) = viewModel.state {
       #expect(message.contains("Local analytics"))
@@ -405,87 +396,122 @@ struct TemporalPatternsViewModelTests {
 
   // MARK: - Computed Properties Tests
 
-  @Test("hourlyDistribution returns correct items when loaded")
+  @Test("medicinalTrend returns correct value when loaded")
   @MainActor
-  func hourlyDistribution_returnsItemsWhenLoaded() {
+  func medicinalTrend_returnsValueWhenLoaded() {
     let mockService = MockAnalyticsService()
     let mockPersistence = MockSyncSettingsPersistence()
     let syncSettings = SyncSettings(persistence: mockPersistence)
 
-    let viewModel = TemporalPatternsViewModel(
+    let viewModel = GrowthIndicatorsViewModel(
       analyticsService: mockService,
       syncSettings: syncSettings
     )
 
-    let distribution = [
-      HourlyDistributionItem(hour: 9, count: 5),
-      HourlyDistributionItem(hour: 14, count: 3),
-    ]
-    let patterns = TemporalPatterns(
-      hourlyDistribution: distribution,
-      consistencyScore: 75.0
+    let indicators = GrowthIndicators(
+      medicinalTrend: 0.42,
+      layerDiversity: 3,
+      phaseCoverage: 5
     )
-    viewModel.state = .loaded(patterns)
+    viewModel.state = .loaded(indicators)
 
-    #expect(viewModel.hourlyDistribution == distribution)
+    #expect(viewModel.medicinalTrend == 0.42)
   }
 
-  @Test("hourlyDistribution returns empty array when not loaded")
+  @Test("medicinalTrend returns zero when not loaded")
   @MainActor
-  func hourlyDistribution_returnsEmptyWhenNotLoaded() {
+  func medicinalTrend_returnsZeroWhenNotLoaded() {
     let mockService = MockAnalyticsService()
     let mockPersistence = MockSyncSettingsPersistence()
     let syncSettings = SyncSettings(persistence: mockPersistence)
 
-    let viewModel = TemporalPatternsViewModel(
+    let viewModel = GrowthIndicatorsViewModel(
       analyticsService: mockService,
       syncSettings: syncSettings
     )
 
-    #expect(viewModel.hourlyDistribution.isEmpty)
+    #expect(viewModel.medicinalTrend == 0.0)
   }
 
-  @Test("consistencyScore returns correct value when loaded")
+  @Test("layerDiversity returns correct value when loaded")
   @MainActor
-  func consistencyScore_returnsValueWhenLoaded() {
+  func layerDiversity_returnsValueWhenLoaded() {
     let mockService = MockAnalyticsService()
     let mockPersistence = MockSyncSettingsPersistence()
     let syncSettings = SyncSettings(persistence: mockPersistence)
 
-    let viewModel = TemporalPatternsViewModel(
+    let viewModel = GrowthIndicatorsViewModel(
       analyticsService: mockService,
       syncSettings: syncSettings
     )
 
-    let patterns = TemporalPatterns(
-      hourlyDistribution: [],
-      consistencyScore: 82.5
+    let indicators = GrowthIndicators(
+      medicinalTrend: 0.30,
+      layerDiversity: 6,
+      phaseCoverage: 8
     )
-    viewModel.state = .loaded(patterns)
+    viewModel.state = .loaded(indicators)
 
-    #expect(viewModel.consistencyScore == 82.5)
+    #expect(viewModel.layerDiversity == 6)
   }
 
-  @Test("consistencyScore returns zero when not loaded")
+  @Test("layerDiversity returns zero when not loaded")
   @MainActor
-  func consistencyScore_returnsZeroWhenNotLoaded() {
+  func layerDiversity_returnsZeroWhenNotLoaded() {
     let mockService = MockAnalyticsService()
     let mockPersistence = MockSyncSettingsPersistence()
     let syncSettings = SyncSettings(persistence: mockPersistence)
 
-    let viewModel = TemporalPatternsViewModel(
+    let viewModel = GrowthIndicatorsViewModel(
       analyticsService: mockService,
       syncSettings: syncSettings
     )
 
-    #expect(viewModel.consistencyScore == 0.0)
+    #expect(viewModel.layerDiversity == 0)
+  }
+
+  @Test("phaseCoverage returns correct value when loaded")
+  @MainActor
+  func phaseCoverage_returnsValueWhenLoaded() {
+    let mockService = MockAnalyticsService()
+    let mockPersistence = MockSyncSettingsPersistence()
+    let syncSettings = SyncSettings(persistence: mockPersistence)
+
+    let viewModel = GrowthIndicatorsViewModel(
+      analyticsService: mockService,
+      syncSettings: syncSettings
+    )
+
+    let indicators = GrowthIndicators(
+      medicinalTrend: 0.20,
+      layerDiversity: 4,
+      phaseCoverage: 9
+    )
+    viewModel.state = .loaded(indicators)
+
+    #expect(viewModel.phaseCoverage == 9)
+  }
+
+  @Test("phaseCoverage returns zero when not loaded")
+  @MainActor
+  func phaseCoverage_returnsZeroWhenNotLoaded() {
+    let mockService = MockAnalyticsService()
+    let mockPersistence = MockSyncSettingsPersistence()
+    let syncSettings = SyncSettings(persistence: mockPersistence)
+
+    let viewModel = GrowthIndicatorsViewModel(
+      analyticsService: mockService,
+      syncSettings: syncSettings
+    )
+
+    #expect(viewModel.phaseCoverage == 0)
   }
 
   // MARK: - Retry Tests
 
-  @Test("viewModel retry calls loadTemporalPatterns")
+  @Test("viewModel retry calls loadGrowthIndicators")
   @MainActor
-  func viewModel_retryCallsLoadTemporalPatterns() async {
+  func viewModel_retryCallsLoadGrowthIndicators() async {
     let mockService = MockAnalyticsService()
     mockService.errorToThrow = NSError(domain: "test", code: -1)
 
@@ -493,27 +519,28 @@ struct TemporalPatternsViewModelTests {
     mockPersistence.boolValues[SyncSettings.cloudSyncEnabledKey] = true
     let syncSettings = SyncSettings(persistence: mockPersistence)
 
-    let viewModel = TemporalPatternsViewModel(
+    let startDate = Date()
+    let endDate = Date().addingTimeInterval(86400)
+
+    let viewModel = GrowthIndicatorsViewModel(
       analyticsService: mockService,
       syncSettings: syncSettings
     )
 
-    await viewModel.loadTemporalPatterns(
-      startDate: Self.testStartDate,
-      endDate: Self.testEndDate
-    )
-    #expect(mockService.getTemporalPatternsCallCount == 1)
+    await viewModel.loadGrowthIndicators(startDate: startDate, endDate: endDate)
+    #expect(mockService.getGrowthIndicatorsCallCount == 1)
 
     // Clear error and retry
     mockService.errorToThrow = nil
-    mockService.temporalPatternsToReturn = TemporalPatterns(
-      hourlyDistribution: [],
-      consistencyScore: 60.0
+    mockService.growthIndicatorsToReturn = GrowthIndicators(
+      medicinalTrend: 0.10,
+      layerDiversity: 2,
+      phaseCoverage: 4
     )
 
-    await viewModel.retry(startDate: Self.testStartDate, endDate: Self.testEndDate)
+    await viewModel.retry(startDate: startDate, endDate: endDate)
 
-    #expect(mockService.getTemporalPatternsCallCount == 2)
+    #expect(mockService.getGrowthIndicatorsCallCount == 2)
     if case .loaded = viewModel.state {
       // Success
     } else {
@@ -527,13 +554,12 @@ struct TemporalPatternsViewModelTests {
   @MainActor
   func viewModel_usesBackendWithoutTryingLocal() async {
     let mockService = MockAnalyticsService()
-    let backendPatterns = TemporalPatterns(
-      hourlyDistribution: [
-        HourlyDistributionItem(hour: 12, count: 10),
-      ],
-      consistencyScore: 90.0
+    let backendIndicators = GrowthIndicators(
+      medicinalTrend: 0.35,
+      layerDiversity: 6,
+      phaseCoverage: 8
     )
-    mockService.temporalPatternsToReturn = backendPatterns
+    mockService.growthIndicatorsToReturn = backendIndicators
 
     let mockCalculator = MockLocalAnalyticsCalculator()
     let mockRepository = MockJournalRepository()
@@ -542,22 +568,22 @@ struct TemporalPatternsViewModelTests {
     mockPersistence.boolValues[SyncSettings.cloudSyncEnabledKey] = true
     let syncSettings = SyncSettings(persistence: mockPersistence)
 
-    let viewModel = TemporalPatternsViewModel(
+    let startDate = Date()
+    let endDate = Date().addingTimeInterval(86400)
+
+    let viewModel = GrowthIndicatorsViewModel(
       analyticsService: mockService,
       localCalculator: mockCalculator,
       journalRepository: mockRepository,
       syncSettings: syncSettings
     )
 
-    await viewModel.loadTemporalPatterns(
-      startDate: Self.testStartDate,
-      endDate: Self.testEndDate
-    )
+    await viewModel.loadGrowthIndicators(startDate: startDate, endDate: endDate)
 
-    if case let .loaded(patterns) = viewModel.state {
-      #expect(patterns == backendPatterns)
-      #expect(mockService.getTemporalPatternsCallCount == 1)
-      #expect(mockCalculator.calculateTemporalPatternsCallCount == 0)
+    if case let .loaded(indicators) = viewModel.state {
+      #expect(indicators == backendIndicators)
+      #expect(mockService.getGrowthIndicatorsCallCount == 1)
+      #expect(mockCalculator.calculateGrowthIndicatorsCallCount == 0)
       #expect(mockRepository.fetchAllCallCount == 0)
     } else {
       Issue.record("Expected loaded state, got \(viewModel.state)")
@@ -572,11 +598,12 @@ struct TemporalPatternsViewModelTests {
     let mockService = MockAnalyticsService()
 
     let mockCalculator = MockLocalAnalyticsCalculator()
-    let localPatterns = TemporalPatterns(
-      hourlyDistribution: [],
-      consistencyScore: 50.0
+    let mockIndicators = GrowthIndicators(
+      medicinalTrend: 0.15,
+      layerDiversity: 4,
+      phaseCoverage: 6
     )
-    mockCalculator.temporalPatternsToReturn = localPatterns
+    mockCalculator.growthIndicatorsToReturn = mockIndicators
 
     let mockRepository = MockJournalRepository()
     mockRepository.entriesToReturn = [
@@ -587,19 +614,19 @@ struct TemporalPatternsViewModelTests {
     mockPersistence.boolValues[SyncSettings.cloudSyncEnabledKey] = false
     let syncSettings = SyncSettings(persistence: mockPersistence)
 
-    let viewModel = TemporalPatternsViewModel(
+    let startDate = Date()
+    let endDate = Date().addingTimeInterval(86400 * 7) // 7 days later
+
+    let viewModel = GrowthIndicatorsViewModel(
       analyticsService: mockService,
       localCalculator: mockCalculator,
       journalRepository: mockRepository,
       syncSettings: syncSettings
     )
 
-    await viewModel.loadTemporalPatterns(
-      startDate: Self.testStartDate,
-      endDate: Self.testEndDate
-    )
+    await viewModel.loadGrowthIndicators(startDate: startDate, endDate: endDate)
 
-    #expect(mockCalculator.lastStartDate == Self.testStartDate)
-    #expect(mockCalculator.lastEndDate == Self.testEndDate)
+    #expect(mockCalculator.lastStartDate == startDate)
+    #expect(mockCalculator.lastEndDate == endDate)
   }
 }
