@@ -44,6 +44,14 @@ struct SelfCareViewModelTests {
     ) async throws -> TemporalPatterns {
       fatalError("Not implemented in this test")
     }
+
+    func getGrowthIndicators(
+      userId: Int,
+      startDate: Date,
+      endDate: Date
+    ) async throws -> GrowthIndicators {
+      fatalError("Not implemented in this test")
+    }
   }
 
   // MARK: - Mock Local Calculator

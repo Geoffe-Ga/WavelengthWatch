@@ -5,6 +5,7 @@ protocol AnalyticsServiceProtocol {
   func getEmotionalLandscape(userId: Int) async throws -> EmotionalLandscape
   func getSelfCare(userId: Int, limit: Int) async throws -> SelfCareAnalytics
   func getTemporalPatterns(userId: Int, startDate: Date, endDate: Date) async throws -> TemporalPatterns
+  func getGrowthIndicators(userId: Int, startDate: Date, endDate: Date) async throws -> GrowthIndicators
 }
 
 final class AnalyticsService: AnalyticsServiceProtocol {
@@ -38,6 +39,18 @@ final class AnalyticsService: AnalyticsServiceProtocol {
     let startStr = formatter.string(from: startDate)
     let endStr = formatter.string(from: endDate)
     let path = "\(APIPath.analyticsTemporal)?user_id=\(userId)&start_date=\(startStr)&end_date=\(endStr)"
+    return try await apiClient.get(path)
+  }
+
+  func getGrowthIndicators(
+    userId: Int,
+    startDate: Date,
+    endDate: Date
+  ) async throws -> GrowthIndicators {
+    let formatter = ISO8601DateFormatter()
+    let startStr = formatter.string(from: startDate)
+    let endStr = formatter.string(from: endDate)
+    let path = "\(APIPath.analyticsGrowth)?user_id=\(userId)&start_date=\(startStr)&end_date=\(endStr)"
     return try await apiClient.get(path)
   }
 }
