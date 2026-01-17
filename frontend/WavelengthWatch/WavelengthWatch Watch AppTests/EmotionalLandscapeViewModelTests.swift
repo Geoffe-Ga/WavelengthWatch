@@ -32,6 +32,14 @@ struct EmotionalLandscapeViewModelTests {
     func getSelfCare(userId: Int, limit: Int) async throws -> SelfCareAnalytics {
       fatalError("Not implemented in this test")
     }
+
+    func getTemporalPatterns(
+      userId: Int,
+      startDate: Date,
+      endDate: Date
+    ) async throws -> TemporalPatterns {
+      fatalError("Not implemented in this test")
+    }
   }
 
   // MARK: - Initialization Tests

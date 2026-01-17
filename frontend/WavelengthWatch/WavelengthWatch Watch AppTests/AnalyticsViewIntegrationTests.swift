@@ -32,6 +32,14 @@ struct AnalyticsViewIntegrationTests {
     func getSelfCare(userId: Int, limit: Int) async throws -> SelfCareAnalytics {
       throw NSError(domain: "test", code: -1)
     }
+
+    func getTemporalPatterns(
+      userId: Int,
+      startDate: Date,
+      endDate: Date
+    ) async throws -> TemporalPatterns {
+      throw NSError(domain: "test", code: -1)
+    }
   }
 
   final class MockJournalRepository: JournalRepositoryProtocol {
