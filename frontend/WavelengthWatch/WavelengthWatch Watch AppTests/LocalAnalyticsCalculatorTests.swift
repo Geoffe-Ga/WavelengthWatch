@@ -656,4 +656,248 @@ struct LocalAnalyticsCalculatorTests {
     #expect(abs(strategy102!.percentage - 33.33) < 0.1)
     #expect(abs(strategy103!.percentage - 16.67) < 0.1)
   }
+
+  // MARK: - Temporal Patterns Tests
+
+  @Test("calculateTemporalPatterns returns empty for empty entries")
+  func calculateTemporalPatterns_returnsEmptyForEmpty() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let entries: [LocalJournalEntry] = []
+    let now = Date()
+
+    let result = calculator.calculateTemporalPatterns(
+      entries: entries,
+      startDate: now.addingTimeInterval(-86400 * 7),
+      endDate: now
+    )
+
+    #expect(result.hourlyDistribution.isEmpty)
+    #expect(result.consistencyScore == 0.0)
+  }
+
+  @Test("calculateTemporalPatterns calculates single entry distribution")
+  func calculateTemporalPatterns_singleEntry() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let calendar = Calendar.current
+
+    // Create entry at 10 AM
+    var components = calendar.dateComponents([.year, .month, .day], from: Date())
+    components.hour = 10
+    components.minute = 30
+    let entryDate = calendar.date(from: components)!
+
+    let entries = [
+      LocalJournalEntry(createdAt: entryDate, userID: 1, curriculumID: 1),
+    ]
+
+    let result = calculator.calculateTemporalPatterns(
+      entries: entries,
+      startDate: entryDate,
+      endDate: entryDate
+    )
+
+    #expect(result.hourlyDistribution.count == 1)
+    #expect(result.hourlyDistribution[0].hour == 10)
+    #expect(result.hourlyDistribution[0].count == 1)
+  }
+
+  @Test("calculateTemporalPatterns aggregates same hour entries")
+  func calculateTemporalPatterns_aggregatesSameHour() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let calendar = Calendar.current
+
+    // Create 3 entries at 14:00 (2 PM) on different days
+    var components = calendar.dateComponents([.year, .month, .day], from: Date())
+    components.hour = 14
+    components.minute = 0
+    let day1 = calendar.date(from: components)!
+    let day2 = calendar.date(byAdding: .day, value: -1, to: day1)!
+    let day3 = calendar.date(byAdding: .day, value: -2, to: day1)!
+
+    let entries = [
+      LocalJournalEntry(createdAt: day1, userID: 1, curriculumID: 1),
+      LocalJournalEntry(createdAt: day2, userID: 1, curriculumID: 1),
+      LocalJournalEntry(createdAt: day3, userID: 1, curriculumID: 1),
+    ]
+
+    let result = calculator.calculateTemporalPatterns(
+      entries: entries,
+      startDate: day3,
+      endDate: day1
+    )
+
+    #expect(result.hourlyDistribution.count == 1)
+    #expect(result.hourlyDistribution[0].hour == 14)
+    #expect(result.hourlyDistribution[0].count == 3)
+  }
+
+  @Test("calculateTemporalPatterns distributes across multiple hours")
+  func calculateTemporalPatterns_multipleHours() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let calendar = Calendar.current
+
+    // Create entries at different hours: 9 AM, 14 PM, 21 PM
+    var components = calendar.dateComponents([.year, .month, .day], from: Date())
+
+    components.hour = 9
+    let morning = calendar.date(from: components)!
+
+    components.hour = 14
+    let afternoon = calendar.date(from: components)!
+
+    components.hour = 21
+    let evening = calendar.date(from: components)!
+
+    let entries = [
+      LocalJournalEntry(createdAt: morning, userID: 1, curriculumID: 1),
+      LocalJournalEntry(createdAt: afternoon, userID: 1, curriculumID: 1),
+      LocalJournalEntry(createdAt: evening, userID: 1, curriculumID: 1),
+    ]
+
+    let result = calculator.calculateTemporalPatterns(
+      entries: entries,
+      startDate: morning,
+      endDate: evening
+    )
+
+    #expect(result.hourlyDistribution.count == 3)
+
+    // Verify sorted by hour
+    #expect(result.hourlyDistribution[0].hour == 9)
+    #expect(result.hourlyDistribution[1].hour == 14)
+    #expect(result.hourlyDistribution[2].hour == 21)
+  }
+
+  @Test("calculateTemporalPatterns handles midnight hour (0)")
+  func calculateTemporalPatterns_midnightHour() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let calendar = Calendar.current
+
+    // Create entry at midnight (hour 0)
+    var components = calendar.dateComponents([.year, .month, .day], from: Date())
+    components.hour = 0
+    components.minute = 30
+    let midnight = calendar.date(from: components)!
+
+    let entries = [
+      LocalJournalEntry(createdAt: midnight, userID: 1, curriculumID: 1),
+    ]
+
+    let result = calculator.calculateTemporalPatterns(
+      entries: entries,
+      startDate: midnight,
+      endDate: midnight
+    )
+
+    #expect(result.hourlyDistribution.count == 1)
+    #expect(result.hourlyDistribution[0].hour == 0)
+    #expect(result.hourlyDistribution[0].count == 1)
+  }
+
+  @Test("calculateTemporalPatterns calculates 100% consistency for daily entries")
+  func calculateTemporalPatterns_fullConsistency() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let calendar = Calendar.current
+
+    // Create entries for 7 consecutive days
+    let today = calendar.startOfDay(for: Date())
+    var entries: [LocalJournalEntry] = []
+
+    for dayOffset in 0 ..< 7 {
+      let date = calendar.date(byAdding: .day, value: -dayOffset, to: today)!
+      entries.append(LocalJournalEntry(createdAt: date, userID: 1, curriculumID: 1))
+    }
+
+    let startDate = calendar.date(byAdding: .day, value: -6, to: today)!
+
+    let result = calculator.calculateTemporalPatterns(
+      entries: entries,
+      startDate: startDate,
+      endDate: today
+    )
+
+    #expect(abs(result.consistencyScore - 100.0) < 0.01)
+  }
+
+  @Test("calculateTemporalPatterns calculates partial consistency")
+  func calculateTemporalPatterns_partialConsistency() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let calendar = Calendar.current
+
+    // Create entries for 3 out of 6 days = 50%
+    let today = calendar.startOfDay(for: Date())
+    let day2 = calendar.date(byAdding: .day, value: -2, to: today)!
+    let day4 = calendar.date(byAdding: .day, value: -4, to: today)!
+
+    let entries = [
+      LocalJournalEntry(createdAt: today, userID: 1, curriculumID: 1),
+      LocalJournalEntry(createdAt: day2, userID: 1, curriculumID: 1),
+      LocalJournalEntry(createdAt: day4, userID: 1, curriculumID: 1),
+    ]
+
+    let startDate = calendar.date(byAdding: .day, value: -5, to: today)!
+
+    let result = calculator.calculateTemporalPatterns(
+      entries: entries,
+      startDate: startDate,
+      endDate: today
+    )
+
+    // 3 unique days / 6 total days = 50%
+    #expect(abs(result.consistencyScore - 50.0) < 0.01)
+  }
+
+  @Test("calculateTemporalPatterns handles multiple entries same day")
+  func calculateTemporalPatterns_multipleEntriesSameDay() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let calendar = Calendar.current
+
+    // Create 5 entries on the same day
+    let today = calendar.startOfDay(for: Date())
+    var entries: [LocalJournalEntry] = []
+
+    for hourOffset in [8, 10, 12, 14, 16] {
+      let date = calendar.date(byAdding: .hour, value: hourOffset, to: today)!
+      entries.append(LocalJournalEntry(createdAt: date, userID: 1, curriculumID: 1))
+    }
+
+    let result = calculator.calculateTemporalPatterns(
+      entries: entries,
+      startDate: today,
+      endDate: today
+    )
+
+    // 1 unique day / 1 total day = 100%
+    #expect(abs(result.consistencyScore - 100.0) < 0.01)
+    // 5 different hours
+    #expect(result.hourlyDistribution.count == 5)
+  }
+
+  @Test("calculateTemporalPatterns sorts distribution by hour")
+  func calculateTemporalPatterns_sortsDistributionByHour() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let calendar = Calendar.current
+
+    // Create entries in reverse order: 22, 15, 8, 3
+    var components = calendar.dateComponents([.year, .month, .day], from: Date())
+
+    var entries: [LocalJournalEntry] = []
+    for hour in [22, 15, 8, 3] {
+      components.hour = hour
+      let date = calendar.date(from: components)!
+      entries.append(LocalJournalEntry(createdAt: date, userID: 1, curriculumID: 1))
+    }
+
+    let result = calculator.calculateTemporalPatterns(
+      entries: entries,
+      startDate: calendar.date(from: components)!,
+      endDate: calendar.date(from: components)!
+    )
+
+    // Verify sorted ascending
+    #expect(result.hourlyDistribution[0].hour == 3)
+    #expect(result.hourlyDistribution[1].hour == 8)
+    #expect(result.hourlyDistribution[2].hour == 15)
+    #expect(result.hourlyDistribution[3].hour == 22)
+  }
 }

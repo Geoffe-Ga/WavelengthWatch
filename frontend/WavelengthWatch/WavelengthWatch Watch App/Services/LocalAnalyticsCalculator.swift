@@ -30,6 +30,12 @@ protocol LocalAnalyticsCalculatorProtocol {
     entries: [LocalJournalEntry],
     limit: Int
   ) -> SelfCareAnalytics
+
+  func calculateTemporalPatterns(
+    entries: [LocalJournalEntry],
+    startDate: Date,
+    endDate: Date
+  ) -> TemporalPatterns
 }
 
 /// Calculates analytics from local journal entries without backend dependency.
@@ -303,6 +309,44 @@ final class LocalAnalyticsCalculator: LocalAnalyticsCalculatorProtocol {
       topStrategies: topStrategiesList,
       diversityScore: diversityScore,
       totalStrategyEntries: totalStrategyEntries
+    )
+  }
+
+  func calculateTemporalPatterns(
+    entries: [LocalJournalEntry],
+    startDate: Date,
+    endDate: Date
+  ) -> TemporalPatterns {
+    guard !entries.isEmpty else {
+      return TemporalPatterns(
+        hourlyDistribution: [],
+        consistencyScore: 0.0
+      )
+    }
+
+    let calendar = Calendar.current
+
+    // Calculate hourly distribution
+    var hourCounts: [Int: Int] = [:]
+    for entry in entries {
+      let hour = calendar.component(.hour, from: entry.createdAt)
+      hourCounts[hour, default: 0] += 1
+    }
+
+    let hourlyDistribution = hourCounts.map { hour, count in
+      HourlyDistributionItem(hour: hour, count: count)
+    }.sorted { $0.hour < $1.hour }
+
+    // Calculate consistency score (days with entries / total days)
+    let uniqueDates = Set(entries.map { calendar.startOfDay(for: $0.createdAt) })
+    let startDateOnly = calendar.startOfDay(for: startDate)
+    let endDateOnly = calendar.startOfDay(for: endDate)
+    let totalDays = calendar.dateComponents([.day], from: startDateOnly, to: endDateOnly).day! + 1
+    let consistencyScore = (Double(uniqueDates.count) / Double(totalDays)) * 100
+
+    return TemporalPatterns(
+      hourlyDistribution: hourlyDistribution,
+      consistencyScore: consistencyScore
     )
   }
 
