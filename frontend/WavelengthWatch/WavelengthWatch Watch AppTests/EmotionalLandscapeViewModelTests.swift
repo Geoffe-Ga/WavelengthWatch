@@ -28,6 +28,10 @@ struct EmotionalLandscapeViewModelTests {
 
       return landscape
     }
+
+    func getSelfCare(userId: Int, limit: Int) async throws -> SelfCareAnalytics {
+      fatalError("Not implemented in this test")
+    }
   }
 
   // MARK: - Initialization Tests
