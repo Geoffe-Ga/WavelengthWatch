@@ -1585,6 +1585,10 @@ struct AnalyticsView: View {
   @StateObject private var viewModel: AnalyticsViewModel
   @EnvironmentObject private var contentViewModel: ContentViewModel
 
+  // Store repositories for passing to detail hub
+  private let journalRepository: JournalRepositoryProtocol
+  private let catalogRepository: CatalogRepositoryProtocol
+
   /// Creates an AnalyticsView with offline analytics support.
   ///
   /// Offline analytics require a cached catalog. If `catalogRepository.cachedCatalog()`
@@ -1598,6 +1602,9 @@ struct AnalyticsView: View {
     journalRepository: JournalRepositoryProtocol,
     catalogRepository: CatalogRepositoryProtocol
   ) {
+    self.journalRepository = journalRepository
+    self.catalogRepository = catalogRepository
+
     let configuration = AppConfiguration()
     let apiClient = APIClient(baseURL: configuration.apiBaseURL)
     let analyticsService = AnalyticsService(apiClient: apiClient)
@@ -1706,6 +1713,9 @@ struct AnalyticsView: View {
 
         // Quick Stats
         quickStatsSection(overview: overview)
+
+        // Detailed Insights Navigation
+        detailedInsightsButton
       }
     }
   }
@@ -1942,6 +1952,45 @@ struct AnalyticsView: View {
         .font(.body)
         .fontWeight(.semibold)
     }
+  }
+
+  // MARK: - Detailed Insights Button
+
+  private var detailedInsightsButton: some View {
+    NavigationLink(
+      destination: AnalyticsDetailHubView(
+        journalRepository: journalRepository,
+        catalogRepository: catalogRepository
+      )
+    ) {
+      HStack {
+        Image(systemName: "chart.bar.doc.horizontal")
+          .font(.title3)
+          .foregroundColor(.blue)
+
+        VStack(alignment: .leading, spacing: 2) {
+          Text("View Detailed Insights")
+            .font(.body)
+            .fontWeight(.semibold)
+
+          Text("Explore patterns, trends & growth")
+            .font(.caption2)
+            .foregroundColor(.secondary)
+        }
+
+        Spacer()
+
+        Image(systemName: "chevron.right")
+          .font(.caption)
+          .foregroundColor(.secondary)
+      }
+      .padding(12)
+      .background(
+        RoundedRectangle(cornerRadius: 8)
+          .fill(Color.blue.opacity(0.15))
+      )
+    }
+    .buttonStyle(.plain)
   }
 }
 
