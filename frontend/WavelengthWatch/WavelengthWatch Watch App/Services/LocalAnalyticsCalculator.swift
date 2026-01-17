@@ -36,6 +36,12 @@ protocol LocalAnalyticsCalculatorProtocol {
     startDate: Date,
     endDate: Date
   ) -> TemporalPatterns
+
+  func calculateGrowthIndicators(
+    entries: [LocalJournalEntry],
+    startDate: Date,
+    endDate: Date
+  ) -> GrowthIndicators
 }
 
 /// Calculates analytics from local journal entries without backend dependency.
@@ -347,6 +353,69 @@ final class LocalAnalyticsCalculator: LocalAnalyticsCalculatorProtocol {
     return TemporalPatterns(
       hourlyDistribution: hourlyDistribution,
       consistencyScore: consistencyScore
+    )
+  }
+
+  func calculateGrowthIndicators(
+    entries: [LocalJournalEntry],
+    startDate: Date,
+    endDate: Date
+  ) -> GrowthIndicators {
+    guard !entries.isEmpty else {
+      return GrowthIndicators(
+        medicinalTrend: 0.0,
+        layerDiversity: 0,
+        phaseCoverage: 0
+      )
+    }
+
+    // Filter entries to the specified date range
+    let filteredEntries = entries.filter {
+      $0.createdAt >= startDate && $0.createdAt <= endDate
+    }
+
+    guard !filteredEntries.isEmpty else {
+      return GrowthIndicators(
+        medicinalTrend: 0.0,
+        layerDiversity: 0,
+        phaseCoverage: 0
+      )
+    }
+
+    // Calculate medicinal trend (compare current period to previous period)
+    let duration = endDate.timeIntervalSince(startDate)
+    let prevStartDate = startDate.addingTimeInterval(-duration)
+    let prevEndDate = startDate
+    let medicinalTrend = calculateMedicinalTrend(
+      entries: entries,
+      currentStart: startDate,
+      currentEnd: endDate,
+      prevStart: prevStartDate,
+      prevEnd: prevEndDate
+    )
+
+    // Calculate layer diversity (unique layers accessed in date range)
+    var uniqueLayers = Set<Int>()
+    for entry in filteredEntries {
+      if let info = curriculumLookup[entry.curriculumID] {
+        uniqueLayers.insert(info.layerId)
+      }
+    }
+    let layerDiversity = uniqueLayers.count
+
+    // Calculate phase coverage (unique phases accessed in date range)
+    var uniquePhases = Set<Int>()
+    for entry in filteredEntries {
+      if let info = curriculumLookup[entry.curriculumID] {
+        uniquePhases.insert(info.phaseId)
+      }
+    }
+    let phaseCoverage = uniquePhases.count
+
+    return GrowthIndicators(
+      medicinalTrend: medicinalTrend,
+      layerDiversity: layerDiversity,
+      phaseCoverage: phaseCoverage
     )
   }
 

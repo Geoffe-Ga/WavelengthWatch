@@ -900,4 +900,256 @@ struct LocalAnalyticsCalculatorTests {
     #expect(result.hourlyDistribution[2].hour == 15)
     #expect(result.hourlyDistribution[3].hour == 22)
   }
+
+  // MARK: - Growth Indicators Tests
+
+  @Test("calculateGrowthIndicators returns zero values for empty entries")
+  func calculateGrowthIndicators_returnsZeroForEmpty() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let entries: [LocalJournalEntry] = []
+    let now = Date()
+
+    let result = calculator.calculateGrowthIndicators(
+      entries: entries,
+      startDate: now.addingTimeInterval(-86400 * 30),
+      endDate: now
+    )
+
+    #expect(result.medicinalTrend == 0.0)
+    #expect(result.layerDiversity == 0)
+    #expect(result.phaseCoverage == 0)
+  }
+
+  @Test("calculateGrowthIndicators returns zero for entries outside date range")
+  func calculateGrowthIndicators_returnsZeroForEntriesOutsideDateRange() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let now = Date()
+    // Entry from 60 days ago, but date range is last 30 days
+    let oldEntry = LocalJournalEntry(
+      createdAt: now.addingTimeInterval(-86400 * 60),
+      userID: 1,
+      curriculumID: 1
+    )
+
+    let result = calculator.calculateGrowthIndicators(
+      entries: [oldEntry],
+      startDate: now.addingTimeInterval(-86400 * 30),
+      endDate: now
+    )
+
+    #expect(result.layerDiversity == 0)
+    #expect(result.phaseCoverage == 0)
+  }
+
+  @Test("calculateGrowthIndicators calculates layer diversity correctly")
+  func calculateGrowthIndicators_calculatesLayerDiversity() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let now = Date()
+    // Entries from layer 1 (curriculum 1, 2) and layer 2 (curriculum 3)
+    let entries = [
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 1), // Layer 1
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 2), // Layer 1
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 3), // Layer 2
+    ]
+
+    let result = calculator.calculateGrowthIndicators(
+      entries: entries,
+      startDate: now.addingTimeInterval(-86400),
+      endDate: now
+    )
+
+    #expect(result.layerDiversity == 2)
+  }
+
+  @Test("calculateGrowthIndicators calculates phase coverage correctly")
+  func calculateGrowthIndicators_calculatesPhaseCoverage() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let now = Date()
+    // Entries from phase 1 (curriculum 1, 2) and phase 2 (curriculum 3)
+    let entries = [
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 1), // Phase 1
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 2), // Phase 1
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 3), // Phase 2
+    ]
+
+    let result = calculator.calculateGrowthIndicators(
+      entries: entries,
+      startDate: now.addingTimeInterval(-86400),
+      endDate: now
+    )
+
+    #expect(result.phaseCoverage == 2)
+  }
+
+  @Test("calculateGrowthIndicators calculates positive medicinal trend")
+  func calculateGrowthIndicators_calculatesPositiveMedicinalTrend() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let now = Date()
+
+    // Previous period: 1 medicinal (50%)
+    // Current period: 2 medicinal, 1 toxic (66.67%)
+    // Expected trend: 0.1667
+
+    let prevStart = now.addingTimeInterval(-14 * 86400)
+    let currentStart = now.addingTimeInterval(-7 * 86400)
+
+    let entries = [
+      // Previous period: 1 medicinal, 1 toxic = 50%
+      LocalJournalEntry(createdAt: prevStart, userID: 1, curriculumID: 1), // Medicinal
+      LocalJournalEntry(
+        createdAt: prevStart.addingTimeInterval(3600),
+        userID: 1,
+        curriculumID: 2
+      ), // Toxic
+
+      // Current period: 2 medicinal, 1 toxic = 66.67%
+      LocalJournalEntry(createdAt: currentStart, userID: 1, curriculumID: 1), // Medicinal
+      LocalJournalEntry(
+        createdAt: currentStart.addingTimeInterval(3600),
+        userID: 1,
+        curriculumID: 2
+      ), // Toxic
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 3), // Medicinal
+    ]
+
+    let result = calculator.calculateGrowthIndicators(
+      entries: entries,
+      startDate: currentStart,
+      endDate: now
+    )
+
+    // 0.6667 - 0.50 = 0.1667
+    #expect(abs(result.medicinalTrend - 0.1667) < 0.01)
+  }
+
+  @Test("calculateGrowthIndicators calculates negative medicinal trend")
+  func calculateGrowthIndicators_calculatesNegativeMedicinalTrend() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let now = Date()
+
+    // Previous period: 2 medicinal, 1 toxic (66.67%)
+    // Current period: 1 medicinal, 2 toxic (33.33%)
+    // Expected trend: -0.3333
+
+    let prevStart = now.addingTimeInterval(-14 * 86400)
+    let currentStart = now.addingTimeInterval(-7 * 86400)
+
+    let entries = [
+      // Previous period: 2 medicinal, 1 toxic
+      LocalJournalEntry(createdAt: prevStart, userID: 1, curriculumID: 1), // Medicinal
+      LocalJournalEntry(
+        createdAt: prevStart.addingTimeInterval(3600),
+        userID: 1,
+        curriculumID: 3
+      ), // Medicinal
+      LocalJournalEntry(
+        createdAt: prevStart.addingTimeInterval(7200),
+        userID: 1,
+        curriculumID: 2
+      ), // Toxic
+
+      // Current period: 1 medicinal, 2 toxic
+      LocalJournalEntry(createdAt: currentStart, userID: 1, curriculumID: 1), // Medicinal
+      LocalJournalEntry(
+        createdAt: currentStart.addingTimeInterval(3600),
+        userID: 1,
+        curriculumID: 2
+      ), // Toxic
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 4), // Toxic
+    ]
+
+    let result = calculator.calculateGrowthIndicators(
+      entries: entries,
+      startDate: currentStart,
+      endDate: now
+    )
+
+    // 0.3333 - 0.6667 = -0.3333
+    #expect(abs(result.medicinalTrend - -0.3333) < 0.01)
+  }
+
+  @Test("calculateGrowthIndicators handles single layer")
+  func calculateGrowthIndicators_handlesSingleLayer() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let now = Date()
+    // All entries from layer 1
+    let entries = [
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 1), // Layer 1
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 2), // Layer 1
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 1), // Layer 1
+    ]
+
+    let result = calculator.calculateGrowthIndicators(
+      entries: entries,
+      startDate: now.addingTimeInterval(-86400),
+      endDate: now
+    )
+
+    #expect(result.layerDiversity == 1)
+  }
+
+  @Test("calculateGrowthIndicators handles single phase")
+  func calculateGrowthIndicators_handlesSinglePhase() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let now = Date()
+    // All entries from phase 1
+    let entries = [
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 1), // Phase 1
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 2), // Phase 1
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 1), // Phase 1
+    ]
+
+    let result = calculator.calculateGrowthIndicators(
+      entries: entries,
+      startDate: now.addingTimeInterval(-86400),
+      endDate: now
+    )
+
+    #expect(result.phaseCoverage == 1)
+  }
+
+  @Test("calculateGrowthIndicators handles unknown curriculum IDs")
+  func calculateGrowthIndicators_handlesUnknownCurriculumIds() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let now = Date()
+    // Include unknown curriculum ID (999)
+    let entries = [
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 1), // Known
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 999), // Unknown
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 3), // Known
+    ]
+
+    let result = calculator.calculateGrowthIndicators(
+      entries: entries,
+      startDate: now.addingTimeInterval(-86400),
+      endDate: now
+    )
+
+    // Should only count known curriculum IDs
+    #expect(result.layerDiversity == 2)
+    #expect(result.phaseCoverage == 2)
+  }
+
+  @Test("calculateGrowthIndicators zero trend when no previous period data")
+  func calculateGrowthIndicators_zeroTrendWhenNoPreviousPeriod() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let now = Date()
+    let currentStart = now.addingTimeInterval(-7 * 86400)
+
+    // Only current period entries, no previous period
+    let entries = [
+      LocalJournalEntry(createdAt: currentStart, userID: 1, curriculumID: 1),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 3),
+    ]
+
+    let result = calculator.calculateGrowthIndicators(
+      entries: entries,
+      startDate: currentStart,
+      endDate: now
+    )
+
+    // Current: 100% medicinal, Previous: 0 entries (0 ratio)
+    // Trend = 1.0 - 0.0 = 1.0
+    #expect(abs(result.medicinalTrend - 1.0) < 0.01)
+  }
 }
