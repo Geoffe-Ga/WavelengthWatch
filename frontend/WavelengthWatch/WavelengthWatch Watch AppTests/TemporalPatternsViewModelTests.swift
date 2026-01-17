@@ -2,16 +2,17 @@ import Foundation
 import Testing
 @testable import WavelengthWatch_Watch_App
 
-@Suite("SelfCareViewModel Tests")
-struct SelfCareViewModelTests {
+@Suite("TemporalPatternsViewModel Tests")
+struct TemporalPatternsViewModelTests {
   // MARK: - Mock Service
 
   final class MockAnalyticsService: AnalyticsServiceProtocol {
-    var selfCareToReturn: SelfCareAnalytics?
+    var temporalPatternsToReturn: TemporalPatterns?
     var errorToThrow: Error?
-    var getSelfCareCallCount = 0
+    var getTemporalPatternsCallCount = 0
     var lastUserId: Int?
-    var lastLimit: Int?
+    var lastStartDate: Date?
+    var lastEndDate: Date?
 
     func getOverview(userId: Int) async throws -> AnalyticsOverview {
       fatalError("Not implemented in this test")
@@ -22,19 +23,7 @@ struct SelfCareViewModelTests {
     }
 
     func getSelfCare(userId: Int, limit: Int) async throws -> SelfCareAnalytics {
-      getSelfCareCallCount += 1
-      lastUserId = userId
-      lastLimit = limit
-
-      if let error = errorToThrow {
-        throw error
-      }
-
-      guard let selfCare = selfCareToReturn else {
-        throw NSError(domain: "test", code: -1)
-      }
-
-      return selfCare
+      fatalError("Not implemented in this test")
     }
 
     func getTemporalPatterns(
@@ -42,17 +31,31 @@ struct SelfCareViewModelTests {
       startDate: Date,
       endDate: Date
     ) async throws -> TemporalPatterns {
-      fatalError("Not implemented in this test")
+      getTemporalPatternsCallCount += 1
+      lastUserId = userId
+      lastStartDate = startDate
+      lastEndDate = endDate
+
+      if let error = errorToThrow {
+        throw error
+      }
+
+      guard let patterns = temporalPatternsToReturn else {
+        throw NSError(domain: "test", code: -1)
+      }
+
+      return patterns
     }
   }
 
   // MARK: - Mock Local Calculator
 
   final class MockLocalAnalyticsCalculator: LocalAnalyticsCalculatorProtocol {
-    var selfCareToReturn: SelfCareAnalytics?
-    var calculateSelfCareCallCount = 0
+    var temporalPatternsToReturn: TemporalPatterns?
+    var calculateTemporalPatternsCallCount = 0
     var lastEntries: [LocalJournalEntry]?
-    var lastLimit: Int?
+    var lastStartDate: Date?
+    var lastEndDate: Date?
 
     func calculateOverview(
       entries: [LocalJournalEntry],
@@ -73,14 +76,7 @@ struct SelfCareViewModelTests {
       entries: [LocalJournalEntry],
       limit: Int
     ) -> SelfCareAnalytics {
-      calculateSelfCareCallCount += 1
-      lastEntries = entries
-      lastLimit = limit
-      return selfCareToReturn ?? SelfCareAnalytics(
-        topStrategies: [],
-        diversityScore: 0.0,
-        totalStrategyEntries: 0
-      )
+      fatalError("Not implemented in this test")
     }
 
     func calculateTemporalPatterns(
@@ -88,7 +84,14 @@ struct SelfCareViewModelTests {
       startDate: Date,
       endDate: Date
     ) -> TemporalPatterns {
-      fatalError("Not implemented in this test")
+      calculateTemporalPatternsCallCount += 1
+      lastEntries = entries
+      lastStartDate = startDate
+      lastEndDate = endDate
+      return temporalPatternsToReturn ?? TemporalPatterns(
+        hourlyDistribution: [],
+        consistencyScore: 0.0
+      )
     }
 
     func calculateGrowthIndicators(
@@ -169,6 +172,11 @@ struct SelfCareViewModelTests {
     }
   }
 
+  // MARK: - Test Fixtures
+
+  static let testStartDate = Date(timeIntervalSince1970: 1_704_067_200) // 2024-01-01
+  static let testEndDate = Date(timeIntervalSince1970: 1_706_745_600) // 2024-02-01
+
   // MARK: - Initialization Tests
 
   @Test("viewModel starts in idle state")
@@ -177,7 +185,7 @@ struct SelfCareViewModelTests {
     let mockService = MockAnalyticsService()
     let mockPersistence = MockSyncSettingsPersistence()
     let syncSettings = SyncSettings(persistence: mockPersistence)
-    let viewModel = SelfCareViewModel(
+    let viewModel = TemporalPatternsViewModel(
       analyticsService: mockService,
       syncSettings: syncSettings
     )
@@ -187,36 +195,40 @@ struct SelfCareViewModelTests {
 
   // MARK: - Loading Tests (Cloud Sync Enabled)
 
-  @Test("viewModel loads self-care from backend when cloud sync enabled")
+  @Test("viewModel loads temporal patterns from backend when cloud sync enabled")
   @MainActor
   func viewModel_loadsFromBackendWhenCloudSyncEnabled() async {
     let mockService = MockAnalyticsService()
-    let mockSelfCare = SelfCareAnalytics(
-      topStrategies: [
-        TopStrategyItem(strategyId: 1, strategy: "Breathe", count: 5, percentage: 50.0),
+    let mockPatterns = TemporalPatterns(
+      hourlyDistribution: [
+        HourlyDistributionItem(hour: 9, count: 5),
+        HourlyDistributionItem(hour: 14, count: 3),
       ],
-      diversityScore: 25.0,
-      totalStrategyEntries: 10
+      consistencyScore: 75.0
     )
-    mockService.selfCareToReturn = mockSelfCare
+    mockService.temporalPatternsToReturn = mockPatterns
 
     let mockPersistence = MockSyncSettingsPersistence()
     mockPersistence.boolValues[SyncSettings.cloudSyncEnabledKey] = true
     let syncSettings = SyncSettings(persistence: mockPersistence)
 
-    let viewModel = SelfCareViewModel(
+    let viewModel = TemporalPatternsViewModel(
       analyticsService: mockService,
       syncSettings: syncSettings,
       userId: 123
     )
 
-    await viewModel.loadSelfCare(limit: 5)
+    await viewModel.loadTemporalPatterns(
+      startDate: Self.testStartDate,
+      endDate: Self.testEndDate
+    )
 
-    if case let .loaded(selfCare) = viewModel.state {
-      #expect(selfCare == mockSelfCare)
-      #expect(mockService.getSelfCareCallCount == 1)
+    if case let .loaded(patterns) = viewModel.state {
+      #expect(patterns == mockPatterns)
+      #expect(mockService.getTemporalPatternsCallCount == 1)
       #expect(mockService.lastUserId == 123)
-      #expect(mockService.lastLimit == 5)
+      #expect(mockService.lastStartDate == Self.testStartDate)
+      #expect(mockService.lastEndDate == Self.testEndDate)
     } else {
       Issue.record("Expected loaded state, got \(viewModel.state)")
     }
@@ -229,37 +241,39 @@ struct SelfCareViewModelTests {
     mockService.errorToThrow = NSError(domain: "test", code: -1)
 
     let mockCalculator = MockLocalAnalyticsCalculator()
-    let localSelfCare = SelfCareAnalytics(
-      topStrategies: [
-        TopStrategyItem(strategyId: 2, strategy: "Meditate", count: 3, percentage: 30.0),
+    let localPatterns = TemporalPatterns(
+      hourlyDistribution: [
+        HourlyDistributionItem(hour: 10, count: 2),
       ],
-      diversityScore: 20.0,
-      totalStrategyEntries: 10
+      consistencyScore: 50.0
     )
-    mockCalculator.selfCareToReturn = localSelfCare
+    mockCalculator.temporalPatternsToReturn = localPatterns
 
     let mockRepository = MockJournalRepository()
     mockRepository.entriesToReturn = [
-      LocalJournalEntry(createdAt: Date(), userID: 1, curriculumID: 1, strategyID: 2),
+      LocalJournalEntry(createdAt: Date(), userID: 1, curriculumID: 1, strategyID: nil),
     ]
 
     let mockPersistence = MockSyncSettingsPersistence()
     mockPersistence.boolValues[SyncSettings.cloudSyncEnabledKey] = true
     let syncSettings = SyncSettings(persistence: mockPersistence)
 
-    let viewModel = SelfCareViewModel(
+    let viewModel = TemporalPatternsViewModel(
       analyticsService: mockService,
       localCalculator: mockCalculator,
       journalRepository: mockRepository,
       syncSettings: syncSettings
     )
 
-    await viewModel.loadSelfCare(limit: 5)
+    await viewModel.loadTemporalPatterns(
+      startDate: Self.testStartDate,
+      endDate: Self.testEndDate
+    )
 
-    if case let .loaded(selfCare) = viewModel.state {
-      #expect(selfCare == localSelfCare)
-      #expect(mockService.getSelfCareCallCount == 1)
-      #expect(mockCalculator.calculateSelfCareCallCount == 1)
+    if case let .loaded(patterns) = viewModel.state {
+      #expect(patterns == localPatterns)
+      #expect(mockService.getTemporalPatternsCallCount == 1)
+      #expect(mockCalculator.calculateTemporalPatternsCallCount == 1)
       #expect(mockRepository.fetchAllCallCount == 1)
     } else {
       Issue.record("Expected loaded state with local data, got \(viewModel.state)")
@@ -272,44 +286,46 @@ struct SelfCareViewModelTests {
   @MainActor
   func viewModel_usesLocalOnlyWhenCloudSyncDisabled() async {
     let mockService = MockAnalyticsService()
-    mockService.selfCareToReturn = SelfCareAnalytics(
-      topStrategies: [],
-      diversityScore: 0.0,
-      totalStrategyEntries: 0
+    mockService.temporalPatternsToReturn = TemporalPatterns(
+      hourlyDistribution: [],
+      consistencyScore: 0.0
     )
 
     let mockCalculator = MockLocalAnalyticsCalculator()
-    let localSelfCare = SelfCareAnalytics(
-      topStrategies: [
-        TopStrategyItem(strategyId: 3, strategy: "Journal", count: 7, percentage: 70.0),
+    let localPatterns = TemporalPatterns(
+      hourlyDistribution: [
+        HourlyDistributionItem(hour: 8, count: 7),
+        HourlyDistributionItem(hour: 20, count: 4),
       ],
-      diversityScore: 15.0,
-      totalStrategyEntries: 10
+      consistencyScore: 85.0
     )
-    mockCalculator.selfCareToReturn = localSelfCare
+    mockCalculator.temporalPatternsToReturn = localPatterns
 
     let mockRepository = MockJournalRepository()
     mockRepository.entriesToReturn = [
-      LocalJournalEntry(createdAt: Date(), userID: 1, curriculumID: 1, strategyID: 3),
+      LocalJournalEntry(createdAt: Date(), userID: 1, curriculumID: 1, strategyID: nil),
     ]
 
     let mockPersistence = MockSyncSettingsPersistence()
     mockPersistence.boolValues[SyncSettings.cloudSyncEnabledKey] = false
     let syncSettings = SyncSettings(persistence: mockPersistence)
 
-    let viewModel = SelfCareViewModel(
+    let viewModel = TemporalPatternsViewModel(
       analyticsService: mockService,
       localCalculator: mockCalculator,
       journalRepository: mockRepository,
       syncSettings: syncSettings
     )
 
-    await viewModel.loadSelfCare(limit: 5)
+    await viewModel.loadTemporalPatterns(
+      startDate: Self.testStartDate,
+      endDate: Self.testEndDate
+    )
 
-    if case let .loaded(selfCare) = viewModel.state {
-      #expect(selfCare == localSelfCare)
-      #expect(mockService.getSelfCareCallCount == 0) // Backend NOT called
-      #expect(mockCalculator.calculateSelfCareCallCount == 1)
+    if case let .loaded(patterns) = viewModel.state {
+      #expect(patterns == localPatterns)
+      #expect(mockService.getTemporalPatternsCallCount == 0) // Backend NOT called
+      #expect(mockCalculator.calculateTemporalPatternsCallCount == 1)
       #expect(mockRepository.fetchAllCallCount == 1)
     } else {
       Issue.record("Expected loaded state, got \(viewModel.state)")
@@ -331,18 +347,21 @@ struct SelfCareViewModelTests {
     mockPersistence.boolValues[SyncSettings.cloudSyncEnabledKey] = true
     let syncSettings = SyncSettings(persistence: mockPersistence)
 
-    let viewModel = SelfCareViewModel(
+    let viewModel = TemporalPatternsViewModel(
       analyticsService: mockService,
       localCalculator: nil,
       journalRepository: mockRepository,
       syncSettings: syncSettings
     )
 
-    await viewModel.loadSelfCare(limit: 5)
+    await viewModel.loadTemporalPatterns(
+      startDate: Self.testStartDate,
+      endDate: Self.testEndDate
+    )
 
     if case let .error(message) = viewModel.state {
       #expect(message.contains("Failed to load"))
-      #expect(mockService.getSelfCareCallCount == 1)
+      #expect(mockService.getTemporalPatternsCallCount == 1)
     } else {
       Issue.record("Expected error state, got \(viewModel.state)")
     }
@@ -357,14 +376,17 @@ struct SelfCareViewModelTests {
     mockPersistence.boolValues[SyncSettings.cloudSyncEnabledKey] = false
     let syncSettings = SyncSettings(persistence: mockPersistence)
 
-    let viewModel = SelfCareViewModel(
+    let viewModel = TemporalPatternsViewModel(
       analyticsService: mockService,
       localCalculator: nil,
       journalRepository: nil,
       syncSettings: syncSettings
     )
 
-    await viewModel.loadSelfCare(limit: 5)
+    await viewModel.loadTemporalPatterns(
+      startDate: Self.testStartDate,
+      endDate: Self.testEndDate
+    )
 
     if case let .error(message) = viewModel.state {
       #expect(message.contains("Local analytics"))
@@ -375,126 +397,87 @@ struct SelfCareViewModelTests {
 
   // MARK: - Computed Properties Tests
 
-  @Test("topStrategies returns correct items when loaded")
+  @Test("hourlyDistribution returns correct items when loaded")
   @MainActor
-  func topStrategies_returnsItemsWhenLoaded() {
+  func hourlyDistribution_returnsItemsWhenLoaded() {
     let mockService = MockAnalyticsService()
     let mockPersistence = MockSyncSettingsPersistence()
     let syncSettings = SyncSettings(persistence: mockPersistence)
 
-    let viewModel = SelfCareViewModel(
+    let viewModel = TemporalPatternsViewModel(
       analyticsService: mockService,
       syncSettings: syncSettings
     )
 
-    let strategies = [
-      TopStrategyItem(strategyId: 1, strategy: "Breathe", count: 5, percentage: 50.0),
-      TopStrategyItem(strategyId: 2, strategy: "Meditate", count: 3, percentage: 30.0),
+    let distribution = [
+      HourlyDistributionItem(hour: 9, count: 5),
+      HourlyDistributionItem(hour: 14, count: 3),
     ]
-    let selfCare = SelfCareAnalytics(
-      topStrategies: strategies,
-      diversityScore: 25.0,
-      totalStrategyEntries: 10
+    let patterns = TemporalPatterns(
+      hourlyDistribution: distribution,
+      consistencyScore: 75.0
     )
-    viewModel.state = .loaded(selfCare)
+    viewModel.state = .loaded(patterns)
 
-    #expect(viewModel.topStrategies == strategies)
+    #expect(viewModel.hourlyDistribution == distribution)
   }
 
-  @Test("topStrategies returns empty array when not loaded")
+  @Test("hourlyDistribution returns empty array when not loaded")
   @MainActor
-  func topStrategies_returnsEmptyWhenNotLoaded() {
+  func hourlyDistribution_returnsEmptyWhenNotLoaded() {
     let mockService = MockAnalyticsService()
     let mockPersistence = MockSyncSettingsPersistence()
     let syncSettings = SyncSettings(persistence: mockPersistence)
 
-    let viewModel = SelfCareViewModel(
+    let viewModel = TemporalPatternsViewModel(
       analyticsService: mockService,
       syncSettings: syncSettings
     )
 
-    #expect(viewModel.topStrategies.isEmpty)
+    #expect(viewModel.hourlyDistribution.isEmpty)
   }
 
-  @Test("diversityScore returns correct value when loaded")
+  @Test("consistencyScore returns correct value when loaded")
   @MainActor
-  func diversityScore_returnsValueWhenLoaded() {
+  func consistencyScore_returnsValueWhenLoaded() {
     let mockService = MockAnalyticsService()
     let mockPersistence = MockSyncSettingsPersistence()
     let syncSettings = SyncSettings(persistence: mockPersistence)
 
-    let viewModel = SelfCareViewModel(
+    let viewModel = TemporalPatternsViewModel(
       analyticsService: mockService,
       syncSettings: syncSettings
     )
 
-    let selfCare = SelfCareAnalytics(
-      topStrategies: [],
-      diversityScore: 42.5,
-      totalStrategyEntries: 10
+    let patterns = TemporalPatterns(
+      hourlyDistribution: [],
+      consistencyScore: 82.5
     )
-    viewModel.state = .loaded(selfCare)
+    viewModel.state = .loaded(patterns)
 
-    #expect(viewModel.diversityScore == 42.5)
+    #expect(viewModel.consistencyScore == 82.5)
   }
 
-  @Test("diversityScore returns zero when not loaded")
+  @Test("consistencyScore returns zero when not loaded")
   @MainActor
-  func diversityScore_returnsZeroWhenNotLoaded() {
+  func consistencyScore_returnsZeroWhenNotLoaded() {
     let mockService = MockAnalyticsService()
     let mockPersistence = MockSyncSettingsPersistence()
     let syncSettings = SyncSettings(persistence: mockPersistence)
 
-    let viewModel = SelfCareViewModel(
+    let viewModel = TemporalPatternsViewModel(
       analyticsService: mockService,
       syncSettings: syncSettings
     )
 
-    #expect(viewModel.diversityScore == 0.0)
-  }
-
-  @Test("totalStrategyEntries returns correct value when loaded")
-  @MainActor
-  func totalStrategyEntries_returnsValueWhenLoaded() {
-    let mockService = MockAnalyticsService()
-    let mockPersistence = MockSyncSettingsPersistence()
-    let syncSettings = SyncSettings(persistence: mockPersistence)
-
-    let viewModel = SelfCareViewModel(
-      analyticsService: mockService,
-      syncSettings: syncSettings
-    )
-
-    let selfCare = SelfCareAnalytics(
-      topStrategies: [],
-      diversityScore: 25.0,
-      totalStrategyEntries: 42
-    )
-    viewModel.state = .loaded(selfCare)
-
-    #expect(viewModel.totalStrategyEntries == 42)
-  }
-
-  @Test("totalStrategyEntries returns zero when not loaded")
-  @MainActor
-  func totalStrategyEntries_returnsZeroWhenNotLoaded() {
-    let mockService = MockAnalyticsService()
-    let mockPersistence = MockSyncSettingsPersistence()
-    let syncSettings = SyncSettings(persistence: mockPersistence)
-
-    let viewModel = SelfCareViewModel(
-      analyticsService: mockService,
-      syncSettings: syncSettings
-    )
-
-    #expect(viewModel.totalStrategyEntries == 0)
+    #expect(viewModel.consistencyScore == 0.0)
   }
 
   // MARK: - Retry Tests
 
-  @Test("viewModel retry calls loadSelfCare")
+  @Test("viewModel retry calls loadTemporalPatterns")
   @MainActor
-  func viewModel_retryCallsLoadSelfCare() async {
+  func viewModel_retryCallsLoadTemporalPatterns() async {
     let mockService = MockAnalyticsService()
     mockService.errorToThrow = NSError(domain: "test", code: -1)
 
@@ -502,25 +485,27 @@ struct SelfCareViewModelTests {
     mockPersistence.boolValues[SyncSettings.cloudSyncEnabledKey] = true
     let syncSettings = SyncSettings(persistence: mockPersistence)
 
-    let viewModel = SelfCareViewModel(
+    let viewModel = TemporalPatternsViewModel(
       analyticsService: mockService,
       syncSettings: syncSettings
     )
 
-    await viewModel.loadSelfCare(limit: 5)
-    #expect(mockService.getSelfCareCallCount == 1)
+    await viewModel.loadTemporalPatterns(
+      startDate: Self.testStartDate,
+      endDate: Self.testEndDate
+    )
+    #expect(mockService.getTemporalPatternsCallCount == 1)
 
     // Clear error and retry
     mockService.errorToThrow = nil
-    mockService.selfCareToReturn = SelfCareAnalytics(
-      topStrategies: [],
-      diversityScore: 10.0,
-      totalStrategyEntries: 5
+    mockService.temporalPatternsToReturn = TemporalPatterns(
+      hourlyDistribution: [],
+      consistencyScore: 60.0
     )
 
-    await viewModel.retry(limit: 5)
+    await viewModel.retry(startDate: Self.testStartDate, endDate: Self.testEndDate)
 
-    #expect(mockService.getSelfCareCallCount == 2)
+    #expect(mockService.getTemporalPatternsCallCount == 2)
     if case .loaded = viewModel.state {
       // Success
     } else {
@@ -534,14 +519,13 @@ struct SelfCareViewModelTests {
   @MainActor
   func viewModel_usesBackendWithoutTryingLocal() async {
     let mockService = MockAnalyticsService()
-    let backendSelfCare = SelfCareAnalytics(
-      topStrategies: [
-        TopStrategyItem(strategyId: 1, strategy: "Walk", count: 10, percentage: 100.0),
+    let backendPatterns = TemporalPatterns(
+      hourlyDistribution: [
+        HourlyDistributionItem(hour: 12, count: 10),
       ],
-      diversityScore: 10.0,
-      totalStrategyEntries: 10
+      consistencyScore: 90.0
     )
-    mockService.selfCareToReturn = backendSelfCare
+    mockService.temporalPatternsToReturn = backendPatterns
 
     let mockCalculator = MockLocalAnalyticsCalculator()
     let mockRepository = MockJournalRepository()
@@ -550,22 +534,64 @@ struct SelfCareViewModelTests {
     mockPersistence.boolValues[SyncSettings.cloudSyncEnabledKey] = true
     let syncSettings = SyncSettings(persistence: mockPersistence)
 
-    let viewModel = SelfCareViewModel(
+    let viewModel = TemporalPatternsViewModel(
       analyticsService: mockService,
       localCalculator: mockCalculator,
       journalRepository: mockRepository,
       syncSettings: syncSettings
     )
 
-    await viewModel.loadSelfCare(limit: 5)
+    await viewModel.loadTemporalPatterns(
+      startDate: Self.testStartDate,
+      endDate: Self.testEndDate
+    )
 
-    if case let .loaded(selfCare) = viewModel.state {
-      #expect(selfCare == backendSelfCare)
-      #expect(mockService.getSelfCareCallCount == 1)
-      #expect(mockCalculator.calculateSelfCareCallCount == 0)
+    if case let .loaded(patterns) = viewModel.state {
+      #expect(patterns == backendPatterns)
+      #expect(mockService.getTemporalPatternsCallCount == 1)
+      #expect(mockCalculator.calculateTemporalPatternsCallCount == 0)
       #expect(mockRepository.fetchAllCallCount == 0)
     } else {
       Issue.record("Expected loaded state, got \(viewModel.state)")
     }
+  }
+
+  // MARK: - Date Parameter Tests
+
+  @Test("viewModel passes correct dates to local calculator")
+  @MainActor
+  func viewModel_passesCorrectDatesToLocalCalculator() async {
+    let mockService = MockAnalyticsService()
+
+    let mockCalculator = MockLocalAnalyticsCalculator()
+    let localPatterns = TemporalPatterns(
+      hourlyDistribution: [],
+      consistencyScore: 50.0
+    )
+    mockCalculator.temporalPatternsToReturn = localPatterns
+
+    let mockRepository = MockJournalRepository()
+    mockRepository.entriesToReturn = [
+      LocalJournalEntry(createdAt: Date(), userID: 1, curriculumID: 1, strategyID: nil),
+    ]
+
+    let mockPersistence = MockSyncSettingsPersistence()
+    mockPersistence.boolValues[SyncSettings.cloudSyncEnabledKey] = false
+    let syncSettings = SyncSettings(persistence: mockPersistence)
+
+    let viewModel = TemporalPatternsViewModel(
+      analyticsService: mockService,
+      localCalculator: mockCalculator,
+      journalRepository: mockRepository,
+      syncSettings: syncSettings
+    )
+
+    await viewModel.loadTemporalPatterns(
+      startDate: Self.testStartDate,
+      endDate: Self.testEndDate
+    )
+
+    #expect(mockCalculator.lastStartDate == Self.testStartDate)
+    #expect(mockCalculator.lastEndDate == Self.testEndDate)
   }
 }
