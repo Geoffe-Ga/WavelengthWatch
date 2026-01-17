@@ -285,6 +285,18 @@ struct AnalyticsViewModelTests {
         consistencyScore: 0.0
       )
     }
+
+    func calculateGrowthIndicators(
+      entries: [LocalJournalEntry],
+      startDate: Date,
+      endDate: Date
+    ) -> GrowthIndicators {
+      GrowthIndicators(
+        medicinalTrend: 0.0,
+        layerDiversity: 0,
+        phaseCoverage: 0
+      )
+    }
   }
 
   final class MockJournalRepository: JournalRepositoryProtocol {
