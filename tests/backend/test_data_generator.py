@@ -18,6 +18,7 @@ STRATEGY_IDS = list(range(1, 21))  # 20 strategies total
 # Distribution weights for realistic data
 MEDICINAL_WEIGHT = 0.65  # 65% medicinal entries (realistic growth trajectory)
 SECONDARY_EMOTION_WEIGHT = 0.40  # 40% have secondary emotions
+STRATEGY_USAGE_WEIGHT = 0.60  # 60% of entries use strategies
 
 
 def generate_journal_entries(
@@ -64,8 +65,8 @@ def generate_journal_entries(
             else None
         )
 
-        # Add strategy ~60% of the time (common usage pattern)
-        strategy_id = choice(STRATEGY_IDS) if random() < 0.60 else None
+        # Add strategy based on usage weight
+        strategy_id = choice(STRATEGY_IDS) if random() < STRATEGY_USAGE_WEIGHT else None
 
         entry = {
             "created_at": created_at.isoformat(),

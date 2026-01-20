@@ -26,7 +26,11 @@ from tests.backend.test_data_generator import (
 
 @pytest.fixture
 def perf_client(client: TestClient) -> TestClient:
-    """Client for performance tests (clears cache between tests)."""
+    """Client for performance tests with isolated database per test.
+
+    Each test receives a fresh database via the base client fixture's tmp_path,
+    ensuring no test data pollution or interference between tests.
+    """
     return client
 
 
@@ -66,9 +70,12 @@ def create_test_entries(client: TestClient, count: int, user_id: int = 999) -> d
     # Use distributed entries for more realistic temporal patterns
     entries = generate_distributed_entries(count, user_id, start_date, days_span=30)
 
-    # Batch create entries
-    for entry in entries:
-        client.post("/api/v1/journal", json=entry)
+    # Batch create entries with validation
+    for i, entry in enumerate(entries):
+        response = client.post("/api/v1/journal", json=entry)
+        assert response.status_code == 201, (
+            f"Failed to create entry {i + 1}/{count}: {response.json()}"
+        )
 
     return {
         "user_id": user_id,
@@ -191,7 +198,7 @@ def test_cache_effectiveness_overview(perf_client: TestClient):
     # Second request (warm cache)
     warm_time = measure_response_time(perf_client, "/api/v1/analytics/overview", params)
 
-    # Cache should improve performance by at least 50%
+    # Cache should improve performance (even modest improvement is valuable)
     improvement = ((cold_time - warm_time) / cold_time) * 100
 
     assert warm_time < cold_time, (
