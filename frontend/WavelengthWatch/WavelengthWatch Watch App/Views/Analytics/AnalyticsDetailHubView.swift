@@ -11,9 +11,16 @@ import SwiftUI
 /// Requires journal and catalog repositories for offline-first analytics support.
 /// ViewModels are created with backend + local calculator fallback.
 struct AnalyticsDetailHubView: View {
-  private let journalRepository: JournalRepositoryProtocol
-  private let catalogRepository: CatalogRepositoryProtocol
-  private let syncSettings: SyncSettings
+  // MARK: - Constants
+
+  fileprivate static let defaultTopStrategiesLimit = 10
+  fileprivate static let defaultDateRangeDays = 30
+
+  // MARK: - Dependencies
+
+  let journalRepository: JournalRepositoryProtocol
+  let catalogRepository: CatalogRepositoryProtocol
+  let syncSettings: SyncSettings
 
   init(
     journalRepository: JournalRepositoryProtocol,
@@ -23,6 +30,38 @@ struct AnalyticsDetailHubView: View {
     self.journalRepository = journalRepository
     self.catalogRepository = catalogRepository
     self.syncSettings = syncSettings
+  }
+
+  // MARK: - Helpers
+
+  /// Creates analytics service and local calculator for offline-first support.
+  ///
+  /// - Returns: Tuple of (service, calculator) where calculator is nil if catalog not cached
+  private func makeAnalyticsComponents() -> (
+    service: AnalyticsService,
+    calculator: LocalAnalyticsCalculatorProtocol?
+  ) {
+    let configuration = AppConfiguration()
+    let apiClient = APIClient(baseURL: configuration.apiBaseURL)
+    let analyticsService = AnalyticsService(apiClient: apiClient)
+
+    let localCalculator = catalogRepository.cachedCatalog()
+      .map { LocalAnalyticsCalculator(catalog: $0) }
+
+    return (analyticsService, localCalculator)
+  }
+
+  /// Calculates default date range for temporal/growth analytics.
+  ///
+  /// - Returns: Tuple of (startDate, endDate) for last 30 days
+  private var defaultDateRange: (startDate: Date, endDate: Date) {
+    let endDate = Date()
+    let startDate = Calendar.current.date(
+      byAdding: .day,
+      value: -Self.defaultDateRangeDays,
+      to: endDate
+    ) ?? endDate
+    return (startDate, endDate)
   }
 
   var body: some View {
@@ -83,25 +122,27 @@ struct AnalyticsDetailHubView: View {
 
   private var selfCareDetailView: some View {
     SelfCareDetailView(
+      makeComponents: makeAnalyticsComponents,
       journalRepository: journalRepository,
-      catalogRepository: catalogRepository,
       syncSettings: syncSettings
     )
   }
 
   private var temporalPatternsDetailView: some View {
     TemporalPatternsDetailView(
+      makeComponents: makeAnalyticsComponents,
       journalRepository: journalRepository,
-      catalogRepository: catalogRepository,
-      syncSettings: syncSettings
+      syncSettings: syncSettings,
+      dateRange: defaultDateRange
     )
   }
 
   private var growthIndicatorsDetailView: some View {
     GrowthIndicatorsDetailView(
+      makeComponents: makeAnalyticsComponents,
       journalRepository: journalRepository,
-      catalogRepository: catalogRepository,
-      syncSettings: syncSettings
+      syncSettings: syncSettings,
+      dateRange: defaultDateRange
     )
   }
 }
@@ -113,20 +154,11 @@ private struct SelfCareDetailView: View {
   @StateObject private var viewModel: SelfCareViewModel
 
   init(
+    makeComponents: () -> (AnalyticsService, LocalAnalyticsCalculatorProtocol?),
     journalRepository: JournalRepositoryProtocol,
-    catalogRepository: CatalogRepositoryProtocol,
     syncSettings: SyncSettings
   ) {
-    let configuration = AppConfiguration()
-    let apiClient = APIClient(baseURL: configuration.apiBaseURL)
-    let analyticsService = AnalyticsService(apiClient: apiClient)
-
-    let localCalculator: LocalAnalyticsCalculatorProtocol? = {
-      guard let catalog = catalogRepository.cachedCatalog() else {
-        return nil
-      }
-      return LocalAnalyticsCalculator(catalog: catalog)
-    }()
+    let (analyticsService, localCalculator) = makeComponents()
 
     _viewModel = StateObject(
       wrappedValue: SelfCareViewModel(
@@ -143,12 +175,15 @@ private struct SelfCareDetailView: View {
       VStack(spacing: 16) {
         switch viewModel.state {
         case .idle, .loading:
-          loadingView
+          AnalyticsLoadingStates.loadingView
         case let .loaded(analytics):
           StrategyUsageView(analytics: analytics)
             .padding()
         case let .error(message):
-          errorView(message: message, retry: { await viewModel.retry(limit: 10) })
+          AnalyticsLoadingStates.errorView(
+            message: message,
+            retry: { await viewModel.retry(limit: AnalyticsDetailHubView.defaultTopStrategiesLimit) }
+          )
         }
       }
     }
@@ -156,7 +191,7 @@ private struct SelfCareDetailView: View {
     .navigationBarTitleDisplayMode(.inline)
     .task {
       if case .idle = viewModel.state {
-        await viewModel.loadSelfCare(limit: 10)
+        await viewModel.loadSelfCare(limit: AnalyticsDetailHubView.defaultTopStrategiesLimit)
       }
     }
   }
@@ -167,22 +202,16 @@ private struct SelfCareDetailView: View {
 /// Detailed temporal patterns analytics view with ViewModel integration.
 private struct TemporalPatternsDetailView: View {
   @StateObject private var viewModel: TemporalPatternsViewModel
+  private let dateRange: (startDate: Date, endDate: Date)
 
   init(
+    makeComponents: () -> (AnalyticsService, LocalAnalyticsCalculatorProtocol?),
     journalRepository: JournalRepositoryProtocol,
-    catalogRepository: CatalogRepositoryProtocol,
-    syncSettings: SyncSettings
+    syncSettings: SyncSettings,
+    dateRange: (startDate: Date, endDate: Date)
   ) {
-    let configuration = AppConfiguration()
-    let apiClient = APIClient(baseURL: configuration.apiBaseURL)
-    let analyticsService = AnalyticsService(apiClient: apiClient)
-
-    let localCalculator: LocalAnalyticsCalculatorProtocol? = {
-      guard let catalog = catalogRepository.cachedCatalog() else {
-        return nil
-      }
-      return LocalAnalyticsCalculator(catalog: catalog)
-    }()
+    let (analyticsService, localCalculator) = makeComponents()
+    self.dateRange = dateRange
 
     _viewModel = StateObject(
       wrappedValue: TemporalPatternsViewModel(
@@ -199,17 +228,17 @@ private struct TemporalPatternsDetailView: View {
       VStack(spacing: 16) {
         switch viewModel.state {
         case .idle, .loading:
-          loadingView
+          AnalyticsLoadingStates.loadingView
         case let .loaded(patterns):
           TemporalPatternsView(patterns: patterns)
             .padding()
         case let .error(message):
-          errorView(
+          AnalyticsLoadingStates.errorView(
             message: message,
             retry: {
               await viewModel.retry(
-                startDate: Date().addingTimeInterval(-30 * 24 * 60 * 60), // 30 days ago
-                endDate: Date()
+                startDate: dateRange.startDate,
+                endDate: dateRange.endDate
               )
             }
           )
@@ -220,10 +249,10 @@ private struct TemporalPatternsDetailView: View {
     .navigationBarTitleDisplayMode(.inline)
     .task {
       if case .idle = viewModel.state {
-        // Default to last 30 days
-        let endDate = Date()
-        let startDate = endDate.addingTimeInterval(-30 * 24 * 60 * 60)
-        await viewModel.loadTemporalPatterns(startDate: startDate, endDate: endDate)
+        await viewModel.loadTemporalPatterns(
+          startDate: dateRange.startDate,
+          endDate: dateRange.endDate
+        )
       }
     }
   }
@@ -234,22 +263,16 @@ private struct TemporalPatternsDetailView: View {
 /// Detailed growth indicators analytics view with ViewModel integration.
 private struct GrowthIndicatorsDetailView: View {
   @StateObject private var viewModel: GrowthIndicatorsViewModel
+  private let dateRange: (startDate: Date, endDate: Date)
 
   init(
+    makeComponents: () -> (AnalyticsService, LocalAnalyticsCalculatorProtocol?),
     journalRepository: JournalRepositoryProtocol,
-    catalogRepository: CatalogRepositoryProtocol,
-    syncSettings: SyncSettings
+    syncSettings: SyncSettings,
+    dateRange: (startDate: Date, endDate: Date)
   ) {
-    let configuration = AppConfiguration()
-    let apiClient = APIClient(baseURL: configuration.apiBaseURL)
-    let analyticsService = AnalyticsService(apiClient: apiClient)
-
-    let localCalculator: LocalAnalyticsCalculatorProtocol? = {
-      guard let catalog = catalogRepository.cachedCatalog() else {
-        return nil
-      }
-      return LocalAnalyticsCalculator(catalog: catalog)
-    }()
+    let (analyticsService, localCalculator) = makeComponents()
+    self.dateRange = dateRange
 
     _viewModel = StateObject(
       wrappedValue: GrowthIndicatorsViewModel(
@@ -266,17 +289,17 @@ private struct GrowthIndicatorsDetailView: View {
       VStack(spacing: 16) {
         switch viewModel.state {
         case .idle, .loading:
-          loadingView
+          AnalyticsLoadingStates.loadingView
         case let .loaded(indicators):
           GrowthIndicatorsView(indicators: indicators)
             .padding()
         case let .error(message):
-          errorView(
+          AnalyticsLoadingStates.errorView(
             message: message,
             retry: {
               await viewModel.retry(
-                startDate: Date().addingTimeInterval(-30 * 24 * 60 * 60), // 30 days ago
-                endDate: Date()
+                startDate: dateRange.startDate,
+                endDate: dateRange.endDate
               )
             }
           )
@@ -287,10 +310,10 @@ private struct GrowthIndicatorsDetailView: View {
     .navigationBarTitleDisplayMode(.inline)
     .task {
       if case .idle = viewModel.state {
-        // Default to last 30 days
-        let endDate = Date()
-        let startDate = endDate.addingTimeInterval(-30 * 24 * 60 * 60)
-        await viewModel.loadGrowthIndicators(startDate: startDate, endDate: endDate)
+        await viewModel.loadGrowthIndicators(
+          startDate: dateRange.startDate,
+          endDate: dateRange.endDate
+        )
       }
     }
   }
@@ -298,38 +321,43 @@ private struct GrowthIndicatorsDetailView: View {
 
 // MARK: - Shared UI Components
 
-private var loadingView: some View {
-  VStack(spacing: 16) {
-    ProgressView()
-      .progressViewStyle(.circular)
-      .tint(.white)
+/// Shared loading and error states for analytics detail views.
+///
+/// Extracted to avoid duplication across SelfCare, Temporal, and Growth detail views.
+private enum AnalyticsLoadingStates {
+  static var loadingView: some View {
+    VStack(spacing: 16) {
+      ProgressView()
+        .progressViewStyle(.circular)
+        .tint(.white)
 
-    Text("Loading analytics...")
-      .font(.caption)
-      .foregroundColor(.secondary)
-  }
-  .frame(maxWidth: .infinity, maxHeight: .infinity)
-  .padding(.top, 40)
-}
-
-private func errorView(message: String, retry: @escaping () async -> Void) -> some View {
-  VStack(spacing: 16) {
-    Image(systemName: "exclamationmark.triangle")
-      .font(.system(size: 40))
-      .foregroundColor(.orange)
-
-    Text("Error")
-      .font(.headline)
-
-    Text(message)
-      .font(.caption)
-      .foregroundColor(.secondary)
-      .multilineTextAlignment(.center)
-
-    Button("Retry") {
-      Task { await retry() }
+      Text("Loading analytics...")
+        .font(.caption)
+        .foregroundColor(.secondary)
     }
-    .buttonStyle(.borderedProminent)
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .padding(.top, 40)
   }
-  .padding(.top, 40)
+
+  static func errorView(message: String, retry: @escaping () async -> Void) -> some View {
+    VStack(spacing: 16) {
+      Image(systemName: "exclamationmark.triangle")
+        .font(.system(size: 40))
+        .foregroundColor(.orange)
+
+      Text("Error")
+        .font(.headline)
+
+      Text(message)
+        .font(.caption)
+        .foregroundColor(.secondary)
+        .multilineTextAlignment(.center)
+
+      Button("Retry") {
+        Task { await retry() }
+      }
+      .buttonStyle(.borderedProminent)
+    }
+    .padding(.top, 40)
+  }
 }
