@@ -22,6 +22,14 @@ struct AnalyticsDetailHubView: View {
   let catalogRepository: CatalogRepositoryProtocol
   let syncSettings: SyncSettings
 
+  // MARK: - Analytics Components
+
+  /// Shared analytics service instance for all detail views
+  private let analyticsService: AnalyticsService
+
+  /// Local calculator for offline-first support (nil if catalog not cached)
+  private let localCalculator: LocalAnalyticsCalculatorProtocol?
+
   init(
     journalRepository: JournalRepositoryProtocol,
     catalogRepository: CatalogRepositoryProtocol,
@@ -30,26 +38,16 @@ struct AnalyticsDetailHubView: View {
     self.journalRepository = journalRepository
     self.catalogRepository = catalogRepository
     self.syncSettings = syncSettings
+
+    // Create shared service components once
+    let configuration = AppConfiguration()
+    let apiClient = APIClient(baseURL: configuration.apiBaseURL)
+    self.analyticsService = AnalyticsService(apiClient: apiClient)
+    self.localCalculator = catalogRepository.cachedCatalog()
+      .map { LocalAnalyticsCalculator(catalog: $0) }
   }
 
   // MARK: - Helpers
-
-  /// Creates analytics service and local calculator for offline-first support.
-  ///
-  /// - Returns: Tuple of (service, calculator) where calculator is nil if catalog not cached
-  private func makeAnalyticsComponents() -> (
-    service: AnalyticsService,
-    calculator: LocalAnalyticsCalculatorProtocol?
-  ) {
-    let configuration = AppConfiguration()
-    let apiClient = APIClient(baseURL: configuration.apiBaseURL)
-    let analyticsService = AnalyticsService(apiClient: apiClient)
-
-    let localCalculator = catalogRepository.cachedCatalog()
-      .map { LocalAnalyticsCalculator(catalog: $0) }
-
-    return (analyticsService, localCalculator)
-  }
 
   /// Calculates default date range for temporal/growth analytics.
   ///
@@ -122,7 +120,8 @@ struct AnalyticsDetailHubView: View {
 
   private var selfCareDetailView: some View {
     SelfCareDetailView(
-      makeComponents: makeAnalyticsComponents,
+      analyticsService: analyticsService,
+      localCalculator: localCalculator,
       journalRepository: journalRepository,
       syncSettings: syncSettings
     )
@@ -130,7 +129,8 @@ struct AnalyticsDetailHubView: View {
 
   private var temporalPatternsDetailView: some View {
     TemporalPatternsDetailView(
-      makeComponents: makeAnalyticsComponents,
+      analyticsService: analyticsService,
+      localCalculator: localCalculator,
       journalRepository: journalRepository,
       syncSettings: syncSettings,
       dateRange: defaultDateRange
@@ -139,7 +139,8 @@ struct AnalyticsDetailHubView: View {
 
   private var growthIndicatorsDetailView: some View {
     GrowthIndicatorsDetailView(
-      makeComponents: makeAnalyticsComponents,
+      analyticsService: analyticsService,
+      localCalculator: localCalculator,
       journalRepository: journalRepository,
       syncSettings: syncSettings,
       dateRange: defaultDateRange
@@ -154,12 +155,11 @@ private struct SelfCareDetailView: View {
   @StateObject private var viewModel: SelfCareViewModel
 
   init(
-    makeComponents: () -> (AnalyticsService, LocalAnalyticsCalculatorProtocol?),
+    analyticsService: AnalyticsService,
+    localCalculator: LocalAnalyticsCalculatorProtocol?,
     journalRepository: JournalRepositoryProtocol,
     syncSettings: SyncSettings
   ) {
-    let (analyticsService, localCalculator) = makeComponents()
-
     _viewModel = StateObject(
       wrappedValue: SelfCareViewModel(
         analyticsService: analyticsService,
@@ -205,12 +205,12 @@ private struct TemporalPatternsDetailView: View {
   private let dateRange: (startDate: Date, endDate: Date)
 
   init(
-    makeComponents: () -> (AnalyticsService, LocalAnalyticsCalculatorProtocol?),
+    analyticsService: AnalyticsService,
+    localCalculator: LocalAnalyticsCalculatorProtocol?,
     journalRepository: JournalRepositoryProtocol,
     syncSettings: SyncSettings,
     dateRange: (startDate: Date, endDate: Date)
   ) {
-    let (analyticsService, localCalculator) = makeComponents()
     self.dateRange = dateRange
 
     _viewModel = StateObject(
@@ -266,12 +266,12 @@ private struct GrowthIndicatorsDetailView: View {
   private let dateRange: (startDate: Date, endDate: Date)
 
   init(
-    makeComponents: () -> (AnalyticsService, LocalAnalyticsCalculatorProtocol?),
+    analyticsService: AnalyticsService,
+    localCalculator: LocalAnalyticsCalculatorProtocol?,
     journalRepository: JournalRepositoryProtocol,
     syncSettings: SyncSettings,
     dateRange: (startDate: Date, endDate: Date)
   ) {
-    let (analyticsService, localCalculator) = makeComponents()
     self.dateRange = dateRange
 
     _viewModel = StateObject(
