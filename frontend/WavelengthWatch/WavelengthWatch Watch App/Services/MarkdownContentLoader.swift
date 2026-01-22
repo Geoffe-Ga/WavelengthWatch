@@ -40,8 +40,12 @@ class MarkdownContentLoader {
       return .failure(.readFailed)
     }
 
-    // Parse markdown to AttributedString
-    guard let attributedString = try? AttributedString(markdown: markdownString) else {
+    // Parse markdown to AttributedString with full block-level formatting support
+    // This preserves lists, headers, and line breaks properly on watchOS
+    var options = AttributedString.MarkdownParsingOptions()
+    options.interpretedSyntax = .full
+
+    guard let attributedString = try? AttributedString(markdown: markdownString, options: options) else {
       return .failure(.parsingFailed)
     }
 
