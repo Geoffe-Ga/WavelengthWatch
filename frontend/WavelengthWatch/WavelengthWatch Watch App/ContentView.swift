@@ -1995,15 +1995,15 @@ struct AnalyticsView: View {
 }
 
 struct ConceptExplainerView: View {
-  @State private var content: AttributedString?
+  @State private var blocks: [MarkdownBlock]?
   @State private var errorMessage: String?
   private let loader = MarkdownContentLoader()
 
   var body: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: 16) {
-        if let content {
-          Text(content)
+        if let blocks {
+          MarkdownContentView(blocks: blocks)
             .padding()
         } else if let errorMessage {
           // Error state
@@ -2044,11 +2044,11 @@ struct ConceptExplainerView: View {
   }
 
   private func loadMarkdown() async {
-    let result = await loader.loadContent(fileName: "about-content")
+    let result = await loader.loadParsedContent(fileName: "about-content")
 
     switch result {
-    case let .success(attributedString):
-      content = attributedString
+    case let .success(content):
+      blocks = content.blocks
     case let .failure(error):
       errorMessage = errorMessageFor(error)
     }
