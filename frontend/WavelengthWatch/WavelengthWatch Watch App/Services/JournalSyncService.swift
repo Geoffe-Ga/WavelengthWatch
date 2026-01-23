@@ -147,11 +147,12 @@ final class JournalSyncService: ObservableObject {
       }
 
       var syncedCount = 0
+      var lastError: Error?
 
-      // Sync each entry
+      // Sync each entry (continue even if some fail)
       for (index, item) in syncableEntries.enumerated() {
-        // Update progress
-        let progress = Double(index) / Double(syncableEntries.count)
+        // Update progress (reaches 1.0 at completion)
+        let progress = Double(index + 1) / Double(syncableEntries.count)
         syncStatus = .syncing(progress: progress)
 
         do {
@@ -178,13 +179,27 @@ final class JournalSyncService: ObservableObject {
           try queue.markSynced(id: item.id)
           syncedCount += 1
         } catch {
-          // Mark as failed in queue
-          try queue.markFailed(id: item.id, error: error)
-          throw error
+          // Mark as failed in queue (don't let this replace original error)
+          do {
+            try queue.markFailed(id: item.id, error: error)
+          } catch {
+            // Queue error - log but don't replace sync error
+            print("Failed to mark entry as failed: \(error)")
+          }
+          lastError = error
+          // Continue with next entry instead of throwing
         }
       }
 
-      syncStatus = .success(syncedCount: syncedCount)
+      // Set final status based on results
+      if let lastError, syncedCount == 0 {
+        // All entries failed
+        syncStatus = .error(lastError)
+        throw lastError
+      } else {
+        // Some or all succeeded
+        syncStatus = .success(syncedCount: syncedCount)
+      }
     } catch {
       syncStatus = .error(error)
       throw error
@@ -203,7 +218,11 @@ final class JournalSyncService: ObservableObject {
 
         Task { @MainActor in
           if isConnected, !self.isSyncing {
-            try? await self.sync()
+            do {
+              try await self.sync()
+            } catch {
+              print("Auto-sync failed: \(error)")
+            }
           }
         }
       }
