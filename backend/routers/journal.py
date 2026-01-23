@@ -101,12 +101,16 @@ def _validate_idempotency_key(key: str) -> None:
 
 
 def _get_existing_journal_by_idempotency_key(
-    session: Session, idempotency_key: str
+    session: Session, idempotency_key: str, user_id: int
 ) -> Journal | None:
-    """Get existing journal entry by idempotency key if not expired."""
-    # Check if idempotency record exists and is not expired
+    """Get existing journal entry by idempotency key if not expired.
+
+    Scoped per user to prevent cross-user data leaks.
+    """
+    # Check if idempotency record exists for this user
     statement = select(IdempotencyRecord).where(
-        IdempotencyRecord.idempotency_key == idempotency_key
+        IdempotencyRecord.idempotency_key == idempotency_key,
+        IdempotencyRecord.user_id == user_id,
     )
     result = cast(ScalarResult[IdempotencyRecord], session.exec(statement))
     record = result.one_or_none()
@@ -121,28 +125,29 @@ def _get_existing_journal_by_idempotency_key(
 
     # Check if record is expired
     if expires_at <= datetime.now(UTC):
-        # Remove expired record
+        # Mark for deletion (will be committed with outer transaction)
         session.delete(record)
-        session.commit()
         return None
 
     # Return the existing journal entry
     return _get_journal_or_404(record.journal_id, session)
 
 
-def _store_idempotency_record(
-    session: Session, idempotency_key: str, journal_id: int
-) -> None:
-    """Store idempotency record with 24-hour expiration."""
+def _create_idempotency_record(
+    idempotency_key: str, user_id: int, journal_id: int
+) -> IdempotencyRecord:
+    """Create idempotency record with 24-hour expiration.
+
+    Note: Record is added to session by caller for atomic commit.
+    """
     now = datetime.now(UTC)
-    record = IdempotencyRecord(
+    return IdempotencyRecord(
         idempotency_key=idempotency_key,
+        user_id=user_id,
         journal_id=journal_id,
         created_at=now,
         expires_at=now + timedelta(hours=24),
     )
-    session.add(record)
-    session.commit()
 
 
 def cleanup_expired_idempotency_records(session: Session) -> None:
@@ -205,9 +210,9 @@ def create_journal(
     if idempotency_key is not None:
         _validate_idempotency_key(idempotency_key)
 
-        # Check if entry already exists for this idempotency key
+        # Check if entry already exists for this user's idempotency key
         existing_journal = _get_existing_journal_by_idempotency_key(
-            session, idempotency_key
+            session, idempotency_key, payload.user_id
         )
         if existing_journal is not None:
             return _serialize_journal(existing_journal)
@@ -223,17 +228,24 @@ def create_journal(
     # Create new journal entry
     journal = Journal(**payload.model_dump())
     session.add(journal)
+    session.flush()  # Get journal ID without committing
+
+    # Add idempotency record to same transaction if key provided
+    if idempotency_key is not None:
+        journal_id = _ensure_journal_id(journal)
+        idempotency_record = _create_idempotency_record(
+            idempotency_key, payload.user_id, journal_id
+        )
+        session.add(idempotency_record)
+
+    # Single commit for both journal and idempotency record
     session.commit()
     session.refresh(journal)
-
-    # Store idempotency record if key provided
-    journal_id = _ensure_journal_id(journal)
-    if idempotency_key is not None:
-        _store_idempotency_record(session, idempotency_key, journal_id)
 
     # Invalidate analytics cache for this user since their data changed
     analytics_cache.invalidate_user(payload.user_id)
 
+    journal_id = _ensure_journal_id(journal)
     return _serialize_journal(_get_journal_or_404(journal_id, session))
 
 

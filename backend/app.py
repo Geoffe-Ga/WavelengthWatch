@@ -62,6 +62,10 @@ def create_application() -> FastAPI:
         database.create_db_and_tables()
         with Session(database.engine) as session:
             seed_database(session)
+            # Cleanup expired idempotency records on startup
+            from .routers.journal import cleanup_expired_idempotency_records
+
+            cleanup_expired_idempotency_records(session)
         yield
 
     application = FastAPI(

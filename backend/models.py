@@ -177,11 +177,15 @@ class IdempotencyRecord(SQLModel, table=True):
 
     Stores mapping of idempotency keys to journal IDs to prevent
     duplicate entries. Records expire after 24 hours.
+
+    Composite primary key (idempotency_key, user_id) ensures keys
+    are scoped per user, preventing cross-user data leaks.
     """
 
     __tablename__ = "idempotency_records"
 
     idempotency_key: str = Field(primary_key=True)
+    user_id: int = Field(primary_key=True, index=True)
     journal_id: int = Field(foreign_key="journal.id", index=True)
     created_at: datetime = Field(
         sa_column=Column(DateTime(timezone=True), nullable=False)

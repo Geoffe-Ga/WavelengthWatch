@@ -213,11 +213,17 @@ def test_journal_idempotency_key_validation(client) -> None:
 
 
 def test_journal_idempotency_after_expiration(client) -> None:
-    """Test idempotency key creates new entry after expiration (> 24 hours)."""
+    """Test idempotency key creates new entry after expiration (> 24 hours).
+
+    Note: Uses direct database access to simulate time passage by manually
+    expiring the idempotency record. This is necessary since we cannot
+    actually wait 24 hours in a test.
+    """
     idempotency_key = str(uuid.uuid4())
+    user_id = 204
     payload = {
         "created_at": "2025-10-20T16:00:00Z",
-        "user_id": 204,
+        "user_id": user_id,
         "curriculum_id": 1,
     }
 
@@ -231,11 +237,13 @@ def test_journal_idempotency_after_expiration(client) -> None:
     entry1 = response1.json()
 
     # Manually expire the idempotency record by setting expires_at in past
+    # Direct DB access needed to simulate time passage
     from backend.database import get_session
     from backend.models import IdempotencyRecord
 
     for session in get_session():
-        record = session.get(IdempotencyRecord, idempotency_key)
+        # Composite primary key requires both values
+        record = session.get(IdempotencyRecord, (idempotency_key, user_id))
         assert record is not None
         record.expires_at = datetime.now(UTC) - timedelta(hours=1)
         session.add(record)
@@ -273,7 +281,7 @@ def test_journal_idempotency_different_users_same_key(client) -> None:
     assert response1.status_code == 201
     entry1 = response1.json()
 
-    # User 206 with same idempotency key (should fail - key is global)
+    # User 206 with same key (creates new entry - keys scoped per user)
     payload2 = {
         "created_at": "2025-10-20T17:30:00Z",
         "user_id": 206,
@@ -287,9 +295,9 @@ def test_journal_idempotency_different_users_same_key(client) -> None:
     assert response2.status_code == 201
     entry2 = response2.json()
 
-    # Should return the original entry (idempotency keys are global)
-    assert entry2["id"] == entry1["id"]
-    assert entry2["user_id"] == 205  # Original user
+    # Should create separate entries (idempotency keys are scoped per user)
+    assert entry2["id"] != entry1["id"]
+    assert entry2["user_id"] == 206  # Different user
 
 
 def test_idempotency_cleanup_removes_expired_records(client) -> None:
@@ -300,12 +308,13 @@ def test_idempotency_cleanup_removes_expired_records(client) -> None:
 
     # Create an expired record manually
     expired_key = str(uuid.uuid4())
+    user_id = 207
 
     for session in get_session():
         # First create a journal entry
         payload = {
             "created_at": "2025-10-20T18:00:00Z",
-            "user_id": 207,
+            "user_id": user_id,
             "curriculum_id": 1,
         }
         response = client.post(
@@ -317,7 +326,7 @@ def test_idempotency_cleanup_removes_expired_records(client) -> None:
         journal_id = response.json()["id"]
 
         # Manually set expiration to the past
-        record = session.get(IdempotencyRecord, expired_key)
+        record = session.get(IdempotencyRecord, (expired_key, user_id))
         assert record is not None
         record.expires_at = datetime.now(UTC) - timedelta(hours=25)
         session.add(record)
@@ -327,6 +336,7 @@ def test_idempotency_cleanup_removes_expired_records(client) -> None:
         active_key = str(uuid.uuid4())
         active_record = IdempotencyRecord(
             idempotency_key=active_key,
+            user_id=user_id,
             journal_id=journal_id,
             created_at=datetime.now(UTC),
             expires_at=datetime.now(UTC) + timedelta(hours=23),
@@ -338,5 +348,5 @@ def test_idempotency_cleanup_removes_expired_records(client) -> None:
         cleanup_expired_idempotency_records(session)
 
         # Verify expired record removed, active record remains
-        assert session.get(IdempotencyRecord, expired_key) is None
-        assert session.get(IdempotencyRecord, active_key) is not None
+        assert session.get(IdempotencyRecord, (expired_key, user_id)) is None
+        assert session.get(IdempotencyRecord, (active_key, user_id)) is not None
