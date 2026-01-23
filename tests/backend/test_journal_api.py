@@ -242,8 +242,8 @@ def test_journal_idempotency_after_expiration(client) -> None:
     from backend.models import IdempotencyRecord
 
     for session in get_session():
-        # Single primary key (idempotency_key only)
-        record = session.get(IdempotencyRecord, idempotency_key)
+        # Composite primary key (idempotency_key, user_id)
+        record = session.get(IdempotencyRecord, (idempotency_key, user_id))
         assert record is not None
         record.expires_at = datetime.now(UTC) - timedelta(hours=1)
         session.add(record)
@@ -264,10 +264,10 @@ def test_journal_idempotency_after_expiration(client) -> None:
 
 
 def test_journal_idempotency_different_users_same_key(client) -> None:
-    """Test same idempotency key prevents creation even for different users.
+    """Test same idempotency key used by different users creates separate entries.
 
-    Idempotency keys are globally unique to follow standard semantics.
-    The second user gets the first user's entry (idempotent replay).
+    Idempotency keys are scoped per user (standard semantics) to prevent
+    cross-user interference and data leaks.
     """
     idempotency_key = str(uuid.uuid4())
 
@@ -285,7 +285,7 @@ def test_journal_idempotency_different_users_same_key(client) -> None:
     assert response1.status_code == 201
     entry1 = response1.json()
 
-    # User 206 with same key gets original entry (global uniqueness)
+    # User 206 with same key creates their own entry (per-user scoping)
     payload2 = {
         "created_at": "2025-10-20T17:30:00Z",
         "user_id": 206,
@@ -296,12 +296,12 @@ def test_journal_idempotency_different_users_same_key(client) -> None:
         json=payload2,
         headers={"X-Idempotency-Key": idempotency_key},
     )
-    assert response2.status_code == 200  # Idempotent replay
+    assert response2.status_code == 201
     entry2 = response2.json()
 
-    # Should return same entry (global idempotency)
-    assert entry2["id"] == entry1["id"]
-    assert entry2["user_id"] == 205  # Original user
+    # Should create separate entries (per-user idempotency)
+    assert entry2["id"] != entry1["id"]
+    assert entry2["user_id"] == 206  # Correct user
 
 
 def test_idempotency_cleanup_removes_expired_records(client) -> None:
@@ -330,7 +330,7 @@ def test_idempotency_cleanup_removes_expired_records(client) -> None:
         journal_id = response.json()["id"]
 
         # Manually set expiration to the past
-        record = session.get(IdempotencyRecord, expired_key)
+        record = session.get(IdempotencyRecord, (expired_key, user_id))
         assert record is not None
         record.expires_at = datetime.now(UTC) - timedelta(hours=25)
         session.add(record)
@@ -352,5 +352,5 @@ def test_idempotency_cleanup_removes_expired_records(client) -> None:
         cleanup_expired_idempotency_records(session)
 
         # Verify expired record removed, active record remains
-        assert session.get(IdempotencyRecord, expired_key) is None
-        assert session.get(IdempotencyRecord, active_key) is not None
+        assert session.get(IdempotencyRecord, (expired_key, user_id)) is None
+        assert session.get(IdempotencyRecord, (active_key, user_id)) is not None

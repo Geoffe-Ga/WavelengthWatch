@@ -103,15 +103,17 @@ def _validate_idempotency_key(key: str) -> None:
 
 
 def _get_existing_journal_by_idempotency_key(
-    session: Session, idempotency_key: str
+    session: Session, idempotency_key: str, user_id: int
 ) -> Journal | None:
     """Get existing journal entry by idempotency key if not expired.
 
+    Keys are scoped per user to prevent cross-user interference.
     Returns None if key not found or record expired.
     """
-    # Check if idempotency record exists
+    # Check if idempotency record exists for this user
     statement = select(IdempotencyRecord).where(
-        IdempotencyRecord.idempotency_key == idempotency_key
+        IdempotencyRecord.idempotency_key == idempotency_key,
+        IdempotencyRecord.user_id == user_id,
     )
     result = cast(ScalarResult[IdempotencyRecord], session.exec(statement))
     record = result.one_or_none()
@@ -217,9 +219,9 @@ def create_journal(
     if idempotency_key is not None:
         _validate_idempotency_key(idempotency_key)
 
-        # Check if entry already exists for this idempotency key
+        # Check if entry already exists for this user's idempotency key
         existing_journal = _get_existing_journal_by_idempotency_key(
-            session, idempotency_key
+            session, idempotency_key, payload.user_id
         )
         if existing_journal is not None:
             # Return 200 OK for idempotent replay
@@ -254,18 +256,23 @@ def create_journal(
     # first, IntegrityError will be raised due to unique constraint
     try:
         session.commit()
-    except IntegrityError:
-        # Concurrent request won the race, fetch existing entry
-        session.rollback()
-        existing_journal = _get_existing_journal_by_idempotency_key(
-            session, idempotency_key or ""
-        )
-        if existing_journal is not None:
-            return JSONResponse(
-                content=_serialize_journal(existing_journal).model_dump(mode="json"),
-                status_code=status.HTTP_200_OK,
+    except IntegrityError as exc:
+        # Check if this is an idempotency key conflict (not other constraints)
+        error_msg = str(exc)
+        if idempotency_key is not None and "idempotency_records" in error_msg.lower():
+            # Concurrent request won the race, fetch existing entry
+            session.rollback()
+            existing_journal = _get_existing_journal_by_idempotency_key(
+                session, idempotency_key, payload.user_id
             )
-        # If we still can't find it, re-raise the original error
+            if existing_journal is not None:
+                return JSONResponse(
+                    content=_serialize_journal(existing_journal).model_dump(
+                        mode="json"
+                    ),
+                    status_code=status.HTTP_200_OK,
+                )
+        # Re-raise for other integrity errors (foreign keys, etc.)
         raise
 
     session.refresh(journal)

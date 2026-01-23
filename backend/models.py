@@ -175,17 +175,19 @@ class Journal(SQLModel, table=True):
 class IdempotencyRecord(SQLModel, table=True):
     """Idempotency key tracking for journal creation.
 
-    Stores mapping of globally unique idempotency keys to journal IDs
+    Stores mapping of user-scoped idempotency keys to journal IDs
     to prevent duplicate entries. Records expire after 24 hours.
 
-    Primary key on idempotency_key ensures global uniqueness and
-    prevents race conditions via database-level constraint.
+    Composite primary key (idempotency_key, user_id) ensures per-user
+    uniqueness and prevents race conditions via database-level constraint.
+    This follows standard idempotency semantics where keys are scoped
+    per client/user, preventing cross-user interference.
     """
 
     __tablename__ = "idempotency_records"
 
     idempotency_key: str = Field(primary_key=True)
-    user_id: int = Field(index=True)
+    user_id: int = Field(primary_key=True)
     journal_id: int = Field(foreign_key="journal.id", index=True)
     created_at: datetime = Field(
         sa_column=Column(DateTime(timezone=True), nullable=False)
