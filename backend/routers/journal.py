@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+import uuid
+from datetime import UTC, datetime, timedelta
 from typing import Annotated, cast
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response, status
+from fastapi.responses import JSONResponse
 from sqlalchemy import desc
 from sqlalchemy.engine import ScalarResult
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.elements import ColumnElement
 from sqlmodel import Session, select
@@ -15,7 +18,7 @@ from sqlmodel.sql.expression import SelectOfScalar
 
 from ..cache import analytics_cache
 from ..database import get_session
-from ..models import Curriculum, Journal, Strategy
+from ..models import Curriculum, IdempotencyRecord, Journal, Strategy
 from ..schemas import JournalCreate, JournalRead, JournalUpdate
 
 SessionDep = Annotated[Session, Depends(get_session)]
@@ -88,6 +91,84 @@ def _ensure_journal_id(journal: Journal) -> int:
     return journal_id
 
 
+def _validate_idempotency_key(key: str) -> None:
+    """Validate that idempotency key is a valid UUID."""
+    try:
+        uuid.UUID(key)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid idempotency key format: must be a valid UUID",
+        ) from exc
+
+
+def _get_existing_journal_by_idempotency_key(
+    session: Session, idempotency_key: str, user_id: int
+) -> Journal | None:
+    """Get existing journal entry by idempotency key if not expired.
+
+    Keys are scoped per user to prevent cross-user interference.
+    Returns None if key not found or record expired.
+    """
+    # Check if idempotency record exists for this user
+    statement = select(IdempotencyRecord).where(
+        IdempotencyRecord.idempotency_key == idempotency_key,
+        IdempotencyRecord.user_id == user_id,
+    )
+    result = cast(ScalarResult[IdempotencyRecord], session.exec(statement))
+    record = result.one_or_none()
+
+    if record is None:
+        return None
+
+    # Ensure timezone awareness for comparison (SQLite stores as naive)
+    expires_at = record.expires_at
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=UTC)
+
+    # Check if record is expired
+    if expires_at <= datetime.now(UTC):
+        # Mark for deletion (will be committed with outer transaction)
+        session.delete(record)
+        return None
+
+    # Return the existing journal entry
+    return _get_journal_or_404(record.journal_id, session)
+
+
+def _create_idempotency_record(
+    idempotency_key: str, user_id: int, journal_id: int
+) -> IdempotencyRecord:
+    """Create idempotency record with 24-hour expiration.
+
+    Note: Record is added to session by caller for atomic commit.
+    """
+    now = datetime.now(UTC)
+    return IdempotencyRecord(
+        idempotency_key=idempotency_key,
+        user_id=user_id,
+        journal_id=journal_id,
+        created_at=now,
+        expires_at=now + timedelta(hours=24),
+    )
+
+
+def cleanup_expired_idempotency_records(session: Session) -> None:
+    """Remove expired idempotency records (> 24 hours old)."""
+    now = datetime.now(UTC)
+    statement = select(IdempotencyRecord).where(
+        cast(ColumnElement[bool], IdempotencyRecord.expires_at <= now)
+    )
+    result = cast(ScalarResult[IdempotencyRecord], session.exec(statement))
+    expired_records = result.all()
+
+    for record in expired_records:
+        session.delete(record)
+
+    if expired_records:
+        session.commit()
+
+
 @router.get("", response_model=list[JournalRead])
 def list_journal_entries(
     *,
@@ -122,24 +203,91 @@ def get_journal(journal_id: int, session: SessionDep) -> JournalRead:
     return _serialize_journal(_get_journal_or_404(journal_id, session))
 
 
-@router.post("", response_model=JournalRead, status_code=status.HTTP_201_CREATED)
-def create_journal(payload: JournalCreate, session: SessionDep) -> JournalRead:
+@router.post("", response_model=JournalRead)
+def create_journal(
+    payload: JournalCreate,
+    session: SessionDep,
+    idempotency_key: Annotated[
+        str | None,
+        Header(
+            alias="X-Idempotency-Key",
+            description="UUID-formatted idempotency key for duplicate prevention",
+        ),
+    ] = None,
+) -> Response:
+    # Handle idempotency if key provided
+    if idempotency_key is not None:
+        _validate_idempotency_key(idempotency_key)
+
+        # Check if entry already exists for this user's idempotency key
+        existing_journal = _get_existing_journal_by_idempotency_key(
+            session, idempotency_key, payload.user_id
+        )
+        if existing_journal is not None:
+            # Return 200 OK for idempotent replay
+            return JSONResponse(
+                content=_serialize_journal(existing_journal).model_dump(mode="json"),
+                status_code=status.HTTP_200_OK,
+            )
+
+    # Validate references
     _validate_references(
         session,
         curriculum_id=payload.curriculum_id,
         secondary_curriculum_id=payload.secondary_curriculum_id,
         strategy_id=payload.strategy_id,
     )
+
+    # Create new journal entry
     journal = Journal(**payload.model_dump())
     session.add(journal)
-    session.commit()
+    session.flush()  # Get journal ID without committing
+
+    # Add idempotency record to same transaction if key provided
+    if idempotency_key is not None:
+        journal_id = _ensure_journal_id(journal)
+        idempotency_record = _create_idempotency_record(
+            idempotency_key, payload.user_id, journal_id
+        )
+        session.add(idempotency_record)
+
+    # Single commit for both journal and idempotency record
+    # Race condition handling: if another request with same key commits
+    # first, IntegrityError will be raised due to unique constraint
+    try:
+        session.commit()
+    except IntegrityError as exc:
+        # Check if this is an idempotency key conflict (not other constraints)
+        error_msg = str(exc)
+        if idempotency_key is not None and "idempotency_records" in error_msg.lower():
+            # Concurrent request won the race, fetch existing entry
+            session.rollback()
+            existing_journal = _get_existing_journal_by_idempotency_key(
+                session, idempotency_key, payload.user_id
+            )
+            if existing_journal is not None:
+                return JSONResponse(
+                    content=_serialize_journal(existing_journal).model_dump(
+                        mode="json"
+                    ),
+                    status_code=status.HTTP_200_OK,
+                )
+        # Re-raise for other integrity errors (foreign keys, etc.)
+        raise
+
     session.refresh(journal)
 
     # Invalidate analytics cache for this user since their data changed
     analytics_cache.invalidate_user(payload.user_id)
 
     journal_id = _ensure_journal_id(journal)
-    return _serialize_journal(_get_journal_or_404(journal_id, session))
+    serialized = _serialize_journal(_get_journal_or_404(journal_id, session))
+
+    # Return 201 Created for newly created entry
+    return JSONResponse(
+        content=serialized.model_dump(mode="json"),
+        status_code=status.HTTP_201_CREATED,
+    )
 
 
 @router.put("/{journal_id}", response_model=JournalRead)

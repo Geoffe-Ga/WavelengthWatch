@@ -172,12 +172,38 @@ class Journal(SQLModel, table=True):
     __table_args__ = (Index("ix_journal_user_created", "user_id", "created_at"),)
 
 
+class IdempotencyRecord(SQLModel, table=True):
+    """Idempotency key tracking for journal creation.
+
+    Stores mapping of user-scoped idempotency keys to journal IDs
+    to prevent duplicate entries. Records expire after 24 hours.
+
+    Composite primary key (idempotency_key, user_id) ensures per-user
+    uniqueness and prevents race conditions via database-level constraint.
+    This follows standard idempotency semantics where keys are scoped
+    per client/user, preventing cross-user interference.
+    """
+
+    __tablename__ = "idempotency_records"
+
+    idempotency_key: str = Field(primary_key=True)
+    user_id: int = Field(primary_key=True)
+    journal_id: int = Field(foreign_key="journal.id", index=True)
+    created_at: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
+    expires_at: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False, index=True)
+    )
+
+
 __all__ = [
     "Layer",
     "Phase",
     "Curriculum",
     "Strategy",
     "Journal",
+    "IdempotencyRecord",
     "Dosage",
     "InitiatedBy",
 ]
