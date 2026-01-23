@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 import Network
 
@@ -8,6 +9,14 @@ enum ConnectionType {
   case wired
   case unknown
   case none
+}
+
+/// Protocol for network monitoring.
+///
+/// Enables dependency injection and testing by defining the monitor interface.
+protocol NetworkMonitorProtocol: ObservableObject {
+  var isConnected: Bool { get }
+  var isConnectedPublisher: Published<Bool>.Publisher { get }
 }
 
 /// Monitors network reachability and publishes connectivity state changes.
@@ -34,11 +43,13 @@ enum ConnectionType {
 /// - Properly cancels monitoring on deinit to prevent leaks
 /// - Distinguishes between wifi, cellular, wired, and no connection
 @MainActor
-final class NetworkMonitor: ObservableObject {
+final class NetworkMonitor: ObservableObject, NetworkMonitorProtocol {
   // MARK: - Published Properties
 
   /// Current network connection status.
   @Published private(set) var isConnected: Bool = false
+
+  var isConnectedPublisher: Published<Bool>.Publisher { $isConnected }
 
   /// Type of connection currently active.
   @Published private(set) var connectionType: ConnectionType = .unknown
