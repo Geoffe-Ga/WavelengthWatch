@@ -7,8 +7,10 @@ from datetime import UTC, datetime, timedelta
 from typing import Annotated, cast
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response, status
+from fastapi.responses import JSONResponse
 from sqlalchemy import desc
 from sqlalchemy.engine import ScalarResult
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.elements import ColumnElement
 from sqlmodel import Session, select
@@ -101,16 +103,15 @@ def _validate_idempotency_key(key: str) -> None:
 
 
 def _get_existing_journal_by_idempotency_key(
-    session: Session, idempotency_key: str, user_id: int
+    session: Session, idempotency_key: str
 ) -> Journal | None:
     """Get existing journal entry by idempotency key if not expired.
 
-    Scoped per user to prevent cross-user data leaks.
+    Returns None if key not found or record expired.
     """
-    # Check if idempotency record exists for this user
+    # Check if idempotency record exists
     statement = select(IdempotencyRecord).where(
-        IdempotencyRecord.idempotency_key == idempotency_key,
-        IdempotencyRecord.user_id == user_id,
+        IdempotencyRecord.idempotency_key == idempotency_key
     )
     result = cast(ScalarResult[IdempotencyRecord], session.exec(statement))
     record = result.one_or_none()
@@ -118,7 +119,7 @@ def _get_existing_journal_by_idempotency_key(
     if record is None:
         return None
 
-    # Ensure expires_at is timezone-aware for comparison
+    # Ensure timezone awareness for comparison (SQLite stores as naive)
     expires_at = record.expires_at
     if expires_at.tzinfo is None:
         expires_at = expires_at.replace(tzinfo=UTC)
@@ -200,22 +201,32 @@ def get_journal(journal_id: int, session: SessionDep) -> JournalRead:
     return _serialize_journal(_get_journal_or_404(journal_id, session))
 
 
-@router.post("", response_model=JournalRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=JournalRead)
 def create_journal(
     payload: JournalCreate,
     session: SessionDep,
-    idempotency_key: Annotated[str | None, Header(alias="X-Idempotency-Key")] = None,
-) -> JournalRead:
+    idempotency_key: Annotated[
+        str | None,
+        Header(
+            alias="X-Idempotency-Key",
+            description="UUID-formatted idempotency key for duplicate prevention",
+        ),
+    ] = None,
+) -> Response:
     # Handle idempotency if key provided
     if idempotency_key is not None:
         _validate_idempotency_key(idempotency_key)
 
-        # Check if entry already exists for this user's idempotency key
+        # Check if entry already exists for this idempotency key
         existing_journal = _get_existing_journal_by_idempotency_key(
-            session, idempotency_key, payload.user_id
+            session, idempotency_key
         )
         if existing_journal is not None:
-            return _serialize_journal(existing_journal)
+            # Return 200 OK for idempotent replay
+            return JSONResponse(
+                content=_serialize_journal(existing_journal).model_dump(mode="json"),
+                status_code=status.HTTP_200_OK,
+            )
 
     # Validate references
     _validate_references(
@@ -239,14 +250,37 @@ def create_journal(
         session.add(idempotency_record)
 
     # Single commit for both journal and idempotency record
-    session.commit()
+    # Race condition handling: if another request with same key commits
+    # first, IntegrityError will be raised due to unique constraint
+    try:
+        session.commit()
+    except IntegrityError:
+        # Concurrent request won the race, fetch existing entry
+        session.rollback()
+        existing_journal = _get_existing_journal_by_idempotency_key(
+            session, idempotency_key or ""
+        )
+        if existing_journal is not None:
+            return JSONResponse(
+                content=_serialize_journal(existing_journal).model_dump(mode="json"),
+                status_code=status.HTTP_200_OK,
+            )
+        # If we still can't find it, re-raise the original error
+        raise
+
     session.refresh(journal)
 
     # Invalidate analytics cache for this user since their data changed
     analytics_cache.invalidate_user(payload.user_id)
 
     journal_id = _ensure_journal_id(journal)
-    return _serialize_journal(_get_journal_or_404(journal_id, session))
+    serialized = _serialize_journal(_get_journal_or_404(journal_id, session))
+
+    # Return 201 Created for newly created entry
+    return JSONResponse(
+        content=serialized.model_dump(mode="json"),
+        status_code=status.HTTP_201_CREATED,
+    )
 
 
 @router.put("/{journal_id}", response_model=JournalRead)
