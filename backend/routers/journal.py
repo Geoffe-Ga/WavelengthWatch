@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+import uuid
+from datetime import UTC, datetime, timedelta
 from typing import Annotated, cast
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response, status
 from sqlalchemy import desc
 from sqlalchemy.engine import ScalarResult
 from sqlalchemy.orm import joinedload
@@ -15,7 +16,7 @@ from sqlmodel.sql.expression import SelectOfScalar
 
 from ..cache import analytics_cache
 from ..database import get_session
-from ..models import Curriculum, Journal, Strategy
+from ..models import Curriculum, IdempotencyRecord, Journal, Strategy
 from ..schemas import JournalCreate, JournalRead, JournalUpdate
 
 SessionDep = Annotated[Session, Depends(get_session)]
@@ -88,6 +89,78 @@ def _ensure_journal_id(journal: Journal) -> int:
     return journal_id
 
 
+def _validate_idempotency_key(key: str) -> None:
+    """Validate that idempotency key is a valid UUID."""
+    try:
+        uuid.UUID(key)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid idempotency key format: must be a valid UUID",
+        ) from exc
+
+
+def _get_existing_journal_by_idempotency_key(
+    session: Session, idempotency_key: str
+) -> Journal | None:
+    """Get existing journal entry by idempotency key if not expired."""
+    # Check if idempotency record exists and is not expired
+    statement = select(IdempotencyRecord).where(
+        IdempotencyRecord.idempotency_key == idempotency_key
+    )
+    result = cast(ScalarResult[IdempotencyRecord], session.exec(statement))
+    record = result.one_or_none()
+
+    if record is None:
+        return None
+
+    # Ensure expires_at is timezone-aware for comparison
+    expires_at = record.expires_at
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=UTC)
+
+    # Check if record is expired
+    if expires_at <= datetime.now(UTC):
+        # Remove expired record
+        session.delete(record)
+        session.commit()
+        return None
+
+    # Return the existing journal entry
+    return _get_journal_or_404(record.journal_id, session)
+
+
+def _store_idempotency_record(
+    session: Session, idempotency_key: str, journal_id: int
+) -> None:
+    """Store idempotency record with 24-hour expiration."""
+    now = datetime.now(UTC)
+    record = IdempotencyRecord(
+        idempotency_key=idempotency_key,
+        journal_id=journal_id,
+        created_at=now,
+        expires_at=now + timedelta(hours=24),
+    )
+    session.add(record)
+    session.commit()
+
+
+def cleanup_expired_idempotency_records(session: Session) -> None:
+    """Remove expired idempotency records (> 24 hours old)."""
+    now = datetime.now(UTC)
+    statement = select(IdempotencyRecord).where(
+        cast(ColumnElement[bool], IdempotencyRecord.expires_at <= now)
+    )
+    result = cast(ScalarResult[IdempotencyRecord], session.exec(statement))
+    expired_records = result.all()
+
+    for record in expired_records:
+        session.delete(record)
+
+    if expired_records:
+        session.commit()
+
+
 @router.get("", response_model=list[JournalRead])
 def list_journal_entries(
     *,
@@ -123,22 +196,44 @@ def get_journal(journal_id: int, session: SessionDep) -> JournalRead:
 
 
 @router.post("", response_model=JournalRead, status_code=status.HTTP_201_CREATED)
-def create_journal(payload: JournalCreate, session: SessionDep) -> JournalRead:
+def create_journal(
+    payload: JournalCreate,
+    session: SessionDep,
+    idempotency_key: Annotated[str | None, Header(alias="X-Idempotency-Key")] = None,
+) -> JournalRead:
+    # Handle idempotency if key provided
+    if idempotency_key is not None:
+        _validate_idempotency_key(idempotency_key)
+
+        # Check if entry already exists for this idempotency key
+        existing_journal = _get_existing_journal_by_idempotency_key(
+            session, idempotency_key
+        )
+        if existing_journal is not None:
+            return _serialize_journal(existing_journal)
+
+    # Validate references
     _validate_references(
         session,
         curriculum_id=payload.curriculum_id,
         secondary_curriculum_id=payload.secondary_curriculum_id,
         strategy_id=payload.strategy_id,
     )
+
+    # Create new journal entry
     journal = Journal(**payload.model_dump())
     session.add(journal)
     session.commit()
     session.refresh(journal)
 
+    # Store idempotency record if key provided
+    journal_id = _ensure_journal_id(journal)
+    if idempotency_key is not None:
+        _store_idempotency_record(session, idempotency_key, journal_id)
+
     # Invalidate analytics cache for this user since their data changed
     analytics_cache.invalidate_user(payload.user_id)
 
-    journal_id = _ensure_journal_id(journal)
     return _serialize_journal(_get_journal_or_404(journal_id, session))
 
 

@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import uuid
+from datetime import UTC, datetime, timedelta
+
 
 def test_journal_filtering(client) -> None:
     response = client.get("/api/v1/journal", params={"user_id": 1})
@@ -105,3 +108,235 @@ def test_journal_initiated_by_field(client) -> None:
     }
     response = client.post("/api/v1/journal", json=payload_invalid)
     assert response.status_code == 422
+
+
+def test_journal_create_without_idempotency_key(client) -> None:
+    """Test creating journal entry without idempotency key (current behavior)."""
+    payload = {
+        "created_at": "2025-10-20T12:00:00Z",
+        "user_id": 200,
+        "curriculum_id": 1,
+    }
+
+    # First request
+    response1 = client.post("/api/v1/journal", json=payload)
+    assert response1.status_code == 201
+    entry1 = response1.json()
+
+    # Second request with same payload (no idempotency key)
+    response2 = client.post("/api/v1/journal", json=payload)
+    assert response2.status_code == 201
+    entry2 = response2.json()
+
+    # Should create two different entries
+    assert entry1["id"] != entry2["id"]
+
+
+def test_journal_create_with_new_idempotency_key(client) -> None:
+    """Test creating journal entry with new idempotency key creates entry."""
+    idempotency_key = str(uuid.uuid4())
+    payload = {
+        "created_at": "2025-10-20T13:00:00Z",
+        "user_id": 201,
+        "curriculum_id": 1,
+    }
+
+    response = client.post(
+        "/api/v1/journal",
+        json=payload,
+        headers={"X-Idempotency-Key": idempotency_key},
+    )
+    assert response.status_code == 201
+    entry = response.json()
+    assert entry["user_id"] == 201
+    assert entry["curriculum"]["id"] == 1
+
+
+def test_journal_idempotency_prevents_duplicates(client) -> None:
+    """Test same idempotency key twice returns existing entry, no duplicate."""
+    idempotency_key = str(uuid.uuid4())
+    payload = {
+        "created_at": "2025-10-20T14:00:00Z",
+        "user_id": 202,
+        "curriculum_id": 1,
+        "strategy_id": 1,
+    }
+
+    # First request
+    response1 = client.post(
+        "/api/v1/journal",
+        json=payload,
+        headers={"X-Idempotency-Key": idempotency_key},
+    )
+    assert response1.status_code == 201
+    entry1 = response1.json()
+    journal_id = entry1["id"]
+
+    # Second request with same idempotency key
+    response2 = client.post(
+        "/api/v1/journal",
+        json=payload,
+        headers={"X-Idempotency-Key": idempotency_key},
+    )
+    assert response2.status_code == 201
+    entry2 = response2.json()
+
+    # Should return same entry, not create duplicate
+    assert entry2["id"] == journal_id
+    assert entry2["user_id"] == 202
+    assert entry2["strategy"]["id"] == 1
+
+    # Verify only one entry exists
+    list_response = client.get("/api/v1/journal", params={"user_id": 202})
+    assert list_response.status_code == 200
+    entries = list_response.json()
+    assert len(entries) == 1
+    assert entries[0]["id"] == journal_id
+
+
+def test_journal_idempotency_key_validation(client) -> None:
+    """Test idempotency key must be valid UUID format."""
+    payload = {
+        "created_at": "2025-10-20T15:00:00Z",
+        "user_id": 203,
+        "curriculum_id": 1,
+    }
+
+    # Invalid UUID format
+    response = client.post(
+        "/api/v1/journal",
+        json=payload,
+        headers={"X-Idempotency-Key": "not-a-uuid"},
+    )
+    assert response.status_code == 400
+    assert "invalid" in response.json()["detail"].lower()
+
+
+def test_journal_idempotency_after_expiration(client) -> None:
+    """Test idempotency key creates new entry after expiration (> 24 hours)."""
+    idempotency_key = str(uuid.uuid4())
+    payload = {
+        "created_at": "2025-10-20T16:00:00Z",
+        "user_id": 204,
+        "curriculum_id": 1,
+    }
+
+    # First request
+    response1 = client.post(
+        "/api/v1/journal",
+        json=payload,
+        headers={"X-Idempotency-Key": idempotency_key},
+    )
+    assert response1.status_code == 201
+    entry1 = response1.json()
+
+    # Manually expire the idempotency record by setting expires_at in past
+    from backend.database import get_session
+    from backend.models import IdempotencyRecord
+
+    for session in get_session():
+        record = session.get(IdempotencyRecord, idempotency_key)
+        assert record is not None
+        record.expires_at = datetime.now(UTC) - timedelta(hours=1)
+        session.add(record)
+        session.commit()
+
+    # Second request with same key after expiration
+    payload["created_at"] = "2025-10-21T16:00:00Z"  # Different timestamp
+    response2 = client.post(
+        "/api/v1/journal",
+        json=payload,
+        headers={"X-Idempotency-Key": idempotency_key},
+    )
+    assert response2.status_code == 201
+    entry2 = response2.json()
+
+    # Should create new entry after expiration
+    assert entry2["id"] != entry1["id"]
+
+
+def test_journal_idempotency_different_users_same_key(client) -> None:
+    """Test same idempotency key used by different users creates separate entries."""
+    idempotency_key = str(uuid.uuid4())
+
+    # User 205
+    payload1 = {
+        "created_at": "2025-10-20T17:00:00Z",
+        "user_id": 205,
+        "curriculum_id": 1,
+    }
+    response1 = client.post(
+        "/api/v1/journal",
+        json=payload1,
+        headers={"X-Idempotency-Key": idempotency_key},
+    )
+    assert response1.status_code == 201
+    entry1 = response1.json()
+
+    # User 206 with same idempotency key (should fail - key is global)
+    payload2 = {
+        "created_at": "2025-10-20T17:30:00Z",
+        "user_id": 206,
+        "curriculum_id": 1,
+    }
+    response2 = client.post(
+        "/api/v1/journal",
+        json=payload2,
+        headers={"X-Idempotency-Key": idempotency_key},
+    )
+    assert response2.status_code == 201
+    entry2 = response2.json()
+
+    # Should return the original entry (idempotency keys are global)
+    assert entry2["id"] == entry1["id"]
+    assert entry2["user_id"] == 205  # Original user
+
+
+def test_idempotency_cleanup_removes_expired_records(client) -> None:
+    """Test cleanup function removes expired idempotency records."""
+    from backend.database import get_session
+    from backend.models import IdempotencyRecord
+    from backend.routers.journal import cleanup_expired_idempotency_records
+
+    # Create an expired record manually
+    expired_key = str(uuid.uuid4())
+
+    for session in get_session():
+        # First create a journal entry
+        payload = {
+            "created_at": "2025-10-20T18:00:00Z",
+            "user_id": 207,
+            "curriculum_id": 1,
+        }
+        response = client.post(
+            "/api/v1/journal",
+            json=payload,
+            headers={"X-Idempotency-Key": expired_key},
+        )
+        assert response.status_code == 201
+        journal_id = response.json()["id"]
+
+        # Manually set expiration to the past
+        record = session.get(IdempotencyRecord, expired_key)
+        assert record is not None
+        record.expires_at = datetime.now(UTC) - timedelta(hours=25)
+        session.add(record)
+        session.commit()
+
+        # Create a non-expired record
+        active_key = str(uuid.uuid4())
+        active_record = IdempotencyRecord(
+            idempotency_key=active_key,
+            journal_id=journal_id,
+            created_at=datetime.now(UTC),
+            expires_at=datetime.now(UTC) + timedelta(hours=23),
+        )
+        session.add(active_record)
+        session.commit()
+
+        # Run cleanup
+        cleanup_expired_idempotency_records(session)
+
+        # Verify expired record removed, active record remains
+        assert session.get(IdempotencyRecord, expired_key) is None
+        assert session.get(IdempotencyRecord, active_key) is not None
