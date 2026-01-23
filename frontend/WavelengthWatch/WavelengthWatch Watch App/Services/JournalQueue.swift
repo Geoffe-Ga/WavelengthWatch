@@ -1,6 +1,21 @@
 import Foundation
 import SQLite3
 
+/// Protocol for journal queue operations.
+///
+/// Enables dependency injection and testing by defining the queue interface
+/// separately from the SQLite implementation.
+protocol JournalQueueProtocol {
+  func enqueue(_ entry: LocalJournalEntry) throws
+  func pendingEntries() throws -> [JournalQueueItem]
+  func fetch(id: UUID) throws -> JournalQueueItem?
+  func markSyncing(id: UUID) throws
+  func markSynced(id: UUID) throws
+  func markFailed(id: UUID, error: Error) throws
+  func cleanupSynced(olderThan days: Int) throws
+  func statistics() throws -> QueueStatistics
+}
+
 /// SQLite-based queue service for offline journal entries.
 ///
 /// This service manages a persistent queue of journal entries that need to be
@@ -40,7 +55,7 @@ import SQLite3
 /// try queue.cleanupSynced(olderThan: 30)
 /// ```
 @MainActor
-final class JournalQueue: ObservableObject {
+final class JournalQueue: ObservableObject, JournalQueueProtocol {
   // MARK: - Private Properties
 
   /// SQLite database pointer.

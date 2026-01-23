@@ -51,6 +51,7 @@ ALL_SUITES=(
   "ContentViewFilteringTests"
   "JournalFlowViewModelTests"
   "JournalQueueTests"
+  "JournalSyncServiceTests"
   "MenuViewTests"
   "JournalReviewViewTests"
   "CircularProgressViewTests"
