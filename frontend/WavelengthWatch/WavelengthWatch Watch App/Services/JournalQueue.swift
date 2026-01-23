@@ -44,7 +44,12 @@ final class JournalQueue: ObservableObject {
   // MARK: - Private Properties
 
   /// SQLite database pointer.
-  private var db: OpaquePointer?
+  ///
+  /// Marked nonisolated(unsafe) to allow access from deinit.
+  /// Safe because:
+  /// - SQLite opened with FULLMUTEX is thread-safe
+  /// - deinit only called when no other references exist
+  private nonisolated(unsafe) var db: OpaquePointer?
 
   /// Path to the database file.
   private let databasePath: String
@@ -63,10 +68,16 @@ final class JournalQueue: ObservableObject {
     if let databasePath {
       self.databasePath = databasePath
     } else {
-      let documentsPath = FileManager.default.urls(
-        for: .documentDirectory,
-        in: .userDomainMask
-      ).first!
+      guard
+        let documentsPath = FileManager.default.urls(
+          for: .documentDirectory,
+          in: .userDomainMask
+        ).first
+      else {
+        throw JournalQueueError.databaseError(
+          "Could not access documents directory"
+        )
+      }
       self.databasePath = documentsPath
         .appendingPathComponent("journal_queue.sqlite")
         .path
@@ -76,9 +87,9 @@ final class JournalQueue: ObservableObject {
     try createTables()
   }
 
-  // Note: No deinit needed - SQLite connections are automatically closed
-  // when the process terminates. Explicit cleanup can be done via closeDatabase()
-  // if needed during the app lifecycle.
+  deinit {
+    closeDatabase()
+  }
 
   // MARK: - Public Methods
 
@@ -142,6 +153,38 @@ final class JournalQueue: ObservableObject {
   /// - Throws: `JournalQueueError` if query fails.
   func pendingEntries() throws -> [JournalQueueItem] {
     try fetchEntries(withStatus: .pending)
+  }
+
+  /// Fetches a specific queue item by ID.
+  ///
+  /// - Parameter id: The entry ID to fetch.
+  /// - Returns: The queue item if found, nil otherwise.
+  /// - Throws: `JournalQueueError` if query fails.
+  func fetch(id: UUID) throws -> JournalQueueItem? {
+    guard let db else {
+      throw JournalQueueError.databaseError("Database not open")
+    }
+
+    let sql = """
+      SELECT id, local_entry_data, status, retry_count, last_attempt, created_at
+      FROM journal_queue
+      WHERE id = ?
+    """
+
+    var statement: OpaquePointer?
+    guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
+      let message = String(cString: sqlite3_errmsg(db))
+      throw JournalQueueError.queryFailed(message)
+    }
+    defer { sqlite3_finalize(statement) }
+
+    sqlite3_bind_text(statement, 1, id.uuidString, -1, SQLITE_TRANSIENT)
+
+    guard sqlite3_step(statement) == SQLITE_ROW else {
+      return nil
+    }
+
+    return try parseQueueItem(from: statement)
   }
 
   /// Marks an entry as currently syncing.
@@ -288,10 +331,9 @@ final class JournalQueue: ObservableObject {
 
   /// Closes the database connection.
   ///
-  /// Note: Typically not needed as SQLite automatically closes connections
-  /// when the process terminates. This method is provided for explicit cleanup
-  /// during testing or specific lifecycle scenarios.
-  private func closeDatabase() {
+  /// Called automatically from deinit. Can also be called explicitly during
+  /// testing or specific lifecycle scenarios if needed.
+  private nonisolated func closeDatabase() {
     guard let db else { return }
     sqlite3_close(db)
     self.db = nil

@@ -201,8 +201,10 @@ struct JournalQueueTests {
     let stats = try queue.statistics()
     #expect(stats.failed == 1)
 
-    // Note: We can't verify retry count directly without a getter method
-    // This is a limitation we'll need to address in implementation or add a method
+    // Verify retry count was incremented twice
+    let item = try queue.fetch(id: entry.id)
+    #expect(item != nil)
+    #expect(item?.retryCount == 2)
   }
 
   @Test @MainActor func statusTransitionPendingToSyncingToSynced() throws {
