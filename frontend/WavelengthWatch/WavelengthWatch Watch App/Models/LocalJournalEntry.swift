@@ -57,6 +57,9 @@ struct LocalJournalEntry: Codable, Identifiable, Equatable {
   /// Last time sync was attempted (for retry backoff).
   var lastSyncAttempt: Date?
 
+  /// Number of sync retry attempts (for exponential backoff and max retry limit).
+  var retryCount: Int
+
   /// Creates a new local journal entry with pending sync status.
   ///
   /// - Parameters:
@@ -86,6 +89,7 @@ struct LocalJournalEntry: Codable, Identifiable, Equatable {
     self.initiatedBy = initiatedBy
     self.syncStatus = .pending
     self.lastSyncAttempt = nil
+    self.retryCount = 0
   }
 
   /// Creates an entry from a backend response after successful sync.

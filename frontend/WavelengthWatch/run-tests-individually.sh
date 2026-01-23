@@ -50,6 +50,7 @@ ALL_SUITES=(
   "EmotionSummaryCardTests"
   "ContentViewFilteringTests"
   "JournalFlowViewModelTests"
+  "JournalQueueTests"
   "MenuViewTests"
   "JournalReviewViewTests"
   "CircularProgressViewTests"

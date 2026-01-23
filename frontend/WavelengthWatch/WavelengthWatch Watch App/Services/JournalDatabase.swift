@@ -27,7 +27,7 @@ enum JournalDatabaseError: Error, Equatable {
 /// The database includes a version table for future migrations.
 final class JournalDatabase {
   /// Current schema version for migration tracking.
-  static let schemaVersion = 1
+  static let schemaVersion = 2
 
   /// SQLite database pointer.
   private var db: OpaquePointer?
@@ -83,6 +83,7 @@ final class JournalDatabase {
 
     db = dbPointer
     try createTables()
+    try migrate()
   }
 
   /// Closes the database connection.
@@ -116,7 +117,8 @@ final class JournalDatabase {
         strategy_id INTEGER,
         initiated_by TEXT NOT NULL,
         sync_status TEXT NOT NULL DEFAULT 'pending',
-        last_sync_attempt REAL
+        last_sync_attempt REAL,
+        retry_count INTEGER NOT NULL DEFAULT 0
       );
 
       CREATE INDEX IF NOT EXISTS idx_journal_user_created
@@ -147,6 +149,76 @@ final class JournalDatabase {
     }
   }
 
+  /// Migrates the database schema to the current version.
+  private func migrate() throws {
+    guard let db else { throw JournalDatabaseError.databaseNotOpen }
+
+    // Get current schema version
+    let versionSQL = "SELECT version FROM schema_version LIMIT 1"
+    var statement: OpaquePointer?
+
+    guard sqlite3_prepare_v2(db, versionSQL, -1, &statement, nil) == SQLITE_OK else {
+      let message = String(cString: sqlite3_errmsg(db))
+      throw JournalDatabaseError.failedToQuery(message)
+    }
+    defer { sqlite3_finalize(statement) }
+
+    var currentVersion = 0
+    if sqlite3_step(statement) == SQLITE_ROW {
+      currentVersion = Int(sqlite3_column_int64(statement, 0))
+    }
+
+    // Apply migrations sequentially
+    if currentVersion < 2 {
+      try migrateToV2()
+    }
+
+    // Update schema version
+    let updateVersionSQL = "UPDATE schema_version SET version = \(Self.schemaVersion)"
+    var errorMessage: UnsafeMutablePointer<CChar>?
+    if sqlite3_exec(db, updateVersionSQL, nil, nil, &errorMessage) != SQLITE_OK {
+      let message = errorMessage.map { String(cString: $0) } ?? "Unknown error"
+      sqlite3_free(errorMessage)
+      throw JournalDatabaseError.failedToUpdate(message)
+    }
+  }
+
+  /// Migrates from schema v1 to v2 (adds retry_count column).
+  private func migrateToV2() throws {
+    guard let db else { throw JournalDatabaseError.databaseNotOpen }
+
+    // Check if retry_count column already exists
+    let checkSQL = "PRAGMA table_info(journal_entry)"
+    var checkStatement: OpaquePointer?
+
+    guard sqlite3_prepare_v2(db, checkSQL, -1, &checkStatement, nil) == SQLITE_OK else {
+      let message = String(cString: sqlite3_errmsg(db))
+      throw JournalDatabaseError.failedToQuery(message)
+    }
+    defer { sqlite3_finalize(checkStatement) }
+
+    var hasRetryCount = false
+    while sqlite3_step(checkStatement) == SQLITE_ROW {
+      if let colName = sqlite3_column_text(checkStatement, 1).map({ String(cString: $0) }),
+         colName == "retry_count"
+      {
+        hasRetryCount = true
+        break
+      }
+    }
+
+    // Add retry_count column if it doesn't exist
+    if !hasRetryCount {
+      let alterSQL = "ALTER TABLE journal_entry ADD COLUMN retry_count INTEGER NOT NULL DEFAULT 0"
+      var errorMessage: UnsafeMutablePointer<CChar>?
+      if sqlite3_exec(db, alterSQL, nil, nil, &errorMessage) != SQLITE_OK {
+        let message = errorMessage.map { String(cString: $0) } ?? "Unknown error"
+        sqlite3_free(errorMessage)
+        throw JournalDatabaseError.failedToUpdate(message)
+      }
+    }
+  }
+
   /// Inserts a new journal entry.
   ///
   /// - Parameter entry: The entry to insert.
@@ -158,8 +230,8 @@ final class JournalDatabase {
       INSERT INTO journal_entry (
         id, server_id, created_at, user_id, curriculum_id,
         secondary_curriculum_id, strategy_id, initiated_by,
-        sync_status, last_sync_attempt
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        sync_status, last_sync_attempt, retry_count
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
 
     var statement: OpaquePointer?
@@ -196,6 +268,7 @@ final class JournalDatabase {
     } else {
       sqlite3_bind_null(statement, 10)
     }
+    sqlite3_bind_int64(statement, 11, Int64(entry.retryCount))
 
     guard sqlite3_step(statement) == SQLITE_DONE else {
       let message = String(cString: sqlite3_errmsg(db))
@@ -214,7 +287,8 @@ final class JournalDatabase {
       UPDATE journal_entry SET
         server_id = ?,
         sync_status = ?,
-        last_sync_attempt = ?
+        last_sync_attempt = ?,
+        retry_count = ?
       WHERE id = ?
     """
 
@@ -236,7 +310,8 @@ final class JournalDatabase {
     } else {
       sqlite3_bind_null(statement, 3)
     }
-    sqlite3_bind_text(statement, 4, entry.id.uuidString, -1, SQLITE_TRANSIENT)
+    sqlite3_bind_int64(statement, 4, Int64(entry.retryCount))
+    sqlite3_bind_text(statement, 5, entry.id.uuidString, -1, SQLITE_TRANSIENT)
 
     guard sqlite3_step(statement) == SQLITE_DONE else {
       let message = String(cString: sqlite3_errmsg(db))
@@ -387,6 +462,7 @@ final class JournalDatabase {
     let initiatedByCol = 7
     let syncStatusCol = 8
     let lastSyncAttemptCol = 9
+    let retryCountCol = 10
 
     // Parse required fields
     guard let idString = sqlite3_column_text(statement, Int32(idCol)).map({ String(cString: $0) }),
@@ -433,6 +509,7 @@ final class JournalDatabase {
     entry.lastSyncAttempt = sqlite3_column_type(statement, Int32(lastSyncAttemptCol)) != SQLITE_NULL
       ? Date(timeIntervalSince1970: sqlite3_column_double(statement, Int32(lastSyncAttemptCol)))
       : nil
+    entry.retryCount = Int(sqlite3_column_int64(statement, Int32(retryCountCol)))
 
     return entry
   }
