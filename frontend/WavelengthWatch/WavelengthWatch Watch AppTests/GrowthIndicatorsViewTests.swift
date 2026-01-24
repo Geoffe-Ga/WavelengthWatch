@@ -42,15 +42,15 @@ struct GrowthIndicatorsViewTests {
     #expect(view.trendDirection == .positive)
   }
 
-  @Test("trendDirection returns negative for trend below negative threshold")
-  func trendDirection_returnsNegativeForTrendBelowThreshold() {
+  @Test("trendDirection returns varying for trend below negative threshold")
+  func trendDirection_returnsVaryingForTrendBelowThreshold() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
       medicinalTrend: -6.0,
       layerDiversity: 2,
       phaseCoverage: 3
     ))
 
-    #expect(view.trendDirection == .negative)
+    #expect(view.trendDirection == .varying)
   }
 
   @Test("trendDirection returns neutral for trend within thresholds")
@@ -86,8 +86,8 @@ struct GrowthIndicatorsViewTests {
     #expect(view.trendArrow == "arrow.up")
   }
 
-  @Test("trendArrow returns down arrow for negative trend")
-  func trendArrow_returnsDownArrowForNegativeTrend() {
+  @Test("trendArrow returns down arrow for varying trend")
+  func trendArrow_returnsDownArrowForVaryingTrend() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
       medicinalTrend: -8.0,
       layerDiversity: 2,
@@ -119,26 +119,30 @@ struct GrowthIndicatorsViewTests {
     #expect(view.trendColor == .green)
   }
 
-  @Test("trendColor returns red for negative trend")
-  func trendColor_returnsRedForNegativeTrend() {
+  @Test("trendColor returns neutral color for varying trend")
+  func trendColor_returnsNeutralColorForVaryingTrend() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
       medicinalTrend: -12.0,
       layerDiversity: 2,
       phaseCoverage: 3
     ))
 
-    #expect(view.trendColor == .red)
+    // Should use a neutral, supportive color (not red/orange)
+    #expect(view.trendColor != .red)
+    #expect(view.trendColor != .orange)
   }
 
-  @Test("trendColor returns orange for neutral trend")
-  func trendColor_returnsOrangeForNeutralTrend() {
+  @Test("trendColor returns neutral color for neutral trend")
+  func trendColor_returnsNeutralColorForNeutralTrend() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
       medicinalTrend: 3.0,
       layerDiversity: 3,
       phaseCoverage: 4
     ))
 
-    #expect(view.trendColor == .orange)
+    // Should use a neutral color (not red/orange)
+    #expect(view.trendColor != .red)
+    #expect(view.trendColor != .orange)
   }
 
   @Test("formattedTrend includes percentage and sign for positive trend")
@@ -152,8 +156,8 @@ struct GrowthIndicatorsViewTests {
     #expect(view.formattedTrend == "+12.3%")
   }
 
-  @Test("formattedTrend includes percentage and sign for negative trend")
-  func formattedTrend_includesPercentageAndSignForNegativeTrend() {
+  @Test("formattedTrend includes percentage and sign for decreasing trend")
+  func formattedTrend_includesPercentageAndSignForDecreasingTrend() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
       medicinalTrend: -8.76,
       layerDiversity: 2,
@@ -284,8 +288,8 @@ struct GrowthIndicatorsViewTests {
     #expect(view.isEmpty == false)
   }
 
-  @Test("isEmpty returns false when has negative trend")
-  func isEmpty_returnsFalseWhenHasNegativeTrend() {
+  @Test("isEmpty returns false when has varying trend")
+  func isEmpty_returnsFalseWhenHasVaryingTrend() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
       medicinalTrend: -5.0,
       layerDiversity: 0,
@@ -312,17 +316,19 @@ struct GrowthIndicatorsViewTests {
     #expect(view.isEmpty == false)
   }
 
-  @Test("integration test with realistic negative growth data")
-  func integrationTest_withRealisticNegativeGrowthData() {
+  @Test("integration test with realistic varying growth data")
+  func integrationTest_withRealisticVaryingGrowthData() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
       medicinalTrend: -15.2,
       layerDiversity: 2,
       phaseCoverage: 3
     ))
 
-    #expect(view.trendDirection == .negative)
+    #expect(view.trendDirection == .varying)
     #expect(view.trendArrow == "arrow.down")
-    #expect(view.trendColor == .red)
+    // Should use neutral, supportive color
+    #expect(view.trendColor != .red)
+    #expect(view.trendColor != .orange)
     #expect(view.formattedTrend == "-15.2%")
     #expect(view.layerDiversityText == "2 modes")
     #expect(view.phaseCoverageText == "3 of 6 phases")
@@ -339,7 +345,9 @@ struct GrowthIndicatorsViewTests {
 
     #expect(view.trendDirection == .neutral)
     #expect(view.trendArrow == "arrow.forward")
-    #expect(view.trendColor == .orange)
+    // Should use neutral, supportive color
+    #expect(view.trendColor != .red)
+    #expect(view.trendColor != .orange)
     #expect(view.formattedTrend == "+2.5%")
     #expect(view.layerDiversityText == "3 modes")
     #expect(view.phaseCoverageText == "4 of 6 phases")

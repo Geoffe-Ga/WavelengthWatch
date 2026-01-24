@@ -33,9 +33,11 @@ struct GrowthIndicatorsView: View {
 
   // MARK: - Trend Direction
 
+  /// Represents medicinal trend direction using neutral, supportive language.
+  /// Avoids evaluative terminology like "negative" that implies failure.
   enum TrendDirection {
     case positive
-    case negative
+    case varying // Natural fluctuation (replaces "negative")
     case neutral
   }
 
@@ -47,7 +49,7 @@ struct GrowthIndicatorsView: View {
     if indicators.medicinalTrend > threshold {
       return .positive
     } else if indicators.medicinalTrend < -threshold {
-      return .negative
+      return .varying // Natural fluctuation - not "negative"
     } else {
       return .neutral
     }
@@ -59,21 +61,23 @@ struct GrowthIndicatorsView: View {
     switch trendDirection {
     case .positive:
       "arrow.up"
-    case .negative:
+    case .varying:
       "arrow.down"
     case .neutral:
       "arrow.forward"
     }
   }
 
+  /// Color for trend indicator using neutral, supportive palette.
+  /// Avoids red/orange evaluative colors that imply judgment or failure.
   var trendColor: Color {
     switch trendDirection {
     case .positive:
       .green
-    case .negative:
-      .red
+    case .varying:
+      .secondary // Neutral - honoring natural rhythm
     case .neutral:
-      .orange
+      .secondary // Neutral - honoring natural rhythm
     }
   }
 

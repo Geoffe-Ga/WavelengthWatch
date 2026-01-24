@@ -52,7 +52,7 @@ private struct ConsistencyScoreView: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 4) {
-      Text("Consistency")
+      Text("Your Natural Rhythm")
         .font(.caption2)
         .foregroundColor(.secondary)
 
@@ -60,36 +60,19 @@ private struct ConsistencyScoreView: View {
         Text(String(format: "%.1f%%", score))
           .font(.title3)
           .fontWeight(.semibold)
+          .foregroundColor(.secondary)
 
-        consistencyIndicator
+        Image(systemName: "chart.line.uptrend.xyaxis")
+          .foregroundColor(.secondary)
+          .font(.caption)
       }
+
+      Text("Your check-in frequency naturally varies with your wavelength.")
+        .font(.caption2)
+        .foregroundColor(.secondary)
+        .padding(.top, 2)
     }
     .padding(.top, 4)
-  }
-
-  private var consistencyIndicator: some View {
-    let imageName: String
-    let color: Color
-
-    // Consistency score thresholds:
-    // 80%+: High consistency (check-ins on most days)
-    // 50-80%: Moderate consistency (room for improvement)
-    // <50%: Low consistency (infrequent check-ins)
-    switch score {
-    case 80...:
-      imageName = "checkmark.circle.fill"
-      color = .green
-    case 50 ..< 80:
-      imageName = "minus.circle.fill"
-      color = .orange
-    default:
-      imageName = "exclamationmark.circle.fill"
-      color = .red
-    }
-
-    return Image(systemName: imageName)
-      .foregroundColor(color)
-      .font(.caption)
   }
 }
 

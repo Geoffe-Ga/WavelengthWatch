@@ -125,7 +125,7 @@ struct StreakDisplayView: View {
     if currentStreak == longestStreak {
       .stable // At personal record
     } else {
-      .declining // Working back toward record
+      .resting // Honoring natural rhythm
     }
   }
 
@@ -134,18 +134,21 @@ struct StreakDisplayView: View {
     switch trendIndicator {
     case .stable:
       "→"
-    case .declining:
+    case .resting:
       "↓"
     }
   }
 
   /// Color for trend indicator
-  private var trendColor: Color {
+  ///
+  /// Uses neutral, supportive colors to honor natural rhythms.
+  /// Avoids red/orange evaluative colors that imply judgment.
+  var trendColor: Color {
     switch trendIndicator {
     case .stable:
       .green // At personal best - positive!
-    case .declining:
-      .orange // Working back - motivational
+    case .resting:
+      .secondary // Neutral - honoring natural rhythm
     }
   }
 }
@@ -157,9 +160,11 @@ struct StreakDisplayView: View {
 /// Note: `.improving` case removed because currentStreak cannot exceed longestStreak
 /// (enforced by precondition in init). When a new record is achieved, the caller
 /// must update longestStreak to match currentStreak, resulting in `.stable` status.
+///
+/// Uses neutral, supportive language to honor natural rhythms rather than judge engagement.
 enum TrendIndicator: Equatable {
   case stable // Current == Longest (at personal record)
-  case declining // Current < Longest (working back toward record)
+  case resting // Current < Longest (honoring natural rhythm)
 }
 
 // MARK: - Previews

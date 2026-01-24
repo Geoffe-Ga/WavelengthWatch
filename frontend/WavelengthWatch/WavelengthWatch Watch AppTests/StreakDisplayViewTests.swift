@@ -55,6 +55,19 @@ struct StreakDisplayViewTests {
   // currentStreak <= longestStreak. When a record is broken, the caller must
   // update longestStreak to match currentStreak before creating the view.
 
+  @Test("trend indicators use neutral, supportive language")
+  func trendIndicators_useNeutralSupportiveLanguage() {
+    let restingView = StreakDisplayView(
+      currentStreak: 5,
+      longestStreak: 12
+    )
+
+    // Verify resting state uses neutral color (not red/orange evaluative colors)
+    let color = restingView.trendColor
+    #expect(color != .red)
+    #expect(color != .orange)
+  }
+
   @Test("view shows stable trend when current equals longest")
   func view_showsStableTrendWhenCurrentEqualsLongest() {
     let view = StreakDisplayView(
@@ -65,14 +78,14 @@ struct StreakDisplayViewTests {
     #expect(view.trendIndicator == .stable)
   }
 
-  @Test("view shows declining trend when current is less than longest")
-  func view_showsDecliningTrendWhenCurrentIsLessThanLongest() {
+  @Test("view shows resting trend when current is less than longest")
+  func view_showsRestingTrendWhenCurrentIsLessThanLongest() {
     let view = StreakDisplayView(
       currentStreak: 5,
       longestStreak: 12
     )
 
-    #expect(view.trendIndicator == .declining)
+    #expect(view.trendIndicator == .resting)
   }
 
   @Test("view shows stable trend when both streaks are zero")
@@ -210,7 +223,7 @@ struct StreakDisplayViewTests {
   // MARK: - Trend Arrow Tests
 
   // NOTE: Test for up arrow (↑) removed because .improving trend no longer exists.
-  // Component now only supports .stable (→) and .declining (↓) trends.
+  // Component now only supports .stable (→) and .resting (↓) trends.
 
   @Test("view returns right arrow for stable trend")
   func view_returnsRightArrowForStableTrend() {
@@ -222,8 +235,8 @@ struct StreakDisplayViewTests {
     #expect(view.trendArrow == "→")
   }
 
-  @Test("view returns down arrow for declining trend")
-  func view_returnsDownArrowForDecliningTrend() {
+  @Test("view returns down arrow for resting trend")
+  func view_returnsDownArrowForRestingTrend() {
     let view = StreakDisplayView(
       currentStreak: 5,
       longestStreak: 12
@@ -245,7 +258,7 @@ struct StreakDisplayViewTests {
     #expect(view.currentStreak == 25)
     #expect(view.longestStreak == 30)
     #expect(view.consistencyScore == 83.33)
-    #expect(view.trendIndicator == .declining)
+    #expect(view.trendIndicator == .resting)
     #expect(view.trendArrow == "↓")
   }
 
