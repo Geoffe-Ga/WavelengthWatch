@@ -18,7 +18,7 @@ from sqlmodel.sql.expression import SelectOfScalar
 
 from ..cache import analytics_cache
 from ..database import get_session
-from ..models import Curriculum, IdempotencyRecord, Journal, Strategy
+from ..models import Curriculum, EntryType, IdempotencyRecord, Journal, Strategy
 from ..schemas import JournalCreate, JournalRead, JournalUpdate
 
 SessionDep = Annotated[Session, Depends(get_session)]
@@ -60,11 +60,20 @@ def _get_journal_or_404(journal_id: int, session: Session) -> Journal:
 def _validate_references(
     session: Session,
     *,
-    curriculum_id: int,
+    curriculum_id: int | None,
     secondary_curriculum_id: int | None,
     strategy_id: int | None,
+    entry_type: EntryType,
 ) -> None:
-    if session.get(Curriculum, curriculum_id) is None:
+    # For EMOTION entries, curriculum_id is required
+    if entry_type == EntryType.EMOTION and curriculum_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="curriculum_id is required for emotion entries",
+        )
+
+    # Validate curriculum_id if provided
+    if curriculum_id is not None and session.get(Curriculum, curriculum_id) is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid curriculum_id",
@@ -236,6 +245,7 @@ def create_journal(
         curriculum_id=payload.curriculum_id,
         secondary_curriculum_id=payload.secondary_curriculum_id,
         strategy_id=payload.strategy_id,
+        entry_type=payload.entry_type,
     )
 
     # Create new journal entry
@@ -302,11 +312,13 @@ def update_journal(
             "secondary_curriculum_id", journal.secondary_curriculum_id
         )
         strategy_id = data.get("strategy_id", journal.strategy_id)
+        entry_type = data.get("entry_type", journal.entry_type)
         _validate_references(
             session,
             curriculum_id=curriculum_id,
             secondary_curriculum_id=secondary_curriculum_id,
             strategy_id=strategy_id,
+            entry_type=entry_type,
         )
         for key, value in data.items():
             setattr(journal, key, value)

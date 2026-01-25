@@ -24,6 +24,13 @@ class InitiatedBy(str, Enum):
     SCHEDULED = "scheduled"
 
 
+class EntryType(str, Enum):
+    """Type of journal entry."""
+
+    EMOTION = "emotion"
+    REST = "rest"
+
+
 class Layer(SQLModel, table=True):
     """Reference table describing each spiral dynamics layer."""
 
@@ -131,7 +138,9 @@ class Journal(SQLModel, table=True):
         sa_column=Column(DateTime(timezone=True), nullable=False, index=True)
     )
     user_id: int = Field(index=True)
-    curriculum_id: int = Field(foreign_key="curriculum.id", nullable=False, index=True)
+    curriculum_id: int | None = Field(
+        default=None, foreign_key="curriculum.id", nullable=True, index=True
+    )
     secondary_curriculum_id: int | None = Field(
         default=None, foreign_key="curriculum.id", nullable=True, index=True
     )
@@ -142,6 +151,12 @@ class Journal(SQLModel, table=True):
         default=InitiatedBy.SELF,
         sa_column=Column(
             SAEnum(InitiatedBy, name="journal_initiated_by", native_enum=False)
+        ),
+    )
+    entry_type: EntryType = Field(
+        default=EntryType.EMOTION,
+        sa_column=Column(
+            SAEnum(EntryType, name="journal_entry_type", native_enum=False)
         ),
     )
 
@@ -206,4 +221,5 @@ __all__ = [
     "IdempotencyRecord",
     "Dosage",
     "InitiatedBy",
+    "EntryType",
 ]
