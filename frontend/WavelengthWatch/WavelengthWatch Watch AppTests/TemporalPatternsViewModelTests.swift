@@ -259,7 +259,7 @@ struct TemporalPatternsViewModelTests {
 
     let mockRepository = MockJournalRepository()
     mockRepository.entriesToReturn = [
-      LocalJournalEntry(createdAt: Date(), userID: 1, curriculumID: 1, strategyID: nil),
+      LocalJournalEntry(createdAt: Date(), userID: 1, curriculumID: 1, strategyID: nil, entryType: .emotion),
     ]
 
     let mockPersistence = MockSyncSettingsPersistence()
@@ -311,7 +311,7 @@ struct TemporalPatternsViewModelTests {
 
     let mockRepository = MockJournalRepository()
     mockRepository.entriesToReturn = [
-      LocalJournalEntry(createdAt: Date(), userID: 1, curriculumID: 1, strategyID: nil),
+      LocalJournalEntry(createdAt: Date(), userID: 1, curriculumID: 1, strategyID: nil, entryType: .emotion),
     ]
 
     let mockPersistence = MockSyncSettingsPersistence()
@@ -580,7 +580,7 @@ struct TemporalPatternsViewModelTests {
 
     let mockRepository = MockJournalRepository()
     mockRepository.entriesToReturn = [
-      LocalJournalEntry(createdAt: Date(), userID: 1, curriculumID: 1, strategyID: nil),
+      LocalJournalEntry(createdAt: Date(), userID: 1, curriculumID: 1, strategyID: nil, entryType: .emotion),
     ]
 
     let mockPersistence = MockSyncSettingsPersistence()

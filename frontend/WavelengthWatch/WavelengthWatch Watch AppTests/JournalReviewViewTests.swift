@@ -49,7 +49,8 @@ struct JournalReviewViewTests {
     let catalog = makeSampleCatalog()
     let viewModel = JournalFlowViewModel(catalog: catalog, initiatedBy: .self_initiated)
 
-    // Select primary and navigate to review
+    // Select emotion type and primary emotion
+    viewModel.selectEntryType(.emotion)
     viewModel.selectPrimaryCurriculum(id: 1)
     viewModel.advanceStep() // to secondaryEmotion
 
@@ -62,6 +63,16 @@ struct JournalReviewViewTests {
       viewModel.selectStrategy(id: 10)
     }
     viewModel.advanceStep() // to review
+
+    return viewModel
+  }
+
+  private func makeRestViewModel() -> JournalFlowViewModel {
+    let catalog = makeSampleCatalog()
+    let viewModel = JournalFlowViewModel(catalog: catalog, initiatedBy: .self_initiated)
+
+    // Select REST entry type (skips to review)
+    viewModel.selectRestPeriod()
 
     return viewModel
   }
@@ -153,7 +164,26 @@ struct JournalReviewViewTests {
             curriculumID: curriculumID,
             secondaryCurriculumID: secondaryCurriculumID,
             strategyID: strategyID,
-            initiatedBy: initiatedBy
+            initiatedBy: initiatedBy,
+            entryType: .emotion
+          )
+        } else {
+          throw NSError(domain: "test", code: 500, userInfo: nil)
+        }
+      }
+
+      func submitRestPeriod(
+        initiatedBy: InitiatedBy
+      ) async throws -> LocalJournalEntry {
+        submittedInitiatedBy = initiatedBy
+
+        if shouldSucceed {
+          return LocalJournalEntry(
+            createdAt: Date(),
+            userID: 123,
+            curriculumID: nil,
+            initiatedBy: initiatedBy,
+            entryType: .rest
           )
         } else {
           throw NSError(domain: "test", code: 500, userInfo: nil)
@@ -188,6 +218,13 @@ struct JournalReviewViewTests {
         curriculumID: Int,
         secondaryCurriculumID: Int?,
         strategyID: Int?,
+        initiatedBy: InitiatedBy
+      ) async throws -> LocalJournalEntry {
+        submitCount += 1
+        throw NSError(domain: "test", code: 500, userInfo: nil)
+      }
+
+      func submitRestPeriod(
         initiatedBy: InitiatedBy
       ) async throws -> LocalJournalEntry {
         submitCount += 1
@@ -243,7 +280,21 @@ struct JournalReviewViewTests {
           curriculumID: curriculumID,
           secondaryCurriculumID: secondaryCurriculumID,
           strategyID: strategyID,
-          initiatedBy: initiatedBy
+          initiatedBy: initiatedBy,
+          entryType: .emotion
+        )
+      }
+
+      func submitRestPeriod(
+        initiatedBy: InitiatedBy
+      ) async throws -> LocalJournalEntry {
+        submitCalled = true
+        return LocalJournalEntry(
+          createdAt: Date(),
+          userID: 123,
+          curriculumID: nil,
+          initiatedBy: initiatedBy,
+          entryType: .rest
         )
       }
     }
@@ -251,6 +302,8 @@ struct JournalReviewViewTests {
     let catalog = makeSampleCatalog()
     let viewModel = JournalFlowViewModel(catalog: catalog, initiatedBy: .self_initiated)
 
+    // Select emotion type first
+    viewModel.selectEntryType(.emotion)
     // Advance to review WITHOUT selecting primary curriculum
     viewModel.advanceStep() // to secondaryEmotion (invalid state)
     viewModel.advanceStep() // to strategySelection
@@ -266,6 +319,59 @@ struct JournalReviewViewTests {
     // In a real UI test, this would verify the error alert is shown
     // For unit tests, we verify that primaryCurriculumID being nil prevents submission
     #expect(mockClient.submitCalled == false)
+  }
+
+  @Test("REST entry submits without curriculum")
+  func restEntry_submitsWithoutCurriculum() async throws {
+    class MockJournalClient: JournalClientProtocol {
+      var restSubmitCalled = false
+      var emotionSubmitCalled = false
+
+      func submit(
+        curriculumID: Int,
+        secondaryCurriculumID: Int?,
+        strategyID: Int?,
+        initiatedBy: InitiatedBy
+      ) async throws -> LocalJournalEntry {
+        emotionSubmitCalled = true
+        return LocalJournalEntry(
+          createdAt: Date(),
+          userID: 123,
+          curriculumID: curriculumID,
+          secondaryCurriculumID: secondaryCurriculumID,
+          strategyID: strategyID,
+          initiatedBy: initiatedBy,
+          entryType: .emotion
+        )
+      }
+
+      func submitRestPeriod(
+        initiatedBy: InitiatedBy
+      ) async throws -> LocalJournalEntry {
+        restSubmitCalled = true
+        return LocalJournalEntry(
+          createdAt: Date(),
+          userID: 123,
+          curriculumID: nil,
+          initiatedBy: initiatedBy,
+          entryType: .rest
+        )
+      }
+    }
+
+    let viewModel = makeRestViewModel()
+    let mockClient = MockJournalClient()
+
+    #expect(viewModel.currentStep == .review)
+    #expect(viewModel.entryType == .rest)
+
+    // Simulate REST entry submission
+    let entry = try await mockClient.submitRestPeriod(initiatedBy: viewModel.initiatedBy)
+
+    #expect(mockClient.restSubmitCalled == true)
+    #expect(mockClient.emotionSubmitCalled == false)
+    #expect(entry.entryType == .rest)
+    #expect(entry.curriculumID == nil)
   }
 
   // TODO: UI Testing - Journal Review View

@@ -38,11 +38,11 @@ struct JournalFlowViewModelTests {
     return CatalogResponseModel(phaseOrder: ["Rising"], layers: layers)
   }
 
-  @Test func init_startsAtPrimaryEmotion() async {
+  @Test func init_startsAtEntryTypeSelection() async {
     let catalog = createTestCatalog()
     let viewModel = JournalFlowViewModel(catalog: catalog)
 
-    #expect(viewModel.currentStep == .primaryEmotion)
+    #expect(viewModel.currentStep == .entryTypeSelection)
   }
 
   @Test func init_defaultsToSelfInitiated() async {
@@ -52,11 +52,21 @@ struct JournalFlowViewModelTests {
     #expect(viewModel.initiatedBy == .self_initiated)
   }
 
-  @Test func filteredLayers_returnsEmotionsOnly_initially() async {
+  @Test func filteredLayers_returnsAll_atEntryTypeSelection() async {
     let catalog = createTestCatalog()
     let viewModel = JournalFlowViewModel(catalog: catalog)
 
-    // Initial step is primary emotion, should filter to emotions only (exclude layer 0)
+    // Initial step is entry type selection, should show all layers
+    let filteredLayers = viewModel.filteredLayers
+    #expect(filteredLayers.count == 3)
+  }
+
+  @Test func filteredLayers_returnsEmotionsOnly_atPrimaryEmotion() async {
+    let catalog = createTestCatalog()
+    let viewModel = JournalFlowViewModel(catalog: catalog)
+    viewModel.selectEntryType(.emotion)
+
+    // After selecting emotion type, should filter to emotions only (exclude layer 0)
     let filteredLayers = viewModel.filteredLayers
     #expect(filteredLayers.count == 2)
     #expect(filteredLayers.allSatisfy { $0.id != 0 })
@@ -95,6 +105,7 @@ struct JournalFlowViewModelTests {
     let viewModel = JournalFlowViewModel(catalog: catalog)
 
     // Make selections
+    viewModel.selectEntryType(.emotion)
     viewModel.selectPrimaryCurriculum(id: 10)
     viewModel.advanceStep()
     viewModel.selectSecondaryCurriculum(id: 11)
@@ -109,14 +120,21 @@ struct JournalFlowViewModelTests {
     #expect(viewModel.primaryCurriculumID == nil)
     #expect(viewModel.secondaryCurriculumID == nil)
     #expect(viewModel.strategyID == nil)
-    #expect(viewModel.currentStep == .primaryEmotion)
+    #expect(viewModel.entryType == .emotion)
+    #expect(viewModel.currentStep == .entryTypeSelection)
   }
 
-  @Test func advance_updatesCurrentStep() async {
+  @Test func advance_updatesCurrentStep_forEmotionFlow() async {
     let catalog = createTestCatalog()
     let viewModel = JournalFlowViewModel(catalog: catalog)
 
-    // Start at primary emotion
+    // Start at entry type selection
+    #expect(viewModel.currentStep == .entryTypeSelection)
+
+    // Select emotion type
+    viewModel.selectEntryType(.emotion)
+
+    // Should be at primary emotion
     #expect(viewModel.currentStep == .primaryEmotion)
 
     // Select and advance
@@ -137,6 +155,41 @@ struct JournalFlowViewModelTests {
 
     // Should be at review
     #expect(viewModel.currentStep == .review)
+  }
+
+  @Test func selectRestPeriod_skipsToReview() async {
+    let catalog = createTestCatalog()
+    let viewModel = JournalFlowViewModel(catalog: catalog)
+
+    // Start at entry type selection
+    #expect(viewModel.currentStep == .entryTypeSelection)
+
+    // Select REST period
+    viewModel.selectRestPeriod()
+
+    // Should skip directly to review
+    #expect(viewModel.currentStep == .review)
+    #expect(viewModel.entryType == .rest)
+  }
+
+  @Test func selectEntryType_emotion_navigatesToPrimaryEmotion() async {
+    let catalog = createTestCatalog()
+    let viewModel = JournalFlowViewModel(catalog: catalog)
+
+    viewModel.selectEntryType(.emotion)
+
+    #expect(viewModel.currentStep == .primaryEmotion)
+    #expect(viewModel.entryType == .emotion)
+  }
+
+  @Test func selectEntryType_rest_navigatesToReview() async {
+    let catalog = createTestCatalog()
+    let viewModel = JournalFlowViewModel(catalog: catalog)
+
+    viewModel.selectEntryType(.rest)
+
+    #expect(viewModel.currentStep == .review)
+    #expect(viewModel.entryType == .rest)
   }
 
   @Test func getPrimaryCurriculum_returnsCurriculum_whenSelected() async {

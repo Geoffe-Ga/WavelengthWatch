@@ -32,7 +32,8 @@ struct JournalQueueTests {
       createdAt: Date(),
       userID: userID,
       curriculumID: curriculumID,
-      initiatedBy: .self_initiated
+      initiatedBy: .self_initiated,
+      entryType: .emotion
     )
   }
 

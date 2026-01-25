@@ -27,7 +27,7 @@ enum JournalDatabaseError: Error, Equatable {
 /// The database includes a version table for future migrations.
 final class JournalDatabase {
   /// Current schema version for migration tracking.
-  static let schemaVersion = 2
+  static let schemaVersion = 3
 
   /// SQLite database pointer.
   private var db: OpaquePointer?
@@ -112,10 +112,11 @@ final class JournalDatabase {
         server_id INTEGER,
         created_at REAL NOT NULL,
         user_id INTEGER NOT NULL,
-        curriculum_id INTEGER NOT NULL,
+        curriculum_id INTEGER,
         secondary_curriculum_id INTEGER,
         strategy_id INTEGER,
         initiated_by TEXT NOT NULL,
+        entry_type TEXT NOT NULL DEFAULT 'emotion',
         sync_status TEXT NOT NULL DEFAULT 'pending',
         last_sync_attempt REAL,
         retry_count INTEGER NOT NULL DEFAULT 0
@@ -129,6 +130,9 @@ final class JournalDatabase {
 
       CREATE INDEX IF NOT EXISTS idx_journal_curriculum
         ON journal_entry(curriculum_id);
+
+      CREATE INDEX IF NOT EXISTS idx_journal_entry_type
+        ON journal_entry(entry_type);
 
       CREATE UNIQUE INDEX IF NOT EXISTS idx_journal_server_id
         ON journal_entry(server_id) WHERE server_id IS NOT NULL;
@@ -171,6 +175,9 @@ final class JournalDatabase {
     // Apply migrations sequentially
     if currentVersion < 2 {
       try migrateToV2()
+    }
+    if currentVersion < 3 {
+      try migrateToV3()
     }
 
     // Update schema version
@@ -219,6 +226,47 @@ final class JournalDatabase {
     }
   }
 
+  /// Migrates from schema v2 to v3 (adds entry_type column, makes curriculum_id nullable).
+  private func migrateToV3() throws {
+    guard let db else { throw JournalDatabaseError.databaseNotOpen }
+
+    // Check if entry_type column already exists
+    let checkSQL = "PRAGMA table_info(journal_entry)"
+    var checkStatement: OpaquePointer?
+
+    guard sqlite3_prepare_v2(db, checkSQL, -1, &checkStatement, nil) == SQLITE_OK else {
+      let message = String(cString: sqlite3_errmsg(db))
+      throw JournalDatabaseError.failedToQuery(message)
+    }
+    defer { sqlite3_finalize(checkStatement) }
+
+    var hasEntryType = false
+    while sqlite3_step(checkStatement) == SQLITE_ROW {
+      if let colName = sqlite3_column_text(checkStatement, 1).map({ String(cString: $0) }),
+         colName == "entry_type"
+      {
+        hasEntryType = true
+        break
+      }
+    }
+
+    // Add entry_type column if it doesn't exist
+    // Note: SQLite doesn't support making existing columns nullable via ALTER TABLE,
+    // so curriculum_id remains NOT NULL in old databases. New databases created with
+    // schema v3 will have curriculum_id as nullable. This is acceptable because:
+    // 1. Existing entries are all EMOTION type with valid curriculum_id
+    // 2. REST entries (which have null curriculum_id) only exist in v3+ databases
+    if !hasEntryType {
+      let alterSQL = "ALTER TABLE journal_entry ADD COLUMN entry_type TEXT NOT NULL DEFAULT 'emotion'"
+      var errorMessage: UnsafeMutablePointer<CChar>?
+      if sqlite3_exec(db, alterSQL, nil, nil, &errorMessage) != SQLITE_OK {
+        let message = errorMessage.map { String(cString: $0) } ?? "Unknown error"
+        sqlite3_free(errorMessage)
+        throw JournalDatabaseError.failedToUpdate(message)
+      }
+    }
+  }
+
   /// Inserts a new journal entry.
   ///
   /// - Parameter entry: The entry to insert.
@@ -229,9 +277,9 @@ final class JournalDatabase {
     let sql = """
       INSERT INTO journal_entry (
         id, server_id, created_at, user_id, curriculum_id,
-        secondary_curriculum_id, strategy_id, initiated_by,
+        secondary_curriculum_id, strategy_id, initiated_by, entry_type,
         sync_status, last_sync_attempt, retry_count
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
 
     var statement: OpaquePointer?
@@ -250,7 +298,11 @@ final class JournalDatabase {
     }
     sqlite3_bind_double(statement, 3, entry.createdAt.timeIntervalSince1970)
     sqlite3_bind_int64(statement, 4, Int64(entry.userID))
-    sqlite3_bind_int64(statement, 5, Int64(entry.curriculumID))
+    if let curriculumID = entry.curriculumID {
+      sqlite3_bind_int64(statement, 5, Int64(curriculumID))
+    } else {
+      sqlite3_bind_null(statement, 5)
+    }
     if let secondary = entry.secondaryCurriculumID {
       sqlite3_bind_int64(statement, 6, Int64(secondary))
     } else {
@@ -262,13 +314,14 @@ final class JournalDatabase {
       sqlite3_bind_null(statement, 7)
     }
     sqlite3_bind_text(statement, 8, entry.initiatedBy.rawValue, -1, SQLITE_TRANSIENT)
-    sqlite3_bind_text(statement, 9, entry.syncStatus.rawValue, -1, SQLITE_TRANSIENT)
+    sqlite3_bind_text(statement, 9, entry.entryType.rawValue, -1, SQLITE_TRANSIENT)
+    sqlite3_bind_text(statement, 10, entry.syncStatus.rawValue, -1, SQLITE_TRANSIENT)
     if let lastSync = entry.lastSyncAttempt {
-      sqlite3_bind_double(statement, 10, lastSync.timeIntervalSince1970)
+      sqlite3_bind_double(statement, 11, lastSync.timeIntervalSince1970)
     } else {
-      sqlite3_bind_null(statement, 10)
+      sqlite3_bind_null(statement, 11)
     }
-    sqlite3_bind_int64(statement, 11, Int64(entry.retryCount))
+    sqlite3_bind_int64(statement, 12, Int64(entry.retryCount))
 
     guard sqlite3_step(statement) == SQLITE_DONE else {
       let message = String(cString: sqlite3_errmsg(db))
@@ -460,9 +513,10 @@ final class JournalDatabase {
     let secondaryCurriculumIdCol = 5
     let strategyIdCol = 6
     let initiatedByCol = 7
-    let syncStatusCol = 8
-    let lastSyncAttemptCol = 9
-    let retryCountCol = 10
+    let entryTypeCol = 8
+    let syncStatusCol = 9
+    let lastSyncAttemptCol = 10
+    let retryCountCol = 11
 
     // Parse required fields
     guard let idString = sqlite3_column_text(statement, Int32(idCol)).map({ String(cString: $0) }),
@@ -473,12 +527,22 @@ final class JournalDatabase {
 
     let createdAt = Date(timeIntervalSince1970: sqlite3_column_double(statement, Int32(createdAtCol)))
     let userID = Int(sqlite3_column_int64(statement, Int32(userIdCol)))
-    let curriculumID = Int(sqlite3_column_int64(statement, Int32(curriculumIdCol)))
+
+    // curriculum_id is now optional (can be NULL for REST entries)
+    let curriculumID = sqlite3_column_type(statement, Int32(curriculumIdCol)) != SQLITE_NULL
+      ? Int(sqlite3_column_int64(statement, Int32(curriculumIdCol)))
+      : nil
 
     guard let initiatedByString = sqlite3_column_text(statement, Int32(initiatedByCol)).map({ String(cString: $0) }),
           let initiatedBy = InitiatedBy(rawValue: initiatedByString)
     else {
       throw JournalDatabaseError.invalidData("Invalid initiated_by value")
+    }
+
+    // entry_type defaults to "emotion" for backwards compatibility with v2 databases
+    let entryTypeString = sqlite3_column_text(statement, Int32(entryTypeCol)).map { String(cString: $0) } ?? "emotion"
+    guard let entryType = EntryType(rawValue: entryTypeString) else {
+      throw JournalDatabaseError.invalidData("Invalid entry_type value")
     }
 
     guard let syncStatusString = sqlite3_column_text(statement, Int32(syncStatusCol)).map({ String(cString: $0) }),
@@ -499,7 +563,8 @@ final class JournalDatabase {
       strategyID: sqlite3_column_type(statement, Int32(strategyIdCol)) != SQLITE_NULL
         ? Int(sqlite3_column_int64(statement, Int32(strategyIdCol)))
         : nil,
-      initiatedBy: initiatedBy
+      initiatedBy: initiatedBy,
+      entryType: entryType
     )
 
     entry.serverId = sqlite3_column_type(statement, Int32(serverIdCol)) != SQLITE_NULL

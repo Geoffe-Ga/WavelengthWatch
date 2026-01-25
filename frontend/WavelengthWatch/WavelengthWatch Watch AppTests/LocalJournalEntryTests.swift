@@ -8,7 +8,8 @@ struct LocalJournalEntryTests {
       createdAt: Date(),
       userID: 123,
       curriculumID: 1,
-      initiatedBy: .self_initiated
+      initiatedBy: .self_initiated,
+      entryType: .emotion
     )
 
     #expect(entry.syncStatus == .pending)
@@ -23,7 +24,8 @@ struct LocalJournalEntryTests {
       curriculumID: 1,
       secondaryCurriculumID: 2,
       strategyID: 3,
-      initiatedBy: .scheduled
+      initiatedBy: .scheduled,
+      entryType: .emotion
     )
 
     #expect(entry.secondaryCurriculumID == 2)
@@ -36,7 +38,8 @@ struct LocalJournalEntryTests {
       createdAt: Date(),
       userID: 123,
       curriculumID: 1,
-      initiatedBy: .self_initiated
+      initiatedBy: .self_initiated,
+      entryType: .emotion
     )
 
     let response = JournalResponseModel(
@@ -44,7 +47,8 @@ struct LocalJournalEntryTests {
       curriculumID: 1,
       secondaryCurriculumID: nil,
       strategyID: nil,
-      initiatedBy: .self_initiated
+      initiatedBy: .self_initiated,
+      entryType: .emotion
     )
 
     let syncedEntry = LocalJournalEntry.synced(from: response, localEntry: localEntry)
@@ -62,7 +66,8 @@ struct LocalJournalEntryTests {
       createdAt: date,
       userID: 123,
       curriculumID: 1,
-      initiatedBy: .self_initiated
+      initiatedBy: .self_initiated,
+      entryType: .emotion
     )
 
     let entry2 = LocalJournalEntry(
@@ -70,7 +75,8 @@ struct LocalJournalEntryTests {
       createdAt: date,
       userID: 123,
       curriculumID: 1,
-      initiatedBy: .self_initiated
+      initiatedBy: .self_initiated,
+      entryType: .emotion
     )
 
     #expect(entry1 == entry2)
@@ -83,7 +89,8 @@ struct LocalJournalEntryTests {
       createdAt: Date(),
       userID: 123,
       curriculumID: 1,
-      initiatedBy: .self_initiated
+      initiatedBy: .self_initiated,
+      entryType: .emotion
     )
 
     let entry2 = LocalJournalEntry(
@@ -91,7 +98,8 @@ struct LocalJournalEntryTests {
       createdAt: Date().addingTimeInterval(100),
       userID: 456,
       curriculumID: 2,
-      initiatedBy: .scheduled
+      initiatedBy: .scheduled,
+      entryType: .emotion
     )
 
     #expect(entry1.hashValue == entry2.hashValue)
@@ -104,7 +112,8 @@ struct LocalJournalEntryTests {
       curriculumID: 1,
       secondaryCurriculumID: 2,
       strategyID: 3,
-      initiatedBy: .scheduled
+      initiatedBy: .scheduled,
+      entryType: .emotion
     )
 
     let data = try JSONEncoder().encode(entry)
@@ -117,5 +126,44 @@ struct LocalJournalEntryTests {
     #expect(decoded.strategyID == entry.strategyID)
     #expect(decoded.initiatedBy == entry.initiatedBy)
     #expect(decoded.syncStatus == entry.syncStatus)
+  }
+
+  @Test func createsRestEntryWithNilCurriculum() {
+    let entry = LocalJournalEntry(
+      createdAt: Date(),
+      userID: 123,
+      curriculumID: nil,
+      initiatedBy: .self_initiated,
+      entryType: .rest
+    )
+
+    #expect(entry.entryType == .rest)
+    #expect(entry.curriculumID == nil)
+    #expect(entry.isRestEntry == true)
+    #expect(entry.syncStatus == .pending)
+  }
+
+  @Test func isRestEntry_returnsFalse_forEmotionEntries() {
+    let entry = LocalJournalEntry(
+      createdAt: Date(),
+      userID: 123,
+      curriculumID: 1,
+      initiatedBy: .self_initiated,
+      entryType: .emotion
+    )
+
+    #expect(entry.isRestEntry == false)
+  }
+
+  @Test func isRestEntry_returnsTrue_forRestEntries() {
+    let entry = LocalJournalEntry(
+      createdAt: Date(),
+      userID: 123,
+      curriculumID: nil,
+      initiatedBy: .self_initiated,
+      entryType: .rest
+    )
+
+    #expect(entry.isRestEntry == true)
   }
 }

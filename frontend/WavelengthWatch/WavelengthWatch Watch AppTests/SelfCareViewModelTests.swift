@@ -248,7 +248,7 @@ struct SelfCareViewModelTests {
 
     let mockRepository = MockJournalRepository()
     mockRepository.entriesToReturn = [
-      LocalJournalEntry(createdAt: Date(), userID: 1, curriculumID: 1, strategyID: 2),
+      LocalJournalEntry(createdAt: Date(), userID: 1, curriculumID: 1, strategyID: 2, entryType: .emotion),
     ]
 
     let mockPersistence = MockSyncSettingsPersistence()
@@ -298,7 +298,7 @@ struct SelfCareViewModelTests {
 
     let mockRepository = MockJournalRepository()
     mockRepository.entriesToReturn = [
-      LocalJournalEntry(createdAt: Date(), userID: 1, curriculumID: 1, strategyID: 3),
+      LocalJournalEntry(createdAt: Date(), userID: 1, curriculumID: 1, strategyID: 3, entryType: .emotion),
     ]
 
     let mockPersistence = MockSyncSettingsPersistence()

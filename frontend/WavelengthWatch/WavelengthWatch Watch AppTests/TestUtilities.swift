@@ -151,6 +151,7 @@ final class JournalClientMock: JournalClientProtocol {
   struct ErrorStub: Error {}
 
   var submissions: [(Int, Int?, Int?)] = []
+  var restSubmissions: [InitiatedBy] = []
   var submittedInitiatedBy: InitiatedBy?
   var shouldFail = false
 
@@ -171,7 +172,25 @@ final class JournalClientMock: JournalClientProtocol {
       curriculumID: curriculumID,
       secondaryCurriculumID: secondaryCurriculumID,
       strategyID: strategyID,
-      initiatedBy: initiatedBy
+      initiatedBy: initiatedBy,
+      entryType: .emotion
+    )
+  }
+
+  func submitRestPeriod(
+    initiatedBy: InitiatedBy
+  ) async throws -> LocalJournalEntry {
+    restSubmissions.append(initiatedBy)
+    submittedInitiatedBy = initiatedBy
+    if shouldFail {
+      throw ErrorStub()
+    }
+    return LocalJournalEntry(
+      createdAt: Date(),
+      userID: 123,
+      curriculumID: nil,
+      initiatedBy: initiatedBy,
+      entryType: .rest
     )
   }
 }
@@ -217,7 +236,7 @@ final class CatalogRepositoryLoggerSpy: CatalogRepositoryLogging {
 final class APIClientSpy: APIClientProtocol {
   var lastPath: String?
   var lastBody: Data?
-  var response = JournalResponseModel(id: 10, curriculumID: 5, secondaryCurriculumID: 7, strategyID: 9, initiatedBy: .self_initiated)
+  var response = JournalResponseModel(id: 10, curriculumID: 5, secondaryCurriculumID: 7, strategyID: 9, initiatedBy: .self_initiated, entryType: .emotion)
   private let encoder: JSONEncoder
   private let decoder: JSONDecoder
 

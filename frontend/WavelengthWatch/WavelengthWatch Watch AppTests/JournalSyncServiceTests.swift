@@ -27,7 +27,8 @@ struct JournalSyncServiceTests {
       createdAt: Date(),
       userID: 123,
       curriculumID: 1,
-      initiatedBy: .self_initiated
+      initiatedBy: .self_initiated,
+      entryType: .emotion
     )
     entry.syncStatus = syncStatus
     entry.retryCount = retryCount
@@ -422,7 +423,8 @@ final class MockAPIClient: APIClientProtocol {
       curriculumID: 1,
       secondaryCurriculumID: nil,
       strategyID: nil,
-      initiatedBy: .self_initiated
+      initiatedBy: .self_initiated,
+      entryType: .emotion
     )
     return response as! Response
   }
