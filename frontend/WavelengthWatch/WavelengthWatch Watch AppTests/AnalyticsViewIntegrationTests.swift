@@ -7,7 +7,6 @@ import Testing
 /// These tests verify that AnalyticsView properly initializes AnalyticsViewModel
 /// with all required dependencies for offline-first functionality.
 @MainActor
-@Suite("AnalyticsView Integration Tests")
 struct AnalyticsViewIntegrationTests {
   // MARK: - Mock Services
 
@@ -56,7 +55,9 @@ struct AnalyticsViewIntegrationTests {
     func save(_ entry: LocalJournalEntry) throws {}
     func update(_ entry: LocalJournalEntry) throws {}
     func delete(id: UUID) throws {}
-    func fetch(id: UUID) throws -> LocalJournalEntry? { nil }
+    func fetch(id: UUID) throws -> LocalJournalEntry? {
+      nil
+    }
 
     func fetchAll() throws -> [LocalJournalEntry] {
       entries

@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import WavelengthWatch_Watch_App
 
-@Suite("AnalyticsViewModel Tests")
 struct AnalyticsViewModelTests {
   // MARK: - Mock Service
 
@@ -214,7 +213,7 @@ struct AnalyticsViewModelTests {
 
   @Test("viewModel passes numeric user identifier to service")
   @MainActor
-  func viewModel_passesNumericUserIdToService() async {
+  func viewModel_passesNumericUserIdToService() async throws {
     let mockService = MockAnalyticsService()
     mockService.overviewToReturn = AnalyticsOverview(
       totalEntries: 0,
@@ -239,7 +238,7 @@ struct AnalyticsViewModelTests {
     await viewModel.loadAnalytics()
 
     #expect(mockService.lastUserId != nil)
-    #expect(mockService.lastUserId! > 0)
+    #expect(try #require(mockService.lastUserId) > 0)
   }
 
   // MARK: - Local Fallback Tests
@@ -495,7 +494,7 @@ struct AnalyticsViewModelTests {
     }
   }
 
-  // Helper to create test catalog
+  /// Helper to create test catalog
   private func testCatalog() -> CatalogResponseModel {
     CatalogResponseModel(
       phaseOrder: ["Rising", "Peaking", "Falling", "Resting"],

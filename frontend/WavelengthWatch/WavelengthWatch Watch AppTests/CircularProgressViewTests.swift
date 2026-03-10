@@ -2,7 +2,6 @@ import SwiftUI
 import Testing
 @testable import WavelengthWatch_Watch_App
 
-@Suite("CircularProgressView Tests")
 struct CircularProgressViewTests {
   // MARK: - Percentage Tests
 

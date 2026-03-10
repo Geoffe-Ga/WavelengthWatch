@@ -3,7 +3,6 @@ import Testing
 @testable import WavelengthWatch_Watch_App
 
 /// Comprehensive tests for JournalClient local-first behavior and sync scenarios.
-@Suite("JournalClient Local-First Tests")
 struct JournalClientLocalFirstTests {
   // MARK: - Local Save Tests
 

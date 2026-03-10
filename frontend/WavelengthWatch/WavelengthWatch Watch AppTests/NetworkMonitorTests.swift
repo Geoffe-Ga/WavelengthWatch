@@ -6,11 +6,10 @@ import Testing
 ///
 /// Note: These tests verify the NetworkMonitor's API and behavior patterns.
 /// Actual network state changes require manual testing (e.g., toggling airplane mode).
-@Suite("NetworkMonitor Tests")
 struct NetworkMonitorTests {
   @Test("NetworkMonitor initializes with default state")
   @MainActor
-  func initialState() async throws {
+  func initialState() {
     let monitor = NetworkMonitor()
 
     // Monitor should initialize with unknown connection state
@@ -29,7 +28,7 @@ struct NetworkMonitorTests {
 
   @Test("NetworkMonitor can be stopped and started")
   @MainActor
-  func startStop() async throws {
+  func startStop() {
     let monitor = NetworkMonitor()
 
     // Should not crash when stopping
@@ -44,7 +43,7 @@ struct NetworkMonitorTests {
 
   @Test("NetworkMonitor published properties are MainActor-safe")
   @MainActor
-  func mainActorSafety() async throws {
+  func mainActorSafety() {
     let monitor = NetworkMonitor()
 
     // Should be able to access published properties on MainActor

@@ -1,7 +1,6 @@
 import Foundation
 import SwiftUI
 import Testing
-
 @testable import WavelengthWatch_Watch_App
 
 /// Tests for ConceptExplainerView markdown loading and rendering.
@@ -11,7 +10,6 @@ import Testing
 /// - Missing files are handled gracefully
 /// - Content is converted to AttributedString
 @MainActor
-@Suite("ConceptExplainerView Tests")
 struct ConceptExplainerViewTests {
   @Test func markdownLoader_validFile_loadsContent() async {
     // Given a valid markdown file in the bundle

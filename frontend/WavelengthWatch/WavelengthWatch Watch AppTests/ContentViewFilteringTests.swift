@@ -1,6 +1,5 @@
 import SwiftUI
 import Testing
-
 @testable import WavelengthWatch_Watch_App
 
 /// Tests for ContentView navigation with filtered layers.

@@ -3,7 +3,6 @@ import SwiftUI
 import Testing
 @testable import WavelengthWatch_Watch_App
 
-@Suite("JournalReviewView Tests")
 @MainActor
 struct JournalReviewViewTests {
   private func makeSampleCatalog() -> CatalogResponseModel {
@@ -196,7 +195,7 @@ struct JournalReviewViewTests {
 
     // Simulate submission
     let response = try await mockClient.submit(
-      curriculumID: viewModel.primaryCurriculumID!,
+      curriculumID: #require(viewModel.primaryCurriculumID),
       secondaryCurriculumID: viewModel.secondaryCurriculumID,
       strategyID: viewModel.strategyID,
       initiatedBy: viewModel.initiatedBy
@@ -238,7 +237,7 @@ struct JournalReviewViewTests {
     // First attempt fails
     do {
       _ = try await mockClient.submit(
-        curriculumID: viewModel.primaryCurriculumID!,
+        curriculumID: #require(viewModel.primaryCurriculumID),
         secondaryCurriculumID: viewModel.secondaryCurriculumID,
         strategyID: viewModel.strategyID,
         initiatedBy: viewModel.initiatedBy
@@ -251,7 +250,7 @@ struct JournalReviewViewTests {
     // Retry should be possible
     do {
       _ = try await mockClient.submit(
-        curriculumID: viewModel.primaryCurriculumID!,
+        curriculumID: #require(viewModel.primaryCurriculumID),
         secondaryCurriculumID: viewModel.secondaryCurriculumID,
         strategyID: viewModel.strategyID,
         initiatedBy: viewModel.initiatedBy
@@ -263,7 +262,7 @@ struct JournalReviewViewTests {
   }
 
   @Test("submit entry guards against nil primary curriculum")
-  func submitEntry_withNilPrimary_showsError() async throws {
+  func submitEntry_withNilPrimary_showsError() {
     class MockJournalClient: JournalClientProtocol {
       var submitCalled = false
 

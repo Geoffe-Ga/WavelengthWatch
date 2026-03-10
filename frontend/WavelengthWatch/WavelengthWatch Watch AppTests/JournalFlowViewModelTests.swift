@@ -1,6 +1,5 @@
 import SwiftUI
 import Testing
-
 @testable import WavelengthWatch_Watch_App
 
 /// Tests for JournalFlowViewModel managing the multi-step emotion logging flow.
@@ -38,21 +37,21 @@ struct JournalFlowViewModelTests {
     return CatalogResponseModel(phaseOrder: ["Rising"], layers: layers)
   }
 
-  @Test func init_startsAtEntryTypeSelection() async {
+  @Test func init_startsAtEntryTypeSelection() {
     let catalog = createTestCatalog()
     let viewModel = JournalFlowViewModel(catalog: catalog)
 
     #expect(viewModel.currentStep == .entryTypeSelection)
   }
 
-  @Test func init_defaultsToSelfInitiated() async {
+  @Test func init_defaultsToSelfInitiated() {
     let catalog = createTestCatalog()
     let viewModel = JournalFlowViewModel(catalog: catalog)
 
     #expect(viewModel.initiatedBy == .self_initiated)
   }
 
-  @Test func filteredLayers_returnsAll_atEntryTypeSelection() async {
+  @Test func filteredLayers_returnsAll_atEntryTypeSelection() {
     let catalog = createTestCatalog()
     let viewModel = JournalFlowViewModel(catalog: catalog)
 
@@ -61,7 +60,7 @@ struct JournalFlowViewModelTests {
     #expect(filteredLayers.count == 3)
   }
 
-  @Test func filteredLayers_returnsEmotionsOnly_atPrimaryEmotion() async {
+  @Test func filteredLayers_returnsEmotionsOnly_atPrimaryEmotion() {
     let catalog = createTestCatalog()
     let viewModel = JournalFlowViewModel(catalog: catalog)
     viewModel.selectEntryType(.emotion)
@@ -72,11 +71,12 @@ struct JournalFlowViewModelTests {
     #expect(filteredLayers.allSatisfy { $0.id != 0 })
   }
 
-  @Test func filteredLayers_returnsLayersInDescendingOrder() async {
+  @Test func filteredLayers_returnsLayersInDescendingOrder() {
     let catalog = createTestCatalog()
     let viewModel = JournalFlowViewModel(catalog: catalog)
+    viewModel.selectEntryType(.emotion)
 
-    // Filtered layers should be in descending ID order (highest ID first) to match main app navigation
+    // After selecting emotion type, emotionsOnly filter excludes layer 0 (Strategies)
     // Catalog: [0,1,2] → init reverses → [2,1,0] → filter excludes 0 → [2,1]
     // In production: [0,1,...,10] → reverse → [10,9,...,1,0] → filter → [10,9,...,1]
     // This puts Clear Light (layer 10) at index 0 (top), Beige (layer 1) at last index (bottom)
@@ -86,11 +86,12 @@ struct JournalFlowViewModelTests {
     #expect(filteredLayers[1].id == 1) // Beige (lowest emotion layer) appears last
   }
 
-  @Test func canProceed_fromPrimary_requiresSelection() async {
+  @Test func canProceed_fromPrimary_requiresSelection() {
     let catalog = createTestCatalog()
     let viewModel = JournalFlowViewModel(catalog: catalog)
+    viewModel.selectEntryType(.emotion)
 
-    // No selection yet, cannot proceed
+    // At primary emotion step with no selection yet, cannot proceed
     #expect(viewModel.canProceed == false)
 
     // Select a primary emotion
@@ -100,7 +101,7 @@ struct JournalFlowViewModelTests {
     #expect(viewModel.canProceed == true)
   }
 
-  @Test func reset_clearsAllSelections() async {
+  @Test func reset_clearsAllSelections() {
     let catalog = createTestCatalog()
     let viewModel = JournalFlowViewModel(catalog: catalog)
 
@@ -124,7 +125,7 @@ struct JournalFlowViewModelTests {
     #expect(viewModel.currentStep == .entryTypeSelection)
   }
 
-  @Test func advance_updatesCurrentStep_forEmotionFlow() async {
+  @Test func advance_updatesCurrentStep_forEmotionFlow() {
     let catalog = createTestCatalog()
     let viewModel = JournalFlowViewModel(catalog: catalog)
 
@@ -157,7 +158,7 @@ struct JournalFlowViewModelTests {
     #expect(viewModel.currentStep == .review)
   }
 
-  @Test func selectRestPeriod_skipsToReview() async {
+  @Test func selectRestPeriod_skipsToReview() {
     let catalog = createTestCatalog()
     let viewModel = JournalFlowViewModel(catalog: catalog)
 
@@ -172,7 +173,7 @@ struct JournalFlowViewModelTests {
     #expect(viewModel.entryType == .rest)
   }
 
-  @Test func selectEntryType_emotion_navigatesToPrimaryEmotion() async {
+  @Test func selectEntryType_emotion_navigatesToPrimaryEmotion() {
     let catalog = createTestCatalog()
     let viewModel = JournalFlowViewModel(catalog: catalog)
 
@@ -182,7 +183,7 @@ struct JournalFlowViewModelTests {
     #expect(viewModel.entryType == .emotion)
   }
 
-  @Test func selectEntryType_rest_navigatesToReview() async {
+  @Test func selectEntryType_rest_navigatesToReview() {
     let catalog = createTestCatalog()
     let viewModel = JournalFlowViewModel(catalog: catalog)
 
@@ -192,7 +193,7 @@ struct JournalFlowViewModelTests {
     #expect(viewModel.entryType == .rest)
   }
 
-  @Test func getPrimaryCurriculum_returnsCurriculum_whenSelected() async {
+  @Test func getPrimaryCurriculum_returnsCurriculum_whenSelected() {
     let catalog = createTestCatalog()
     let viewModel = JournalFlowViewModel(catalog: catalog)
 

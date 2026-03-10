@@ -36,7 +36,9 @@ final class JournalDatabase {
   let databasePath: String
 
   /// Whether the database is currently open.
-  var isOpen: Bool { db != nil }
+  var isOpen: Bool {
+    db != nil
+  }
 
   /// Creates a JournalDatabase instance with the specified path.
   ///

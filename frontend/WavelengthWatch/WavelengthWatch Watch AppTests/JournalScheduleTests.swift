@@ -1,9 +1,7 @@
 import Foundation
 import Testing
-
 @testable import WavelengthWatch_Watch_App
 
-@Suite("JournalSchedule Tests")
 struct JournalScheduleTests {
   @Test func encodesAndDecodesSchedule() throws {
     var time = DateComponents()

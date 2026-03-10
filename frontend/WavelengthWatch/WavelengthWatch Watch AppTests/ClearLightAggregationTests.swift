@@ -5,7 +5,6 @@ import Testing
 /// Tests for Clear Light layer emotion aggregation logic
 /// Verifies that Clear Light (layer 10) correctly aggregates all emotions
 /// from all other layers (1-9), excluding Strategies (layer 0) and itself.
-@Suite("Clear Light Aggregation Tests")
 struct ClearLightAggregationTests {
   // MARK: - Aggregation Logic Tests
 

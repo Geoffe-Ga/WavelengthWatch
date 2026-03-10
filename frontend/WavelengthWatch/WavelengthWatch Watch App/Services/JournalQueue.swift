@@ -70,7 +70,9 @@ final class JournalQueue: ObservableObject, JournalQueueProtocol {
   private let databasePath: String
 
   /// Whether the database is currently open.
-  private var isOpen: Bool { db != nil }
+  private var isOpen: Bool {
+    db != nil
+  }
 
   // MARK: - Initialization
 

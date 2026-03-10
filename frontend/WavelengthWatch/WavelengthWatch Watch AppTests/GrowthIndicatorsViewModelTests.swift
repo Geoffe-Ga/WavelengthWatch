@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import WavelengthWatch_Watch_App
 
-@Suite("GrowthIndicatorsViewModel Tests")
 struct GrowthIndicatorsViewModelTests {
   // MARK: - Mock Service
 

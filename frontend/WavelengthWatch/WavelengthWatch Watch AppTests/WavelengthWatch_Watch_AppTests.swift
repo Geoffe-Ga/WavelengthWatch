@@ -88,7 +88,7 @@ struct CatalogRepositoryTests {
 struct JournalClientTests {
   @Test func encodesPayloadWithStableUserIdentifier() async throws {
     let spy = APIClientSpy()
-    let defaults = UserDefaults(suiteName: "JournalClientTests")!
+    let defaults = try #require(UserDefaults(suiteName: "JournalClientTests"))
     defaults.removePersistentDomain(forName: "JournalClientTests")
     defaults.set("12345678-1234-1234-1234-1234567890ab", forKey: "com.wavelengthwatch.userIdentifier")
     let date = Date(timeIntervalSince1970: 1000)

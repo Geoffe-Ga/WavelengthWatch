@@ -13,7 +13,7 @@ final class OnboardingViewUITests: XCTestCase {
   }
 
   @MainActor
-  func testOnboardingViewAppearsOnFirstLaunch() throws {
+  func testOnboardingViewAppearsOnFirstLaunch() {
     let app = XCUIApplication()
     app.launchArguments = ["RESET_ONBOARDING"]
     app.launch()
@@ -24,7 +24,7 @@ final class OnboardingViewUITests: XCTestCase {
   }
 
   @MainActor
-  func testOnboardingViewShowsStorageOptions() throws {
+  func testOnboardingViewShowsStorageOptions() {
     let app = XCUIApplication()
     app.launchArguments = ["RESET_ONBOARDING"]
     app.launch()
@@ -37,7 +37,7 @@ final class OnboardingViewUITests: XCTestCase {
   }
 
   @MainActor
-  func testLocalOnlySelectionIsDefault() throws {
+  func testLocalOnlySelectionIsDefault() {
     let app = XCUIApplication()
     app.launchArguments = ["RESET_ONBOARDING"]
     app.launch()
@@ -48,7 +48,7 @@ final class OnboardingViewUITests: XCTestCase {
   }
 
   @MainActor
-  func testCanSelectCloudBackup() throws {
+  func testCanSelectCloudBackup() {
     let app = XCUIApplication()
     app.launchArguments = ["RESET_ONBOARDING"]
     app.launch()
@@ -62,7 +62,7 @@ final class OnboardingViewUITests: XCTestCase {
   }
 
   @MainActor
-  func testContinueButtonDismissesOnboarding() throws {
+  func testContinueButtonDismissesOnboarding() {
     let app = XCUIApplication()
     app.launchArguments = ["RESET_ONBOARDING"]
     app.launch()
@@ -80,7 +80,7 @@ final class OnboardingViewUITests: XCTestCase {
   }
 
   @MainActor
-  func testOnboardingShowsSettingsHint() throws {
+  func testOnboardingShowsSettingsHint() {
     let app = XCUIApplication()
     app.launchArguments = ["RESET_ONBOARDING"]
     app.launch()

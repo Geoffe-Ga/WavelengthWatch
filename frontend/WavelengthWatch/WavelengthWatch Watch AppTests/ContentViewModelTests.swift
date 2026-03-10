@@ -1,11 +1,9 @@
 import Foundation
 import Testing
-
 @testable import WavelengthWatch_Watch_App
 
-@Suite("ContentViewModel Tests")
 struct ContentViewModelTests {
-  @Test func loadsCatalogSuccessfully() async throws {
+  @Test func loadsCatalogSuccessfully() async {
     let repository = CatalogRepositoryMock(cached: SampleData.catalog, result: .success(SampleData.catalog))
     let journal = JournalClientMock()
     let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journal)

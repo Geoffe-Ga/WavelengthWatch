@@ -104,7 +104,6 @@ struct OnboardingView: View {
     }
   }
 
-  @ViewBuilder
   private func storageOption(_ mode: StorageMode) -> some View {
     Button {
       selectedMode = mode

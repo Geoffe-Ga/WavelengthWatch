@@ -3,7 +3,6 @@ import SwiftUI
 import Testing
 @testable import WavelengthWatch_Watch_App
 
-@Suite("StrategyUsageView Tests")
 struct StrategyUsageViewTests {
   @Test("view initializes with empty data")
   func view_initializesWithEmptyData() {
