@@ -2,7 +2,6 @@ import SwiftUI
 import Testing
 @testable import WavelengthWatch_Watch_App
 
-@Suite("EmotionSummaryCard Tests")
 struct EmotionSummaryCardTests {
   // MARK: - Test Data
 

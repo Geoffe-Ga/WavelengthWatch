@@ -1,8 +1,6 @@
 import Testing
-
 @testable import WavelengthWatch_Watch_App
 
-@Suite("PhaseNavigator Tests")
 struct PhaseNavigatorTests {
   @Test func wrapsFromFirstToLast() {
     let adjusted = PhaseNavigator.adjustedSelection(0, phaseCount: 6)

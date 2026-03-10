@@ -1,7 +1,7 @@
 """SQLModel table definitions for the WavelengthWatch backend."""
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from sqlalchemy import Column, DateTime
 from sqlalchemy import Enum as SAEnum
@@ -10,18 +10,25 @@ from sqlalchemy.orm import Mapped
 from sqlmodel import Field, Relationship, SQLModel
 
 
-class Dosage(str, Enum):
+class Dosage(StrEnum):
     """Dosage categories for curriculum entries."""
 
     MEDICINAL = "Medicinal"
     TOXIC = "Toxic"
 
 
-class InitiatedBy(str, Enum):
+class InitiatedBy(StrEnum):
     """Source of journal entry creation."""
 
     SELF = "self"
     SCHEDULED = "scheduled"
+
+
+class EntryType(StrEnum):
+    """Type of journal entry."""
+
+    EMOTION = "emotion"
+    REST = "rest"
 
 
 class Layer(SQLModel, table=True):
@@ -131,7 +138,9 @@ class Journal(SQLModel, table=True):
         sa_column=Column(DateTime(timezone=True), nullable=False, index=True)
     )
     user_id: int = Field(index=True)
-    curriculum_id: int = Field(foreign_key="curriculum.id", nullable=False, index=True)
+    curriculum_id: int | None = Field(
+        default=None, foreign_key="curriculum.id", nullable=True, index=True
+    )
     secondary_curriculum_id: int | None = Field(
         default=None, foreign_key="curriculum.id", nullable=True, index=True
     )
@@ -142,6 +151,12 @@ class Journal(SQLModel, table=True):
         default=InitiatedBy.SELF,
         sa_column=Column(
             SAEnum(InitiatedBy, name="journal_initiated_by", native_enum=False)
+        ),
+    )
+    entry_type: EntryType = Field(
+        default=EntryType.EMOTION,
+        sa_column=Column(
+            SAEnum(EntryType, name="journal_entry_type", native_enum=False)
         ),
     )
 
@@ -206,4 +221,5 @@ __all__ = [
     "IdempotencyRecord",
     "Dosage",
     "InitiatedBy",
+    "EntryType",
 ]

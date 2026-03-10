@@ -14,7 +14,7 @@ from sqlmodel.sql.expression import SelectOfScalar
 
 from ..cache import analytics_cache, make_cache_key
 from ..database import get_session
-from ..models import Curriculum, Dosage, Journal, Strategy
+from ..models import Curriculum, Dosage, EntryType, Journal, Strategy
 from ..schemas import (
     AnalyticsOverview,
     EmotionalLandscape,
@@ -106,7 +106,10 @@ def _calculate_longest_streak(entries: list[datetime]) -> int:
 def _calculate_medicinal_ratio(
     session: Session, user_id: int, start_date: datetime, end_date: datetime
 ) -> float:
-    """Calculate ratio of medicinal entries (returns 0.0-1.0, not 0-100)."""
+    """Calculate ratio of medicinal entries (returns 0.0-1.0, not 0-100).
+
+    Only includes EMOTION entries (excludes REST entries).
+    """
     statement = (
         select(Curriculum.dosage, func.count())
         .select_from(Journal)
@@ -118,6 +121,7 @@ def _calculate_medicinal_ratio(
             cast(ColumnElement[bool], Journal.user_id == user_id),
             cast(ColumnElement[bool], Journal.created_at >= start_date),
             cast(ColumnElement[bool], Journal.created_at <= end_date),
+            cast(ColumnElement[bool], Journal.entry_type == EntryType.EMOTION),
         )
         .group_by(Curriculum.dosage)
     )
@@ -170,6 +174,8 @@ def _get_dominant_layer_and_phase(
 ) -> tuple[int | None, int | None]:
     """Get most frequent layer and phase from last 7 days.
 
+    Only includes EMOTION entries (excludes REST entries).
+
     Args:
         session: Database session
         user_id: User ID
@@ -193,6 +199,7 @@ def _get_dominant_layer_and_phase(
             cast(ColumnElement[bool], Journal.user_id == user_id),
             cast(ColumnElement[bool], Journal.created_at >= seven_days_ago),
             cast(ColumnElement[bool], Journal.created_at <= end_date),
+            cast(ColumnElement[bool], Journal.entry_type == EntryType.EMOTION),
         )
         .group_by(cast(ColumnElement[int], Curriculum.layer_id))
         .order_by(desc(count_col))
@@ -215,6 +222,7 @@ def _get_dominant_layer_and_phase(
             cast(ColumnElement[bool], Journal.user_id == user_id),
             cast(ColumnElement[bool], Journal.created_at >= seven_days_ago),
             cast(ColumnElement[bool], Journal.created_at <= end_date),
+            cast(ColumnElement[bool], Journal.entry_type == EntryType.EMOTION),
         )
         .group_by(cast(ColumnElement[int], Curriculum.phase_id))
         .order_by(desc(count_col))
@@ -304,13 +312,14 @@ def get_analytics_overview(
         session, user_id, end_date
     )
 
-    # Unique emotions
+    # Unique emotions (EMOTION entries only)
     unique_emotions_stmt = select(
         func.count(func.distinct(Journal.curriculum_id))
     ).where(
         cast(ColumnElement[bool], Journal.user_id == user_id),
         cast(ColumnElement[bool], Journal.created_at >= start_date),
         cast(ColumnElement[bool], Journal.created_at <= end_date),
+        cast(ColumnElement[bool], Journal.entry_type == EntryType.EMOTION),
     )
     unique_emotions = session.exec(unique_emotions_stmt).one()
 
@@ -413,7 +422,8 @@ def get_emotional_landscape(
     if start_date is None:
         start_date = end_date - timedelta(days=30)
 
-    # Check if user has any entries in the date range (efficient COUNT query)
+    # Check if user has any EMOTION entries in the date range (efficient COUNT query)
+    # Excludes REST entries as they don't have emotional context
     count_stmt = (
         select(func.count())
         .select_from(Journal)
@@ -421,6 +431,7 @@ def get_emotional_landscape(
             cast(ColumnElement[bool], Journal.user_id == user_id),
             cast(ColumnElement[bool], Journal.created_at >= start_date),
             cast(ColumnElement[bool], Journal.created_at <= end_date),
+            cast(ColumnElement[bool], Journal.entry_type == EntryType.EMOTION),
         )
     )
 
@@ -432,7 +443,7 @@ def get_emotional_landscape(
             detail="No journal entries found for user",
         )
 
-    # Calculate layer distribution
+    # Calculate layer distribution (EMOTION entries only)
     layer_stmt = (
         select(Curriculum.layer_id, func.count().label("cnt"))
         .select_from(Journal)
@@ -444,6 +455,7 @@ def get_emotional_landscape(
             cast(ColumnElement[bool], Journal.user_id == user_id),
             cast(ColumnElement[bool], Journal.created_at >= start_date),
             cast(ColumnElement[bool], Journal.created_at <= end_date),
+            cast(ColumnElement[bool], Journal.entry_type == EntryType.EMOTION),
         )
         .group_by(cast(ColumnElement[int], Curriculum.layer_id))
     )
@@ -459,7 +471,7 @@ def get_emotional_landscape(
         for layer_id, count in layer_results
     ]
 
-    # Calculate phase distribution
+    # Calculate phase distribution (EMOTION entries only)
     phase_stmt = (
         select(Curriculum.phase_id, func.count().label("cnt"))
         .select_from(Journal)
@@ -471,6 +483,7 @@ def get_emotional_landscape(
             cast(ColumnElement[bool], Journal.user_id == user_id),
             cast(ColumnElement[bool], Journal.created_at >= start_date),
             cast(ColumnElement[bool], Journal.created_at <= end_date),
+            cast(ColumnElement[bool], Journal.entry_type == EntryType.EMOTION),
         )
         .group_by(cast(ColumnElement[int], Curriculum.phase_id))
     )
@@ -486,7 +499,7 @@ def get_emotional_landscape(
         for phase_id, count in phase_results
     ]
 
-    # Calculate top emotions (combine primary + secondary)
+    # Calculate top emotions (combine primary + secondary, EMOTION entries only)
     # First, get primary emotions
     # NOTE: type: ignore below - SQLAlchemy 2.0 cannot infer types for select() with
     # 6+ mixed column types (model attributes + func.count()). This is a known
@@ -509,6 +522,7 @@ def get_emotional_landscape(
             cast(ColumnElement[bool], Journal.user_id == user_id),
             cast(ColumnElement[bool], Journal.created_at >= start_date),
             cast(ColumnElement[bool], Journal.created_at <= end_date),
+            cast(ColumnElement[bool], Journal.entry_type == EntryType.EMOTION),
         )
         .group_by(
             Curriculum.id,
@@ -521,7 +535,7 @@ def get_emotional_landscape(
 
     primary_results = session.exec(primary_stmt).all()
 
-    # Get secondary emotions
+    # Get secondary emotions (EMOTION entries only)
     # NOTE: type: ignore below - Same SQLAlchemy 2.0 type inference limitation as
     # primary_stmt (select() with 6+ mixed column types). See comment above.
     secondary_stmt = (
@@ -542,6 +556,7 @@ def get_emotional_landscape(
             cast(ColumnElement[bool], Journal.user_id == user_id),
             cast(ColumnElement[bool], Journal.created_at >= start_date),
             cast(ColumnElement[bool], Journal.created_at <= end_date),
+            cast(ColumnElement[bool], Journal.entry_type == EntryType.EMOTION),
             cast(ColumnElement[int | None], Journal.secondary_curriculum_id).is_not(
                 None
             ),
@@ -785,6 +800,7 @@ def get_growth_indicators(
 
     # Use SQL aggregation to get unique layers and phases directly
     # This avoids loading all journal entries and N+1 curriculum lookups
+    # Only includes EMOTION entries (excludes REST entries)
     layer_stmt = (
         select(func.count(func.distinct(Curriculum.layer_id)))
         .select_from(Journal)
@@ -796,6 +812,7 @@ def get_growth_indicators(
             cast(ColumnElement[bool], Journal.user_id == user_id),
             cast(ColumnElement[bool], Journal.created_at >= start_date),
             cast(ColumnElement[bool], Journal.created_at <= end_date),
+            cast(ColumnElement[bool], Journal.entry_type == EntryType.EMOTION),
         )
     )
     layer_diversity = session.exec(layer_stmt).one() or 0
@@ -811,6 +828,7 @@ def get_growth_indicators(
             cast(ColumnElement[bool], Journal.user_id == user_id),
             cast(ColumnElement[bool], Journal.created_at >= start_date),
             cast(ColumnElement[bool], Journal.created_at <= end_date),
+            cast(ColumnElement[bool], Journal.entry_type == EntryType.EMOTION),
         )
     )
     phase_coverage = session.exec(phase_stmt).one() or 0

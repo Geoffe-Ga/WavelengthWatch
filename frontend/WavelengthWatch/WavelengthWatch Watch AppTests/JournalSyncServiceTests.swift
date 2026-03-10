@@ -27,7 +27,8 @@ struct JournalSyncServiceTests {
       createdAt: Date(),
       userID: 123,
       curriculumID: 1,
-      initiatedBy: .self_initiated
+      initiatedBy: .self_initiated,
+      entryType: .emotion
     )
     entry.syncStatus = syncStatus
     entry.retryCount = retryCount
@@ -422,7 +423,8 @@ final class MockAPIClient: APIClientProtocol {
       curriculumID: 1,
       secondaryCurriculumID: nil,
       strategyID: nil,
-      initiatedBy: .self_initiated
+      initiatedBy: .self_initiated,
+      entryType: .emotion
     )
     return response as! Response
   }
@@ -433,7 +435,9 @@ final class MockAPIClient: APIClientProtocol {
 final class MockNetworkMonitor: ObservableObject, NetworkMonitorProtocol {
   @Published var isConnected: Bool
 
-  var isConnectedPublisher: Published<Bool>.Publisher { $isConnected }
+  var isConnectedPublisher: Published<Bool>.Publisher {
+    $isConnected
+  }
 
   init(isConnected: Bool) {
     self.isConnected = isConnected

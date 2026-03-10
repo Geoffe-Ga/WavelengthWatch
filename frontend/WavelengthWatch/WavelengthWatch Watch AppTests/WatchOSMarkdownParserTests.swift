@@ -5,7 +5,6 @@ import Testing
 /// Tests for WatchOSMarkdownParser.
 ///
 /// Validates block-level markdown parsing for watchOS rendering.
-@Suite("WatchOSMarkdownParser Tests")
 struct WatchOSMarkdownParserTests {
   let parser = WatchOSMarkdownParser()
 

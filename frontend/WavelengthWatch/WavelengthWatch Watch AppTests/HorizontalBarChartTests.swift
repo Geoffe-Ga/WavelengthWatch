@@ -3,7 +3,6 @@ import SwiftUI
 import Testing
 @testable import WavelengthWatch_Watch_App
 
-@Suite("HorizontalBarChart Tests")
 struct HorizontalBarChartTests {
   // MARK: - Data Model Tests
 

@@ -1,9 +1,7 @@
 import Testing
 import UserNotifications
-
 @testable import WavelengthWatch_Watch_App
 
-@Suite("NotificationDelegate Tests")
 struct NotificationDelegateTests {
   /// Tests the core notification handling logic by calling handleNotificationResponse with a mock response.
   /// Note: We can't easily mock UNNotificationResponse (it's a sealed class), so we test the logic

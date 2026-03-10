@@ -5,10 +5,10 @@ import SwiftUI
 private enum UIConstants {
   static let menuButtonSize: CGFloat = 20
 
-  // Reference screen width for scaling (Apple Watch Series 9 45mm = 198pt)
+  /// Reference screen width for scaling (Apple Watch Series 9 45mm = 198pt)
   static let referenceScreenWidth: CGFloat = 198
 
-  // Calculate scale factor based on actual screen width
+  /// Calculate scale factor based on actual screen width
   static func scaleFactor(for width: CGFloat) -> CGFloat {
     width / referenceScreenWidth
   }
@@ -20,23 +20,15 @@ private enum UIConstants {
   static let phaseAccentInnerWidth: CGFloat = 50
   static let phaseAccentInnerHeight: CGFloat = 2
 
-  // Phase card minimum width - ensures cards don't get too narrow
+  /// Phase card minimum width - ensures cards don't get too narrow
   static let phaseCardMinWidth: CGFloat = 145
 
-  // Analytics view dimensions
+  /// Analytics view dimensions
   static let analyticsIconSize: CGFloat = 48
 }
 
-// Environment key for tracking detail view visibility
-private struct IsShowingDetailViewKey: EnvironmentKey {
-  static let defaultValue: Binding<Bool> = .constant(false)
-}
-
 extension EnvironmentValues {
-  var isShowingDetailView: Binding<Bool> {
-    get { self[IsShowingDetailViewKey.self] }
-    set { self[IsShowingDetailViewKey.self] = newValue }
-  }
+  @Entry var isShowingDetailView: Binding<Bool> = .constant(false)
 }
 
 extension Comparable {
@@ -933,7 +925,7 @@ struct StrategyListView: View {
   @State private var showingJournalConfirmation = false
   @State private var selectedStrategy: CatalogStrategyModel?
 
-  // For strategies-only phases, find a curriculum ID from any available layer/phase
+  /// For strategies-only phases, find a curriculum ID from any available layer/phase
   private var fallbackCurriculumID: Int? {
     // First try the current phase
     if let id = phase.medicinal.first?.id ?? phase.toxic.first?.id {
@@ -1779,7 +1771,7 @@ struct AnalyticsView: View {
           .fill(Color.secondary.opacity(0.15))
       )
 
-      // Streak Display
+      // Recent Activity Display
       if overview.currentStreak > 0 || overview.totalEntries >= 2 {
         StreakDisplayView(
           currentStreak: overview.currentStreak,
@@ -2173,7 +2165,6 @@ struct FlowReviewSheet: View {
     }
   }
 
-  @ViewBuilder
   private func emotionCard(label: String, expression: String, dosage: CatalogDosage) -> some View {
     VStack(alignment: .leading, spacing: 8) {
       // Label
@@ -2209,7 +2200,6 @@ struct FlowReviewSheet: View {
     )
   }
 
-  @ViewBuilder
   private func strategyCard(strategy: CatalogStrategyModel) -> some View {
     VStack(alignment: .leading, spacing: 8) {
       Text("Strategy")

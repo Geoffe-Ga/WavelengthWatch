@@ -3,16 +3,18 @@ import Foundation
 /// Manages state for the multi-step emotion logging flow.
 ///
 /// The flow progresses through these steps:
-/// 1. Primary emotion selection (emotions-only filter)
-/// 2. Secondary emotion selection (emotions-only filter, optional)
-/// 3. Strategy selection (strategies-only filter, optional)
-/// 4. Review and submit
+/// 1. Entry type selection (emotion or rest)
+/// 2. Primary emotion selection (emotions-only filter) - skipped for REST
+/// 3. Secondary emotion selection (emotions-only filter, optional)
+/// 4. Strategy selection (strategies-only filter, optional)
+/// 5. Review and submit
 ///
 /// The ViewModel tracks selections, manages filter modes based on current step,
 /// and provides validation for whether the user can proceed.
 final class JournalFlowViewModel: ObservableObject {
   /// Flow steps in order
   enum FlowStep: Equatable {
+    case entryTypeSelection
     case primaryEmotion
     case secondaryEmotion
     case strategySelection
@@ -21,7 +23,8 @@ final class JournalFlowViewModel: ObservableObject {
 
   // MARK: - Published State
 
-  @Published var currentStep: FlowStep = .primaryEmotion
+  @Published var currentStep: FlowStep = .entryTypeSelection
+  @Published var entryType: EntryType = .emotion
   @Published var primaryCurriculumID: Int?
   @Published var secondaryCurriculumID: Int?
   @Published var strategyID: Int?
@@ -57,6 +60,8 @@ final class JournalFlowViewModel: ObservableObject {
   /// Returns the filter mode for the current step.
   var filterMode: LayerFilterMode {
     switch currentStep {
+    case .entryTypeSelection:
+      .all
     case .primaryEmotion, .secondaryEmotion:
       .emotionsOnly
     case .strategySelection:
@@ -68,12 +73,15 @@ final class JournalFlowViewModel: ObservableObject {
 
   /// Whether the user can proceed from the current step.
   ///
-  /// - Primary emotion: requires a selection
+  /// - Entry type selection: requires entry type to be set
+  /// - Primary emotion: requires a selection (only for EMOTION entries)
   /// - Secondary emotion: always can proceed (optional)
   /// - Strategy selection: always can proceed (optional)
   /// - Review: cannot proceed (final step)
   var canProceed: Bool {
     switch currentStep {
+    case .entryTypeSelection:
+      true // Entry type is always set
     case .primaryEmotion:
       primaryCurriculumID != nil
     case .secondaryEmotion, .strategySelection:
@@ -105,10 +113,36 @@ final class JournalFlowViewModel: ObservableObject {
 
   // MARK: - Navigation Methods
 
+  /// Selects entry type and advances flow accordingly.
+  @MainActor
+  func selectEntryType(_ type: EntryType) {
+    entryType = type
+    if type == .rest {
+      // Skip to review for REST entries
+      currentStep = .review
+    } else {
+      // Continue to emotion selection for EMOTION entries
+      currentStep = .primaryEmotion
+    }
+  }
+
+  /// Selects REST entry type and skips to review.
+  @MainActor
+  func selectRestPeriod() {
+    selectEntryType(.rest)
+  }
+
   /// Advances to the next step in the flow.
   @MainActor
   func advanceStep() {
     switch currentStep {
+    case .entryTypeSelection:
+      // Navigate based on entry type
+      if entryType == .rest {
+        currentStep = .review
+      } else {
+        currentStep = .primaryEmotion
+      }
     case .primaryEmotion:
       currentStep = .secondaryEmotion
     case .secondaryEmotion:
@@ -123,7 +157,8 @@ final class JournalFlowViewModel: ObservableObject {
   /// Resets the flow to the beginning, clearing all selections.
   @MainActor
   func reset() {
-    currentStep = .primaryEmotion
+    currentStep = .entryTypeSelection
+    entryType = .emotion
     primaryCurriculumID = nil
     secondaryCurriculumID = nil
     strategyID = nil

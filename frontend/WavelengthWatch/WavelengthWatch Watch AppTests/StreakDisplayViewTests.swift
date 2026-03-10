@@ -2,7 +2,6 @@ import SwiftUI
 import Testing
 @testable import WavelengthWatch_Watch_App
 
-@Suite("StreakDisplayView Tests")
 struct StreakDisplayViewTests {
   // MARK: - Basic Display Tests
 
@@ -111,9 +110,9 @@ struct StreakDisplayViewTests {
     #expect(view.longestStreak == 12)
   }
 
-  // NOTE: Test for currentStreak > longestStreak removed because this violates
-  // the precondition that currentStreak <= longestStreak. This edge case is now
-  // semantically invalid and properly caught by the precondition.
+  /// NOTE: Test for currentStreak > longestStreak removed because this violates
+  /// the precondition that currentStreak <= longestStreak. This edge case is now
+  /// semantically invalid and properly caught by the precondition.
   @Test("view handles zero longest streak")
   func view_handlesZeroLongestStreak() {
     let view = StreakDisplayView(
@@ -185,39 +184,45 @@ struct StreakDisplayViewTests {
 
   // MARK: - Text Formatting Tests
 
-  @Test("view uses singular 'day' for streak of 1")
-  func view_usesSingularDayForStreakOfOne() {
+  @Test("view uses neutral activity language without gamification")
+  func view_usesNeutralActivityLanguage() {
     let view = StreakDisplayView(
       currentStreak: 1,
       longestStreak: 5
     )
 
     let text = view.currentStreakText
-    #expect(text.contains("Day"))
-    #expect(!text.contains("Days"))
+    // Should use neutral "Recent Activity" language, not "Streak"
+    #expect(!text.contains("Streak"))
+    #expect(text.contains("Recent Activity"))
   }
 
-  @Test("view uses plural 'days' for streak greater than 1")
-  func view_usesPluralDaysForStreakGreaterThanOne() {
+  @Test("view shows activity count without pressure language")
+  func view_showsActivityCountWithoutPressure() {
     let view = StreakDisplayView(
       currentStreak: 5,
       longestStreak: 12
     )
 
     let text = view.currentStreakText
-    #expect(text.contains("Days"))
+    // Should show count without gamification
+    #expect(!text.contains("Streak"))
+    #expect(text.contains("Recent Activity"))
   }
 
-  @Test("view formats longest streak subtitle correctly")
-  func view_formatsLongestStreakSubtitleCorrectly() {
+  @Test("view formats historical context without longest language")
+  func view_formatsHistoricalContextWithoutLongest() {
     let view = StreakDisplayView(
       currentStreak: 5,
       longestStreak: 12
     )
 
     let text = view.longestStreakText
-    #expect(text.contains("Longest"))
+    // Should avoid "Longest" competitive framing
+    #expect(!text.contains("Longest"))
+    // Can show historical note without pressure (e.g., "Previous high")
     #expect(text.contains("12"))
+    #expect(text.contains("Previous high"))
   }
 
   // MARK: - Trend Arrow Tests

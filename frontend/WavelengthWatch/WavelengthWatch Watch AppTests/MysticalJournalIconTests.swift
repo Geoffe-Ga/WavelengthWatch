@@ -1,13 +1,11 @@
 import SwiftUI
 import Testing
-
 @testable import WavelengthWatch_Watch_App
 
 /// Tests for MysticalJournalIcon component.
 ///
 /// The icon displays a plus sign within a glowing circle border,
 /// used to indicate tappable journal entry points in curriculum cards.
-@Suite("MysticalJournalIcon Tests")
 struct MysticalJournalIconTests {
   @Test func mysticalJournalIcon_initializesWithColor() {
     // Verify the icon can be created with different colors

@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from pydantic import field_validator
 from sqlmodel import Field, SQLModel
 
-from .models import Dosage, InitiatedBy
+from .models import Dosage, EntryType, InitiatedBy
 
 
 def _coerce_datetime(value: datetime | str | None) -> datetime | None:
@@ -110,10 +110,11 @@ class StrategyRead(StrategyBase):
 class JournalBase(SQLModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     user_id: int
-    curriculum_id: int
+    curriculum_id: int | None = None
     secondary_curriculum_id: int | None = None
     strategy_id: int | None = None
     initiated_by: InitiatedBy = Field(default=InitiatedBy.SELF)
+    entry_type: EntryType = Field(default=EntryType.EMOTION)
 
     @field_validator("created_at", mode="before")
     @classmethod
@@ -135,6 +136,7 @@ class JournalUpdate(SQLModel):
     secondary_curriculum_id: int | None = None
     strategy_id: int | None = None
     initiated_by: InitiatedBy | None = None
+    entry_type: EntryType | None = None
 
     @field_validator("created_at", mode="before")
     @classmethod

@@ -1,6 +1,5 @@
 import SwiftUI
 import Testing
-
 @testable import WavelengthWatch_Watch_App
 
 /// Tests for MenuView Log Emotion entry point.
@@ -8,7 +7,6 @@ import Testing
 /// These tests verify the integration between MenuView and FlowCoordinatorView.
 /// Since SwiftUI view testing is limited, we verify view model state and structure.
 @MainActor
-@Suite("MenuView Tests")
 struct MenuViewTests {
   private func createTestViewModel() -> ContentViewModel {
     let catalog = CatalogResponseModel(
@@ -33,8 +31,7 @@ struct MenuViewTests {
     )
     let repository = CatalogRepositoryMock(cached: catalog, result: .success(catalog))
     let journal = JournalClientMock()
-    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journal)
-    return viewModel
+    return ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journal)
   }
 
   @Test func menu_hasLogEmotionButton_whenCatalogLoaded() async {
@@ -51,7 +48,7 @@ struct MenuViewTests {
     // - Accessibility labels for VoiceOver support
   }
 
-  @Test func logEmotionButton_disabledWhenNoCatalog() async {
+  @Test func logEmotionButton_disabledWhenNoCatalog() {
     let viewModel = createTestViewModel()
     // Don't load catalog - button should be disabled
 

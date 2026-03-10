@@ -21,11 +21,32 @@ struct JournalReviewView: View {
   var body: some View {
     ScrollView {
       VStack(spacing: 20) {
-        // Title
-        Text("Review Your Entry")
+        // Title - different for REST entries
+        Text(flowViewModel.entryType == .rest ? "Honoring Rest" : "Review Your Entry")
           .font(.title3)
           .fontWeight(.semibold)
           .padding(.top)
+
+        // Supportive message for REST entries
+        if flowViewModel.entryType == .rest {
+          VStack(spacing: 8) {
+            Image(systemName: "moon.zzz.fill")
+              .font(.system(size: 36))
+              .foregroundColor(.purple.opacity(0.8))
+
+            Text("Your natural rhythm may be asking you to rest")
+              .font(.body)
+              .foregroundColor(.secondary)
+              .multilineTextAlignment(.center)
+              .padding(.horizontal)
+          }
+          .padding(.vertical, 12)
+          .frame(maxWidth: .infinity)
+          .background(
+            RoundedRectangle(cornerRadius: 12)
+              .fill(Color.purple.opacity(0.1))
+          )
+        }
 
         // Timestamp
         VStack(spacing: 4) {
@@ -46,30 +67,33 @@ struct JournalReviewView: View {
 
         Divider()
 
-        // Primary emotion
-        if let primary = flowViewModel.getPrimaryCurriculum() {
-          emotionCard(
-            label: "Primary Emotion",
-            expression: primary.expression,
-            dosage: primary.dosage
-          )
-        }
+        // Emotion details - only for EMOTION entries
+        if flowViewModel.entryType == .emotion {
+          // Primary emotion
+          if let primary = flowViewModel.getPrimaryCurriculum() {
+            emotionCard(
+              label: "Primary Emotion",
+              expression: primary.expression,
+              dosage: primary.dosage
+            )
+          }
 
-        // Secondary emotion (if selected)
-        if let secondary = flowViewModel.getSecondaryCurriculum() {
-          emotionCard(
-            label: "Secondary Emotion",
-            expression: secondary.expression,
-            dosage: secondary.dosage
-          )
-        }
+          // Secondary emotion (if selected)
+          if let secondary = flowViewModel.getSecondaryCurriculum() {
+            emotionCard(
+              label: "Secondary Emotion",
+              expression: secondary.expression,
+              dosage: secondary.dosage
+            )
+          }
 
-        // Strategy (if selected)
-        if let strategy = flowViewModel.getStrategy() {
-          strategyCard(strategy: strategy)
-        }
+          // Strategy (if selected)
+          if let strategy = flowViewModel.getStrategy() {
+            strategyCard(strategy: strategy)
+          }
 
-        Divider()
+          Divider()
+        }
 
         // Action buttons
         VStack(spacing: 12) {
@@ -136,7 +160,6 @@ struct JournalReviewView: View {
     Self.timestampFormatter.string(from: Date())
   }
 
-  @ViewBuilder
   private func emotionCard(label: String, expression: String, dosage: CatalogDosage) -> some View {
     VStack(alignment: .leading, spacing: 8) {
       Text(label)
@@ -167,7 +190,6 @@ struct JournalReviewView: View {
     .cornerRadius(10)
   }
 
-  @ViewBuilder
   private func strategyCard(strategy: CatalogStrategyModel) -> some View {
     VStack(alignment: .leading, spacing: 8) {
       Text("Strategy")
@@ -209,22 +231,31 @@ struct JournalReviewView: View {
   }
 
   private func submitEntry() {
-    guard let primaryCurriculumID = flowViewModel.primaryCurriculumID else {
-      errorMessage = "Primary emotion is required"
-      showingErrorAlert = true
-      return
-    }
-
     isSubmitting = true
 
     submitTask = Task { @MainActor in
       do {
-        _ = try await journalClient.submit(
-          curriculumID: primaryCurriculumID,
-          secondaryCurriculumID: flowViewModel.secondaryCurriculumID,
-          strategyID: flowViewModel.strategyID,
-          initiatedBy: flowViewModel.initiatedBy
-        )
+        if flowViewModel.entryType == .rest {
+          // Submit REST entry
+          _ = try await journalClient.submitRestPeriod(
+            initiatedBy: flowViewModel.initiatedBy
+          )
+        } else {
+          // Submit EMOTION entry
+          guard let primaryCurriculumID = flowViewModel.primaryCurriculumID else {
+            errorMessage = "Primary emotion is required"
+            showingErrorAlert = true
+            isSubmitting = false
+            return
+          }
+
+          _ = try await journalClient.submit(
+            curriculumID: primaryCurriculumID,
+            secondaryCurriculumID: flowViewModel.secondaryCurriculumID,
+            strategyID: flowViewModel.strategyID,
+            initiatedBy: flowViewModel.initiatedBy
+          )
+        }
 
         guard !Task.isCancelled else { return }
 
@@ -300,12 +331,27 @@ struct JournalReviewView: View {
         curriculumID: curriculumID,
         secondaryCurriculumID: secondaryCurriculumID,
         strategyID: strategyID,
-        initiatedBy: initiatedBy
+        initiatedBy: initiatedBy,
+        entryType: .emotion
+      )
+    }
+
+    func submitRestPeriod(
+      initiatedBy: InitiatedBy
+    ) async throws -> LocalJournalEntry {
+      try await Task.sleep(nanoseconds: 500_000_000) // Simulate network delay
+      return LocalJournalEntry(
+        createdAt: Date(),
+        userID: 123,
+        curriculumID: nil,
+        initiatedBy: initiatedBy,
+        entryType: .rest
       )
     }
   }
 
   let viewModel = JournalFlowViewModel(catalog: catalog, initiatedBy: .self_initiated)
+  viewModel.selectEntryType(.emotion)
   viewModel.selectPrimaryCurriculum(id: 1)
   viewModel.advanceStep()
   viewModel.advanceStep()

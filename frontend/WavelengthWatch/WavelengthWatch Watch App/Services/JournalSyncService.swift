@@ -166,7 +166,8 @@ final class JournalSyncService: ObservableObject {
             curriculumID: item.localEntry.curriculumID,
             secondaryCurriculumID: item.localEntry.secondaryCurriculumID,
             strategyID: item.localEntry.strategyID,
-            initiatedBy: item.localEntry.initiatedBy
+            initiatedBy: item.localEntry.initiatedBy,
+            entryType: item.localEntry.entryType
           )
 
           // Post to backend
