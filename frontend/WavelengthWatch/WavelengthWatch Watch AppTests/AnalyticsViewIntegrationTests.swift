@@ -125,7 +125,8 @@ struct AnalyticsViewIntegrationTests {
         curriculumID: 1,
         secondaryCurriculumID: nil,
         strategyID: nil,
-        initiatedBy: .self_initiated
+        initiatedBy: .self_initiated,
+        entryType: .emotion
       ),
       LocalJournalEntry(
         createdAt: Date().addingTimeInterval(-86400),
@@ -133,7 +134,8 @@ struct AnalyticsViewIntegrationTests {
         curriculumID: 2,
         secondaryCurriculumID: nil,
         strategyID: nil,
-        initiatedBy: .self_initiated
+        initiatedBy: .self_initiated,
+        entryType: .emotion
       ),
     ]
   }

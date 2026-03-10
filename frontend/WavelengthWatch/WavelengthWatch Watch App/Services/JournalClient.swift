@@ -1,5 +1,10 @@
 import Foundation
 
+enum EntryType: String, Codable {
+  case emotion
+  case rest
+}
+
 enum InitiatedBy: String, Codable {
   case self_initiated = "self"
   case scheduled
@@ -7,10 +12,11 @@ enum InitiatedBy: String, Codable {
 
 struct JournalResponseModel: Codable, Equatable {
   let id: Int
-  let curriculumID: Int
+  let curriculumID: Int?
   let secondaryCurriculumID: Int?
   let strategyID: Int?
   let initiatedBy: InitiatedBy
+  let entryType: EntryType
 
   enum CodingKeys: String, CodingKey {
     case id
@@ -18,16 +24,18 @@ struct JournalResponseModel: Codable, Equatable {
     case secondaryCurriculumID = "secondary_curriculum_id"
     case strategyID = "strategy_id"
     case initiatedBy = "initiated_by"
+    case entryType = "entry_type"
   }
 }
 
 struct JournalPayload: Codable {
   let createdAt: Date
   let userID: Int
-  let curriculumID: Int
+  let curriculumID: Int?
   let secondaryCurriculumID: Int?
   let strategyID: Int?
   let initiatedBy: InitiatedBy
+  let entryType: EntryType
 
   enum CodingKeys: String, CodingKey {
     case createdAt = "created_at"
@@ -36,6 +44,7 @@ struct JournalPayload: Codable {
     case secondaryCurriculumID = "secondary_curriculum_id"
     case strategyID = "strategy_id"
     case initiatedBy = "initiated_by"
+    case entryType = "entry_type"
   }
 }
 
@@ -45,6 +54,11 @@ protocol JournalClientProtocol {
     curriculumID: Int,
     secondaryCurriculumID: Int?,
     strategyID: Int?,
+    initiatedBy: InitiatedBy
+  ) async throws -> LocalJournalEntry
+
+  @discardableResult
+  func submitRestPeriod(
     initiatedBy: InitiatedBy
   ) async throws -> LocalJournalEntry
 }
@@ -114,7 +128,8 @@ final class JournalClient: JournalClientProtocol {
       curriculumID: curriculumID,
       secondaryCurriculumID: secondaryCurriculumID,
       strategyID: strategyID,
-      initiatedBy: initiatedBy
+      initiatedBy: initiatedBy,
+      entryType: .emotion
     )
 
     // 2. Save to local repository first (always)
@@ -129,7 +144,8 @@ final class JournalClient: JournalClientProtocol {
           curriculumID: entry.curriculumID,
           secondaryCurriculumID: entry.secondaryCurriculumID,
           strategyID: entry.strategyID,
-          initiatedBy: entry.initiatedBy
+          initiatedBy: entry.initiatedBy,
+          entryType: .emotion
         )
 
         let response: JournalResponseModel = try await apiClient.post(APIPath.journal, body: payload)
@@ -146,6 +162,56 @@ final class JournalClient: JournalClientProtocol {
 
         // Don't throw - entry is still saved locally
         // TODO: Consider adding user-visible feedback (notification badge or status indicator)
+      }
+    }
+
+    return entry
+  }
+
+  @discardableResult
+  func submitRestPeriod(
+    initiatedBy: InitiatedBy = .self_initiated
+  ) async throws -> LocalJournalEntry {
+    // 1. Create local REST entry with pending sync status
+    var entry = LocalJournalEntry(
+      createdAt: dateProvider(),
+      userID: numericUserIdentifier(),
+      curriculumID: nil,
+      secondaryCurriculumID: nil,
+      strategyID: nil,
+      initiatedBy: initiatedBy,
+      entryType: .rest
+    )
+
+    // 2. Save to local repository first (always)
+    try repository.save(entry)
+
+    // 3. Attempt backend sync if enabled
+    if syncSettings.cloudSyncEnabled {
+      do {
+        let payload = JournalPayload(
+          createdAt: entry.createdAt,
+          userID: entry.userID,
+          curriculumID: nil,
+          secondaryCurriculumID: nil,
+          strategyID: nil,
+          initiatedBy: entry.initiatedBy,
+          entryType: .rest
+        )
+
+        let response: JournalResponseModel = try await apiClient.post(APIPath.journal, body: payload)
+
+        // Update entry with server ID and synced status
+        entry = LocalJournalEntry.synced(from: response, localEntry: entry)
+        try repository.update(entry)
+      } catch {
+        // Sync failed - mark as failed for retry
+        print("⚠️ Journal sync failed for REST entry \(entry.id): \(error). Entry saved locally with failed sync status.")
+        entry.syncStatus = .failed
+        entry.lastSyncAttempt = dateProvider()
+        try repository.update(entry)
+
+        // Don't throw - entry is still saved locally
       }
     }
 

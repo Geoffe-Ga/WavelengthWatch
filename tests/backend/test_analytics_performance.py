@@ -189,18 +189,17 @@ def test_analytics_growth_indicators_performance(
 
 
 def test_cache_effectiveness_overview(perf_client: TestClient):
-    """Test that repeated requests complete within performance budget.
+    """Test that cached responses meet performance budget.
 
-    Rather than comparing cold vs warm times (which is unreliable on
-    shared CI runners due to variable system load), this test verifies
-    that cached responses stay within the spec target of <500ms.
+    Uses a deterministic <500ms budget with 3-sample average instead of
+    unreliable cold-vs-warm comparisons that flake on shared CI runners.
     """
     params = create_test_entries(perf_client, 1000, user_id=6000)
 
-    # Warm up with first request
+    # Warm up
     measure_response_time(perf_client, "/api/v1/analytics/overview", params)
 
-    # Measure 3 subsequent requests (should benefit from warm caches)
+    # Measure 3 subsequent requests
     times = [
         measure_response_time(perf_client, "/api/v1/analytics/overview", params)
         for _ in range(3)
@@ -209,12 +208,12 @@ def test_cache_effectiveness_overview(perf_client: TestClient):
 
     assert avg_time < 500, (
         f"Cached overview too slow: avg={avg_time:.1f}ms "
-        f"(target: <500ms, times={[f'{t:.1f}' for t in times]})"
+        f"(target: <500ms, samples: {[f'{t:.1f}' for t in times]})"
     )
 
     print(
         f"\n✅ Cache effectiveness: avg={avg_time:.1f}ms "
-        f"(times={[f'{t:.1f}' for t in times]})"
+        f"(samples: {[f'{t:.1f}' for t in times]})"
     )
 
 

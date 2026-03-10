@@ -397,7 +397,7 @@ struct AnalyticsViewModelTests {
 
     let mockRepository = MockJournalRepository()
     mockRepository.entriesToReturn = [
-      LocalJournalEntry(createdAt: Date(), userID: 1, curriculumID: 1),
+      LocalJournalEntry(createdAt: Date(), userID: 1, curriculumID: 1, entryType: .emotion),
     ]
 
     let mockCatalog = MockCatalogRepository()

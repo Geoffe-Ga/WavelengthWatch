@@ -39,8 +39,8 @@ struct LocalJournalEntry: Codable, Identifiable, Equatable {
   /// Pseudo-unique user identifier derived from device.
   let userID: Int
 
-  /// Primary emotion curriculum ID (required).
-  let curriculumID: Int
+  /// Primary emotion curriculum ID (optional for REST entries).
+  let curriculumID: Int?
 
   /// Secondary emotion curriculum ID (optional).
   let secondaryCurriculumID: Int?
@@ -50,6 +50,9 @@ struct LocalJournalEntry: Codable, Identifiable, Equatable {
 
   /// How the entry was initiated.
   let initiatedBy: InitiatedBy
+
+  /// Type of journal entry (emotion or rest).
+  let entryType: EntryType
 
   /// Current sync status with backend.
   var syncStatus: SyncStatus
@@ -66,18 +69,20 @@ struct LocalJournalEntry: Codable, Identifiable, Equatable {
   ///   - id: Local UUID (defaults to new UUID)
   ///   - createdAt: Entry creation timestamp
   ///   - userID: Pseudo-unique user identifier
-  ///   - curriculumID: Primary emotion curriculum ID
+  ///   - curriculumID: Primary emotion curriculum ID (nil for REST entries)
   ///   - secondaryCurriculumID: Optional secondary emotion
   ///   - strategyID: Optional self-care strategy
   ///   - initiatedBy: Entry initiation source
+  ///   - entryType: Type of entry (emotion or rest)
   init(
     id: UUID = UUID(),
     createdAt: Date,
     userID: Int,
-    curriculumID: Int,
+    curriculumID: Int?,
     secondaryCurriculumID: Int? = nil,
     strategyID: Int? = nil,
-    initiatedBy: InitiatedBy = .self_initiated
+    initiatedBy: InitiatedBy = .self_initiated,
+    entryType: EntryType = .emotion
   ) {
     self.id = id
     self.serverId = nil
@@ -87,9 +92,15 @@ struct LocalJournalEntry: Codable, Identifiable, Equatable {
     self.secondaryCurriculumID = secondaryCurriculumID
     self.strategyID = strategyID
     self.initiatedBy = initiatedBy
+    self.entryType = entryType
     self.syncStatus = .pending
     self.lastSyncAttempt = nil
     self.retryCount = 0
+  }
+
+  /// Whether this is a REST entry (for filtering in analytics).
+  var isRestEntry: Bool {
+    entryType == .rest
   }
 
   /// Creates an entry from a backend response after successful sync.

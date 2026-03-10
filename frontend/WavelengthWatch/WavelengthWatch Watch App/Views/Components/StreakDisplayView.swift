@@ -1,12 +1,13 @@
 import SwiftUI
 
-/// A reusable component for displaying journal entry streak statistics.
+/// A reusable component for displaying journal entry activity statistics.
 ///
-/// Shows current streak with fire icon, longest streak,
-/// and trend indicators to show progress toward goals.
+/// Shows recent activity with neutral calendar icon, historical context,
+/// and trend indicators to reflect natural engagement patterns.
 ///
 /// ## Usage
 /// ```swift
+/// // Basic activity display
 /// StreakDisplayView(
 ///   currentStreak: 5,
 ///   longestStreak: 12
@@ -15,8 +16,8 @@ import SwiftUI
 ///
 /// ## Analytics Context
 /// Part of the analytics feature (Issue #195) for displaying temporal patterns
-/// to users. Supports growth indicators by showing trend arrows based on
-/// current vs longest streak comparison.
+/// and consistency metrics to users. Supports validation of natural rhythms without
+/// gamification pressure. Updated in Issue #280 to remove streak language.
 struct StreakDisplayView: View {
   let currentStreak: Int
   let longestStreak: Int
@@ -43,10 +44,11 @@ struct StreakDisplayView: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 8) {
-      // Current streak with fire icon
+      // Recent activity with neutral calendar icon
       HStack(spacing: 6) {
-        Text("🔥")
+        Image(systemName: "calendar")
           .font(.title2)
+          .foregroundColor(.purple)
 
         VStack(alignment: .leading, spacing: 2) {
           Text(currentStreakText)
@@ -76,16 +78,15 @@ struct StreakDisplayView: View {
 
   // MARK: - Computed Properties
 
-  /// Formatted text for current streak with proper pluralization
+  /// Formatted text for recent activity without gamification language
   var currentStreakText: String {
-    let dayWord = currentStreak == 1 ? "Day" : "Days"
-    return "\(currentStreak) \(dayWord) Streak"
+    "Recent Activity"
   }
 
-  /// Formatted text for longest streak subtitle
+  /// Formatted text for historical context without competitive framing
   var longestStreakText: String {
     let dayWord = longestStreak == 1 ? "day" : "days"
-    return "Longest: \(longestStreak) \(dayWord)"
+    return "Previous high: \(longestStreak) \(dayWord)"
   }
 
   /// Trend indicator based on current vs longest streak comparison
@@ -140,47 +141,47 @@ enum TrendIndicator: Equatable {
 
 // MARK: - Previews
 
-#Preview("Active Streak") {
+#Preview("Recent Activity") {
   StreakDisplayView(
     currentStreak: 5,
     longestStreak: 12
   )
   .padding()
-  .previewDisplayName("Active Streak")
+  .previewDisplayName("Recent Activity")
 }
 
-#Preview("At Record") {
+#Preview("At Previous High") {
   StreakDisplayView(
     currentStreak: 15,
     longestStreak: 15
   )
   .padding()
-  .previewDisplayName("At Personal Record")
+  .previewDisplayName("At Previous High")
 }
 
-#Preview("No Streak") {
+#Preview("Resting Period") {
   StreakDisplayView(
     currentStreak: 0,
     longestStreak: 12
   )
   .padding()
-  .previewDisplayName("No Current Streak")
+  .previewDisplayName("Resting Period")
 }
 
-#Preview("Single Day") {
+#Preview("Starting Out") {
   StreakDisplayView(
     currentStreak: 1,
     longestStreak: 1
   )
   .padding()
-  .previewDisplayName("Single Day")
+  .previewDisplayName("Starting Out")
 }
 
-#Preview("Large Numbers") {
+#Preview("Long-term Practice") {
   StreakDisplayView(
     currentStreak: 365,
     longestStreak: 400
   )
   .padding()
-  .previewDisplayName("Large Numbers")
+  .previewDisplayName("Long-term Practice")
 }

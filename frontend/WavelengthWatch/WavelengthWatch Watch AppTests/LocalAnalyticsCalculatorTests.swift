@@ -1143,4 +1143,158 @@ struct LocalAnalyticsCalculatorTests {
     // Trend = 1.0 - 0.0 = 1.0
     #expect(abs(result.medicinalTrend - 1.0) < 0.01)
   }
+
+  // MARK: - REST Entry Filtering Tests
+
+  @Test("calculateOverview excludes REST entries from emotion metrics")
+  func calculateOverview_excludesRestEntries() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let now = Date()
+    // 2 emotion entries (1 medicinal, 1 toxic) + 3 REST entries = 5 total
+    let entries = [
+      LocalJournalEntry(
+        createdAt: now,
+        userID: 1,
+        curriculumID: 1,
+        entryType: .emotion
+      ), // Medicinal
+      LocalJournalEntry(
+        createdAt: now,
+        userID: 1,
+        curriculumID: 2,
+        entryType: .emotion
+      ), // Toxic
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: nil, entryType: .rest), // REST
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: nil, entryType: .rest), // REST
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: nil, entryType: .rest), // REST
+    ]
+
+    let result = calculator.calculateOverview(
+      entries: entries,
+      startDate: now.addingTimeInterval(-86400),
+      endDate: now
+    )
+
+    // Total should include all entries (5)
+    #expect(result.totalEntries == 5)
+    // Medicinal ratio should be 50% (1 of 2 emotion entries)
+    #expect(abs(result.medicinalRatio - 0.50) < 0.01)
+    // Unique emotions should be 2 (not counting REST)
+    #expect(result.uniqueEmotions == 2)
+  }
+
+  @Test("calculateEmotionalLandscape excludes REST entries")
+  func calculateEmotionalLandscape_excludesRestEntries() throws {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let now = Date()
+    // 2 emotion entries + 3 REST entries
+    let entries = [
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 1, entryType: .emotion), // Layer 1
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 3, entryType: .emotion), // Layer 2
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: nil, entryType: .rest),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: nil, entryType: .rest),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: nil, entryType: .rest),
+    ]
+
+    let result = calculator.calculateEmotionalLandscape(entries: entries, limit: 10)
+
+    // Should only count 2 emotion entries
+    #expect(result.layerDistribution.count == 2)
+    #expect(result.topEmotions.count == 2)
+
+    // Percentages should be based on 2 entries, not 5
+    let layer1 = result.layerDistribution.first { $0.layerId == 1 }
+    #expect(try abs(#require(layer1?.percentage) - 50.0) < 0.1) // 1 of 2 = 50%
+  }
+
+  @Test("calculateEmotionalLandscape returns empty when only REST entries")
+  func calculateEmotionalLandscape_onlyRestEntries() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let now = Date()
+    let entries = [
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: nil, entryType: .rest),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: nil, entryType: .rest),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: nil, entryType: .rest),
+    ]
+
+    let result = calculator.calculateEmotionalLandscape(entries: entries, limit: 10)
+
+    #expect(result.layerDistribution.isEmpty)
+    #expect(result.phaseDistribution.isEmpty)
+    #expect(result.topEmotions.isEmpty)
+  }
+
+  @Test("calculateGrowthIndicators excludes REST entries")
+  func calculateGrowthIndicators_excludesRestEntries() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let now = Date()
+    // 2 emotion entries from different layers + 2 REST entries
+    let entries = [
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 1, entryType: .emotion), // Layer 1
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: 3, entryType: .emotion), // Layer 2
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: nil, entryType: .rest),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: nil, entryType: .rest),
+    ]
+
+    let result = calculator.calculateGrowthIndicators(
+      entries: entries,
+      startDate: now.addingTimeInterval(-86400),
+      endDate: now
+    )
+
+    // Should count 2 layers (not affected by REST entries)
+    #expect(result.layerDiversity == 2)
+    #expect(result.phaseCoverage == 2)
+  }
+
+  @Test("calculateGrowthIndicators returns zero when only REST entries")
+  func calculateGrowthIndicators_onlyRestEntries() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let now = Date()
+    let entries = [
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: nil, entryType: .rest),
+      LocalJournalEntry(createdAt: now, userID: 1, curriculumID: nil, entryType: .rest),
+    ]
+
+    let result = calculator.calculateGrowthIndicators(
+      entries: entries,
+      startDate: now.addingTimeInterval(-86400),
+      endDate: now
+    )
+
+    #expect(result.medicinalTrend == 0.0)
+    #expect(result.layerDiversity == 0)
+    #expect(result.phaseCoverage == 0)
+  }
+
+  @Test("calculateOverview handles optional curriculumID correctly")
+  func calculateOverview_handlesOptionalCurriculumID() {
+    let calculator = LocalAnalyticsCalculator(catalog: testCatalog)
+    let now = Date()
+    // Mix of emotion entries with curriculumID and REST entries without
+    let entries = [
+      LocalJournalEntry(
+        createdAt: now,
+        userID: 1,
+        curriculumID: 1,
+        entryType: .emotion
+      ), // Valid emotion
+      LocalJournalEntry(
+        createdAt: now,
+        userID: 1,
+        curriculumID: nil,
+        entryType: .rest
+      ), // REST without curriculum
+    ]
+
+    let result = calculator.calculateOverview(
+      entries: entries,
+      startDate: now.addingTimeInterval(-86400),
+      endDate: now
+    )
+
+    // Should not crash and should correctly count unique emotions
+    #expect(result.uniqueEmotions == 1)
+    #expect(result.totalEntries == 2)
+  }
 }

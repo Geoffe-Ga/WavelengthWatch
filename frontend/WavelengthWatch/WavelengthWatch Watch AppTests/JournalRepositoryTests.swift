@@ -11,7 +11,8 @@ struct JournalRepositoryTests {
       createdAt: Date(),
       userID: 123,
       curriculumID: 1,
-      initiatedBy: .self_initiated
+      initiatedBy: .self_initiated,
+      entryType: .emotion
     )
 
     try repo.save(entry)
@@ -47,7 +48,8 @@ struct JournalRepositoryTests {
       createdAt: Date(),
       userID: 123,
       curriculumID: 1,
-      initiatedBy: .self_initiated
+      initiatedBy: .self_initiated,
+      entryType: .emotion
     )
 
     try repo.save(entry)
@@ -65,13 +67,15 @@ struct JournalRepositoryTests {
       createdAt: now.addingTimeInterval(-100),
       userID: 123,
       curriculumID: 1,
-      initiatedBy: .self_initiated
+      initiatedBy: .self_initiated,
+      entryType: .emotion
     )
     let entry2 = LocalJournalEntry(
       createdAt: now,
       userID: 123,
       curriculumID: 2,
-      initiatedBy: .self_initiated
+      initiatedBy: .self_initiated,
+      entryType: .emotion
     )
 
     try repo.save(entry1)
@@ -90,7 +94,8 @@ struct JournalRepositoryTests {
       createdAt: Date(),
       userID: 123,
       curriculumID: 1,
-      initiatedBy: .self_initiated
+      initiatedBy: .self_initiated,
+      entryType: .emotion
     )
     pending.syncStatus = .pending
 
@@ -98,7 +103,8 @@ struct JournalRepositoryTests {
       createdAt: Date(),
       userID: 123,
       curriculumID: 2,
-      initiatedBy: .self_initiated
+      initiatedBy: .self_initiated,
+      entryType: .emotion
     )
     failed.syncStatus = .failed
 
@@ -106,7 +112,8 @@ struct JournalRepositoryTests {
       createdAt: Date(),
       userID: 123,
       curriculumID: 3,
-      initiatedBy: .self_initiated
+      initiatedBy: .self_initiated,
+      entryType: .emotion
     )
     synced.syncStatus = .synced
 
@@ -127,13 +134,15 @@ struct JournalRepositoryTests {
       createdAt: Date(),
       userID: 123,
       curriculumID: 1,
-      initiatedBy: .self_initiated
+      initiatedBy: .self_initiated,
+      entryType: .emotion
     ))
     try repo.save(LocalJournalEntry(
       createdAt: Date(),
       userID: 123,
       curriculumID: 2,
-      initiatedBy: .self_initiated
+      initiatedBy: .self_initiated,
+      entryType: .emotion
     ))
 
     let count = try repo.count()
@@ -147,7 +156,8 @@ struct JournalRepositoryTests {
       createdAt: Date(),
       userID: 123,
       curriculumID: 1,
-      initiatedBy: .self_initiated
+      initiatedBy: .self_initiated,
+      entryType: .emotion
     ))
 
     repo.clear()
@@ -230,7 +240,8 @@ struct JournalRepositoryTests {
       createdAt: Date(),
       userID: 123,
       curriculumID: 1,
-      initiatedBy: .self_initiated
+      initiatedBy: .self_initiated,
+      entryType: .emotion
     )
 
     try repo.save(entry)
@@ -257,13 +268,15 @@ struct JournalRepositoryTests {
       createdAt: now.addingTimeInterval(-100),
       userID: 123,
       curriculumID: 1,
-      initiatedBy: .self_initiated
+      initiatedBy: .self_initiated,
+      entryType: .emotion
     )
     let entry2 = LocalJournalEntry(
       createdAt: now,
       userID: 123,
       curriculumID: 2,
-      initiatedBy: .self_initiated
+      initiatedBy: .self_initiated,
+      entryType: .emotion
     )
 
     try repo.save(entry1)
@@ -291,7 +304,8 @@ struct JournalRepositoryTests {
       createdAt: Date(),
       userID: 123,
       curriculumID: 1,
-      initiatedBy: .self_initiated
+      initiatedBy: .self_initiated,
+      entryType: .emotion
     )
     pending.syncStatus = .pending
 
@@ -299,7 +313,8 @@ struct JournalRepositoryTests {
       createdAt: Date(),
       userID: 123,
       curriculumID: 2,
-      initiatedBy: .self_initiated
+      initiatedBy: .self_initiated,
+      entryType: .emotion
     )
     failed.syncStatus = .failed
 
@@ -307,7 +322,8 @@ struct JournalRepositoryTests {
       createdAt: Date(),
       userID: 123,
       curriculumID: 3,
-      initiatedBy: .self_initiated
+      initiatedBy: .self_initiated,
+      entryType: .emotion
     )
     synced.syncStatus = .synced
 
@@ -340,13 +356,15 @@ struct JournalRepositoryTests {
       createdAt: Date(),
       userID: 123,
       curriculumID: 1,
-      initiatedBy: .self_initiated
+      initiatedBy: .self_initiated,
+      entryType: .emotion
     ))
     try repo.save(LocalJournalEntry(
       createdAt: Date(),
       userID: 123,
       curriculumID: 2,
-      initiatedBy: .self_initiated
+      initiatedBy: .self_initiated,
+      entryType: .emotion
     ))
 
     let count = try repo.count()

@@ -119,6 +119,9 @@ final class LocalAnalyticsCalculator: LocalAnalyticsCalculatorProtocol {
       )
     }
 
+    // Filter to emotion entries only (exclude REST entries)
+    let emotionEntries = entries.filter { $0.entryType == .emotion }
+
     let totalEntries = entries.count
 
     // Sort by created date descending for streak and last check-in
@@ -135,36 +138,37 @@ final class LocalAnalyticsCalculator: LocalAnalyticsCalculatorProtocol {
     let daysInPeriod = calendar.dateComponents([.day], from: startDate, to: endDate).day! + 1
     let avgFrequency = Double(totalEntries) / Double(daysInPeriod)
 
-    // Medicinal ratio
-    let medicinalRatio = calculateMedicinalRatio(entries: entries)
+    // Medicinal ratio (emotion entries only)
+    let medicinalRatio = calculateMedicinalRatio(entries: emotionEntries)
 
-    // Medicinal trend (compare to previous period)
+    // Medicinal trend (compare to previous period, emotion entries only)
     let duration = endDate.timeIntervalSince(startDate)
     let prevStartDate = startDate.addingTimeInterval(-duration)
     let prevEndDate = startDate
     let medicinalTrend = calculateMedicinalTrend(
-      entries: entries,
+      entries: emotionEntries,
       currentStart: startDate,
       currentEnd: endDate,
       prevStart: prevStartDate,
       prevEnd: prevEndDate
     )
 
-    // Dominant layer and phase (last 7 days)
+    // Dominant layer and phase (last 7 days, emotion entries only)
     let sevenDaysAgo = endDate.addingTimeInterval(-7 * 86400)
-    let recentEntries = entries.filter { $0.createdAt >= sevenDaysAgo && $0.createdAt <= endDate }
-    let (dominantLayerId, dominantPhaseId) = getDominantLayerAndPhase(entries: recentEntries)
+    let recentEmotionEntries = emotionEntries.filter { $0.createdAt >= sevenDaysAgo && $0.createdAt <= endDate }
+    let (dominantLayerId, dominantPhaseId) = getDominantLayerAndPhase(entries: recentEmotionEntries)
 
-    // Unique emotions (distinct curriculum IDs)
-    let uniqueEmotions = Set(entries.map(\.curriculumID)).count
+    // Unique emotions (distinct curriculum IDs, emotion entries only)
+    let uniqueEmotions = Set(emotionEntries.compactMap(\.curriculumID)).count
 
     // Strategies used (distinct strategy IDs, excluding nil)
     let strategiesUsed = Set(entries.compactMap(\.strategyID)).count
 
-    // Secondary emotions percentage (as decimal 0-1, not 0-100)
-    let entriesWithSecondary = entries.count(where: { $0.secondaryCurriculumID != nil })
-    let secondaryEmotionsPct = totalEntries > 0
-      ? Double(entriesWithSecondary) / Double(totalEntries)
+    // Secondary emotions percentage (as decimal 0-1, not 0-100, emotion entries only)
+    let entriesWithSecondary = emotionEntries.count(where: { $0.secondaryCurriculumID != nil })
+    let emotionEntriesCount = emotionEntries.count
+    let secondaryEmotionsPct = emotionEntriesCount > 0
+      ? Double(entriesWithSecondary) / Double(emotionEntriesCount)
       : 0.0
 
     return AnalyticsOverview(
@@ -196,12 +200,25 @@ final class LocalAnalyticsCalculator: LocalAnalyticsCalculatorProtocol {
       )
     }
 
-    let totalEntries = entries.count
+    // Filter to emotion entries only (exclude REST entries)
+    let emotionEntries = entries.filter { $0.entryType == .emotion }
+
+    guard !emotionEntries.isEmpty else {
+      return EmotionalLandscape(
+        layerDistribution: [],
+        phaseDistribution: [],
+        topEmotions: []
+      )
+    }
+
+    let totalEntries = emotionEntries.count
 
     // Calculate layer distribution
     var layerCounts: [Int: Int] = [:]
-    for entry in entries {
-      if let info = curriculumLookup[entry.curriculumID] {
+    for entry in emotionEntries {
+      if let curriculumId = entry.curriculumID,
+         let info = curriculumLookup[curriculumId]
+      {
         layerCounts[info.layerId, default: 0] += 1
       }
     }
@@ -216,8 +233,10 @@ final class LocalAnalyticsCalculator: LocalAnalyticsCalculatorProtocol {
 
     // Calculate phase distribution
     var phaseCounts: [Int: Int] = [:]
-    for entry in entries {
-      if let info = curriculumLookup[entry.curriculumID] {
+    for entry in emotionEntries {
+      if let curriculumId = entry.curriculumID,
+         let info = curriculumLookup[curriculumId]
+      {
         phaseCounts[info.phaseId, default: 0] += 1
       }
     }
@@ -234,12 +253,14 @@ final class LocalAnalyticsCalculator: LocalAnalyticsCalculatorProtocol {
     var emotionCounts: [Int: Int] = [:]
 
     // Count primary emotions
-    for entry in entries {
-      emotionCounts[entry.curriculumID, default: 0] += 1
+    for entry in emotionEntries {
+      if let curriculumId = entry.curriculumID {
+        emotionCounts[curriculumId, default: 0] += 1
+      }
     }
 
     // Count secondary emotions
-    for entry in entries {
+    for entry in emotionEntries {
       if let secondaryId = entry.secondaryCurriculumID {
         emotionCounts[secondaryId, default: 0] += 1
       }
@@ -436,8 +457,19 @@ final class LocalAnalyticsCalculator: LocalAnalyticsCalculatorProtocol {
       )
     }
 
+    // Filter to emotion entries only (exclude REST entries)
+    let emotionEntries = entries.filter { $0.entryType == .emotion }
+
+    guard !emotionEntries.isEmpty else {
+      return GrowthIndicators(
+        medicinalTrend: 0.0,
+        layerDiversity: 0,
+        phaseCoverage: 0
+      )
+    }
+
     // Filter entries to the specified date range
-    let filteredEntries = entries.filter {
+    let filteredEntries = emotionEntries.filter {
       $0.createdAt >= startDate && $0.createdAt <= endDate
     }
 
@@ -454,7 +486,7 @@ final class LocalAnalyticsCalculator: LocalAnalyticsCalculatorProtocol {
     let prevStartDate = startDate.addingTimeInterval(-duration)
     let prevEndDate = startDate
     let medicinalTrend = calculateMedicinalTrend(
-      entries: entries,
+      entries: emotionEntries,
       currentStart: startDate,
       currentEnd: endDate,
       prevStart: prevStartDate,
@@ -464,7 +496,9 @@ final class LocalAnalyticsCalculator: LocalAnalyticsCalculatorProtocol {
     // Calculate layer diversity (unique layers accessed in date range)
     var uniqueLayers = Set<Int>()
     for entry in filteredEntries {
-      if let info = curriculumLookup[entry.curriculumID] {
+      if let curriculumId = entry.curriculumID,
+         let info = curriculumLookup[curriculumId]
+      {
         uniqueLayers.insert(info.layerId)
       }
     }
@@ -473,7 +507,9 @@ final class LocalAnalyticsCalculator: LocalAnalyticsCalculatorProtocol {
     // Calculate phase coverage (unique phases accessed in date range)
     var uniquePhases = Set<Int>()
     for entry in filteredEntries {
-      if let info = curriculumLookup[entry.curriculumID] {
+      if let curriculumId = entry.curriculumID,
+         let info = curriculumLookup[curriculumId]
+      {
         uniquePhases.insert(info.phaseId)
       }
     }
@@ -564,7 +600,9 @@ final class LocalAnalyticsCalculator: LocalAnalyticsCalculatorProtocol {
     var totalCount = 0
 
     for entry in entries {
-      if let info = curriculumLookup[entry.curriculumID] {
+      if let curriculumId = entry.curriculumID,
+         let info = curriculumLookup[curriculumId]
+      {
         totalCount += 1
         if info.dosage == .medicinal {
           medicinalCount += 1
@@ -596,11 +634,18 @@ final class LocalAnalyticsCalculator: LocalAnalyticsCalculatorProtocol {
   private func getDominantLayerAndPhase(entries: [LocalJournalEntry]) -> (Int?, Int?) {
     guard !entries.isEmpty else { return (nil, nil) }
 
+    // Filter to emotion entries only (exclude REST entries)
+    let emotionEntries = entries.filter { $0.entryType == .emotion }
+
+    guard !emotionEntries.isEmpty else { return (nil, nil) }
+
     var layerCounts: [Int: Int] = [:]
     var phaseCounts: [Int: Int] = [:]
 
-    for entry in entries {
-      if let info = curriculumLookup[entry.curriculumID] {
+    for entry in emotionEntries {
+      if let curriculumId = entry.curriculumID,
+         let info = curriculumLookup[curriculumId]
+      {
         layerCounts[info.layerId, default: 0] += 1
         phaseCounts[info.phaseId, default: 0] += 1
       }

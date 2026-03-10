@@ -1771,7 +1771,7 @@ struct AnalyticsView: View {
           .fill(Color.secondary.opacity(0.15))
       )
 
-      // Streak Display
+      // Recent Activity Display
       if overview.currentStreak > 0 || overview.totalEntries >= 2 {
         StreakDisplayView(
           currentStreak: overview.currentStreak,
