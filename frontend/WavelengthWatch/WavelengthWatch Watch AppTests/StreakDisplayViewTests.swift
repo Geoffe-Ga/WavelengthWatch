@@ -26,28 +26,6 @@ struct StreakDisplayViewTests {
     #expect(view.longestStreak == 12)
   }
 
-  @Test("view displays consistency score when provided")
-  func view_displaysConsistencyScore() {
-    let view = StreakDisplayView(
-      currentStreak: 5,
-      longestStreak: 12,
-      consistencyScore: 83.5
-    )
-
-    #expect(view.consistencyScore == 83.5)
-  }
-
-  @Test("view handles nil consistency score")
-  func view_handlesNilConsistencyScore() {
-    let view = StreakDisplayView(
-      currentStreak: 5,
-      longestStreak: 12,
-      consistencyScore: nil
-    )
-
-    #expect(view.consistencyScore == nil)
-  }
-
   // MARK: - Trend Indicator Tests
 
   // NOTE: Test for currentStreak > longestStreak removed because this now triggers
@@ -148,41 +126,6 @@ struct StreakDisplayViewTests {
     #expect(view.longestStreak == 400)
   }
 
-  // MARK: - Consistency Score Tests
-
-  @Test("view handles zero consistency score")
-  func view_handlesZeroConsistencyScore() {
-    let view = StreakDisplayView(
-      currentStreak: 0,
-      longestStreak: 5,
-      consistencyScore: 0.0
-    )
-
-    #expect(view.consistencyScore == 0.0)
-  }
-
-  @Test("view handles perfect consistency score")
-  func view_handlesPerfectConsistencyScore() {
-    let view = StreakDisplayView(
-      currentStreak: 30,
-      longestStreak: 30,
-      consistencyScore: 100.0
-    )
-
-    #expect(view.consistencyScore == 100.0)
-  }
-
-  @Test("view handles decimal consistency score")
-  func view_handlesDecimalConsistencyScore() {
-    let view = StreakDisplayView(
-      currentStreak: 25,
-      longestStreak: 30,
-      consistencyScore: 83.33
-    )
-
-    #expect(view.consistencyScore == 83.33)
-  }
-
   // MARK: - Text Formatting Tests
 
   @Test("view uses singular 'day' for streak of 1")
@@ -251,13 +194,11 @@ struct StreakDisplayViewTests {
   func view_showsAllComponentsTogether() {
     let view = StreakDisplayView(
       currentStreak: 25,
-      longestStreak: 30,
-      consistencyScore: 83.33
+      longestStreak: 30
     )
 
     #expect(view.currentStreak == 25)
     #expect(view.longestStreak == 30)
-    #expect(view.consistencyScore == 83.33)
     #expect(view.trendIndicator == .resting)
     #expect(view.trendArrow == "↓")
   }
@@ -271,7 +212,6 @@ struct StreakDisplayViewTests {
 
     #expect(view.currentStreak == 0)
     #expect(view.longestStreak == 0)
-    #expect(view.consistencyScore == nil)
     #expect(view.trendIndicator == .stable)
   }
 }

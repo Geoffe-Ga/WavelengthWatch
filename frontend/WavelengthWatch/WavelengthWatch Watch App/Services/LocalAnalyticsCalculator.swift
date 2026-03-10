@@ -11,6 +11,7 @@ struct CurriculumInfo {
 /// Metadata for strategy items needed for analytics calculations.
 struct StrategyInfo {
   let strategy: String
+  let phaseId: Int
 }
 
 /// Protocol for local analytics calculation operations.
@@ -83,7 +84,8 @@ final class LocalAnalyticsCalculator: LocalAnalyticsCalculatorProtocol {
 
         for strategy in phase.strategies {
           strategyDict[strategy.id] = StrategyInfo(
-            strategy: strategy.strategy
+            strategy: strategy.strategy,
+            phaseId: phase.id
           )
         }
       }
@@ -189,7 +191,8 @@ final class LocalAnalyticsCalculator: LocalAnalyticsCalculatorProtocol {
       return EmotionalLandscape(
         layerDistribution: [],
         phaseDistribution: [],
-        topEmotions: []
+        topEmotions: [],
+        phaseMedicinalRatios: []
       )
     }
 
@@ -259,10 +262,33 @@ final class LocalAnalyticsCalculator: LocalAnalyticsCalculatorProtocol {
       .prefix(limit) // Apply limit
       .map(\.self) // Convert back to array
 
+    // Calculate per-phase medicinal ratios
+    var phaseTotals: [Int: Int] = [:]
+    var phaseMedicinalCounts: [Int: Int] = [:]
+    for entry in entries {
+      if let info = curriculumLookup[entry.curriculumID] {
+        phaseTotals[info.phaseId, default: 0] += 1
+        if info.dosage == .medicinal {
+          phaseMedicinalCounts[info.phaseId, default: 0] += 1
+        }
+      }
+    }
+
+    let phaseMedicinalRatios = phaseTotals.map { phaseId, total in
+      PhaseMedicinalRatioItem(
+        phaseId: phaseId,
+        medicinalRatio: total > 0
+          ? Double(phaseMedicinalCounts[phaseId, default: 0]) / Double(total)
+          : 0.0,
+        totalEntries: total
+      )
+    }.sorted { $0.phaseId < $1.phaseId }
+
     return EmotionalLandscape(
       layerDistribution: layerDistribution,
       phaseDistribution: phaseDistribution,
-      topEmotions: topEmotions
+      topEmotions: topEmotions,
+      phaseMedicinalRatios: phaseMedicinalRatios
     )
   }
 
@@ -311,10 +337,43 @@ final class LocalAnalyticsCalculator: LocalAnalyticsCalculatorProtocol {
     .prefix(limit) // Apply limit
     .map(\.self) // Convert back to array
 
+    // Build strategy groups by phase
+    var phaseStrategyData: [Int: [Int: Int]] = [:] // phaseId -> {strategyId: count}
+    for (strategyId, count) in strategyCounts {
+      if let info = strategyLookup[strategyId] {
+        phaseStrategyData[info.phaseId, default: [:]][strategyId] = count
+      }
+    }
+
+    let strategyGroups = phaseStrategyData.keys.sorted().map { phaseId -> PhaseStrategyGroup in
+      let phaseCounts = phaseStrategyData[phaseId]!
+      let phaseTotal = phaseCounts.values.reduce(0, +)
+      let phaseUnique = phaseCounts.count
+      let phaseDiversity = phaseTotal > 0
+        ? (Double(phaseUnique) / Double(phaseTotal)) * 100
+        : 0.0
+      let phaseStrategies = phaseCounts.map { sid, cnt in
+        TopStrategyItem(
+          strategyId: sid,
+          strategy: strategyLookup[sid]?.strategy ?? "Unknown",
+          count: cnt,
+          percentage: phaseTotal > 0 ? (Double(cnt) / Double(phaseTotal)) * 100 : 0.0
+        )
+      }.sorted { $0.count > $1.count }
+
+      return PhaseStrategyGroup(
+        phaseId: phaseId,
+        strategies: phaseStrategies,
+        diversityScore: phaseDiversity,
+        totalEntries: phaseTotal
+      )
+    }
+
     return SelfCareAnalytics(
       topStrategies: topStrategiesList,
       diversityScore: diversityScore,
-      totalStrategyEntries: totalStrategyEntries
+      totalStrategyEntries: totalStrategyEntries,
+      strategyGroups: strategyGroups
     )
   }
 
@@ -325,34 +384,42 @@ final class LocalAnalyticsCalculator: LocalAnalyticsCalculatorProtocol {
   ) -> TemporalPatterns {
     guard !entries.isEmpty else {
       return TemporalPatterns(
-        hourlyDistribution: [],
-        consistencyScore: 0.0
+        hourlyDistribution: []
       )
     }
 
     let calendar = Calendar.current
 
-    // Calculate hourly distribution
+    // Calculate hourly distribution with dominant phase/dosage
     var hourCounts: [Int: Int] = [:]
+    var hourPhaseCounts: [Int: [Int: Int]] = [:]
+    var hourDosageCounts: [Int: [String: Int]] = [:]
+
     for entry in entries {
       let hour = calendar.component(.hour, from: entry.createdAt)
       hourCounts[hour, default: 0] += 1
+
+      if let info = curriculumLookup[entry.curriculumID] {
+        hourPhaseCounts[hour, default: [:]][info.phaseId, default: 0] += 1
+        hourDosageCounts[hour, default: [:]][info.dosage.rawValue, default: 0] += 1
+      }
     }
 
-    let hourlyDistribution = hourCounts.map { hour, count in
-      HourlyDistributionItem(hour: hour, count: count)
-    }.sorted { $0.hour < $1.hour }
+    let hourlyDistribution = hourCounts.keys.sorted().map { hour -> HourlyDistributionItem in
+      let count = hourCounts[hour]!
+      let dominantPhaseId = hourPhaseCounts[hour]?.max(by: { $0.value < $1.value })?.key
+      let dominantDosage = hourDosageCounts[hour]?.max(by: { $0.value < $1.value })?.key
 
-    // Calculate consistency score (days with entries / total days)
-    let uniqueDates = Set(entries.map { calendar.startOfDay(for: $0.createdAt) })
-    let startDateOnly = calendar.startOfDay(for: startDate)
-    let endDateOnly = calendar.startOfDay(for: endDate)
-    let totalDays = calendar.dateComponents([.day], from: startDateOnly, to: endDateOnly).day! + 1
-    let consistencyScore = (Double(uniqueDates.count) / Double(totalDays)) * 100
+      return HourlyDistributionItem(
+        hour: hour,
+        count: count,
+        dominantPhaseId: dominantPhaseId,
+        dominantDosage: dominantDosage
+      )
+    }
 
     return TemporalPatterns(
-      hourlyDistribution: hourlyDistribution,
-      consistencyScore: consistencyScore
+      hourlyDistribution: hourlyDistribution
     )
   }
 

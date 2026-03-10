@@ -31,13 +31,6 @@ final class TemporalPatternsViewModel: ObservableObject {
     return patterns.hourlyDistribution
   }
 
-  var consistencyScore: Double {
-    guard case let .loaded(patterns) = state else {
-      return 0.0
-    }
-    return patterns.consistencyScore
-  }
-
   // MARK: - Dependencies
 
   private let analyticsService: AnalyticsServiceProtocol

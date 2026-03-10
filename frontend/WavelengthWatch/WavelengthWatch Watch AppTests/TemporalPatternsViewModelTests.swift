@@ -97,8 +97,7 @@ struct TemporalPatternsViewModelTests {
       lastStartDate = startDate
       lastEndDate = endDate
       return temporalPatternsToReturn ?? TemporalPatterns(
-        hourlyDistribution: [],
-        consistencyScore: 0.0
+        hourlyDistribution: []
       )
     }
 
@@ -211,8 +210,7 @@ struct TemporalPatternsViewModelTests {
       hourlyDistribution: [
         HourlyDistributionItem(hour: 9, count: 5),
         HourlyDistributionItem(hour: 14, count: 3),
-      ],
-      consistencyScore: 75.0
+      ]
     )
     mockService.temporalPatternsToReturn = mockPatterns
 
@@ -252,8 +250,7 @@ struct TemporalPatternsViewModelTests {
     let localPatterns = TemporalPatterns(
       hourlyDistribution: [
         HourlyDistributionItem(hour: 10, count: 2),
-      ],
-      consistencyScore: 50.0
+      ]
     )
     mockCalculator.temporalPatternsToReturn = localPatterns
 
@@ -295,8 +292,7 @@ struct TemporalPatternsViewModelTests {
   func viewModel_usesLocalOnlyWhenCloudSyncDisabled() async {
     let mockService = MockAnalyticsService()
     mockService.temporalPatternsToReturn = TemporalPatterns(
-      hourlyDistribution: [],
-      consistencyScore: 0.0
+      hourlyDistribution: []
     )
 
     let mockCalculator = MockLocalAnalyticsCalculator()
@@ -304,8 +300,7 @@ struct TemporalPatternsViewModelTests {
       hourlyDistribution: [
         HourlyDistributionItem(hour: 8, count: 7),
         HourlyDistributionItem(hour: 20, count: 4),
-      ],
-      consistencyScore: 85.0
+      ]
     )
     mockCalculator.temporalPatternsToReturn = localPatterns
 
@@ -422,8 +417,7 @@ struct TemporalPatternsViewModelTests {
       HourlyDistributionItem(hour: 14, count: 3),
     ]
     let patterns = TemporalPatterns(
-      hourlyDistribution: distribution,
-      consistencyScore: 75.0
+      hourlyDistribution: distribution
     )
     viewModel.state = .loaded(patterns)
 
@@ -443,42 +437,6 @@ struct TemporalPatternsViewModelTests {
     )
 
     #expect(viewModel.hourlyDistribution.isEmpty)
-  }
-
-  @Test("consistencyScore returns correct value when loaded")
-  @MainActor
-  func consistencyScore_returnsValueWhenLoaded() {
-    let mockService = MockAnalyticsService()
-    let mockPersistence = MockSyncSettingsPersistence()
-    let syncSettings = SyncSettings(persistence: mockPersistence)
-
-    let viewModel = TemporalPatternsViewModel(
-      analyticsService: mockService,
-      syncSettings: syncSettings
-    )
-
-    let patterns = TemporalPatterns(
-      hourlyDistribution: [],
-      consistencyScore: 82.5
-    )
-    viewModel.state = .loaded(patterns)
-
-    #expect(viewModel.consistencyScore == 82.5)
-  }
-
-  @Test("consistencyScore returns zero when not loaded")
-  @MainActor
-  func consistencyScore_returnsZeroWhenNotLoaded() {
-    let mockService = MockAnalyticsService()
-    let mockPersistence = MockSyncSettingsPersistence()
-    let syncSettings = SyncSettings(persistence: mockPersistence)
-
-    let viewModel = TemporalPatternsViewModel(
-      analyticsService: mockService,
-      syncSettings: syncSettings
-    )
-
-    #expect(viewModel.consistencyScore == 0.0)
   }
 
   // MARK: - Retry Tests
@@ -507,8 +465,7 @@ struct TemporalPatternsViewModelTests {
     // Clear error and retry
     mockService.errorToThrow = nil
     mockService.temporalPatternsToReturn = TemporalPatterns(
-      hourlyDistribution: [],
-      consistencyScore: 60.0
+      hourlyDistribution: []
     )
 
     await viewModel.retry(startDate: Self.testStartDate, endDate: Self.testEndDate)
@@ -530,8 +487,7 @@ struct TemporalPatternsViewModelTests {
     let backendPatterns = TemporalPatterns(
       hourlyDistribution: [
         HourlyDistributionItem(hour: 12, count: 10),
-      ],
-      consistencyScore: 90.0
+      ]
     )
     mockService.temporalPatternsToReturn = backendPatterns
 
@@ -573,8 +529,7 @@ struct TemporalPatternsViewModelTests {
 
     let mockCalculator = MockLocalAnalyticsCalculator()
     let localPatterns = TemporalPatterns(
-      hourlyDistribution: [],
-      consistencyScore: 50.0
+      hourlyDistribution: []
     )
     mockCalculator.temporalPatternsToReturn = localPatterns
 

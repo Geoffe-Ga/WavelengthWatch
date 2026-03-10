@@ -1195,7 +1195,364 @@ def test_temporal_patterns_structure(client) -> None:
     assert response.status_code == 200
     data = response.json()
     assert "hourly_distribution" in data
-    assert "consistency_score" in data
+    # consistency_score has been removed
+    assert "consistency_score" not in data
+
+
+def test_temporal_patterns_dominant_phase_and_dosage(client) -> None:
+    """Test hourly distribution includes dominant phase and dosage."""
+    base_date = datetime(2025, 9, 20, 10, 0, 0, tzinfo=UTC)
+
+    # Create entries at hour 10 with different phases:
+    # curriculum_id 1 = phase 1 (Rising), Medicinal
+    # curriculum_id 1 appears 3 times, so phase 1 + Medicinal dominates
+    for i in range(3):
+        client.post(
+            "/api/v1/journal",
+            json={
+                "created_at": (base_date + timedelta(minutes=i * 10)).isoformat(),
+                "user_id": 401,
+                "curriculum_id": 1,  # Phase 1, Medicinal
+            },
+        )
+
+    # 1 entry at hour 10 with phase 1, Toxic
+    client.post(
+        "/api/v1/journal",
+        json={
+            "created_at": (base_date + timedelta(minutes=30)).isoformat(),
+            "user_id": 401,
+            "curriculum_id": 10,  # Phase 1, Toxic
+        },
+    )
+
+    response = client.get(
+        "/api/v1/analytics/temporal",
+        params={
+            "user_id": 401,
+            "start_date": base_date.isoformat(),
+            "end_date": (base_date + timedelta(hours=2)).isoformat(),
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    hourly = data["hourly_distribution"]
+    assert len(hourly) >= 1
+
+    # Find hour 10
+    hour_10 = next((h for h in hourly if h["hour"] == 10), None)
+    assert hour_10 is not None
+    assert hour_10["count"] == 4
+    # Phase 1 is dominant (all entries are phase 1)
+    assert hour_10["dominant_phase_id"] == 1
+    # Medicinal is dominant (3 Medicinal vs 1 Toxic)
+    assert hour_10["dominant_dosage"] == "Medicinal"
+
+
+def test_temporal_patterns_mixed_phases_per_hour(client) -> None:
+    """Test dominant phase/dosage with mixed entries across hours."""
+    base_date = datetime(2025, 9, 20, 8, 0, 0, tzinfo=UTC)
+
+    # Hour 8: 2 entries phase 1 Medicinal, 1 entry phase 2 Medicinal
+    for i in range(2):
+        client.post(
+            "/api/v1/journal",
+            json={
+                "created_at": (base_date + timedelta(minutes=i * 10)).isoformat(),
+                "user_id": 402,
+                "curriculum_id": 1,  # Phase 1, Medicinal
+            },
+        )
+
+    client.post(
+        "/api/v1/journal",
+        json={
+            "created_at": (base_date + timedelta(minutes=20)).isoformat(),
+            "user_id": 402,
+            "curriculum_id": 19,  # Phase 2, Medicinal
+        },
+    )
+
+    # Hour 9: 2 entries phase 2 Toxic
+    for i in range(2):
+        client.post(
+            "/api/v1/journal",
+            json={
+                "created_at": (
+                    base_date + timedelta(hours=1, minutes=i * 10)
+                ).isoformat(),
+                "user_id": 402,
+                "curriculum_id": 28,  # Phase 2, Toxic (layer 1)
+            },
+        )
+
+    response = client.get(
+        "/api/v1/analytics/temporal",
+        params={
+            "user_id": 402,
+            "start_date": base_date.isoformat(),
+            "end_date": (base_date + timedelta(hours=3)).isoformat(),
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    hourly = data["hourly_distribution"]
+
+    hour_8 = next((h for h in hourly if h["hour"] == 8), None)
+    assert hour_8 is not None
+    assert hour_8["dominant_phase_id"] == 1  # 2 vs 1
+    assert hour_8["dominant_dosage"] == "Medicinal"  # all 3 are Medicinal
+
+    hour_9 = next((h for h in hourly if h["hour"] == 9), None)
+    assert hour_9 is not None
+    assert hour_9["dominant_phase_id"] == 2
+    assert hour_9["dominant_dosage"] == "Toxic"
+
+
+# MARK: - Phase Medicinal Ratio Tests
+
+
+def test_emotional_landscape_phase_medicinal_ratios(client) -> None:
+    """Test per-phase medicinal ratio in emotional landscape."""
+    base_date = datetime(2025, 9, 20, 12, 0, 0, tzinfo=UTC)
+
+    # Phase 1 (Rising): 2 Medicinal, 1 Toxic = 0.667
+    for i in range(2):
+        client.post(
+            "/api/v1/journal",
+            json={
+                "created_at": (base_date + timedelta(hours=i)).isoformat(),
+                "user_id": 210,
+                "curriculum_id": 1,  # Phase 1, Medicinal
+            },
+        )
+    client.post(
+        "/api/v1/journal",
+        json={
+            "created_at": (base_date + timedelta(hours=2)).isoformat(),
+            "user_id": 210,
+            "curriculum_id": 10,  # Phase 1, Toxic
+        },
+    )
+
+    # Phase 2 (Peaking): 1 Medicinal, 2 Toxic = 0.333
+    client.post(
+        "/api/v1/journal",
+        json={
+            "created_at": (base_date + timedelta(hours=3)).isoformat(),
+            "user_id": 210,
+            "curriculum_id": 19,  # Phase 2, Medicinal
+        },
+    )
+    for i in range(2):
+        client.post(
+            "/api/v1/journal",
+            json={
+                "created_at": (base_date + timedelta(hours=4 + i)).isoformat(),
+                "user_id": 210,
+                "curriculum_id": 28,  # Phase 2, Toxic
+            },
+        )
+
+    response = client.get(
+        "/api/v1/analytics/emotional-landscape",
+        params={
+            "user_id": 210,
+            "start_date": base_date.isoformat(),
+            "end_date": (base_date + timedelta(hours=7)).isoformat(),
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "phase_medicinal_ratios" in data
+
+    ratios = data["phase_medicinal_ratios"]
+    assert len(ratios) == 2  # Two phases with entries
+
+    phase_1 = next((r for r in ratios if r["phase_id"] == 1), None)
+    assert phase_1 is not None
+    assert abs(phase_1["medicinal_ratio"] - 0.667) < 0.01
+    assert phase_1["total_entries"] == 3
+
+    phase_2 = next((r for r in ratios if r["phase_id"] == 2), None)
+    assert phase_2 is not None
+    assert abs(phase_2["medicinal_ratio"] - 0.333) < 0.01
+    assert phase_2["total_entries"] == 3
+
+
+def test_emotional_landscape_phase_medicinal_all_medicinal(
+    client,
+) -> None:
+    """Test per-phase ratio when all entries are medicinal."""
+    base_date = datetime(2025, 9, 20, 12, 0, 0, tzinfo=UTC)
+
+    for i in range(3):
+        client.post(
+            "/api/v1/journal",
+            json={
+                "created_at": (base_date + timedelta(hours=i)).isoformat(),
+                "user_id": 211,
+                "curriculum_id": 1,  # Phase 1, Medicinal
+            },
+        )
+
+    response = client.get(
+        "/api/v1/analytics/emotional-landscape",
+        params={
+            "user_id": 211,
+            "start_date": base_date.isoformat(),
+            "end_date": (base_date + timedelta(hours=4)).isoformat(),
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    ratios = data["phase_medicinal_ratios"]
+    assert len(ratios) == 1
+    assert ratios[0]["phase_id"] == 1
+    assert ratios[0]["medicinal_ratio"] == 1.0
+
+
+# MARK: - Self-Care Strategy Groups Tests
+
+
+def test_self_care_strategy_groups_by_phase(client) -> None:
+    """Test strategies grouped by phase in self-care analytics."""
+    base_date = datetime(2025, 9, 20, 12, 0, 0, tzinfo=UTC)
+
+    # Strategy 1 (phase 5): 3 uses
+    for i in range(3):
+        client.post(
+            "/api/v1/journal",
+            json={
+                "created_at": (base_date + timedelta(hours=i)).isoformat(),
+                "user_id": 310,
+                "curriculum_id": 1,
+                "strategy_id": 1,  # Phase 5
+            },
+        )
+
+    # Strategy 8 (phase 6): 2 uses
+    for i in range(2):
+        client.post(
+            "/api/v1/journal",
+            json={
+                "created_at": (base_date + timedelta(hours=3 + i)).isoformat(),
+                "user_id": 310,
+                "curriculum_id": 1,
+                "strategy_id": 8,  # Phase 6
+            },
+        )
+
+    # Strategy 2 (phase 5): 1 use
+    client.post(
+        "/api/v1/journal",
+        json={
+            "created_at": (base_date + timedelta(hours=5)).isoformat(),
+            "user_id": 310,
+            "curriculum_id": 1,
+            "strategy_id": 2,  # Phase 5
+        },
+    )
+
+    response = client.get(
+        "/api/v1/analytics/self-care",
+        params={
+            "user_id": 310,
+            "start_date": base_date.isoformat(),
+            "end_date": (base_date + timedelta(hours=7)).isoformat(),
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    assert "strategy_groups" in data
+    groups = data["strategy_groups"]
+    assert len(groups) == 2  # Phase 5 and Phase 6
+
+    # Phase 5 group
+    phase_5 = next((g for g in groups if g["phase_id"] == 5), None)
+    assert phase_5 is not None
+    assert len(phase_5["strategies"]) == 2  # Strategies 1 and 2
+    assert phase_5["total_entries"] == 4  # 3 + 1
+
+    # Phase 6 group
+    phase_6 = next((g for g in groups if g["phase_id"] == 6), None)
+    assert phase_6 is not None
+    assert len(phase_6["strategies"]) == 1  # Strategy 8
+    assert phase_6["total_entries"] == 2
+
+
+def test_self_care_strategy_groups_diversity_per_phase(
+    client,
+) -> None:
+    """Test diversity score is calculated per phase."""
+    base_date = datetime(2025, 9, 20, 12, 0, 0, tzinfo=UTC)
+
+    # Phase 5: 3 unique strategies, 6 uses = 50% diversity
+    for strategy_id in [1, 2, 3]:
+        for i in range(2):
+            client.post(
+                "/api/v1/journal",
+                json={
+                    "created_at": (
+                        base_date + timedelta(hours=strategy_id * 2 + i)
+                    ).isoformat(),
+                    "user_id": 311,
+                    "curriculum_id": 1,
+                    "strategy_id": strategy_id,  # All phase 5
+                },
+            )
+
+    # Phase 6: 1 unique strategy, 3 uses = 33.3% diversity
+    for i in range(3):
+        client.post(
+            "/api/v1/journal",
+            json={
+                "created_at": (base_date + timedelta(hours=10 + i)).isoformat(),
+                "user_id": 311,
+                "curriculum_id": 1,
+                "strategy_id": 8,  # Phase 6
+            },
+        )
+
+    response = client.get(
+        "/api/v1/analytics/self-care",
+        params={
+            "user_id": 311,
+            "start_date": base_date.isoformat(),
+            "end_date": (base_date + timedelta(hours=14)).isoformat(),
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    groups = data["strategy_groups"]
+
+    phase_5 = next((g for g in groups if g["phase_id"] == 5), None)
+    assert phase_5 is not None
+    assert abs(phase_5["diversity_score"] - 50.0) < 0.1
+
+    phase_6 = next((g for g in groups if g["phase_id"] == 6), None)
+    assert phase_6 is not None
+    assert abs(phase_6["diversity_score"] - 33.33) < 0.1
+
+
+def test_self_care_strategy_groups_empty(client) -> None:
+    """Test strategy_groups is empty when no strategies used."""
+    response = client.get(
+        "/api/v1/analytics/self-care",
+        params={"user_id": 99999},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["strategy_groups"] == []
 
 
 def test_growth_indicators_structure(client) -> None:

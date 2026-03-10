@@ -30,6 +30,9 @@ struct AnalyticsDetailHubView: View {
   /// Local calculator for offline-first support (nil if catalog not cached)
   private let localCalculator: LocalAnalyticsCalculatorProtocol?
 
+  /// Phases from cached catalog for resolving phase names in views
+  private let phases: [CatalogPhaseModel]
+
   init(
     journalRepository: JournalRepositoryProtocol,
     catalogRepository: CatalogRepositoryProtocol,
@@ -43,8 +46,10 @@ struct AnalyticsDetailHubView: View {
     let configuration = AppConfiguration()
     let apiClient = APIClient(baseURL: configuration.apiBaseURL)
     self.analyticsService = AnalyticsService(apiClient: apiClient)
-    self.localCalculator = catalogRepository.cachedCatalog()
-      .map { LocalAnalyticsCalculator(catalog: $0) }
+
+    let cachedCatalog = catalogRepository.cachedCatalog()
+    self.localCalculator = cachedCatalog.map { LocalAnalyticsCalculator(catalog: $0) }
+    self.phases = cachedCatalog?.layers.first?.phases ?? []
   }
 
   // MARK: - Helpers
@@ -123,7 +128,8 @@ struct AnalyticsDetailHubView: View {
       analyticsService: analyticsService,
       localCalculator: localCalculator,
       journalRepository: journalRepository,
-      syncSettings: syncSettings
+      syncSettings: syncSettings,
+      phases: phases
     )
   }
 
@@ -133,7 +139,8 @@ struct AnalyticsDetailHubView: View {
       localCalculator: localCalculator,
       journalRepository: journalRepository,
       syncSettings: syncSettings,
-      dateRange: defaultDateRange
+      dateRange: defaultDateRange,
+      phases: phases
     )
   }
 
@@ -153,13 +160,16 @@ struct AnalyticsDetailHubView: View {
 /// Detailed self-care analytics view with ViewModel integration.
 private struct SelfCareDetailView: View {
   @StateObject private var viewModel: SelfCareViewModel
+  private let phases: [CatalogPhaseModel]
 
   init(
     analyticsService: AnalyticsService,
     localCalculator: LocalAnalyticsCalculatorProtocol?,
     journalRepository: JournalRepositoryProtocol,
-    syncSettings: SyncSettings
+    syncSettings: SyncSettings,
+    phases: [CatalogPhaseModel]
   ) {
+    self.phases = phases
     _viewModel = StateObject(
       wrappedValue: SelfCareViewModel(
         analyticsService: analyticsService,
@@ -177,7 +187,7 @@ private struct SelfCareDetailView: View {
         case .idle, .loading:
           AnalyticsLoadingStates.loadingView
         case let .loaded(analytics):
-          StrategyUsageView(analytics: analytics)
+          StrategyUsageView(analytics: analytics, phases: phases)
             .padding()
         case let .error(message):
           AnalyticsLoadingStates.errorView(
@@ -203,15 +213,18 @@ private struct SelfCareDetailView: View {
 private struct TemporalPatternsDetailView: View {
   @StateObject private var viewModel: TemporalPatternsViewModel
   private let dateRange: (startDate: Date, endDate: Date)
+  private let phases: [CatalogPhaseModel]
 
   init(
     analyticsService: AnalyticsService,
     localCalculator: LocalAnalyticsCalculatorProtocol?,
     journalRepository: JournalRepositoryProtocol,
     syncSettings: SyncSettings,
-    dateRange: (startDate: Date, endDate: Date)
+    dateRange: (startDate: Date, endDate: Date),
+    phases: [CatalogPhaseModel]
   ) {
     self.dateRange = dateRange
+    self.phases = phases
 
     _viewModel = StateObject(
       wrappedValue: TemporalPatternsViewModel(
@@ -230,7 +243,7 @@ private struct TemporalPatternsDetailView: View {
         case .idle, .loading:
           AnalyticsLoadingStates.loadingView
         case let .loaded(patterns):
-          TemporalPatternsView(patterns: patterns)
+          TemporalPatternsView(patterns: patterns, phases: phases)
             .padding()
         case let .error(message):
           AnalyticsLoadingStates.errorView(

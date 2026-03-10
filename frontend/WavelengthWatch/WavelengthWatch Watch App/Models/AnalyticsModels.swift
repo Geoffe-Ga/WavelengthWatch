@@ -99,16 +99,63 @@ struct TopEmotionItem: Codable, Equatable {
   }
 }
 
+/// Medicinal ratio breakdown for a single phase
+struct PhaseMedicinalRatioItem: Codable, Equatable {
+  let phaseId: Int
+  let medicinalRatio: Double
+  let totalEntries: Int
+
+  enum CodingKeys: String, CodingKey {
+    case phaseId = "phase_id"
+    case medicinalRatio = "medicinal_ratio"
+    case totalEntries = "total_entries"
+  }
+}
+
 /// Response model for /api/v1/analytics/emotional-landscape endpoint
 struct EmotionalLandscape: Codable, Equatable {
   let layerDistribution: [LayerDistributionItem]
   let phaseDistribution: [PhaseDistributionItem]
   let topEmotions: [TopEmotionItem]
+  let phaseMedicinalRatios: [PhaseMedicinalRatioItem]
 
   enum CodingKeys: String, CodingKey {
     case layerDistribution = "layer_distribution"
     case phaseDistribution = "phase_distribution"
     case topEmotions = "top_emotions"
+    case phaseMedicinalRatios = "phase_medicinal_ratios"
+  }
+
+  init(
+    layerDistribution: [LayerDistributionItem],
+    phaseDistribution: [PhaseDistributionItem],
+    topEmotions: [TopEmotionItem],
+    phaseMedicinalRatios: [PhaseMedicinalRatioItem] = []
+  ) {
+    self.layerDistribution = layerDistribution
+    self.phaseDistribution = phaseDistribution
+    self.topEmotions = topEmotions
+    self.phaseMedicinalRatios = phaseMedicinalRatios
+  }
+
+  init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    self.layerDistribution = try container.decode(
+      [LayerDistributionItem].self,
+      forKey: .layerDistribution
+    )
+    self.phaseDistribution = try container.decode(
+      [PhaseDistributionItem].self,
+      forKey: .phaseDistribution
+    )
+    self.topEmotions = try container.decode(
+      [TopEmotionItem].self,
+      forKey: .topEmotions
+    )
+    self.phaseMedicinalRatios = try container.decodeIfPresent(
+      [PhaseMedicinalRatioItem].self,
+      forKey: .phaseMedicinalRatios
+    ) ?? []
   }
 }
 
@@ -129,16 +176,65 @@ struct TopStrategyItem: Codable, Equatable {
   }
 }
 
+/// Strategy usage grouped by phase
+struct PhaseStrategyGroup: Codable, Equatable {
+  let phaseId: Int
+  let strategies: [TopStrategyItem]
+  let diversityScore: Double
+  let totalEntries: Int
+
+  enum CodingKeys: String, CodingKey {
+    case phaseId = "phase_id"
+    case strategies
+    case diversityScore = "diversity_score"
+    case totalEntries = "total_entries"
+  }
+}
+
 /// Response model for /api/v1/analytics/self-care endpoint
 struct SelfCareAnalytics: Codable, Equatable {
   let topStrategies: [TopStrategyItem]
   let diversityScore: Double
   let totalStrategyEntries: Int
+  let strategyGroups: [PhaseStrategyGroup]
 
   enum CodingKeys: String, CodingKey {
     case topStrategies = "top_strategies"
     case diversityScore = "diversity_score"
     case totalStrategyEntries = "total_strategy_entries"
+    case strategyGroups = "strategy_groups"
+  }
+
+  init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    self.topStrategies = try container.decode(
+      [TopStrategyItem].self,
+      forKey: .topStrategies
+    )
+    self.diversityScore = try container.decode(
+      Double.self,
+      forKey: .diversityScore
+    )
+    self.totalStrategyEntries = try container.decode(
+      Int.self,
+      forKey: .totalStrategyEntries
+    )
+    self.strategyGroups = try container.decodeIfPresent(
+      [PhaseStrategyGroup].self,
+      forKey: .strategyGroups
+    ) ?? []
+  }
+
+  init(
+    topStrategies: [TopStrategyItem],
+    diversityScore: Double,
+    totalStrategyEntries: Int,
+    strategyGroups: [PhaseStrategyGroup] = []
+  ) {
+    self.topStrategies = topStrategies
+    self.diversityScore = diversityScore
+    self.totalStrategyEntries = totalStrategyEntries
+    self.strategyGroups = strategyGroups
   }
 }
 
@@ -151,16 +247,30 @@ struct SelfCareAnalytics: Codable, Equatable {
 struct HourlyDistributionItem: Codable, Equatable {
   let hour: Int
   let count: Int
+  let dominantPhaseId: Int?
+  let dominantDosage: String?
+
+  enum CodingKeys: String, CodingKey {
+    case hour
+    case count
+    case dominantPhaseId = "dominant_phase_id"
+    case dominantDosage = "dominant_dosage"
+  }
+
+  init(hour: Int, count: Int, dominantPhaseId: Int? = nil, dominantDosage: String? = nil) {
+    self.hour = hour
+    self.count = count
+    self.dominantPhaseId = dominantPhaseId
+    self.dominantDosage = dominantDosage
+  }
 }
 
 /// Response model for /api/v1/analytics/temporal endpoint
 struct TemporalPatterns: Codable, Equatable {
   let hourlyDistribution: [HourlyDistributionItem]
-  let consistencyScore: Double
 
   enum CodingKeys: String, CodingKey {
     case hourlyDistribution = "hourly_distribution"
-    case consistencyScore = "consistency_score"
   }
 }
 

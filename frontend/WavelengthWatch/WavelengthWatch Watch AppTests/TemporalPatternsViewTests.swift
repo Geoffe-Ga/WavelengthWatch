@@ -5,15 +5,25 @@ import Testing
 
 @Suite("TemporalPatternsView Tests")
 struct TemporalPatternsViewTests {
+  // MARK: - Test Helpers
+
+  static let samplePhases: [CatalogPhaseModel] = [
+    CatalogPhaseModel(id: 1, name: "Rising", medicinal: [], toxic: [], strategies: []),
+    CatalogPhaseModel(id: 2, name: "Peaking", medicinal: [], toxic: [], strategies: []),
+    CatalogPhaseModel(id: 3, name: "Falling", medicinal: [], toxic: [], strategies: []),
+    CatalogPhaseModel(id: 4, name: "Resting", medicinal: [], toxic: [], strategies: []),
+  ]
+
+  // MARK: - Basic Initialization Tests
+
   @Test("view initializes with empty data")
   func view_initializesWithEmptyData() {
-    let view = TemporalPatternsView(patterns: TemporalPatterns(
-      hourlyDistribution: [],
-      consistencyScore: 0.0
-    ))
+    let view = TemporalPatternsView(
+      patterns: TemporalPatterns(hourlyDistribution: []),
+      phases: Self.samplePhases
+    )
 
     #expect(view.patterns.hourlyDistribution.isEmpty)
-    #expect(view.patterns.consistencyScore == 0.0)
   }
 
   @Test("view initializes with pattern data")
@@ -24,49 +34,15 @@ struct TemporalPatternsViewTests {
       HourlyDistributionItem(hour: 20, count: 7),
     ]
 
-    let view = TemporalPatternsView(patterns: TemporalPatterns(
-      hourlyDistribution: distribution,
-      consistencyScore: 85.5
-    ))
+    let view = TemporalPatternsView(
+      patterns: TemporalPatterns(hourlyDistribution: distribution),
+      phases: Self.samplePhases
+    )
 
     #expect(view.patterns.hourlyDistribution.count == 3)
-    #expect(view.patterns.consistencyScore == 85.5)
   }
 
-  @Test("barChartItems converts hourly data correctly")
-  func barChartItems_convertsHourlyDataCorrectly() {
-    let distribution = [
-      HourlyDistributionItem(hour: 9, count: 5),
-      HourlyDistributionItem(hour: 14, count: 10),
-    ]
-
-    let view = TemporalPatternsView(patterns: TemporalPatterns(
-      hourlyDistribution: distribution,
-      consistencyScore: 50.0
-    ))
-
-    let items = view.barChartItems
-
-    #expect(items.count == 2)
-    #expect(items[0].id == "9")
-    #expect(items[0].label == "9 AM")
-    #expect(abs(items[0].percentage - 33.33) < 0.01)
-    #expect(items[1].id == "14")
-    #expect(items[1].label == "2 PM")
-    #expect(abs(items[1].percentage - 66.67) < 0.01)
-  }
-
-  @Test("barChartItems handles empty distribution")
-  func barChartItems_handlesEmptyDistribution() {
-    let view = TemporalPatternsView(patterns: TemporalPatterns(
-      hourlyDistribution: [],
-      consistencyScore: 0.0
-    ))
-
-    let items = view.barChartItems
-
-    #expect(items.isEmpty)
-  }
+  // MARK: - Hour Label Tests
 
   @Test("hourLabel formats hours correctly")
   func hourLabel_formatsHoursCorrectly() {
@@ -79,24 +55,131 @@ struct TemporalPatternsViewTests {
     #expect(TemporalPatternsView.hourLabel(23) == "11 PM")
   }
 
-  @Test("barChartItems calculates percentages correctly")
-  func barChartItems_calculatesPercentagesCorrectly() {
+  // MARK: - Hourly Summary Tests
+
+  @Test("hourlySummaries includes phase name when available")
+  func hourlySummaries_includesPhaseNameWhenAvailable() {
     let distribution = [
-      HourlyDistributionItem(hour: 9, count: 3),
-      HourlyDistributionItem(hour: 14, count: 6),
-      HourlyDistributionItem(hour: 20, count: 1),
+      HourlyDistributionItem(hour: 9, count: 5, dominantPhaseId: 1, dominantDosage: "Medicinal"),
     ]
 
-    let view = TemporalPatternsView(patterns: TemporalPatterns(
-      hourlyDistribution: distribution,
-      consistencyScore: 50.0
-    ))
+    let view = TemporalPatternsView(
+      patterns: TemporalPatterns(hourlyDistribution: distribution),
+      phases: Self.samplePhases
+    )
 
-    let items = view.barChartItems
+    let summaries = view.hourlySummaries
+    #expect(summaries.count == 1)
+    #expect(summaries[0].hourLabel == "9 AM")
+    #expect(summaries[0].phaseName == "Rising")
+    #expect(summaries[0].dosage == "Medicinal")
+    #expect(summaries[0].count == 5)
+  }
 
-    #expect(items.count == 3)
-    #expect(items[0].percentage == 30.0)
-    #expect(items[1].percentage == 60.0)
-    #expect(items[2].percentage == 10.0)
+  @Test("hourlySummaries handles nil phase and dosage")
+  func hourlySummaries_handlesNilPhaseAndDosage() {
+    let distribution = [
+      HourlyDistributionItem(hour: 14, count: 3),
+    ]
+
+    let view = TemporalPatternsView(
+      patterns: TemporalPatterns(hourlyDistribution: distribution),
+      phases: Self.samplePhases
+    )
+
+    let summaries = view.hourlySummaries
+    #expect(summaries.count == 1)
+    #expect(summaries[0].phaseName == nil)
+    #expect(summaries[0].dosage == nil)
+  }
+
+  @Test("hourlySummaries handles unknown phase ID")
+  func hourlySummaries_handlesUnknownPhaseId() {
+    let distribution = [
+      HourlyDistributionItem(hour: 9, count: 2, dominantPhaseId: 99, dominantDosage: "Toxic"),
+    ]
+
+    let view = TemporalPatternsView(
+      patterns: TemporalPatterns(hourlyDistribution: distribution),
+      phases: Self.samplePhases
+    )
+
+    let summaries = view.hourlySummaries
+    #expect(summaries.count == 1)
+    #expect(summaries[0].phaseName == nil)
+    #expect(summaries[0].dosage == "Toxic")
+  }
+
+  @Test("hourlySummaries calculates percentage correctly")
+  func hourlySummaries_calculatesPercentageCorrectly() {
+    let distribution = [
+      HourlyDistributionItem(hour: 9, count: 3, dominantPhaseId: 1, dominantDosage: "Medicinal"),
+      HourlyDistributionItem(hour: 14, count: 6, dominantPhaseId: 2, dominantDosage: "Toxic"),
+      HourlyDistributionItem(hour: 20, count: 1, dominantPhaseId: 4, dominantDosage: "Medicinal"),
+    ]
+
+    let view = TemporalPatternsView(
+      patterns: TemporalPatterns(hourlyDistribution: distribution),
+      phases: Self.samplePhases
+    )
+
+    let summaries = view.hourlySummaries
+    #expect(summaries.count == 3)
+    #expect(summaries[0].percentage == 30.0)
+    #expect(summaries[1].percentage == 60.0)
+    #expect(summaries[2].percentage == 10.0)
+  }
+
+  @Test("hourlySummaries returns empty for empty distribution")
+  func hourlySummaries_returnsEmptyForEmptyDistribution() {
+    let view = TemporalPatternsView(
+      patterns: TemporalPatterns(hourlyDistribution: []),
+      phases: Self.samplePhases
+    )
+
+    #expect(view.hourlySummaries.isEmpty)
+  }
+
+  // MARK: - Dosage Color Tests
+
+  @Test("dosageColor returns green for Medicinal")
+  func dosageColor_returnsGreenForMedicinal() {
+    #expect(TemporalPatternsView.dosageColor(for: "Medicinal") == .green)
+  }
+
+  @Test("dosageColor returns secondary for Toxic")
+  func dosageColor_returnsSecondaryForToxic() {
+    #expect(TemporalPatternsView.dosageColor(for: "Toxic") == .secondary)
+  }
+
+  @Test("dosageColor returns purple as default")
+  func dosageColor_returnsPurpleAsDefault() {
+    #expect(TemporalPatternsView.dosageColor(for: nil) == .purple)
+  }
+
+  // MARK: - Integration Tests
+
+  @Test("integration test with mixed phase and dosage data")
+  func integrationTest_withMixedPhaseAndDosageData() {
+    let distribution = [
+      HourlyDistributionItem(hour: 8, count: 4, dominantPhaseId: 1, dominantDosage: "Medicinal"),
+      HourlyDistributionItem(hour: 12, count: 6, dominantPhaseId: 2, dominantDosage: "Toxic"),
+      HourlyDistributionItem(hour: 18, count: 3, dominantPhaseId: 3, dominantDosage: "Medicinal"),
+      HourlyDistributionItem(hour: 22, count: 2, dominantPhaseId: 4, dominantDosage: "Medicinal"),
+    ]
+
+    let view = TemporalPatternsView(
+      patterns: TemporalPatterns(hourlyDistribution: distribution),
+      phases: Self.samplePhases
+    )
+
+    let summaries = view.hourlySummaries
+    #expect(summaries.count == 4)
+    #expect(summaries[0].phaseName == "Rising")
+    #expect(summaries[0].dosage == "Medicinal")
+    #expect(summaries[1].phaseName == "Peaking")
+    #expect(summaries[1].dosage == "Toxic")
+    #expect(summaries[2].phaseName == "Falling")
+    #expect(summaries[3].phaseName == "Resting")
   }
 }
