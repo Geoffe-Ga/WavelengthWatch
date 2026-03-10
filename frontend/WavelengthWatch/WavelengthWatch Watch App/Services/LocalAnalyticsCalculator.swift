@@ -287,7 +287,7 @@ final class LocalAnalyticsCalculator: LocalAnalyticsCalculatorProtocol {
     var phaseTotals: [Int: Int] = [:]
     var phaseMedicinalCounts: [Int: Int] = [:]
     for entry in entries {
-      if let info = curriculumLookup[entry.curriculumID] {
+      if let cid = entry.curriculumID, let info = curriculumLookup[cid] {
         phaseTotals[info.phaseId, default: 0] += 1
         if info.dosage == .medicinal {
           phaseMedicinalCounts[info.phaseId, default: 0] += 1
@@ -420,7 +420,7 @@ final class LocalAnalyticsCalculator: LocalAnalyticsCalculatorProtocol {
       let hour = calendar.component(.hour, from: entry.createdAt)
       hourCounts[hour, default: 0] += 1
 
-      if let info = curriculumLookup[entry.curriculumID] {
+      if let cid = entry.curriculumID, let info = curriculumLookup[cid] {
         hourPhaseCounts[hour, default: [:]][info.phaseId, default: 0] += 1
         hourDosageCounts[hour, default: [:]][info.dosage.rawValue, default: 0] += 1
       }
