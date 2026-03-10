@@ -2,8 +2,8 @@ import SwiftUI
 
 /// A reusable component for displaying journal entry activity statistics.
 ///
-/// Shows recent activity with neutral calendar icon, historical context, optional
-/// consistency score, and trend indicators to reflect natural engagement patterns.
+/// Shows recent activity with neutral calendar icon, historical context,
+/// and trend indicators to reflect natural engagement patterns.
 ///
 /// ## Usage
 /// ```swift
@@ -11,13 +11,6 @@ import SwiftUI
 /// StreakDisplayView(
 ///   currentStreak: 5,
 ///   longestStreak: 12
-/// )
-///
-/// // With consistency score
-/// StreakDisplayView(
-///   currentStreak: 25,
-///   longestStreak: 30,
-///   consistencyScore: 83.33
 /// )
 /// ```
 ///
@@ -28,18 +21,15 @@ import SwiftUI
 struct StreakDisplayView: View {
   let currentStreak: Int
   let longestStreak: Int
-  let consistencyScore: Double?
 
-  /// Creates a streak display view with optional consistency score.
+  /// Creates a streak display view.
   ///
   /// - Parameters:
   ///   - currentStreak: Current consecutive days with at least 1 entry
   ///   - longestStreak: Historical best streak
-  ///   - consistencyScore: Optional consistency percentage (0-100)
   init(
     currentStreak: Int,
-    longestStreak: Int,
-    consistencyScore: Double? = nil
+    longestStreak: Int
   ) {
     precondition(currentStreak >= 0, "Current streak cannot be negative")
     precondition(longestStreak >= 0, "Longest streak cannot be negative")
@@ -47,13 +37,9 @@ struct StreakDisplayView: View {
       currentStreak <= longestStreak,
       "Current streak (\(currentStreak)) cannot exceed longest streak (\(longestStreak)). Caller must update longestStreak when record is broken."
     )
-    if let score = consistencyScore {
-      precondition((0 ... 100).contains(score), "Consistency score must be between 0 and 100")
-    }
 
     self.currentStreak = currentStreak
     self.longestStreak = longestStreak
-    self.consistencyScore = consistencyScore
   }
 
   var body: some View {
@@ -80,20 +66,6 @@ struct StreakDisplayView: View {
         Text(trendArrow)
           .font(.title3)
           .foregroundColor(trendColor)
-      }
-
-      // Consistency score (if provided)
-      if let score = consistencyScore {
-        HStack(spacing: 4) {
-          Text("Consistency:")
-            .font(.caption2)
-            .foregroundColor(.secondary)
-
-          Text(String(format: "%.0f%%", score))
-            .font(.caption2)
-            .fontWeight(.medium)
-            .foregroundColor(.secondary)
-        }
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)
@@ -181,21 +153,10 @@ enum TrendIndicator: Equatable {
 #Preview("At Previous High") {
   StreakDisplayView(
     currentStreak: 15,
-    longestStreak: 15,
-    consistencyScore: 93.3
+    longestStreak: 15
   )
   .padding()
   .previewDisplayName("At Previous High")
-}
-
-#Preview("High Consistency") {
-  StreakDisplayView(
-    currentStreak: 30,
-    longestStreak: 30,
-    consistencyScore: 100.0
-  )
-  .padding()
-  .previewDisplayName("High Consistency")
 }
 
 #Preview("Resting Period") {
@@ -219,8 +180,7 @@ enum TrendIndicator: Equatable {
 #Preview("Long-term Practice") {
   StreakDisplayView(
     currentStreak: 365,
-    longestStreak: 400,
-    consistencyScore: 91.25
+    longestStreak: 400
   )
   .padding()
   .previewDisplayName("Long-term Practice")

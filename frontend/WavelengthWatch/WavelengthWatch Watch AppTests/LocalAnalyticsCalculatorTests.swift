@@ -671,7 +671,6 @@ struct LocalAnalyticsCalculatorTests {
     )
 
     #expect(result.hourlyDistribution.isEmpty)
-    #expect(result.consistencyScore == 0.0)
   }
 
   @Test("calculateTemporalPatterns calculates single entry distribution")
@@ -814,8 +813,6 @@ struct LocalAnalyticsCalculatorTests {
       startDate: startDate,
       endDate: today
     )
-
-    #expect(abs(result.consistencyScore - 100.0) < 0.01)
   }
 
   @Test("calculateTemporalPatterns calculates partial consistency")
@@ -841,9 +838,6 @@ struct LocalAnalyticsCalculatorTests {
       startDate: startDate,
       endDate: today
     )
-
-    // 3 unique days / 6 total days = 50%
-    #expect(abs(result.consistencyScore - 50.0) < 0.01)
   }
 
   @Test("calculateTemporalPatterns handles multiple entries same day")
@@ -866,8 +860,6 @@ struct LocalAnalyticsCalculatorTests {
       endDate: today
     )
 
-    // 1 unique day / 1 total day = 100%
-    #expect(abs(result.consistencyScore - 100.0) < 0.01)
     // 5 different hours
     #expect(result.hourlyDistribution.count == 5)
   }

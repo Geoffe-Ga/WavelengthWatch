@@ -300,8 +300,7 @@ struct AnalyticsViewModelTests {
       endDate: Date
     ) -> TemporalPatterns {
       TemporalPatterns(
-        hourlyDistribution: [],
-        consistencyScore: 0.0
+        hourlyDistribution: []
       )
     }
 

@@ -22,6 +22,8 @@ from ..schemas import (
     HourlyDistributionItem,
     LayerDistributionItem,
     PhaseDistributionItem,
+    PhaseMedicinalRatioItem,
+    PhaseStrategyGroup,
     SelfCareAnalytics,
     TemporalPatterns,
     TopEmotionItem,
@@ -601,10 +603,61 @@ def get_emotional_landscape(
         for curr_id, expression, layer_id, phase_id, dosage, count in sorted_emotions
     ]
 
+    # Calculate per-phase medicinal ratios
+    phase_ratio_stmt = (
+        select(
+            Curriculum.phase_id,
+            Curriculum.dosage,
+            func.count().label("cnt"),
+        )
+        .select_from(Journal)
+        .join(
+            Curriculum,
+            cast(
+                ColumnElement[bool],
+                Journal.curriculum_id == Curriculum.id,
+            ),
+        )
+        .where(
+            cast(ColumnElement[bool], Journal.user_id == user_id),
+            cast(
+                ColumnElement[bool],
+                Journal.created_at >= start_date,
+            ),
+            cast(
+                ColumnElement[bool],
+                Journal.created_at <= end_date,
+            ),
+        )
+        .group_by(
+            cast(ColumnElement[int], Curriculum.phase_id),
+            Curriculum.dosage,
+        )
+    )
+    phase_ratio_results = session.exec(phase_ratio_stmt).all()
+
+    # Aggregate per-phase totals and medicinal counts
+    phase_totals: dict[int, int] = {}
+    phase_medicinal: dict[int, int] = {}
+    for phase_id, dosage, count in phase_ratio_results:
+        phase_totals[phase_id] = phase_totals.get(phase_id, 0) + count
+        if dosage == Dosage.MEDICINAL:
+            phase_medicinal[phase_id] = phase_medicinal.get(phase_id, 0) + count
+
+    phase_medicinal_ratios = [
+        PhaseMedicinalRatioItem(
+            phase_id=pid,
+            medicinal_ratio=(phase_medicinal.get(pid, 0) / total if total > 0 else 0.0),
+            total_entries=total,
+        )
+        for pid, total in sorted(phase_totals.items())
+    ]
+
     return EmotionalLandscape(
         layer_distribution=layer_distribution,
         phase_distribution=phase_distribution,
         top_emotions=top_emotions[:limit],
+        phase_medicinal_ratios=phase_medicinal_ratios,
     )
 
 
@@ -693,9 +746,14 @@ def get_self_care_analytics(
     strategy_id_col_filter = cast(ColumnElement[int], Strategy.id)
     strategies_stmt = select(Strategy).where(strategy_id_col_filter.in_(strategy_ids))
     strategies = session.exec(strategies_stmt).all()
-    strategy_id_to_text = {s.id: s.strategy for s in strategies if s.id is not None}
+    strategy_id_to_text: dict[int, str] = {}
+    strategy_id_to_phase: dict[int, int] = {}
+    for s in strategies:
+        if s.id is not None:
+            strategy_id_to_text[s.id] = s.strategy
+            strategy_id_to_phase[s.id] = s.phase_id
 
-    # Build and sort top strategies
+    # Build and sort top strategies (flat list, backward compat)
     top_strategies_list = [
         TopStrategyItem(
             strategy_id=strategy_id,
@@ -708,10 +766,47 @@ def get_self_care_analytics(
 
     top_strategies_list.sort(key=lambda x: x.count, reverse=True)
 
+    # Build strategy groups by phase
+    phase_strategy_data: dict[
+        int, dict[int, int]
+    ] = {}  # phase_id -> {strategy_id: count}
+    for strategy_id, count in strategy_counts.items():
+        phase_id = strategy_id_to_phase.get(strategy_id)
+        if phase_id is not None:
+            if phase_id not in phase_strategy_data:
+                phase_strategy_data[phase_id] = {}
+            phase_strategy_data[phase_id][strategy_id] = count
+
+    strategy_groups = []
+    for phase_id in sorted(phase_strategy_data.keys()):
+        phase_counts = phase_strategy_data[phase_id]
+        phase_total = sum(phase_counts.values())
+        phase_unique = len(phase_counts)
+        phase_diversity = (phase_unique / phase_total) * 100 if phase_total > 0 else 0.0
+        phase_strategies = [
+            TopStrategyItem(
+                strategy_id=sid,
+                strategy=strategy_id_to_text.get(sid, "Unknown"),
+                count=cnt,
+                percentage=(cnt / phase_total) * 100 if phase_total > 0 else 0.0,
+            )
+            for sid, cnt in phase_counts.items()
+        ]
+        phase_strategies.sort(key=lambda x: x.count, reverse=True)
+        strategy_groups.append(
+            PhaseStrategyGroup(
+                phase_id=phase_id,
+                strategies=phase_strategies,
+                diversity_score=phase_diversity,
+                total_entries=phase_total,
+            )
+        )
+
     result = SelfCareAnalytics(
         top_strategies=top_strategies_list[:limit],
         diversity_score=diversity_score,
         total_strategy_entries=total_strategy_entries,
+        strategy_groups=strategy_groups,
     )
 
     # Cache the result
@@ -733,7 +828,7 @@ def get_temporal_patterns(
     if start_date is None:
         start_date = end_date - timedelta(days=30)
 
-    # Get all entries in range
+    # Get all entries in range with curriculum join for phase/dosage
     statement: SelectOfScalar[Journal] = select(Journal).where(
         cast(ColumnElement[bool], Journal.user_id == user_id),
         cast(ColumnElement[bool], Journal.created_at >= start_date),
@@ -741,28 +836,84 @@ def get_temporal_patterns(
     )
     entries = session.exec(statement).all()
 
-    # Calculate hourly distribution
+    # Calculate hourly distribution with dominant phase/dosage
     hour_counts: dict[int, int] = {}
+    # Track phase and dosage counts per hour for dominant calculation
+    hour_phase_counts: dict[int, dict[int, int]] = {}
+    hour_dosage_counts: dict[int, dict[str, int]] = {}
+
     for entry in entries:
         hour = entry.created_at.hour
         hour_counts[hour] = hour_counts.get(hour, 0) + 1
 
-    hourly_distribution = [
-        HourlyDistributionItem(hour=hour, count=count)
-        for hour, count in sorted(hour_counts.items())
-    ]
+    # Fetch curriculum info for phase/dosage per hour via SQL join
+    phase_dosage_stmt = (
+        select(
+            func.strftime("%H", Journal.created_at).label("hour"),
+            Curriculum.phase_id,
+            Curriculum.dosage,
+        )
+        .select_from(Journal)
+        .join(
+            Curriculum,
+            cast(
+                ColumnElement[bool],
+                Journal.curriculum_id == Curriculum.id,
+            ),
+        )
+        .where(
+            cast(ColumnElement[bool], Journal.user_id == user_id),
+            cast(
+                ColumnElement[bool],
+                Journal.created_at >= start_date,
+            ),
+            cast(
+                ColumnElement[bool],
+                Journal.created_at <= end_date,
+            ),
+        )
+    )
+    phase_dosage_results = session.exec(phase_dosage_stmt).all()
 
-    # Calculate consistency score (days with entries / total days)
-    if entries:
-        unique_dates = {entry.created_at.date() for entry in entries}
-        total_days = (end_date.date() - start_date.date()).days + 1
-        consistency_score = (len(unique_dates) / total_days) * 100
-    else:
-        consistency_score = 0.0
+    for hour_str, phase_id, dosage in phase_dosage_results:
+        hour = int(hour_str)
+        if hour not in hour_phase_counts:
+            hour_phase_counts[hour] = {}
+        hour_phase_counts[hour][phase_id] = hour_phase_counts[hour].get(phase_id, 0) + 1
+        if hour not in hour_dosage_counts:
+            hour_dosage_counts[hour] = {}
+        dosage_str = dosage.value if hasattr(dosage, "value") else str(dosage)
+        hour_dosage_counts[hour][dosage_str] = (
+            hour_dosage_counts[hour].get(dosage_str, 0) + 1
+        )
+
+    hourly_distribution = []
+    for hour, count in sorted(hour_counts.items()):
+        # Find dominant phase for this hour
+        dominant_phase_id = None
+        if hour in hour_phase_counts and hour_phase_counts[hour]:
+            dominant_phase_id = max(
+                hour_phase_counts[hour],
+                key=lambda k: hour_phase_counts[hour][k],
+            )
+        # Find dominant dosage for this hour
+        dominant_dosage = None
+        if hour in hour_dosage_counts and hour_dosage_counts[hour]:
+            dominant_dosage = max(
+                hour_dosage_counts[hour],
+                key=lambda k: hour_dosage_counts[hour][k],
+            )
+        hourly_distribution.append(
+            HourlyDistributionItem(
+                hour=hour,
+                count=count,
+                dominant_phase_id=dominant_phase_id,
+                dominant_dosage=dominant_dosage,
+            )
+        )
 
     return TemporalPatterns(
         hourly_distribution=hourly_distribution,
-        consistency_score=consistency_score,
     )
 
 

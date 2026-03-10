@@ -206,6 +206,7 @@ class EmotionalLandscape(SQLModel):
     layer_distribution: list[LayerDistributionItem]
     phase_distribution: list[PhaseDistributionItem]
     top_emotions: list[TopEmotionItem]
+    phase_medicinal_ratios: list[PhaseMedicinalRatioItem] = []
 
 
 class TopStrategyItem(SQLModel):
@@ -223,6 +224,7 @@ class SelfCareAnalytics(SQLModel):
     top_strategies: list[TopStrategyItem]
     diversity_score: float
     total_strategy_entries: int
+    strategy_groups: list[PhaseStrategyGroup] = []
 
 
 class HourlyDistributionItem(SQLModel):
@@ -230,13 +232,14 @@ class HourlyDistributionItem(SQLModel):
 
     hour: int
     count: int
+    dominant_phase_id: int | None = None
+    dominant_dosage: str | None = None
 
 
 class TemporalPatterns(SQLModel):
     """Temporal patterns response model."""
 
     hourly_distribution: list[HourlyDistributionItem]
-    consistency_score: float
 
 
 class GrowthIndicators(SQLModel):
@@ -245,3 +248,20 @@ class GrowthIndicators(SQLModel):
     medicinal_trend: float
     layer_diversity: int
     phase_coverage: int
+
+
+class PhaseMedicinalRatioItem(SQLModel):
+    """Medicinal ratio breakdown for a single phase."""
+
+    phase_id: int
+    medicinal_ratio: float
+    total_entries: int
+
+
+class PhaseStrategyGroup(SQLModel):
+    """Strategy usage grouped by phase."""
+
+    phase_id: int
+    strategies: list[TopStrategyItem]
+    diversity_score: float
+    total_entries: int

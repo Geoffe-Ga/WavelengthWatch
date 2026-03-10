@@ -20,12 +20,12 @@ struct GrowthIndicatorsViewTests {
   @Test("view initializes with growth data")
   func view_initializesWithData() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
-      medicinalTrend: 12.5,
+      medicinalTrend: 0.125,
       layerDiversity: 4,
       phaseCoverage: 5
     ))
 
-    #expect(view.indicators.medicinalTrend == 12.5)
+    #expect(view.indicators.medicinalTrend == 0.125)
     #expect(view.indicators.layerDiversity == 4)
     #expect(view.indicators.phaseCoverage == 5)
   }
@@ -33,7 +33,7 @@ struct GrowthIndicatorsViewTests {
   @Test("trendDirection returns positive for trend above threshold")
   func trendDirection_returnsPositiveForTrendAboveThreshold() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
-      medicinalTrend: 5.5,
+      medicinalTrend: 0.055, // 5.5%, above 5% threshold
       layerDiversity: 3,
       phaseCoverage: 4
     ))
@@ -44,7 +44,7 @@ struct GrowthIndicatorsViewTests {
   @Test("trendDirection returns varying for trend below negative threshold")
   func trendDirection_returnsVaryingForTrendBelowThreshold() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
-      medicinalTrend: -6.0,
+      medicinalTrend: -0.06, // -6%, below -5% threshold
       layerDiversity: 2,
       phaseCoverage: 3
     ))
@@ -55,7 +55,7 @@ struct GrowthIndicatorsViewTests {
   @Test("trendDirection returns neutral for trend within thresholds")
   func trendDirection_returnsNeutralForTrendWithinThresholds() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
-      medicinalTrend: 2.0,
+      medicinalTrend: 0.02, // 2%, within ±5% threshold
       layerDiversity: 3,
       phaseCoverage: 4
     ))
@@ -77,7 +77,7 @@ struct GrowthIndicatorsViewTests {
   @Test("trendArrow returns up arrow for positive trend")
   func trendArrow_returnsUpArrowForPositiveTrend() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
-      medicinalTrend: 10.0,
+      medicinalTrend: 0.10, // 10%
       layerDiversity: 3,
       phaseCoverage: 4
     ))
@@ -88,7 +88,7 @@ struct GrowthIndicatorsViewTests {
   @Test("trendArrow returns down arrow for varying trend")
   func trendArrow_returnsDownArrowForVaryingTrend() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
-      medicinalTrend: -8.0,
+      medicinalTrend: -0.08, // -8%
       layerDiversity: 2,
       phaseCoverage: 3
     ))
@@ -99,7 +99,7 @@ struct GrowthIndicatorsViewTests {
   @Test("trendArrow returns forward arrow for neutral trend")
   func trendArrow_returnsForwardArrowForNeutralTrend() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
-      medicinalTrend: 1.5,
+      medicinalTrend: 0.015, // 1.5%
       layerDiversity: 3,
       phaseCoverage: 4
     ))
@@ -110,7 +110,7 @@ struct GrowthIndicatorsViewTests {
   @Test("trendColor returns green for positive trend")
   func trendColor_returnsGreenForPositiveTrend() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
-      medicinalTrend: 15.0,
+      medicinalTrend: 0.15, // 15%
       layerDiversity: 4,
       phaseCoverage: 5
     ))
@@ -121,7 +121,7 @@ struct GrowthIndicatorsViewTests {
   @Test("trendColor returns neutral color for varying trend")
   func trendColor_returnsNeutralColorForVaryingTrend() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
-      medicinalTrend: -12.0,
+      medicinalTrend: -0.12, // -12%
       layerDiversity: 2,
       phaseCoverage: 3
     ))
@@ -134,7 +134,7 @@ struct GrowthIndicatorsViewTests {
   @Test("trendColor returns neutral color for neutral trend")
   func trendColor_returnsNeutralColorForNeutralTrend() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
-      medicinalTrend: 3.0,
+      medicinalTrend: 0.03, // 3%
       layerDiversity: 3,
       phaseCoverage: 4
     ))
@@ -147,7 +147,7 @@ struct GrowthIndicatorsViewTests {
   @Test("formattedTrend includes percentage and sign for positive trend")
   func formattedTrend_includesPercentageAndSignForPositiveTrend() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
-      medicinalTrend: 12.34,
+      medicinalTrend: 0.1234, // 12.34%
       layerDiversity: 3,
       phaseCoverage: 4
     ))
@@ -158,7 +158,7 @@ struct GrowthIndicatorsViewTests {
   @Test("formattedTrend includes percentage and sign for decreasing trend")
   func formattedTrend_includesPercentageAndSignForDecreasingTrend() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
-      medicinalTrend: -8.76,
+      medicinalTrend: -0.0876, // -8.76%
       layerDiversity: 2,
       phaseCoverage: 3
     ))
@@ -180,7 +180,7 @@ struct GrowthIndicatorsViewTests {
   @Test("layerDiversityText formats singular layer correctly")
   func layerDiversityText_formatsSingularLayerCorrectly() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
-      medicinalTrend: 5.0,
+      medicinalTrend: 0.05,
       layerDiversity: 1,
       phaseCoverage: 3
     ))
@@ -191,7 +191,7 @@ struct GrowthIndicatorsViewTests {
   @Test("layerDiversityText formats plural layers correctly")
   func layerDiversityText_formatsPluralLayersCorrectly() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
-      medicinalTrend: 5.0,
+      medicinalTrend: 0.05,
       layerDiversity: 4,
       phaseCoverage: 5
     ))
@@ -213,7 +213,7 @@ struct GrowthIndicatorsViewTests {
   @Test("phaseCoverageText formats correctly")
   func phaseCoverageText_formatsCorrectly() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
-      medicinalTrend: 5.0,
+      medicinalTrend: 0.05,
       layerDiversity: 3,
       phaseCoverage: 4
     ))
@@ -224,7 +224,7 @@ struct GrowthIndicatorsViewTests {
   @Test("phaseCoverageText handles all phases covered")
   func phaseCoverageText_handlesAllPhasesCovered() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
-      medicinalTrend: 10.0,
+      medicinalTrend: 0.10,
       layerDiversity: 5,
       phaseCoverage: 6
     ))
@@ -279,7 +279,7 @@ struct GrowthIndicatorsViewTests {
   @Test("isEmpty returns false when has positive trend")
   func isEmpty_returnsFalseWhenHasPositiveTrend() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
-      medicinalTrend: 5.0,
+      medicinalTrend: 0.05,
       layerDiversity: 0,
       phaseCoverage: 0
     ))
@@ -290,7 +290,7 @@ struct GrowthIndicatorsViewTests {
   @Test("isEmpty returns false when has varying trend")
   func isEmpty_returnsFalseWhenHasVaryingTrend() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
-      medicinalTrend: -5.0,
+      medicinalTrend: -0.05,
       layerDiversity: 0,
       phaseCoverage: 0
     ))
@@ -301,7 +301,7 @@ struct GrowthIndicatorsViewTests {
   @Test("integration test with realistic positive growth data")
   func integrationTest_withRealisticPositiveGrowthData() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
-      medicinalTrend: 18.5,
+      medicinalTrend: 0.185, // 18.5%
       layerDiversity: 5,
       phaseCoverage: 6
     ))
@@ -318,7 +318,7 @@ struct GrowthIndicatorsViewTests {
   @Test("integration test with realistic varying growth data")
   func integrationTest_withRealisticVaryingGrowthData() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
-      medicinalTrend: -15.2,
+      medicinalTrend: -0.152, // -15.2%
       layerDiversity: 2,
       phaseCoverage: 3
     ))
@@ -337,7 +337,7 @@ struct GrowthIndicatorsViewTests {
   @Test("integration test with realistic neutral growth data")
   func integrationTest_withRealisticNeutralGrowthData() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
-      medicinalTrend: 2.5,
+      medicinalTrend: 0.025, // 2.5%
       layerDiversity: 3,
       phaseCoverage: 4
     ))

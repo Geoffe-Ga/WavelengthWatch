@@ -42,9 +42,9 @@ struct GrowthIndicatorsView: View {
   }
 
   var trendDirection: TrendDirection {
-    // Threshold for meaningful trend: ±5%
-    // Matches backend analytics logic for growth significance
-    let threshold = 5.0
+    // Threshold for meaningful trend: ±5% (0.05 in decimal)
+    // medicinalTrend is a decimal fraction (0.0-1.0 range)
+    let threshold = 0.05
 
     if indicators.medicinalTrend > threshold {
       return .positive
@@ -82,8 +82,10 @@ struct GrowthIndicatorsView: View {
   }
 
   var formattedTrend: String {
-    let sign = indicators.medicinalTrend > 0 ? "+" : ""
-    return String(format: "%@%.1f%%", sign, indicators.medicinalTrend)
+    // medicinalTrend is a decimal fraction (0.0-1.0), multiply by 100 for display
+    let displayValue = indicators.medicinalTrend * 100
+    let sign = displayValue > 0 ? "+" : ""
+    return String(format: "%@%.1f%%", sign, displayValue)
   }
 
   var layerDiversityText: String {
