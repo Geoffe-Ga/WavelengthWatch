@@ -1,6 +1,5 @@
 import SwiftUI
 import Testing
-
 @testable import WavelengthWatch_Watch_App
 
 /// Tests for JournalFlowViewModel managing the multi-step emotion logging flow.
@@ -38,21 +37,21 @@ struct JournalFlowViewModelTests {
     return CatalogResponseModel(phaseOrder: ["Rising"], layers: layers)
   }
 
-  @Test func init_startsAtPrimaryEmotion() async {
+  @Test func init_startsAtPrimaryEmotion() {
     let catalog = createTestCatalog()
     let viewModel = JournalFlowViewModel(catalog: catalog)
 
     #expect(viewModel.currentStep == .primaryEmotion)
   }
 
-  @Test func init_defaultsToSelfInitiated() async {
+  @Test func init_defaultsToSelfInitiated() {
     let catalog = createTestCatalog()
     let viewModel = JournalFlowViewModel(catalog: catalog)
 
     #expect(viewModel.initiatedBy == .self_initiated)
   }
 
-  @Test func filteredLayers_returnsEmotionsOnly_initially() async {
+  @Test func filteredLayers_returnsEmotionsOnly_initially() {
     let catalog = createTestCatalog()
     let viewModel = JournalFlowViewModel(catalog: catalog)
 
@@ -62,7 +61,7 @@ struct JournalFlowViewModelTests {
     #expect(filteredLayers.allSatisfy { $0.id != 0 })
   }
 
-  @Test func filteredLayers_returnsLayersInDescendingOrder() async {
+  @Test func filteredLayers_returnsLayersInDescendingOrder() {
     let catalog = createTestCatalog()
     let viewModel = JournalFlowViewModel(catalog: catalog)
 
@@ -76,7 +75,7 @@ struct JournalFlowViewModelTests {
     #expect(filteredLayers[1].id == 1) // Beige (lowest emotion layer) appears last
   }
 
-  @Test func canProceed_fromPrimary_requiresSelection() async {
+  @Test func canProceed_fromPrimary_requiresSelection() {
     let catalog = createTestCatalog()
     let viewModel = JournalFlowViewModel(catalog: catalog)
 
@@ -90,7 +89,7 @@ struct JournalFlowViewModelTests {
     #expect(viewModel.canProceed == true)
   }
 
-  @Test func reset_clearsAllSelections() async {
+  @Test func reset_clearsAllSelections() {
     let catalog = createTestCatalog()
     let viewModel = JournalFlowViewModel(catalog: catalog)
 
@@ -112,7 +111,7 @@ struct JournalFlowViewModelTests {
     #expect(viewModel.currentStep == .primaryEmotion)
   }
 
-  @Test func advance_updatesCurrentStep() async {
+  @Test func advance_updatesCurrentStep() {
     let catalog = createTestCatalog()
     let viewModel = JournalFlowViewModel(catalog: catalog)
 
@@ -139,7 +138,7 @@ struct JournalFlowViewModelTests {
     #expect(viewModel.currentStep == .review)
   }
 
-  @Test func getPrimaryCurriculum_returnsCurriculum_whenSelected() async {
+  @Test func getPrimaryCurriculum_returnsCurriculum_whenSelected() {
     let catalog = createTestCatalog()
     let viewModel = JournalFlowViewModel(catalog: catalog)
 

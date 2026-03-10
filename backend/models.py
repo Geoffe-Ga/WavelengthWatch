@@ -1,7 +1,7 @@
 """SQLModel table definitions for the WavelengthWatch backend."""
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from sqlalchemy import Column, DateTime
 from sqlalchemy import Enum as SAEnum
@@ -10,14 +10,14 @@ from sqlalchemy.orm import Mapped
 from sqlmodel import Field, Relationship, SQLModel
 
 
-class Dosage(str, Enum):
+class Dosage(StrEnum):
     """Dosage categories for curriculum entries."""
 
     MEDICINAL = "Medicinal"
     TOXIC = "Toxic"
 
 
-class InitiatedBy(str, Enum):
+class InitiatedBy(StrEnum):
     """Source of journal entry creation."""
 
     SELF = "self"

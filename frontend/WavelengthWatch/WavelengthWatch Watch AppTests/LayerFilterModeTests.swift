@@ -1,7 +1,6 @@
 import Testing
 @testable import WavelengthWatch_Watch_App
 
-@Suite("LayerFilterMode Tests")
 struct LayerFilterModeTests {
   // MARK: - Test Data
 

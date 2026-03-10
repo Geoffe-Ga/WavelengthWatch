@@ -49,7 +49,9 @@ final class NetworkMonitor: ObservableObject, NetworkMonitorProtocol {
   /// Current network connection status.
   @Published private(set) var isConnected: Bool = false
 
-  var isConnectedPublisher: Published<Bool>.Publisher { $isConnected }
+  var isConnectedPublisher: Published<Bool>.Publisher {
+    $isConnected
+  }
 
   /// Type of connection currently active.
   @Published private(set) var connectionType: ConnectionType = .unknown

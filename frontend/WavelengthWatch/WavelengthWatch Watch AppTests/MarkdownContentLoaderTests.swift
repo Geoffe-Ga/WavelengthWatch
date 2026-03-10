@@ -6,11 +6,10 @@ import Testing
 ///
 /// Validates markdown parsing with full block-level formatting support,
 /// including lists, headers, bold text, and line breaks.
-@Suite("MarkdownContentLoader Tests")
 struct MarkdownContentLoaderTests {
   @Test("Loads about-content.md successfully")
   @MainActor
-  func loadAboutContent() async throws {
+  func loadAboutContent() async {
     let loader = MarkdownContentLoader()
 
     let result = await loader.loadContent(fileName: "about-content")
@@ -43,7 +42,7 @@ struct MarkdownContentLoaderTests {
 
   @Test("Fails gracefully with non-existent file")
   @MainActor
-  func loadNonExistentFile() async throws {
+  func loadNonExistentFile() async {
     let loader = MarkdownContentLoader()
 
     let result = await loader.loadContent(fileName: "non-existent-file")
@@ -58,7 +57,7 @@ struct MarkdownContentLoaderTests {
 
   @Test("Fails gracefully with empty filename")
   @MainActor
-  func loadEmptyFilename() async throws {
+  func loadEmptyFilename() async {
     let loader = MarkdownContentLoader()
 
     let result = await loader.loadContent(fileName: "")
@@ -73,7 +72,7 @@ struct MarkdownContentLoaderTests {
 
   @Test("Parses markdown with lists correctly")
   @MainActor
-  func parseMarkdownLists() async throws {
+  func parseMarkdownLists() async {
     // Create a test bundle with markdown content
     let testMarkdown = """
     # Test Header
@@ -105,7 +104,7 @@ struct MarkdownContentLoaderTests {
 
   @Test("AttributedString preserves bold formatting")
   @MainActor
-  func preservesBoldFormatting() async throws {
+  func preservesBoldFormatting() async {
     let loader = MarkdownContentLoader()
     let result = await loader.loadContent(fileName: "about-content")
 
@@ -133,7 +132,7 @@ struct MarkdownContentLoaderTests {
 
   @Test("AttributedString preserves paragraph breaks")
   @MainActor
-  func preservesParagraphBreaks() async throws {
+  func preservesParagraphBreaks() async {
     let loader = MarkdownContentLoader()
     let result = await loader.loadContent(fileName: "about-content")
 
@@ -157,7 +156,7 @@ struct MarkdownContentLoaderTests {
 
   @Test("AttributedString preserves headers")
   @MainActor
-  func preservesHeaders() async throws {
+  func preservesHeaders() async {
     let loader = MarkdownContentLoader()
     let result = await loader.loadContent(fileName: "about-content")
 

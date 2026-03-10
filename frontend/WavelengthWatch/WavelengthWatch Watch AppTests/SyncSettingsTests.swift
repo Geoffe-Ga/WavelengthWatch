@@ -88,16 +88,16 @@ struct SyncSettingsTests {
     #expect(settings.hasCompletedInitialMigration == false)
   }
 
-  @Test func lastSyncTimestampDefaultsToNil() {
-    let defaults = UserDefaults(suiteName: "SyncSettingsTests.lastSyncTimestampDefaultsToNil")!
+  @Test func lastSyncTimestampDefaultsToNil() throws {
+    let defaults = try #require(UserDefaults(suiteName: "SyncSettingsTests.lastSyncTimestampDefaultsToNil"))
     defaults.removePersistentDomain(forName: "SyncSettingsTests.lastSyncTimestampDefaultsToNil")
     let settings = SyncSettings(persistence: defaults)
 
     #expect(settings.lastSyncTimestamp == nil)
   }
 
-  @Test func lastSyncTimestampCanBeSet() {
-    let defaults = UserDefaults(suiteName: "SyncSettingsTests.lastSyncTimestampCanBeSet")!
+  @Test func lastSyncTimestampCanBeSet() throws {
+    let defaults = try #require(UserDefaults(suiteName: "SyncSettingsTests.lastSyncTimestampCanBeSet"))
     defaults.removePersistentDomain(forName: "SyncSettingsTests.lastSyncTimestampCanBeSet")
     let settings = SyncSettings(persistence: defaults)
     let now = Date()
@@ -112,8 +112,8 @@ struct SyncSettingsTests {
     }
   }
 
-  @Test func lastSyncTimestampCanBeCleared() {
-    let defaults = UserDefaults(suiteName: "SyncSettingsTests.lastSyncTimestampCanBeCleared")!
+  @Test func lastSyncTimestampCanBeCleared() throws {
+    let defaults = try #require(UserDefaults(suiteName: "SyncSettingsTests.lastSyncTimestampCanBeCleared"))
     defaults.removePersistentDomain(forName: "SyncSettingsTests.lastSyncTimestampCanBeCleared")
     let settings = SyncSettings(persistence: defaults)
 

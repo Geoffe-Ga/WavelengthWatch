@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import WavelengthWatch_Watch_App
 
-@Suite("EmotionalLandscapeViewModel Tests")
 struct EmotionalLandscapeViewModelTests {
   // MARK: - Mock Service
 

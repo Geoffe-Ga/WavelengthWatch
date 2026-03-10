@@ -3,7 +3,6 @@ import SwiftUI
 import Testing
 @testable import WavelengthWatch_Watch_App
 
-@Suite("PhaseJourneyView Tests")
 struct PhaseJourneyViewTests {
   @Test("view initializes with empty distribution")
   func view_initializesWithEmptyDistribution() {

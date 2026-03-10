@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import WavelengthWatch_Watch_App
 
-@Suite("EmotionalLandscape Models Tests")
 struct EmotionalLandscapeModelsTests {
   // MARK: - LayerDistributionItem Tests
 
@@ -16,7 +15,7 @@ struct EmotionalLandscapeModelsTests {
     }
     """
 
-    let data = json.data(using: .utf8)!
+    let data = try #require(json.data(using: .utf8))
     let decoder = JSONDecoder()
     let item = try decoder.decode(LayerDistributionItem.self, from: data)
 
@@ -47,7 +46,7 @@ struct EmotionalLandscapeModelsTests {
     }
     """
 
-    let data = json.data(using: .utf8)!
+    let data = try #require(json.data(using: .utf8))
     let decoder = JSONDecoder()
     let item = try decoder.decode(PhaseDistributionItem.self, from: data)
 
@@ -81,7 +80,7 @@ struct EmotionalLandscapeModelsTests {
     }
     """
 
-    let data = json.data(using: .utf8)!
+    let data = try #require(json.data(using: .utf8))
     let decoder = JSONDecoder()
     let item = try decoder.decode(TopEmotionItem.self, from: data)
 
@@ -151,7 +150,7 @@ struct EmotionalLandscapeModelsTests {
     }
     """
 
-    let data = json.data(using: .utf8)!
+    let data = try #require(json.data(using: .utf8))
     let decoder = JSONDecoder()
     let landscape = try decoder.decode(EmotionalLandscape.self, from: data)
 
@@ -209,7 +208,7 @@ struct EmotionalLandscapeModelsTests {
     }
     """
 
-    let data = json.data(using: .utf8)!
+    let data = try #require(json.data(using: .utf8))
     let decoder = JSONDecoder()
     let landscape = try decoder.decode(EmotionalLandscape.self, from: data)
 

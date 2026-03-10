@@ -433,7 +433,9 @@ final class MockAPIClient: APIClientProtocol {
 final class MockNetworkMonitor: ObservableObject, NetworkMonitorProtocol {
   @Published var isConnected: Bool
 
-  var isConnectedPublisher: Published<Bool>.Publisher { $isConnected }
+  var isConnectedPublisher: Published<Bool>.Publisher {
+    $isConnected
+  }
 
   init(isConnected: Bool) {
     self.isConnected = isConnected

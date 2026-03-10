@@ -87,7 +87,7 @@ final class NotificationDelegate: ObservableObject {
   }
 }
 
-// Shim to bridge UNUserNotificationCenterDelegate to our NotificationDelegate
+/// Shim to bridge UNUserNotificationCenterDelegate to our NotificationDelegate
 final class NotificationDelegateShim: NSObject, UNUserNotificationCenterDelegate {
   static let shared = NotificationDelegateShim()
   weak var delegate: NotificationDelegate?

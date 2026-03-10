@@ -2,7 +2,6 @@ import SwiftUI
 import Testing
 @testable import WavelengthWatch_Watch_App
 
-@Suite("StreakDisplayView Tests")
 struct StreakDisplayViewTests {
   // MARK: - Basic Display Tests
 
@@ -89,9 +88,9 @@ struct StreakDisplayViewTests {
     #expect(view.longestStreak == 12)
   }
 
-  // NOTE: Test for currentStreak > longestStreak removed because this violates
-  // the precondition that currentStreak <= longestStreak. This edge case is now
-  // semantically invalid and properly caught by the precondition.
+  /// NOTE: Test for currentStreak > longestStreak removed because this violates
+  /// the precondition that currentStreak <= longestStreak. This edge case is now
+  /// semantically invalid and properly caught by the precondition.
   @Test("view handles zero longest streak")
   func view_handlesZeroLongestStreak() {
     let view = StreakDisplayView(

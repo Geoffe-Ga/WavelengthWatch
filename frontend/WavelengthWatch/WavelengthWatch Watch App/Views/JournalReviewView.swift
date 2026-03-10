@@ -136,7 +136,6 @@ struct JournalReviewView: View {
     Self.timestampFormatter.string(from: Date())
   }
 
-  @ViewBuilder
   private func emotionCard(label: String, expression: String, dosage: CatalogDosage) -> some View {
     VStack(alignment: .leading, spacing: 8) {
       Text(label)
@@ -167,7 +166,6 @@ struct JournalReviewView: View {
     .cornerRadius(10)
   }
 
-  @ViewBuilder
   private func strategyCard(strategy: CatalogStrategyModel) -> some View {
     VStack(alignment: .leading, spacing: 8) {
       Text("Strategy")

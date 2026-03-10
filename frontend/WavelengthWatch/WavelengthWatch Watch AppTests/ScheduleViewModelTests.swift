@@ -8,7 +8,7 @@ struct ScheduleViewModelTests {
   @Test func requestsNotificationPermission() async throws {
     let mockCenter = MockNotificationCenter()
     let scheduler = NotificationScheduler(notificationCenter: mockCenter)
-    let defaults = UserDefaults(suiteName: "ScheduleViewModelTests.permission")!
+    let defaults = try #require(UserDefaults(suiteName: "ScheduleViewModelTests.permission"))
     defaults.removePersistentDomain(forName: "ScheduleViewModelTests.permission")
     let viewModel = ScheduleViewModel(userDefaults: defaults, notificationScheduler: scheduler)
 
@@ -22,7 +22,7 @@ struct ScheduleViewModelTests {
 
   @MainActor
   @Test func addsScheduleAndPersists() throws {
-    let defaults = UserDefaults(suiteName: "ScheduleViewModelTests.add")!
+    let defaults = try #require(UserDefaults(suiteName: "ScheduleViewModelTests.add"))
     defaults.removePersistentDomain(forName: "ScheduleViewModelTests.add")
 
     let viewModel = ScheduleViewModel(userDefaults: defaults)
@@ -44,8 +44,8 @@ struct ScheduleViewModelTests {
   }
 
   @MainActor
-  @Test func updatesSchedule() {
-    let defaults = UserDefaults(suiteName: "ScheduleViewModelTests.update")!
+  @Test func updatesSchedule() throws {
+    let defaults = try #require(UserDefaults(suiteName: "ScheduleViewModelTests.update"))
     defaults.removePersistentDomain(forName: "ScheduleViewModelTests.update")
 
     let viewModel = ScheduleViewModel(userDefaults: defaults)
@@ -73,8 +73,8 @@ struct ScheduleViewModelTests {
   }
 
   @MainActor
-  @Test func deletesSchedule() {
-    let defaults = UserDefaults(suiteName: "ScheduleViewModelTests.delete")!
+  @Test func deletesSchedule() throws {
+    let defaults = try #require(UserDefaults(suiteName: "ScheduleViewModelTests.delete"))
     defaults.removePersistentDomain(forName: "ScheduleViewModelTests.delete")
 
     let viewModel = ScheduleViewModel(userDefaults: defaults)
@@ -92,8 +92,8 @@ struct ScheduleViewModelTests {
   }
 
   @MainActor
-  @Test func togglesScheduleEnabledViaDirectBinding() {
-    let defaults = UserDefaults(suiteName: "ScheduleViewModelTests.toggle")!
+  @Test func togglesScheduleEnabledViaDirectBinding() throws {
+    let defaults = try #require(UserDefaults(suiteName: "ScheduleViewModelTests.toggle"))
     defaults.removePersistentDomain(forName: "ScheduleViewModelTests.toggle")
 
     let viewModel = ScheduleViewModel(userDefaults: defaults)

@@ -228,11 +228,11 @@ final class APIClientSpy: APIClientProtocol {
     decoder.dateDecodingStrategy = .iso8601
   }
 
-  func get<T>(_ path: String) async throws -> T where T: Decodable {
+  func get<T: Decodable>(_ path: String) async throws -> T {
     throw NSError(domain: "unimplemented", code: 1)
   }
 
-  func post<Response>(_ path: String, body: some Encodable) async throws -> Response where Response: Decodable {
+  func post<Response: Decodable>(_ path: String, body: some Encodable) async throws -> Response {
     lastPath = path
     lastBody = try encoder.encode(body)
     let data = try encoder.encode(response)

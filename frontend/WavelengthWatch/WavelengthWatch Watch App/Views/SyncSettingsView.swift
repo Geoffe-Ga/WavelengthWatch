@@ -75,7 +75,6 @@ struct SyncSettingsView: View {
     .navigationBarTitleDisplayMode(.inline)
   }
 
-  @ViewBuilder
   private func privacyExplanation(icon: String, color: Color, title: String, description: String) -> some View {
     HStack(alignment: .top, spacing: 8) {
       Image(systemName: icon)
