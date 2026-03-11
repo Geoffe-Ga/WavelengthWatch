@@ -46,6 +46,9 @@ struct LayerView: View {
     .onAppear {
       showIndicator()
     }
+    .onDisappear {
+      hideIndicatorTask?.cancel()
+    }
   }
 
   private var pageIndicator: some View {

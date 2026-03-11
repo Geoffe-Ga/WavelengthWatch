@@ -8,6 +8,10 @@ struct StrategyCard: View {
   @EnvironmentObject private var flowCoordinator: FlowCoordinator
   @State private var showingJournalConfirmation = false
 
+  private var primaryID: Int? {
+    phase.medicinal.first?.id ?? phase.toxic.first?.id
+  }
+
   var body: some View {
     ZStack(alignment: .topTrailing) {
       HStack {
@@ -27,13 +31,11 @@ struct StrategyCard: View {
           .fill(color.opacity(0.08))
       )
       .onTapGesture {
-        let primaryID = phase.medicinal.first?.id ?? phase.toxic.first?.id
         if primaryID != nil || flowCoordinator.currentStep == .selectingStrategy {
           showingJournalConfirmation = true
         }
       }
 
-      let primaryID = phase.medicinal.first?.id ?? phase.toxic.first?.id
       if primaryID != nil || flowCoordinator.currentStep == .selectingStrategy {
         MysticalJournalIcon(color: color)
           .padding(.top, 6)
@@ -57,7 +59,6 @@ struct StrategyCard: View {
     if flowCoordinator.currentStep == .selectingStrategy {
       flowCoordinator.captureStrategy(strategy)
     } else {
-      let primaryID = phase.medicinal.first?.id ?? phase.toxic.first?.id
       if let primaryID {
         Task {
           await viewModel.journal(
