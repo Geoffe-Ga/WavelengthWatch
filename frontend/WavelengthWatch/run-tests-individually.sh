@@ -67,6 +67,12 @@ ALL_SUITES=(
   "StrategyUsageViewTests"
   "TemporalPatternsViewTests"
   "GrowthIndicatorsViewTests"
+  "WLColorTokensTests"
+  "WLSpacingTokensTests"
+  "WLTypographyTokensTests"
+  "WLGlassModifierTests"
+  "WLCardModifierTests"
+  "WLButtonStyleTests"
 )
 
 # Parse arguments
