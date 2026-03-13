@@ -37,5 +37,7 @@ backend/database.db
 app.db
 .test-cache/
 
-# Claude agent system (copied from ml-odyssey, not checked in)
-.claude/
+# Claude Code - ignore local settings, track skills/agents/shared
+.claude/settings.local.json
+.claude/worktrees/
+.claude/commands/
