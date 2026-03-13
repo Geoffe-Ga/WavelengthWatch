@@ -81,8 +81,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Select Xcode 16.4
-        run: sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
+      - name: Select latest Xcode
+        run: |
+          # Prefer Xcode 18 (26.x) if available, fall back to 16.4
+          if [ -d /Applications/Xcode_26.app ]; then
+            sudo xcode-select -s /Applications/Xcode_26.app/Contents/Developer
+          else
+            sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
+          fi
 
       - name: Install SwiftFormat
         run: brew install swiftformat

@@ -22,8 +22,13 @@ set -e  # Exit on first failure
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 SCHEME="WavelengthWatch Watch App"
-# Use a commonly available simulator across different Xcode/CI versions
-DESTINATION="platform=watchOS Simulator,name=Apple Watch Series 10 (46mm)"
+# Pick the best available large-face watchOS simulator.
+# Xcode 18+ (watchOS 26) ships Series 11; Xcode 16.x ships Series 10.
+if xcrun simctl list devices available 2>/dev/null | grep -q "Apple Watch Series 11 (46mm)"; then
+  DESTINATION="platform=watchOS Simulator,name=Apple Watch Series 11 (46mm)"
+else
+  DESTINATION="platform=watchOS Simulator,name=Apple Watch Series 10 (46mm)"
+fi
 TEST_TARGET="WavelengthWatch Watch AppTests"
 PROJECT_PATH="$SCRIPT_DIR/WavelengthWatch.xcodeproj"
 DERIVED_DATA_PATH="$SCRIPT_DIR/.test-cache"
