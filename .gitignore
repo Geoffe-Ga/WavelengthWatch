@@ -29,6 +29,9 @@ fastlane/test_output/
 # idea
 .idea/*
 
+# Python virtual environment
+.venv/
+
 # Pycache
 **/__pycache__/*
 
