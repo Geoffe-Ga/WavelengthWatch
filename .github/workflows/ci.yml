@@ -83,10 +83,13 @@ jobs:
 
       - name: Select latest Xcode
         run: |
-          # Prefer Xcode 18 (26.x) if available, fall back to 16.4
-          if [ -d /Applications/Xcode_26.app ]; then
-            sudo xcode-select -s /Applications/Xcode_26.app/Contents/Developer
+          # Prefer the newest Xcode 26.x if available, fall back to 16.4
+          XCODE_26=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          if [ -n "$XCODE_26" ]; then
+            echo "Using $XCODE_26"
+            sudo xcode-select -s "$XCODE_26/Contents/Developer"
           else
+            echo "Using Xcode 16.4"
             sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
           fi
 
