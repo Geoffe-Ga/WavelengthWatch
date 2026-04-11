@@ -83,11 +83,20 @@ jobs:
 
       - name: Select latest Xcode
         run: |
-          # Prefer Xcode 18 (26.x) if available, fall back to 16.4
-          if [ -d /Applications/Xcode_26.app ]; then
-            sudo xcode-select -s /Applications/Xcode_26.app/Contents/Developer
+          # Prefer the newest Xcode 26.x if available, fall back to newest 16.x
+          # GitHub runners use versioned names (Xcode_26.0.app, Xcode_26.3.app, etc.)
+          XCODE_26=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          XCODE_16=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -1)
+          if [ -n "$XCODE_26" ]; then
+            echo "Selected: $XCODE_26"
+            sudo xcode-select -s "$XCODE_26/Contents/Developer"
+          elif [ -n "$XCODE_16" ]; then
+            echo "Selected: $XCODE_16"
+            sudo xcode-select -s "$XCODE_16/Contents/Developer"
           else
-            sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
+            echo "No Xcode 26.x or 16.x found. Available installations:"
+            ls /Applications/Xcode*.app 2>/dev/null || echo "  (none)"
+            exit 1
           fi
 
       - name: Install SwiftFormat
