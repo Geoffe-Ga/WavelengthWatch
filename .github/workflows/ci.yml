@@ -81,20 +81,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Select latest Xcode
+      - name: Select Xcode
         run: |
-          # Prefer the newest Xcode 26.x if available, fall back to newest 16.x
-          # GitHub runners use versioned names (Xcode_26.0.app, Xcode_26.3.app, etc.)
-          XCODE_26=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          # Use Xcode 16.x for watchOS 11.x deployment targets (Swift 5 mode).
+          # The project hasn't migrated to the watchOS 26 SDK yet — switch to
+          # Xcode 26.x here once that migration is complete.
+          # GitHub runners use versioned names (Xcode_16.4.app, Xcode_26.3.app, etc.)
           XCODE_16=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -1)
-          if [ -n "$XCODE_26" ]; then
-            echo "Selected: $XCODE_26"
-            sudo xcode-select -s "$XCODE_26/Contents/Developer"
-          elif [ -n "$XCODE_16" ]; then
+          XCODE_26=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          if [ -n "$XCODE_16" ]; then
             echo "Selected: $XCODE_16"
             sudo xcode-select -s "$XCODE_16/Contents/Developer"
+          elif [ -n "$XCODE_26" ]; then
+            echo "Falling back to: $XCODE_26"
+            sudo xcode-select -s "$XCODE_26/Contents/Developer"
           else
-            echo "No Xcode 26.x or 16.x found. Available installations:"
+            echo "No Xcode 16.x or 26.x found. Available installations:"
             ls /Applications/Xcode*.app 2>/dev/null || echo "  (none)"
             exit 1
           fi
