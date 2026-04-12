@@ -29,7 +29,8 @@ fastlane/test_output/
 # idea
 .idea/*
 
-# Pycache
+# Python
+.venv/
 **/__pycache__/*
 
 # db

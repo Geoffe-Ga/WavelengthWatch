@@ -81,13 +81,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Select latest Xcode
+      - name: Select Xcode
         run: |
-          # Prefer Xcode 18 (26.x) if available, fall back to 16.4
-          if [ -d /Applications/Xcode_26.app ]; then
-            sudo xcode-select -s /Applications/Xcode_26.app/Contents/Developer
+          # Use Xcode 16.x for watchOS 11.x deployment targets (Swift 5 mode).
+          # The project hasn't migrated to the watchOS 26 SDK yet — switch to
+          # Xcode 26.x here once that migration is complete.
+          # GitHub runners use versioned names (Xcode_16.4.app, Xcode_26.3.app, etc.)
+          XCODE_16=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -1)
+          XCODE_26=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          if [ -n "$XCODE_16" ]; then
+            echo "Selected: $XCODE_16"
+            sudo xcode-select -s "$XCODE_16/Contents/Developer"
+          elif [ -n "$XCODE_26" ]; then
+            echo "Falling back to: $XCODE_26"
+            sudo xcode-select -s "$XCODE_26/Contents/Developer"
           else
-            sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
+            echo "No Xcode 16.x or 26.x found. Available installations:"
+            ls /Applications/Xcode*.app 2>/dev/null || echo "  (none)"
+            exit 1
           fi
 
       - name: Install SwiftFormat
