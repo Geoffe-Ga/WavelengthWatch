@@ -85,6 +85,7 @@ struct CatalogRepositoryTests {
   }
 }
 
+@MainActor
 struct JournalClientTests {
   @Test func encodesPayloadWithStableUserIdentifier() async throws {
     let spy = APIClientSpy()

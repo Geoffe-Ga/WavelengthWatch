@@ -170,10 +170,13 @@ final class JournalSyncService: ObservableObject {
             entryType: item.localEntry.entryType
           )
 
-          // Post to backend
+          // Post to backend with idempotency key derived from the entry's
+          // local UUID. Reusing the key across retry attempts lets the
+          // backend deduplicate replayed submissions.
           let _: JournalResponseModel = try await apiClient.post(
             APIPath.journal,
-            body: payload
+            body: payload,
+            headers: [JournalRequestHeader.idempotencyKey: item.localEntry.id.uuidString]
           )
 
           // Mark as synced in queue

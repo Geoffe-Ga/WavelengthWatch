@@ -42,10 +42,21 @@ struct ContentView: View {
     self.journalRepository = journalRepository
     self.catalogRepository = repository
     let syncSettings = SyncSettings()
+    let journalQueue: JournalQueueProtocol?
+    do {
+      journalQueue = try JournalQueue()
+    } catch {
+      // Offline queue is best-effort. If SQLite setup fails (e.g. in previews
+      // or on read-only storage) fall back to no-queue behaviour so journal
+      // submissions still succeed locally.
+      print("⚠️ Failed to initialize journal queue: \(error). Offline retry disabled.")
+      journalQueue = nil
+    }
     let journalClient = JournalClient(
       apiClient: apiClient,
       repository: journalRepository,
-      syncSettings: syncSettings
+      syncSettings: syncSettings,
+      queue: journalQueue
     )
     self.journalClient = journalClient
     let initialLayer = UserDefaults.standard.integer(forKey: "selectedLayerIndex")
@@ -175,6 +186,12 @@ struct ContentView: View {
             message: Text("Thanks for checking in."),
             dismissButton: .default(Text("OK")) { viewModel.journalFeedback = nil }
           )
+        case let .queued(message):
+          Alert(
+            title: Text("Saved Offline"),
+            message: Text(message),
+            dismissButton: .default(Text("OK")) { viewModel.journalFeedback = nil }
+          )
         case let .failure(message):
           Alert(
             title: Text("Something went wrong"),
@@ -195,6 +212,11 @@ struct ContentView: View {
             do {
               try await flowCoordinator.submit()
               // Success - reset flow state (quick log doesn't use review sheet)
+              flowCoordinator.reset()
+            } catch JournalError.queuedForRetry {
+              viewModel.journalFeedback = .init(
+                kind: .queued("Saved offline. Will sync automatically.")
+              )
               flowCoordinator.reset()
             } catch {
               viewModel.journalFeedback = .init(kind: .failure("Failed to log emotion: \(error.localizedDescription)"))
@@ -218,6 +240,11 @@ struct ContentView: View {
             do {
               try await flowCoordinator.submit()
               // Success - reset flow state (quick log doesn't use review sheet)
+              flowCoordinator.reset()
+            } catch JournalError.queuedForRetry {
+              viewModel.journalFeedback = .init(
+                kind: .queued("Saved offline. Will sync automatically.")
+              )
               flowCoordinator.reset()
             } catch {
               viewModel.journalFeedback = .init(kind: .failure("Failed to log emotions: \(error.localizedDescription)"))

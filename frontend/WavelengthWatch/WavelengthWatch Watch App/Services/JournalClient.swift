@@ -48,6 +48,24 @@ struct JournalPayload: Codable {
   }
 }
 
+/// Header name used to send idempotency keys with journal POST requests.
+///
+/// Matches the backend journal router which reads the `X-Idempotency-Key`
+/// header to deduplicate replayed submissions.
+enum JournalRequestHeader {
+  static let idempotencyKey = "X-Idempotency-Key"
+}
+
+/// Errors surfaced by the journal submission flow.
+///
+/// Distinguishes between transient network failures that have been queued for
+/// background retry and permanent failures that the user should be informed of.
+enum JournalError: Error, Equatable {
+  /// The submission was saved locally and queued for retry once connectivity
+  /// returns. The associated UUID identifies the enqueued local entry.
+  case queuedForRetry(entryID: UUID)
+}
+
 protocol JournalClientProtocol {
   @discardableResult
   func submit(
@@ -63,24 +81,35 @@ protocol JournalClientProtocol {
   ) async throws -> LocalJournalEntry
 }
 
-/// Journal client with local-first architecture.
+/// Journal client with local-first architecture and offline queueing.
 ///
 /// This client saves all journal entries to local SQLite storage first,
 /// then optionally syncs to the backend server if cloud sync is enabled.
+/// When a sync attempt fails with a retryable error (network, 5xx) and a
+/// queue is supplied, the entry is enqueued for background retry and the
+/// caller receives `JournalError.queuedForRetry` so the UI can present a
+/// distinct "saved locally" message.
 ///
 /// ## Local-First Behavior
 /// 1. Creates LocalJournalEntry and saves to repository (always)
-/// 2. If cloudSyncEnabled, attempts backend sync
+/// 2. If cloudSyncEnabled, attempts backend sync with an idempotency key
 /// 3. Updates local entry with sync status and server ID
 /// 4. Returns the local entry (with or without successful sync)
 ///
 /// ## Offline Support
 /// Entries are always saved locally, even when offline or sync fails.
-/// Background sync can retry pending/failed entries later.
+/// Retryable failures are enqueued in `JournalQueue` and retried by
+/// `JournalSyncService`. Non-retryable failures mark the entry as failed.
+///
+/// ## Actor Isolation
+/// Isolated to `@MainActor` so it can interoperate safely with the
+/// `@MainActor`-isolated `JournalQueue` without cross-actor bridging.
+@MainActor
 final class JournalClient: JournalClientProtocol {
   private let apiClient: APIClientProtocol
   private let repository: JournalRepositoryProtocol
   private let syncSettings: SyncSettings
+  private let queue: JournalQueueProtocol?
   private let dateProvider: () -> Date
   private let userDefaults: UserDefaults
   private let userDefaultsKey = "com.wavelengthwatch.userIdentifier"
@@ -89,12 +118,14 @@ final class JournalClient: JournalClientProtocol {
     apiClient: APIClientProtocol,
     repository: JournalRepositoryProtocol,
     syncSettings: SyncSettings,
+    queue: JournalQueueProtocol? = nil,
     dateProvider: @escaping () -> Date = Date.init,
     userDefaults: UserDefaults = .standard
   ) {
     self.apiClient = apiClient
     self.repository = repository
     self.syncSettings = syncSettings
+    self.queue = queue
     self.dateProvider = dateProvider
     self.userDefaults = userDefaults
   }
@@ -121,8 +152,7 @@ final class JournalClient: JournalClientProtocol {
     strategyID: Int?,
     initiatedBy: InitiatedBy = .self_initiated
   ) async throws -> LocalJournalEntry {
-    // 1. Create local entry with pending sync status
-    var entry = LocalJournalEntry(
+    let entry = LocalJournalEntry(
       createdAt: dateProvider(),
       userID: numericUserIdentifier(),
       curriculumID: curriculumID,
@@ -132,48 +162,24 @@ final class JournalClient: JournalClientProtocol {
       entryType: .emotion
     )
 
-    // 2. Save to local repository first (always)
-    try repository.save(entry)
+    let payload = JournalPayload(
+      createdAt: entry.createdAt,
+      userID: entry.userID,
+      curriculumID: entry.curriculumID,
+      secondaryCurriculumID: entry.secondaryCurriculumID,
+      strategyID: entry.strategyID,
+      initiatedBy: entry.initiatedBy,
+      entryType: .emotion
+    )
 
-    // 3. Attempt backend sync if enabled
-    if syncSettings.cloudSyncEnabled {
-      do {
-        let payload = JournalPayload(
-          createdAt: entry.createdAt,
-          userID: entry.userID,
-          curriculumID: entry.curriculumID,
-          secondaryCurriculumID: entry.secondaryCurriculumID,
-          strategyID: entry.strategyID,
-          initiatedBy: entry.initiatedBy,
-          entryType: .emotion
-        )
-
-        let response: JournalResponseModel = try await apiClient.post(APIPath.journal, body: payload)
-
-        // Update entry with server ID and synced status
-        entry = LocalJournalEntry.synced(from: response, localEntry: entry)
-        try repository.update(entry)
-      } catch {
-        // Sync failed - mark as failed for retry
-        print("⚠️ Journal sync failed for entry \(entry.id): \(error). Entry saved locally with failed sync status.")
-        entry.syncStatus = .failed
-        entry.lastSyncAttempt = dateProvider()
-        try repository.update(entry)
-
-        // Don't throw - entry is still saved locally
-        // TODO: Consider adding user-visible feedback (notification badge or status indicator)
-      }
-    }
-
-    return entry
+    return try await persistAndSync(entry: entry, payload: payload)
   }
 
   @discardableResult
   func submitRestPeriod(
     initiatedBy: InitiatedBy = .self_initiated
   ) async throws -> LocalJournalEntry {
-    // 1. Create local REST entry with pending sync status
-    var entry = LocalJournalEntry(
+    let entry = LocalJournalEntry(
       createdAt: dateProvider(),
       userID: numericUserIdentifier(),
       curriculumID: nil,
@@ -183,38 +189,73 @@ final class JournalClient: JournalClientProtocol {
       entryType: .rest
     )
 
-    // 2. Save to local repository first (always)
+    let payload = JournalPayload(
+      createdAt: entry.createdAt,
+      userID: entry.userID,
+      curriculumID: nil,
+      secondaryCurriculumID: nil,
+      strategyID: nil,
+      initiatedBy: entry.initiatedBy,
+      entryType: .rest
+    )
+
+    return try await persistAndSync(entry: entry, payload: payload)
+  }
+
+  /// Saves the entry locally and, if cloud sync is enabled, attempts to POST
+  /// it to the backend. Handles queueing and error classification.
+  private func persistAndSync(
+    entry: LocalJournalEntry,
+    payload: JournalPayload
+  ) async throws -> LocalJournalEntry {
+    var entry = entry
     try repository.save(entry)
 
-    // 3. Attempt backend sync if enabled
-    if syncSettings.cloudSyncEnabled {
-      do {
-        let payload = JournalPayload(
-          createdAt: entry.createdAt,
-          userID: entry.userID,
-          curriculumID: nil,
-          secondaryCurriculumID: nil,
-          strategyID: nil,
-          initiatedBy: entry.initiatedBy,
-          entryType: .rest
-        )
-
-        let response: JournalResponseModel = try await apiClient.post(APIPath.journal, body: payload)
-
-        // Update entry with server ID and synced status
-        entry = LocalJournalEntry.synced(from: response, localEntry: entry)
-        try repository.update(entry)
-      } catch {
-        // Sync failed - mark as failed for retry
-        print("⚠️ Journal sync failed for REST entry \(entry.id): \(error). Entry saved locally with failed sync status.")
-        entry.syncStatus = .failed
-        entry.lastSyncAttempt = dateProvider()
-        try repository.update(entry)
-
-        // Don't throw - entry is still saved locally
-      }
+    guard syncSettings.cloudSyncEnabled else {
+      return entry
     }
 
-    return entry
+    let idempotencyKey = entry.id.uuidString
+    do {
+      let response: JournalResponseModel = try await apiClient.post(
+        APIPath.journal,
+        body: payload,
+        headers: [JournalRequestHeader.idempotencyKey: idempotencyKey]
+      )
+      entry = LocalJournalEntry.synced(from: response, localEntry: entry)
+      try repository.update(entry)
+      return entry
+    } catch {
+      let retryable = isRetryable(error)
+      if retryable, let queue {
+        entry.lastSyncAttempt = dateProvider()
+        try repository.update(entry)
+        try queue.enqueue(entry)
+        throw JournalError.queuedForRetry(entryID: entry.id)
+      }
+
+      print("⚠️ Journal sync failed for entry \(entry.id): \(error). Marking entry as failed.")
+      entry.syncStatus = .failed
+      entry.lastSyncAttempt = dateProvider()
+      try repository.update(entry)
+
+      if retryable {
+        // No queue configured — preserve legacy behaviour: keep entry locally
+        // without throwing so the user still sees a success-ish experience.
+        return entry
+      }
+      throw error
+    }
+  }
+
+  /// Classifies an error as retryable (network/server) vs permanent (validation).
+  private func isRetryable(_ error: Error) -> Bool {
+    if let apiError = error as? APIClientError {
+      return apiError.isRetryable
+    }
+    if error is URLError {
+      return true
+    }
+    return false
   }
 }

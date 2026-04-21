@@ -61,6 +61,7 @@ final class ContentViewModel: ObservableObject {
   struct JournalFeedback: Identifiable, Equatable {
     enum Kind: Equatable {
       case success
+      case queued(String)
       case failure(String)
     }
 
@@ -124,6 +125,10 @@ final class ContentViewModel: ObservableObject {
         initiatedBy: initiatedBy
       )
       journalFeedback = JournalFeedback(kind: .success)
+    } catch JournalError.queuedForRetry {
+      journalFeedback = JournalFeedback(
+        kind: .queued("Saved offline. Will sync automatically.")
+      )
     } catch {
       journalFeedback = JournalFeedback(kind: .failure("We couldn't log your entry. Please try again."))
     }
