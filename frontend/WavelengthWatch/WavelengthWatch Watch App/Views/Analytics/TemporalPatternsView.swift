@@ -1,15 +1,10 @@
 import SwiftUI
 
-/// Displays when a user naturally tends to check in — framed as their
-/// natural rhythm rather than a performance metric (Issue #285).
-///
-/// Uses a single neutral color, descriptive (not prescriptive) language,
-/// and an affirmation that every rhythm is valid.
+/// Displays when a user naturally tends to check in — framed as their natural rhythm.
 struct TemporalPatternsView: View {
   let patterns: TemporalPatterns
   let phases: [CatalogPhaseModel]
 
-  /// Single neutral color shared across rows — no evaluative palette.
   static let neutralColor: Color = .purple
 
   var body: some View {
@@ -49,7 +44,6 @@ struct TemporalPatternsView: View {
 
   // MARK: - Data Transformation
 
-  /// Summary of a single hour's dominant phase and dosage
   struct HourlySummary: Equatable {
     let hourLabel: String
     let count: Int
@@ -85,7 +79,6 @@ struct TemporalPatternsView: View {
     return "\(adjustedHour) \(period)"
   }
 
-  /// Single neutral color for all rows — no medicinal/toxic evaluative coding (Issue #285).
   static func dosageColor(for _: String?) -> Color {
     neutralColor
   }

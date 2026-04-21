@@ -41,7 +41,7 @@ struct TemporalPatternsViewTests {
     #expect(view.patterns.hourlyDistribution.count == 3)
   }
 
-  // MARK: - Copy (Issue #285)
+  // MARK: - Copy
 
   @Test("title uses Your Natural Rhythm framing")
   func title_usesNaturalRhythmFraming() {
@@ -165,7 +165,7 @@ struct TemporalPatternsViewTests {
     #expect(view.hourlySummaries.isEmpty)
   }
 
-  // MARK: - Neutral Dosage Color (Issue #285)
+  // MARK: - Neutral Dosage Color
 
   @Test("dosageColor returns neutral purple for Medicinal")
   func dosageColor_returnsNeutralPurpleForMedicinal() {

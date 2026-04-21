@@ -1,26 +1,9 @@
 import SwiftUI
 
 /// A neutral activity summary that replaces streak-style gamification.
-///
-/// Displays the number of check-ins over the past ~30 days as a plain
-/// descriptive observation, with no streak counting, fire emoji, or
-/// "longest/previous high" framing that implies daily goals.
-///
-/// ## Usage
-/// ```swift
-/// StreakDisplayView(monthlyCheckIns: 7)
-/// ```
-///
-/// ## Analytics Context
-/// Part of the analytics reframes batch 1 (Issues #280, #281, #282, #285)
-/// to align with APTITUDE values — presence over engagement metrics.
-/// Replaces the previous streak counter (Issue #280).
 struct StreakDisplayView: View {
   let monthlyCheckIns: Int
 
-  /// Creates a recent activity display.
-  ///
-  /// - Parameter monthlyCheckIns: Total check-ins in the trailing ~30 days.
   init(monthlyCheckIns: Int) {
     precondition(monthlyCheckIns >= 0, "Monthly check-ins cannot be negative")
     self.monthlyCheckIns = monthlyCheckIns
@@ -52,15 +35,11 @@ struct StreakDisplayView: View {
     )
   }
 
-  // MARK: - Computed Properties
-
-  /// Neutral, descriptive activity line — no streak / goal framing.
   var activityText: String {
     let word = monthlyCheckIns == 1 ? "check-in" : "check-ins"
-    return "\(monthlyCheckIns) \(word) this month"
+    return "\(monthlyCheckIns) \(word) in the last 30 days"
   }
 
-  /// Supportive context that affirms natural rhythms.
   var contextText: String {
     "Your check-in rhythm naturally varies"
   }
@@ -78,12 +57,6 @@ struct StreakDisplayView: View {
   StreakDisplayView(monthlyCheckIns: 1)
     .padding()
     .previewDisplayName("Single Check-In")
-}
-
-#Preview("Quieter Period") {
-  StreakDisplayView(monthlyCheckIns: 0)
-    .padding()
-    .previewDisplayName("Quieter Period")
 }
 
 #Preview("Very Active") {

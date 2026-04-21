@@ -28,19 +28,19 @@ struct StreakDisplayViewTests {
   @Test("activity text uses plural for zero check-ins")
   func activityText_usesPluralForZero() {
     let view = StreakDisplayView(monthlyCheckIns: 0)
-    #expect(view.activityText == "0 check-ins this month")
+    #expect(view.activityText == "0 check-ins in the last 30 days")
   }
 
   @Test("activity text uses singular for one check-in")
   func activityText_usesSingularForOne() {
     let view = StreakDisplayView(monthlyCheckIns: 1)
-    #expect(view.activityText == "1 check-in this month")
+    #expect(view.activityText == "1 check-in in the last 30 days")
   }
 
   @Test("activity text uses plural for multiple check-ins")
   func activityText_usesPluralForMany() {
     let view = StreakDisplayView(monthlyCheckIns: 12)
-    #expect(view.activityText == "12 check-ins this month")
+    #expect(view.activityText == "12 check-ins in the last 30 days")
   }
 
   // MARK: - Neutral, non-gamified language

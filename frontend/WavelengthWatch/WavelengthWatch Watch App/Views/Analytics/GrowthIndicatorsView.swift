@@ -1,10 +1,6 @@
 import SwiftUI
 
 /// Displays activity pattern indicators — medicinal trend, layer diversity, and phase coverage.
-///
-/// Reframed in Issue #282 to honor the wavelength's natural ebbs and flows:
-/// no red/green evaluative colors, no "declining/increasing" performance language,
-/// and supportive context explaining that quieter phases are part of the rhythm.
 struct GrowthIndicatorsView: View {
   let indicators: GrowthIndicators
 
@@ -42,8 +38,6 @@ struct GrowthIndicatorsView: View {
 
   // MARK: - Trend Direction
 
-  /// Neutral descriptors for medicinal ratio movement over time.
-  /// No "positive/negative" framing — every phase of the wavelength is valid.
   enum TrendDirection {
     case more // More medicinal expressions this period
     case quieter // Fewer medicinal expressions — a natural contraction
@@ -76,12 +70,10 @@ struct GrowthIndicatorsView: View {
     }
   }
 
-  /// Single neutral color for all trend directions — no evaluative palette (Issue #282).
   var trendColor: Color {
     .secondary
   }
 
-  /// Descriptive, judgment-free label for the trend direction.
   var trendDescription: String {
     switch trendDirection {
     case .more:
@@ -109,7 +101,6 @@ struct GrowthIndicatorsView: View {
     "\(indicators.phaseCoverage) of 6 phases"
   }
 
-  /// Supportive affirmation anchored in APTITUDE's wavelength teachings.
   var rhythmContext: String {
     "Your engagement naturally ebbs and flows. Quieter phases can be times of integration and rest."
   }

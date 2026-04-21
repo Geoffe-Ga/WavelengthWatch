@@ -111,7 +111,7 @@ struct GrowthIndicatorsViewTests {
     #expect(view.trendArrow == "arrow.forward")
   }
 
-  // MARK: - Trend Color (neutral in all cases, Issue #282)
+  // MARK: - Trend Color (neutral in all cases)
 
   @Test("trendColor is neutral for more trend (no evaluative green)")
   func trendColor_isNeutralForMoreTrend() {

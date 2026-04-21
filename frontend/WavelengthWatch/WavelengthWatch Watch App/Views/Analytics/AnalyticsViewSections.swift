@@ -41,7 +41,6 @@ extension AnalyticsView {
           .fill(Color.secondary.opacity(0.15))
       )
 
-      // Recent Activity Display — neutral monthly count (Issue #280)
       if overview.totalEntries > 0 {
         StreakDisplayView(monthlyCheckIns: overview.totalEntries)
       }
@@ -80,7 +79,6 @@ extension AnalyticsView {
           .font(.caption)
           .foregroundColor(.secondary)
 
-        // Neutral trend context — no evaluative colors (Issue #281)
         if overview.medicinalTrend != 0 {
           HStack(spacing: 4) {
             Image(systemName: "waveform.path")
