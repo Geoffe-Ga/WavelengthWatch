@@ -27,8 +27,10 @@ import Testing
 /// ```
 @Suite(
   "AnalyticsPerformanceBenchmarks",
-  .disabled(if: ProcessInfo.processInfo.environment["WWATCH_BENCHMARK"] != "1",
-            "Set WWATCH_BENCHMARK=1 to run analytics benchmarks")
+  .disabled(
+    if: ProcessInfo.processInfo.environment["WWATCH_BENCHMARK"] != "1",
+    "Set WWATCH_BENCHMARK=1 to run analytics benchmarks"
+  )
 )
 struct AnalyticsPerformanceBenchmarks {
   // MARK: - Configuration
@@ -176,7 +178,11 @@ struct AnalyticsPerformanceBenchmarks {
     // Tab-separated for easy parsing; prefixed so grep can isolate them.
     let line = String(
       format: "BENCH\t%@\t%d\t%.3f\t%.3f\t%.3f",
-      method, n, result.minMs, result.meanMs, result.p95Ms
+      method,
+      n,
+      result.minMs,
+      result.meanMs,
+      result.p95Ms
     )
     print(line)
   }
@@ -281,15 +287,21 @@ struct AnalyticsPerformanceBenchmarks {
       let entries = Self.makeEntries(count: n, endDate: endDate)
       let result = measure {
         _ = calculator.calculateOverview(
-          entries: entries, startDate: startDate, endDate: endDate
+          entries: entries,
+          startDate: startDate,
+          endDate: endDate
         )
         _ = calculator.calculateEmotionalLandscape(entries: entries, limit: 10)
         _ = calculator.calculateSelfCare(entries: entries, limit: 10)
         _ = calculator.calculateTemporalPatterns(
-          entries: entries, startDate: startDate, endDate: endDate
+          entries: entries,
+          startDate: startDate,
+          endDate: endDate
         )
         _ = calculator.calculateGrowthIndicators(
-          entries: entries, startDate: startDate, endDate: endDate
+          entries: entries,
+          startDate: startDate,
+          endDate: endDate
         )
       }
       report(method: "fullRefresh", n: n, result: result)
