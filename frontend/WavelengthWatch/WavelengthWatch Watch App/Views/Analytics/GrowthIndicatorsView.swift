@@ -1,12 +1,12 @@
 import SwiftUI
 
-/// Displays growth indicators showing medicinal trend, layer diversity, and phase coverage
+/// Displays activity pattern indicators — medicinal trend, layer diversity, and phase coverage.
 struct GrowthIndicatorsView: View {
   let indicators: GrowthIndicators
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
-      Text("Growth Indicators")
+      Text("Your Activity Pattern")
         .font(.headline)
         .foregroundColor(.secondary)
 
@@ -15,8 +15,7 @@ struct GrowthIndicatorsView: View {
       } else {
         VStack(alignment: .leading, spacing: 8) {
           MedicinalTrendView(
-            trend: indicators.medicinalTrend,
-            direction: trendDirection,
+            description: trendDescription,
             arrow: trendArrow,
             color: trendColor,
             formattedText: formattedTrend
@@ -26,6 +25,12 @@ struct GrowthIndicatorsView: View {
             layerText: layerDiversityText,
             phaseText: phaseCoverageText
           )
+
+          Text(rhythmContext)
+            .font(.caption2)
+            .foregroundColor(.secondary)
+            .multilineTextAlignment(.leading)
+            .padding(.top, 4)
         }
       }
     }
@@ -33,25 +38,22 @@ struct GrowthIndicatorsView: View {
 
   // MARK: - Trend Direction
 
-  /// Represents medicinal trend direction using neutral, supportive language.
-  /// Avoids evaluative terminology like "negative" that implies failure.
   enum TrendDirection {
-    case positive
-    case varying // Natural fluctuation (replaces "negative")
-    case neutral
+    case more // More medicinal expressions this period
+    case quieter // Fewer medicinal expressions — a natural contraction
+    case steady // Within a small threshold of the previous period
   }
 
   var trendDirection: TrendDirection {
-    // Threshold for meaningful trend: ±5% (0.05 in decimal)
-    // medicinalTrend is a decimal fraction (0.0-1.0 range)
+    // Threshold for meaningful change: ±5% (0.05 in decimal)
     let threshold = 0.05
 
     if indicators.medicinalTrend > threshold {
-      return .positive
+      return .more
     } else if indicators.medicinalTrend < -threshold {
-      return .varying // Natural fluctuation - not "negative"
+      return .quieter
     } else {
-      return .neutral
+      return .steady
     }
   }
 
@@ -59,25 +61,27 @@ struct GrowthIndicatorsView: View {
 
   var trendArrow: String {
     switch trendDirection {
-    case .positive:
+    case .more:
       "arrow.up"
-    case .varying:
+    case .quieter:
       "arrow.down"
-    case .neutral:
+    case .steady:
       "arrow.forward"
     }
   }
 
-  /// Color for trend indicator using neutral, supportive palette.
-  /// Avoids red/orange evaluative colors that imply judgment or failure.
   var trendColor: Color {
+    .secondary
+  }
+
+  var trendDescription: String {
     switch trendDirection {
-    case .positive:
-      .green
-    case .varying:
-      .secondary // Neutral - honoring natural rhythm
-    case .neutral:
-      .secondary // Neutral - honoring natural rhythm
+    case .more:
+      "More medicinal this period"
+    case .quieter:
+      "A quieter phase right now"
+    case .steady:
+      "A steady rhythm"
     }
   }
 
@@ -97,6 +101,10 @@ struct GrowthIndicatorsView: View {
     "\(indicators.phaseCoverage) of 6 phases"
   }
 
+  var rhythmContext: String {
+    "Your engagement naturally ebbs and flows. Quieter phases can be times of integration and rest."
+  }
+
   var isEmpty: Bool {
     indicators.layerDiversity == 0
       && indicators.phaseCoverage == 0
@@ -107,15 +115,14 @@ struct GrowthIndicatorsView: View {
 // MARK: - Subviews
 
 private struct MedicinalTrendView: View {
-  let trend: Double
-  let direction: GrowthIndicatorsView.TrendDirection
+  let description: String
   let arrow: String
   let color: Color
   let formattedText: String
 
   var body: some View {
     VStack(alignment: .leading, spacing: 4) {
-      Text("Medicinal Trend")
+      Text("Medicinal Rhythm")
         .font(.caption2)
         .foregroundColor(.secondary)
 
@@ -129,6 +136,10 @@ private struct MedicinalTrendView: View {
           .foregroundColor(color)
           .font(.caption)
       }
+
+      Text(description)
+        .font(.caption2)
+        .foregroundColor(.secondary)
     }
   }
 }
@@ -164,10 +175,10 @@ private struct DiversityCoverageView: View {
 private struct EmptyStateView: View {
   var body: some View {
     VStack(spacing: 8) {
-      Image(systemName: "chart.line.uptrend.xyaxis")
+      Image(systemName: "waveform.path")
         .font(.title)
         .foregroundColor(.secondary)
-      Text("No growth data")
+      Text("No activity data yet")
         .font(.caption)
         .foregroundColor(.secondary)
     }

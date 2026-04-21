@@ -1,14 +1,20 @@
 import SwiftUI
 
-/// Displays temporal patterns showing dominant phase and dosage per hour
+/// Displays when a user naturally tends to check in — framed as their natural rhythm.
 struct TemporalPatternsView: View {
   let patterns: TemporalPatterns
   let phases: [CatalogPhaseModel]
 
+  static let neutralColor: Color = .purple
+
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
-      Text("Temporal Patterns")
+      Text(Self.title)
         .font(.headline)
+        .foregroundColor(.secondary)
+
+      Text(Self.subtitle)
+        .font(.caption2)
         .foregroundColor(.secondary)
 
       if patterns.hourlyDistribution.isEmpty {
@@ -19,13 +25,25 @@ struct TemporalPatternsView: View {
             HourlyRow(summary: summary)
           }
         }
+
+        Text(Self.affirmation)
+          .font(.caption2)
+          .foregroundColor(.secondary)
+          .italic()
+          .multilineTextAlignment(.leading)
+          .padding(.top, 8)
       }
     }
   }
 
+  // MARK: - Copy
+
+  static let title = "Your Natural Rhythm"
+  static let subtitle = "When you naturally tend to check in"
+  static let affirmation = "Everyone's rhythm is unique. This is your pattern, and it's valid."
+
   // MARK: - Data Transformation
 
-  /// Summary of a single hour's dominant phase and dosage
   struct HourlySummary: Equatable {
     let hourLabel: String
     let count: Int
@@ -61,16 +79,8 @@ struct TemporalPatternsView: View {
     return "\(adjustedHour) \(period)"
   }
 
-  /// Maps dosage to a color — Medicinal gets green, Toxic gets neutral
-  static func dosageColor(for dosage: String?) -> Color {
-    switch dosage {
-    case "Medicinal":
-      .green
-    case "Toxic":
-      .secondary
-    default:
-      .purple
-    }
+  static func dosageColor(for _: String?) -> Color {
+    neutralColor
   }
 }
 
@@ -86,13 +96,13 @@ private struct HourlyRow: View {
         .font(.caption2)
         .frame(width: 40, alignment: .leading)
 
-      // Phase + dosage indicator
+      // Phase + dosage indicator (neutral color)
       VStack(alignment: .leading, spacing: 1) {
         if let phaseName = summary.phaseName {
           Text(phaseName)
             .font(.caption2)
             .fontWeight(.medium)
-            .foregroundColor(TemporalPatternsView.dosageColor(for: summary.dosage))
+            .foregroundColor(TemporalPatternsView.neutralColor)
         }
 
         if let dosage = summary.dosage {
@@ -103,10 +113,10 @@ private struct HourlyRow: View {
       }
       .frame(width: 55, alignment: .leading)
 
-      // Bar
+      // Bar (neutral color)
       GeometryReader { geometry in
         RoundedRectangle(cornerRadius: 3)
-          .fill(TemporalPatternsView.dosageColor(for: summary.dosage))
+          .fill(TemporalPatternsView.neutralColor)
           .frame(
             width: geometry.size.width * min(max(summary.percentage, 0) / 100.0, 1.0),
             height: 12
@@ -129,7 +139,7 @@ private struct EmptyStateView: View {
       Image(systemName: "clock")
         .font(.title)
         .foregroundColor(.secondary)
-      Text("No temporal data")
+      Text("No rhythm data yet")
         .font(.caption)
         .foregroundColor(.secondary)
     }

@@ -3,220 +3,66 @@ import Testing
 @testable import WavelengthWatch_Watch_App
 
 struct StreakDisplayViewTests {
-  // MARK: - Basic Display Tests
+  // MARK: - Initialization
 
-  @Test("view displays current streak")
-  func view_displaysCurrentStreak() {
-    let view = StreakDisplayView(
-      currentStreak: 5,
-      longestStreak: 12
-    )
-
-    #expect(view.currentStreak == 5)
+  @Test("view stores monthly check-in count")
+  func view_storesMonthlyCheckInCount() {
+    let view = StreakDisplayView(monthlyCheckIns: 7)
+    #expect(view.monthlyCheckIns == 7)
   }
 
-  @Test("view displays longest streak")
-  func view_displaysLongestStreak() {
-    let view = StreakDisplayView(
-      currentStreak: 5,
-      longestStreak: 12
-    )
-
-    #expect(view.longestStreak == 12)
+  @Test("view accepts zero check-ins")
+  func view_acceptsZeroCheckIns() {
+    let view = StreakDisplayView(monthlyCheckIns: 0)
+    #expect(view.monthlyCheckIns == 0)
   }
 
-  // MARK: - Trend Indicator Tests
-
-  // NOTE: Test for currentStreak > longestStreak removed because this now triggers
-  // a precondition failure (cannot be tested). The component enforces that
-  // currentStreak <= longestStreak. When a record is broken, the caller must
-  // update longestStreak to match currentStreak before creating the view.
-
-  @Test("trend indicators use neutral, supportive language")
-  func trendIndicators_useNeutralSupportiveLanguage() {
-    let restingView = StreakDisplayView(
-      currentStreak: 5,
-      longestStreak: 12
-    )
-
-    // Verify resting state uses neutral color (not red/orange evaluative colors)
-    let color = restingView.trendColor
-    #expect(color != .red)
-    #expect(color != .orange)
+  @Test("view accepts large check-in counts")
+  func view_acceptsLargeCheckInCounts() {
+    let view = StreakDisplayView(monthlyCheckIns: 365)
+    #expect(view.monthlyCheckIns == 365)
   }
 
-  @Test("view shows stable trend when current equals longest")
-  func view_showsStableTrendWhenCurrentEqualsLongest() {
-    let view = StreakDisplayView(
-      currentStreak: 12,
-      longestStreak: 12
-    )
+  // MARK: - Activity Text
 
-    #expect(view.trendIndicator == .stable)
+  @Test("activity text uses plural for zero check-ins")
+  func activityText_usesPluralForZero() {
+    let view = StreakDisplayView(monthlyCheckIns: 0)
+    #expect(view.activityText == "0 check-ins in the last 30 days")
   }
 
-  @Test("view shows resting trend when current is less than longest")
-  func view_showsRestingTrendWhenCurrentIsLessThanLongest() {
-    let view = StreakDisplayView(
-      currentStreak: 5,
-      longestStreak: 12
-    )
-
-    #expect(view.trendIndicator == .resting)
+  @Test("activity text uses singular for one check-in")
+  func activityText_usesSingularForOne() {
+    let view = StreakDisplayView(monthlyCheckIns: 1)
+    #expect(view.activityText == "1 check-in in the last 30 days")
   }
 
-  @Test("view shows stable trend when both streaks are zero")
-  func view_showsStableTrendWhenBothStreaksAreZero() {
-    let view = StreakDisplayView(
-      currentStreak: 0,
-      longestStreak: 0
-    )
-
-    #expect(view.trendIndicator == .stable)
+  @Test("activity text uses plural for multiple check-ins")
+  func activityText_usesPluralForMany() {
+    let view = StreakDisplayView(monthlyCheckIns: 12)
+    #expect(view.activityText == "12 check-ins in the last 30 days")
   }
 
-  // MARK: - Edge Cases
+  // MARK: - Neutral, non-gamified language
 
-  @Test("view handles zero current streak")
-  func view_handlesZeroCurrentStreak() {
-    let view = StreakDisplayView(
-      currentStreak: 0,
-      longestStreak: 12
-    )
-
-    #expect(view.currentStreak == 0)
-    #expect(view.longestStreak == 12)
-  }
-
-  /// NOTE: Test for currentStreak > longestStreak removed because this violates
-  /// the precondition that currentStreak <= longestStreak. This edge case is now
-  /// semantically invalid and properly caught by the precondition.
-  @Test("view handles zero longest streak")
-  func view_handlesZeroLongestStreak() {
-    let view = StreakDisplayView(
-      currentStreak: 0,
-      longestStreak: 0
-    )
-
-    #expect(view.currentStreak == 0)
-    #expect(view.longestStreak == 0)
-  }
-
-  @Test("view handles single day streak")
-  func view_handlesSingleDayStreak() {
-    let view = StreakDisplayView(
-      currentStreak: 1,
-      longestStreak: 1
-    )
-
-    #expect(view.currentStreak == 1)
-    #expect(view.longestStreak == 1)
-    #expect(view.trendIndicator == .stable)
-  }
-
-  @Test("view handles large streak numbers")
-  func view_handlesLargeStreakNumbers() {
-    let view = StreakDisplayView(
-      currentStreak: 365,
-      longestStreak: 400
-    )
-
-    #expect(view.currentStreak == 365)
-    #expect(view.longestStreak == 400)
-  }
-
-  // MARK: - Text Formatting Tests
-
-  @Test("view uses neutral activity language without gamification")
-  func view_usesNeutralActivityLanguage() {
-    let view = StreakDisplayView(
-      currentStreak: 1,
-      longestStreak: 5
-    )
-
-    let text = view.currentStreakText
-    // Should use neutral "Recent Activity" language, not "Streak"
+  @Test("activity text removes all streak terminology")
+  func activityText_removesStreakTerminology() {
+    let view = StreakDisplayView(monthlyCheckIns: 5)
+    let text = view.activityText
     #expect(!text.contains("Streak"))
-    #expect(text.contains("Recent Activity"))
-  }
-
-  @Test("view shows activity count without pressure language")
-  func view_showsActivityCountWithoutPressure() {
-    let view = StreakDisplayView(
-      currentStreak: 5,
-      longestStreak: 12
-    )
-
-    let text = view.currentStreakText
-    // Should show count without gamification
-    #expect(!text.contains("Streak"))
-    #expect(text.contains("Recent Activity"))
-  }
-
-  @Test("view formats historical context without longest language")
-  func view_formatsHistoricalContextWithoutLongest() {
-    let view = StreakDisplayView(
-      currentStreak: 5,
-      longestStreak: 12
-    )
-
-    let text = view.longestStreakText
-    // Should avoid "Longest" competitive framing
+    #expect(!text.contains("streak"))
+    #expect(!text.contains("🔥"))
     #expect(!text.contains("Longest"))
-    // Can show historical note without pressure (e.g., "Previous high")
-    #expect(text.contains("12"))
-    #expect(text.contains("Previous high"))
+    #expect(!text.contains("Previous high"))
   }
 
-  // MARK: - Trend Arrow Tests
-
-  // NOTE: Test for up arrow (↑) removed because .improving trend no longer exists.
-  // Component now only supports .stable (→) and .resting (↓) trends.
-
-  @Test("view returns right arrow for stable trend")
-  func view_returnsRightArrowForStableTrend() {
-    let view = StreakDisplayView(
-      currentStreak: 12,
-      longestStreak: 12
-    )
-
-    #expect(view.trendArrow == "→")
-  }
-
-  @Test("view returns down arrow for resting trend")
-  func view_returnsDownArrowForRestingTrend() {
-    let view = StreakDisplayView(
-      currentStreak: 5,
-      longestStreak: 12
-    )
-
-    #expect(view.trendArrow == "↓")
-  }
-
-  // MARK: - Integration Tests
-
-  @Test("view shows all components together")
-  func view_showsAllComponentsTogether() {
-    let view = StreakDisplayView(
-      currentStreak: 25,
-      longestStreak: 30
-    )
-
-    #expect(view.currentStreak == 25)
-    #expect(view.longestStreak == 30)
-    #expect(view.trendIndicator == .resting)
-    #expect(view.trendArrow == "↓")
-  }
-
-  @Test("view works with minimal data")
-  func view_worksWithMinimalData() {
-    let view = StreakDisplayView(
-      currentStreak: 0,
-      longestStreak: 0
-    )
-
-    #expect(view.currentStreak == 0)
-    #expect(view.longestStreak == 0)
-    #expect(view.trendIndicator == .stable)
+  @Test("context text affirms natural rhythms without pressure")
+  func contextText_affirmsNaturalRhythms() {
+    let view = StreakDisplayView(monthlyCheckIns: 5)
+    let text = view.contextText
+    #expect(!text.contains("should"))
+    #expect(!text.contains("goal"))
+    #expect(!text.contains("streak"))
+    #expect(text.lowercased().contains("natural"))
   }
 }
