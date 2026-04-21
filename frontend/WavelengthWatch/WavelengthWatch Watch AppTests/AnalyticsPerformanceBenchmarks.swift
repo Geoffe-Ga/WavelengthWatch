@@ -53,7 +53,7 @@ struct AnalyticsPerformanceBenchmarks {
     let phaseNames = ["Rising", "Peaking", "Falling", "Resting"]
     var layers: [CatalogLayerModel] = []
     var curriculumId = 1
-    var strategyId = 1_000
+    var strategyId = 1000
     for layerId in 1 ... 6 {
       var phases: [CatalogPhaseModel] = []
       for (phaseIdx, phaseName) in phaseNames.enumerated() {
@@ -114,8 +114,8 @@ struct AnalyticsPerformanceBenchmarks {
 
     // 36 medicinal + 36 toxic = 72 curriculum IDs. 96 strategy IDs (1000..1095).
     let curriculumIds = Array(1 ... 72)
-    let strategyIds = Array(1_000 ... 1_095)
-    let windowSeconds = 30.0 * 86_400.0
+    let strategyIds = Array(1000 ... 1095)
+    let windowSeconds = 30.0 * 86400.0
 
     var entries: [LocalJournalEntry] = []
     entries.reserveCapacity(count)
@@ -158,7 +158,7 @@ struct AnalyticsPerformanceBenchmarks {
     let clock = ContinuousClock()
     for _ in 0 ..< iterations {
       let elapsed = clock.measure { body() }
-      let ms = Double(elapsed.components.seconds) * 1_000
+      let ms = Double(elapsed.components.seconds) * 1000
         + Double(elapsed.components.attoseconds) / 1e15
       samples.append(ms)
     }
@@ -193,7 +193,7 @@ struct AnalyticsPerformanceBenchmarks {
   func bench_calculateOverview() {
     let calculator = LocalAnalyticsCalculator(catalog: Self.catalog)
     let endDate = Date()
-    let startDate = endDate.addingTimeInterval(-30 * 86_400)
+    let startDate = endDate.addingTimeInterval(-30 * 86400)
     print("BENCH_HEADER\tmethod\tN\tmin_ms\tmean_ms\tp95_ms")
     for n in Self.entryCounts {
       let entries = Self.makeEntries(count: n, endDate: endDate)
@@ -242,7 +242,7 @@ struct AnalyticsPerformanceBenchmarks {
   func bench_calculateTemporalPatterns() {
     let calculator = LocalAnalyticsCalculator(catalog: Self.catalog)
     let endDate = Date()
-    let startDate = endDate.addingTimeInterval(-30 * 86_400)
+    let startDate = endDate.addingTimeInterval(-30 * 86400)
     for n in Self.entryCounts {
       let entries = Self.makeEntries(count: n, endDate: endDate)
       let result = measure {
@@ -261,7 +261,7 @@ struct AnalyticsPerformanceBenchmarks {
   func bench_calculateGrowthIndicators() {
     let calculator = LocalAnalyticsCalculator(catalog: Self.catalog)
     let endDate = Date()
-    let startDate = endDate.addingTimeInterval(-30 * 86_400)
+    let startDate = endDate.addingTimeInterval(-30 * 86400)
     for n in Self.entryCounts {
       let entries = Self.makeEntries(count: n, endDate: endDate)
       let result = measure {
@@ -282,7 +282,7 @@ struct AnalyticsPerformanceBenchmarks {
   func bench_fullRefresh() {
     let calculator = LocalAnalyticsCalculator(catalog: Self.catalog)
     let endDate = Date()
-    let startDate = endDate.addingTimeInterval(-30 * 86_400)
+    let startDate = endDate.addingTimeInterval(-30 * 86400)
     for n in Self.entryCounts {
       let entries = Self.makeEntries(count: n, endDate: endDate)
       let result = measure {
@@ -306,7 +306,7 @@ struct AnalyticsPerformanceBenchmarks {
       }
       report(method: "fullRefresh", n: n, result: result)
       // Target from issue #258: a full analytics session should be snappy.
-      #expect(result.minMs < 1_000.0, "Full refresh too slow at N=\(n)")
+      #expect(result.minMs < 1000.0, "Full refresh too slow at N=\(n)")
     }
   }
 }
