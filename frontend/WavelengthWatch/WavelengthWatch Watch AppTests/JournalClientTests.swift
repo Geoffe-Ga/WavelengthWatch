@@ -352,6 +352,10 @@ final class FailingJournalRepository: JournalRepositoryProtocol {
     []
   }
 
+  func fetchByDateRange(from _: Date, to _: Date) throws -> [LocalJournalEntry] {
+    []
+  }
+
   func fetchPendingSync() throws -> [LocalJournalEntry] {
     []
   }
