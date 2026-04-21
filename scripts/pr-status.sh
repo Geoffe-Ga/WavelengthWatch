@@ -2,6 +2,7 @@
 #
 # pr-status.sh — concise, multi-PR status check for efficient CI monitoring.
 #
+# === USAGE ===
 # Usage:
 #   scripts/pr-status.sh [options] <pr-number> [<pr-number>...]
 #   echo "64 65 66" | scripts/pr-status.sh
@@ -28,6 +29,7 @@
 #   1  At least one PR has a failing check or unmergeable conflict
 #   2  No failures, but at least one PR has pending checks
 #   3  Usage error (bad option, no PRs, non-numeric PR number)
+# === END USAGE ===
 
 set -euo pipefail
 
@@ -48,7 +50,11 @@ if [[ -n "${NO_COLOR:-}" ]] || ! [[ -t 1 ]]; then
 fi
 
 usage() {
-    sed -n '3,31p' "$0" | sed 's/^# \{0,1\}//'
+    # Extract the block between the === USAGE === sentinels so the help text
+    # survives future edits to this header without line-number fixups.
+    sed -n '/^# === USAGE ===$/,/^# === END USAGE ===$/p' "$0" \
+        | sed '1d;$d' \
+        | sed 's/^# \{0,1\}//'
 }
 
 die_usage() {
@@ -89,7 +95,8 @@ done
 
 if (( ${#PR_NUMBERS[@]} == 0 )) && ! [[ -t 0 ]]; then
     while IFS= read -r line || [[ -n "$line" ]]; do
-        # split on whitespace
+        # Intentional word-splitting so ``echo "64 65 66" | pr-status.sh`` works.
+        # Safe because every token is validated against ^[0-9]+$ below.
         # shellcheck disable=SC2206
         toks=( $line )
         for tok in "${toks[@]}"; do
@@ -151,6 +158,10 @@ fetch_pr() {
 
     local fields
     fields="number,title,state,url,author,headRefName,baseRefName,createdAt,updatedAt,mergeable,mergeStateStatus,reviewDecision,reviews,comments,statusCheckRollup"
+    # ``local data`` is declared on its own line so the subsequent command
+    # substitution's exit status propagates to ``set -e``. Combining
+    # ``local data=$(...)`` would mask the gh failure because ``local``
+    # always succeeds.
     local data
     if ! data=$("$GH_CMD" pr view "$num" --json "$fields" 2>&1); then
         printf 'Error: failed to fetch PR #%s: %s\n' "$num" "$data" >&2
@@ -158,7 +169,12 @@ fetch_pr() {
     fi
     if (( USE_CACHE )); then
         mkdir -p "$CACHE_DIR"
-        printf '%s' "$data" > "$cache_file"
+        # Write via a tempfile + rename so a crash/interrupt can't leave a
+        # truncated cache file that the next run would read as valid JSON.
+        local tmp_file
+        tmp_file=$(mktemp "${CACHE_DIR}/.pr-${num}-XXXXXX.json")
+        printf '%s' "$data" > "$tmp_file"
+        mv "$tmp_file" "$cache_file"
     fi
     printf '%s' "$data"
 }

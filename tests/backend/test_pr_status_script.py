@@ -12,6 +12,7 @@ import os
 import subprocess
 import sys
 from collections.abc import Iterator
+from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
@@ -20,7 +21,15 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = PROJECT_ROOT / "scripts" / "pr-status.sh"
 
 
-def _write_stub(tmp_path: Path, fixtures: dict[int, dict]) -> Path:
+@dataclass
+class ScriptEnv:
+    """Per-test bundle of the tmp dir and the active ``monkeypatch``."""
+
+    tmp_path: Path
+    monkeypatch: pytest.MonkeyPatch
+
+
+def _write_stub(env: ScriptEnv, fixtures: dict[int, dict]) -> Path:
     """Write a Python ``gh`` stub that replays canned JSON per PR number.
 
     The stub accepts ``gh pr view <NUM> --json <fields>`` invocations and
@@ -28,12 +37,12 @@ def _write_stub(tmp_path: Path, fixtures: dict[int, dict]) -> Path:
     tests notice unexpected arguments.
     """
 
-    fixtures_path = tmp_path / "fixtures.json"
+    fixtures_path = env.tmp_path / "fixtures.json"
     fixtures_path.write_text(
         json.dumps({str(num): payload for num, payload in fixtures.items()})
     )
 
-    stub_path = tmp_path / "gh-stub.py"
+    stub_path = env.tmp_path / "gh-stub.py"
     stub_path.write_text(
         "#!/usr/bin/env python3\n"
         "import json, os, sys\n"
@@ -51,13 +60,14 @@ def _write_stub(tmp_path: Path, fixtures: dict[int, dict]) -> Path:
     )
     stub_path.chmod(0o755)
 
-    wrapper = tmp_path / "gh-stub"
+    wrapper = env.tmp_path / "gh-stub"
     wrapper.write_text(
         f'#!/usr/bin/env bash\nexec "{sys.executable}" "{stub_path}" "$@"\n'
     )
     wrapper.chmod(0o755)
 
-    os.environ["GH_STUB_FIXTURES"] = str(fixtures_path)
+    # Route through monkeypatch so the variable cannot leak to later tests.
+    env.monkeypatch.setenv("GH_STUB_FIXTURES", str(fixtures_path))
     return wrapper
 
 
@@ -133,14 +143,14 @@ def _pending_pr(number: int = 66) -> dict:
 
 
 @pytest.fixture()
-def env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]:
+def env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[ScriptEnv]:
     """Isolate cache dir and ensure the script exists before each test."""
 
     assert SCRIPT.exists(), f"pr-status.sh missing at {SCRIPT}"
     cache_dir = tmp_path / "cache"
     monkeypatch.setenv("PR_STATUS_CACHE_DIR", str(cache_dir))
     monkeypatch.setenv("NO_COLOR", "1")
-    yield tmp_path
+    yield ScriptEnv(tmp_path=tmp_path, monkeypatch=monkeypatch)
 
 
 def _run(
@@ -164,21 +174,21 @@ def test_script_is_executable() -> None:
     assert os.access(SCRIPT, os.X_OK), "scripts/pr-status.sh must be executable"
 
 
-def test_usage_on_no_args(env: Path) -> None:
+def test_usage_on_no_args(env: ScriptEnv) -> None:
     stub = _write_stub(env, {64: _passing_pr()})
     result = _run(stub)
     assert result.returncode == 3
     assert "Usage" in result.stderr or "Usage" in result.stdout
 
 
-def test_help_flag(env: Path) -> None:
+def test_help_flag(env: ScriptEnv) -> None:
     stub = _write_stub(env, {64: _passing_pr()})
     result = _run(stub, "--help")
     assert result.returncode == 0
     assert "Usage" in result.stdout
 
 
-def test_default_output_passing_pr(env: Path) -> None:
+def test_default_output_passing_pr(env: ScriptEnv) -> None:
     stub = _write_stub(env, {64: _passing_pr(title="User Story Suggestions")})
     result = _run(stub, "64")
     assert result.returncode == 0, result.stderr
@@ -194,7 +204,7 @@ def test_default_output_passing_pr(env: Path) -> None:
     assert "YES" in out
 
 
-def test_failing_pr_exit_code_and_output(env: Path) -> None:
+def test_failing_pr_exit_code_and_output(env: ScriptEnv) -> None:
     stub = _write_stub(env, {65: _failing_pr()})
     result = _run(stub, "65")
     assert result.returncode == 1, result.stderr
@@ -205,7 +215,7 @@ def test_failing_pr_exit_code_and_output(env: Path) -> None:
     assert "NO" in out  # mergeable NO due to conflict
 
 
-def test_pending_pr_exit_code_and_output(env: Path) -> None:
+def test_pending_pr_exit_code_and_output(env: ScriptEnv) -> None:
     stub = _write_stub(env, {66: _pending_pr()})
     result = _run(stub, "66")
     assert result.returncode == 2, result.stderr
@@ -215,7 +225,7 @@ def test_pending_pr_exit_code_and_output(env: Path) -> None:
     assert "UNKNOWN" in out
 
 
-def test_multiple_prs_aggregate_exit_codes(env: Path) -> None:
+def test_multiple_prs_aggregate_exit_codes(env: ScriptEnv) -> None:
     stub = _write_stub(
         env,
         {
@@ -233,13 +243,13 @@ def test_multiple_prs_aggregate_exit_codes(env: Path) -> None:
     assert "PR #66" in out
 
 
-def test_pending_wins_when_no_failures(env: Path) -> None:
+def test_pending_wins_when_no_failures(env: ScriptEnv) -> None:
     stub = _write_stub(env, {64: _passing_pr(), 66: _pending_pr()})
     result = _run(stub, "64", "66")
     assert result.returncode == 2
 
 
-def test_summary_flag_one_line_per_pr(env: Path) -> None:
+def test_summary_flag_one_line_per_pr(env: ScriptEnv) -> None:
     stub = _write_stub(env, {64: _passing_pr(title="A"), 65: _failing_pr()})
     result = _run(stub, "--summary", "64", "65")
     lines = [line for line in result.stdout.splitlines() if line.strip()]
@@ -248,7 +258,7 @@ def test_summary_flag_one_line_per_pr(env: Path) -> None:
     assert "#65" in lines[1]
 
 
-def test_json_flag_emits_valid_array(env: Path) -> None:
+def test_json_flag_emits_valid_array(env: ScriptEnv) -> None:
     stub = _write_stub(env, {64: _passing_pr(), 65: _failing_pr()})
     result = _run(stub, "--json", "64", "65")
     assert result.returncode == 1, result.stderr
@@ -264,7 +274,7 @@ def test_json_flag_emits_valid_array(env: Path) -> None:
     assert pr64["mergeable"] == "YES"
 
 
-def test_ci_only_flag_suppresses_reviews(env: Path) -> None:
+def test_ci_only_flag_suppresses_reviews(env: ScriptEnv) -> None:
     stub = _write_stub(env, {64: _passing_pr()})
     result = _run(stub, "--ci-only", "64")
     assert result.returncode == 0
@@ -274,7 +284,7 @@ def test_ci_only_flag_suppresses_reviews(env: Path) -> None:
     assert "Mergeable" not in out
 
 
-def test_reviews_only_flag_suppresses_ci(env: Path) -> None:
+def test_reviews_only_flag_suppresses_ci(env: ScriptEnv) -> None:
     stub = _write_stub(env, {64: _passing_pr()})
     result = _run(stub, "--reviews-only", "64")
     assert result.returncode == 0
@@ -284,7 +294,7 @@ def test_reviews_only_flag_suppresses_ci(env: Path) -> None:
     assert "/4 checks" not in out
 
 
-def test_verbose_lists_individual_checks(env: Path) -> None:
+def test_verbose_lists_individual_checks(env: ScriptEnv) -> None:
     stub = _write_stub(env, {65: _failing_pr()})
     result = _run(stub, "--verbose", "65")
     assert result.returncode == 1
@@ -296,7 +306,7 @@ def test_verbose_lists_individual_checks(env: Path) -> None:
     assert "FAILURE" in out or "fail" in out.lower()
 
 
-def test_stdin_accepts_pr_numbers(env: Path) -> None:
+def test_stdin_accepts_pr_numbers(env: ScriptEnv) -> None:
     stub = _write_stub(env, {64: _passing_pr(), 65: _failing_pr()})
     result = _run(stub, stdin="64 65\n")
     assert result.returncode == 1, result.stderr
@@ -304,20 +314,20 @@ def test_stdin_accepts_pr_numbers(env: Path) -> None:
     assert "PR #65" in result.stdout
 
 
-def test_rejects_non_numeric_pr(env: Path) -> None:
+def test_rejects_non_numeric_pr(env: ScriptEnv) -> None:
     stub = _write_stub(env, {64: _passing_pr()})
     result = _run(stub, "abc")
     assert result.returncode == 3
     assert "abc" in (result.stderr + result.stdout)
 
 
-def test_cache_reuses_result_within_ttl(env: Path) -> None:
+def test_cache_reuses_result_within_ttl(env: ScriptEnv) -> None:
     stub = _write_stub(env, {64: _passing_pr()})
     # First run populates cache
     first = _run(stub, "64")
     assert first.returncode == 0
     # Replace stub with one that fails if invoked — cache must prevent calls
-    broken = env / "gh-broken"
+    broken = env.tmp_path / "gh-broken"
     broken.write_text("#!/usr/bin/env bash\nexit 77\n")
     broken.chmod(0o755)
     cached = subprocess.run(
@@ -331,11 +341,11 @@ def test_cache_reuses_result_within_ttl(env: Path) -> None:
     assert "PR #64" in cached.stdout
 
 
-def test_no_cache_flag_bypasses_cache(env: Path) -> None:
+def test_no_cache_flag_bypasses_cache(env: ScriptEnv) -> None:
     stub = _write_stub(env, {64: _passing_pr()})
     first = _run(stub, "64")
     assert first.returncode == 0
-    broken = env / "gh-broken"
+    broken = env.tmp_path / "gh-broken"
     broken.write_text("#!/usr/bin/env bash\nexit 77\n")
     broken.chmod(0o755)
     result = subprocess.run(
@@ -347,3 +357,15 @@ def test_no_cache_flag_bypasses_cache(env: Path) -> None:
     )
     # Without cache, the broken stub should cause failure
     assert result.returncode != 0
+
+
+def test_verbose_with_no_checks(env: ScriptEnv) -> None:
+    """A PR with zero checks exercises the ``none`` CI-state branch."""
+
+    payload = _passing_pr()
+    payload["statusCheckRollup"] = []
+    stub = _write_stub(env, {64: payload})
+    result = _run(stub, "--verbose", "64")
+    assert result.returncode == 0, result.stderr
+    assert "PR #64" in result.stdout
+    assert "No checks" in result.stdout
