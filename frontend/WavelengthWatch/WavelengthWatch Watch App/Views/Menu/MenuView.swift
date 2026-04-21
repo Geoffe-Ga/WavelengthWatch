@@ -3,6 +3,9 @@ import SwiftUI
 struct MenuView: View {
   let journalClient: JournalClientProtocol
   @ObservedObject var syncSettingsViewModel: SyncSettingsViewModel
+  @ObservedObject var journalQueue: JournalQueue
+  @ObservedObject var syncService: JournalSyncService
+  @ObservedObject var networkMonitor: NetworkMonitor
   @Binding var isPresented: Bool
   @EnvironmentObject private var viewModel: ContentViewModel
   @EnvironmentObject private var flowCoordinator: FlowCoordinator
@@ -37,6 +40,28 @@ struct MenuView: View {
 
       NavigationLink(destination: SyncSettingsView(viewModel: syncSettingsViewModel)) {
         Label("Sync Settings", systemImage: "arrow.triangle.2.circlepath")
+      }
+
+      NavigationLink(destination: SyncStatusView(
+        queue: journalQueue,
+        syncService: syncService,
+        networkMonitor: networkMonitor
+      )) {
+        HStack {
+          Label("Sync Status", systemImage: "icloud.and.arrow.up")
+          Spacer()
+          if journalQueue.pendingCount > 0 {
+            Text("\(journalQueue.pendingCount)")
+              .font(.caption2.monospacedDigit())
+              .foregroundColor(.yellow)
+              .padding(.horizontal, 6)
+              .padding(.vertical, 2)
+              .background(
+                Capsule().fill(Color.yellow.opacity(0.2))
+              )
+              .accessibilityLabel("\(journalQueue.pendingCount) entries waiting to sync")
+          }
+        }
       }
 
       NavigationLink(destination: ConceptExplainerView()) {

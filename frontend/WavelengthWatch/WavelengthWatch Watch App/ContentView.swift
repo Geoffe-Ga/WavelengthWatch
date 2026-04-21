@@ -6,6 +6,9 @@ struct ContentView: View {
   @StateObject private var viewModel: ContentViewModel
   @StateObject private var flowCoordinator: FlowCoordinator
   @StateObject private var syncSettingsViewModel: SyncSettingsViewModel
+  @StateObject private var networkMonitor: NetworkMonitor
+  @StateObject private var journalQueue: JournalQueue
+  @StateObject private var syncService: JournalSyncService
   @EnvironmentObject private var notificationDelegate: NotificationDelegate
   let journalClient: JournalClientProtocol
   let journalRepository: JournalRepositoryProtocol
@@ -42,16 +45,22 @@ struct ContentView: View {
     self.journalRepository = journalRepository
     self.catalogRepository = repository
     let syncSettings = SyncSettings()
-    let journalQueue: JournalQueueProtocol?
+    let journalQueue: JournalQueue
     do {
       journalQueue = try JournalQueue()
     } catch {
-      // Offline queue is best-effort. If SQLite setup fails (e.g. in previews
-      // or on read-only storage) fall back to no-queue behaviour so journal
-      // submissions still succeed locally.
-      print("⚠️ Failed to initialize journal queue: \(error). Offline retry disabled.")
-      journalQueue = nil
+      // The documents directory is unavailable in SwiftUI previews and on a
+      // few read-only storage configurations. Fall back to a temp-dir queue
+      // so the UI can still render even though entries won't persist across
+      // launches.
+      print("⚠️ Failed to initialize journal queue: \(error). Falling back to temp storage.")
+      let fallbackPath = NSTemporaryDirectory() + "journal_queue_fallback.sqlite"
+      // swiftlint:disable:next force_try  -- temp dir is always writable.
+      journalQueue = try! JournalQueue(databasePath: fallbackPath)
     }
+    _journalQueue = StateObject(wrappedValue: journalQueue)
+    let monitor = NetworkMonitor()
+    _networkMonitor = StateObject(wrappedValue: monitor)
     let journalClient = JournalClient(
       apiClient: apiClient,
       repository: journalRepository,
@@ -59,6 +68,12 @@ struct ContentView: View {
       queue: journalQueue
     )
     self.journalClient = journalClient
+    let sync = JournalSyncService(
+      queue: journalQueue,
+      apiClient: apiClient,
+      networkMonitor: monitor
+    )
+    _syncService = StateObject(wrappedValue: sync)
     let initialLayer = UserDefaults.standard.integer(forKey: "selectedLayerIndex")
     let initialPhase = UserDefaults.standard.integer(forKey: "selectedPhaseIndex")
     let model = ContentViewModel(
@@ -117,6 +132,15 @@ struct ContentView: View {
       }
       .ignoresSafeArea(edges: .bottom)
       .task { await viewModel.loadCatalog() }
+      .task {
+        // Kick off auto-sync once when the view appears. The service
+        // subscribes to NetworkMonitor and triggers a sync whenever
+        // connectivity is restored.
+        syncService.startAutoSync()
+      }
+      .onChange(of: syncService.syncStatus) { _, newValue in
+        viewModel.handleSyncStatusChange(newValue, totalPending: journalQueue.pendingCount)
+      }
       .onChange(of: viewModel.phaseOrder) {
         adjustPhaseSelection()
       }
@@ -190,6 +214,18 @@ struct ContentView: View {
           Alert(
             title: Text("Saved Offline"),
             message: Text(message),
+            dismissButton: .default(Text("OK")) { viewModel.journalFeedback = nil }
+          )
+        case let .syncing(current, total):
+          Alert(
+            title: Text("Syncing"),
+            message: Text("Syncing \(current) of \(total) entr\(total == 1 ? "y" : "ies")…"),
+            dismissButton: .default(Text("OK")) { viewModel.journalFeedback = nil }
+          )
+        case let .syncSuccess(count):
+          Alert(
+            title: Text("Synced"),
+            message: Text("\(count) entr\(count == 1 ? "y" : "ies") synced successfully."),
             dismissButton: .default(Text("OK")) { viewModel.journalFeedback = nil }
           )
         case let .failure(message):
@@ -304,6 +340,9 @@ struct ContentView: View {
           MenuView(
             journalClient: journalClient,
             syncSettingsViewModel: syncSettingsViewModel,
+            journalQueue: journalQueue,
+            syncService: syncService,
+            networkMonitor: networkMonitor,
             isPresented: $showingMenu
           )
           .toolbar {

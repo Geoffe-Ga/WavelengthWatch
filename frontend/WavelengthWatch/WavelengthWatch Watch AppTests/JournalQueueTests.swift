@@ -491,4 +491,90 @@ struct JournalQueueTests {
       try queue.markFailed(id: nonExistentID, error: TestError())
     }
   }
+
+  // MARK: - Published pendingCount Tests (#216)
+
+  @Test @MainActor func pendingCountStartsAtZeroForEmptyQueue() throws {
+    let dbPath = temporaryDatabasePath()
+    defer { try? FileManager.default.removeItem(atPath: dbPath) }
+
+    let queue = try JournalQueue(databasePath: dbPath)
+
+    #expect(queue.pendingCount == 0)
+  }
+
+  @Test @MainActor func pendingCountIncrementsOnEnqueue() throws {
+    let dbPath = temporaryDatabasePath()
+    defer { try? FileManager.default.removeItem(atPath: dbPath) }
+
+    let queue = try JournalQueue(databasePath: dbPath)
+
+    try queue.enqueue(sampleEntry(curriculumID: 1))
+    #expect(queue.pendingCount == 1)
+
+    try queue.enqueue(sampleEntry(curriculumID: 2))
+    #expect(queue.pendingCount == 2)
+
+    try queue.enqueue(sampleEntry(curriculumID: 3))
+    #expect(queue.pendingCount == 3)
+  }
+
+  @Test @MainActor func pendingCountDecrementsWhenMarkedSyncing() throws {
+    let dbPath = temporaryDatabasePath()
+    defer { try? FileManager.default.removeItem(atPath: dbPath) }
+
+    let queue = try JournalQueue(databasePath: dbPath)
+    let entry = sampleEntry()
+    try queue.enqueue(entry)
+    #expect(queue.pendingCount == 1)
+
+    try queue.markSyncing(id: entry.id)
+    #expect(queue.pendingCount == 0)
+  }
+
+  @Test @MainActor func pendingCountRemainsZeroAfterMarkSynced() throws {
+    let dbPath = temporaryDatabasePath()
+    defer { try? FileManager.default.removeItem(atPath: dbPath) }
+
+    let queue = try JournalQueue(databasePath: dbPath)
+    let entry = sampleEntry()
+    try queue.enqueue(entry)
+    try queue.markSyncing(id: entry.id)
+    try queue.markSynced(id: entry.id)
+
+    #expect(queue.pendingCount == 0)
+  }
+
+  @Test @MainActor func pendingCountReflectsFailedEntriesAsNonPending() throws {
+    let dbPath = temporaryDatabasePath()
+    defer { try? FileManager.default.removeItem(atPath: dbPath) }
+
+    let queue = try JournalQueue(databasePath: dbPath)
+    let entry = sampleEntry()
+    try queue.enqueue(entry)
+    try queue.markSyncing(id: entry.id)
+
+    struct TestError: Error {}
+    try queue.markFailed(id: entry.id, error: TestError())
+
+    // Failed entries are tracked separately; pendingCount only counts `.pending` rows.
+    #expect(queue.pendingCount == 0)
+  }
+
+  @Test @MainActor func pendingCountHydratedFromDiskOnInit() throws {
+    let dbPath = temporaryDatabasePath()
+    defer { try? FileManager.default.removeItem(atPath: dbPath) }
+
+    // First instance: enqueue two entries, close
+    do {
+      let queue = try JournalQueue(databasePath: dbPath)
+      try queue.enqueue(sampleEntry(curriculumID: 1))
+      try queue.enqueue(sampleEntry(curriculumID: 2))
+      #expect(queue.pendingCount == 2)
+    }
+
+    // Second instance: pendingCount should be hydrated from disk
+    let queue = try JournalQueue(databasePath: dbPath)
+    #expect(queue.pendingCount == 2)
+  }
 }

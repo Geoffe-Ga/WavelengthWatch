@@ -154,6 +154,9 @@ final class JournalClientMock: JournalClientProtocol {
   var restSubmissions: [InitiatedBy] = []
   var submittedInitiatedBy: InitiatedBy?
   var shouldFail = false
+  /// When true, submit() throws `JournalError.queuedForRetry` to simulate
+  /// the offline-queue path introduced in #215.
+  var shouldQueue = false
 
   func submit(
     curriculumID: Int,
@@ -163,6 +166,9 @@ final class JournalClientMock: JournalClientProtocol {
   ) async throws -> LocalJournalEntry {
     submissions.append((curriculumID, secondaryCurriculumID, strategyID))
     submittedInitiatedBy = initiatedBy
+    if shouldQueue {
+      throw JournalError.queuedForRetry(entryID: UUID())
+    }
     if shouldFail {
       throw ErrorStub()
     }
@@ -182,6 +188,9 @@ final class JournalClientMock: JournalClientProtocol {
   ) async throws -> LocalJournalEntry {
     restSubmissions.append(initiatedBy)
     submittedInitiatedBy = initiatedBy
+    if shouldQueue {
+      throw JournalError.queuedForRetry(entryID: UUID())
+    }
     if shouldFail {
       throw ErrorStub()
     }
