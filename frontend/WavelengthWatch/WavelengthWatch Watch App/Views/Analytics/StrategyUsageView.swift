@@ -1,9 +1,23 @@
 import SwiftUI
 
-/// Displays strategy usage analytics grouped by phase with diversity scores
+/// Displays strategy usage analytics grouped by phase with diversity scores.
+///
+/// When a `drilldownContext` is supplied, individual strategy rows become
+/// tappable and navigate to `JournalEntryListView` filtered by strategy ID.
 struct StrategyUsageView: View {
   let analytics: SelfCareAnalytics
   let phases: [CatalogPhaseModel]
+  let drilldownContext: JournalDrilldownContext?
+
+  init(
+    analytics: SelfCareAnalytics,
+    phases: [CatalogPhaseModel],
+    drilldownContext: JournalDrilldownContext? = nil
+  ) {
+    self.analytics = analytics
+    self.phases = phases
+    self.drilldownContext = drilldownContext
+  }
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
@@ -24,7 +38,10 @@ struct StrategyUsageView: View {
 
           // Strategies grouped by phase
           ForEach(phaseGroups, id: \.phaseName) { group in
-            PhaseStrategyCardView(group: group)
+            PhaseStrategyCardView(
+              group: group,
+              drilldownContext: drilldownContext
+            )
           }
         }
       }
@@ -35,6 +52,7 @@ struct StrategyUsageView: View {
 
   /// Resolved phase group with human-readable phase name
   struct ResolvedPhaseGroup: Equatable {
+    let phaseId: Int
     let phaseName: String
     let strategies: [TopStrategyItem]
     let diversityScore: Double
@@ -47,6 +65,7 @@ struct StrategyUsageView: View {
         ?? "Phase \(group.phaseId)"
 
       return ResolvedPhaseGroup(
+        phaseId: group.phaseId,
         phaseName: phaseName,
         strategies: group.strategies,
         diversityScore: group.diversityScore,
@@ -92,25 +111,45 @@ private struct OverallDiversityView: View {
 
 private struct PhaseStrategyCardView: View {
   let group: StrategyUsageView.ResolvedPhaseGroup
+  let drilldownContext: JournalDrilldownContext?
 
   var body: some View {
     VStack(alignment: .leading, spacing: 6) {
-      // Phase header with per-phase diversity
-      HStack {
-        Text(group.phaseName)
-          .font(.caption)
-          .fontWeight(.semibold)
-
-        Spacer()
-
-        Text(String(format: "%.0f%%", group.diversityScore))
-          .font(.caption2)
-          .foregroundColor(.secondary)
+      // Phase header with per-phase diversity (tappable when drill-down is wired)
+      if let context = drilldownContext {
+        NavigationLink {
+          JournalEntryListView(
+            filter: .byPhase(phaseId: group.phaseId, name: group.phaseName),
+            journalRepository: context.journalRepository,
+            catalog: context.catalog
+          )
+        } label: {
+          phaseHeader
+        }
+        .buttonStyle(.plain)
+      } else {
+        phaseHeader
       }
 
       // Strategy cards
       ForEach(group.strategies, id: \.strategyId) { strategy in
-        StrategyCardView(strategy: strategy)
+        if let context = drilldownContext {
+          NavigationLink {
+            JournalEntryListView(
+              filter: .byStrategy(
+                strategyId: strategy.strategyId,
+                name: strategy.strategy
+              ),
+              journalRepository: context.journalRepository,
+              catalog: context.catalog
+            )
+          } label: {
+            StrategyCardView(strategy: strategy)
+          }
+          .buttonStyle(.plain)
+        } else {
+          StrategyCardView(strategy: strategy)
+        }
       }
     }
     .padding(8)
@@ -118,6 +157,20 @@ private struct PhaseStrategyCardView: View {
       RoundedRectangle(cornerRadius: 8)
         .fill(Color.secondary.opacity(0.1))
     )
+  }
+
+  private var phaseHeader: some View {
+    HStack {
+      Text(group.phaseName)
+        .font(.caption)
+        .fontWeight(.semibold)
+
+      Spacer()
+
+      Text(String(format: "%.0f%%", group.diversityScore))
+        .font(.caption2)
+        .foregroundColor(.secondary)
+    }
   }
 }
 
