@@ -20,6 +20,9 @@ protocol JournalRepositoryProtocol {
   /// Fetches all entries, newest first.
   func fetchAll() throws -> [LocalJournalEntry]
 
+  /// Fetches entries whose `createdAt` is within the inclusive date range.
+  func fetchByDateRange(from startDate: Date, to endDate: Date) throws -> [LocalJournalEntry]
+
   /// Fetches entries pending sync.
   func fetchPendingSync() throws -> [LocalJournalEntry]
 
@@ -131,6 +134,21 @@ final class JournalRepository: JournalRepositoryProtocol {
     return try database.fetchAll()
   }
 
+  /// Fetches entries whose `createdAt` is within the inclusive date range.
+  ///
+  /// Leverages the `idx_journal_created_curriculum` composite index added
+  /// in schema v4 so analytics queries that operate on a time window
+  /// (e.g., 30-day overview, monthly streaks) avoid full-table scans.
+  ///
+  /// - Parameters:
+  ///   - startDate: Lower bound (inclusive).
+  ///   - endDate: Upper bound (inclusive).
+  /// - Returns: Matching entries ordered newest first.
+  func fetchByDateRange(from startDate: Date, to endDate: Date) throws -> [LocalJournalEntry] {
+    try ensureOpen()
+    return try database.fetchByDateRange(from: startDate, to: endDate)
+  }
+
   /// Fetches entries that are pending sync.
   ///
   /// - Returns: Array of entries with pending or failed sync status.
@@ -185,6 +203,12 @@ final class InMemoryJournalRepository: JournalRepositoryProtocol {
 
   func fetchAll() throws -> [LocalJournalEntry] {
     entries.values.sorted { $0.createdAt > $1.createdAt }
+  }
+
+  func fetchByDateRange(from startDate: Date, to endDate: Date) throws -> [LocalJournalEntry] {
+    entries.values
+      .filter { $0.createdAt >= startDate && $0.createdAt <= endDate }
+      .sorted { $0.createdAt > $1.createdAt }
   }
 
   func fetchPendingSync() throws -> [LocalJournalEntry] {

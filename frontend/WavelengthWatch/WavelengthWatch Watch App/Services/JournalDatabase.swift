@@ -27,7 +27,7 @@ enum JournalDatabaseError: Error, Equatable {
 /// The database includes a version table for future migrations.
 final class JournalDatabase {
   /// Current schema version for migration tracking.
-  static let schemaVersion = 3
+  static let schemaVersion = 4
 
   /// SQLite database pointer.
   private var db: OpaquePointer?
@@ -136,6 +136,12 @@ final class JournalDatabase {
       CREATE INDEX IF NOT EXISTS idx_journal_entry_type
         ON journal_entry(entry_type);
 
+      CREATE INDEX IF NOT EXISTS idx_journal_strategy
+        ON journal_entry(strategy_id);
+
+      CREATE INDEX IF NOT EXISTS idx_journal_created_curriculum
+        ON journal_entry(created_at, curriculum_id);
+
       CREATE UNIQUE INDEX IF NOT EXISTS idx_journal_server_id
         ON journal_entry(server_id) WHERE server_id IS NOT NULL;
     """
@@ -180,6 +186,9 @@ final class JournalDatabase {
     }
     if currentVersion < 3 {
       try migrateToV3()
+    }
+    if currentVersion < 4 {
+      try migrateToV4()
     }
 
     // Update schema version
@@ -266,6 +275,31 @@ final class JournalDatabase {
         sqlite3_free(errorMessage)
         throw JournalDatabaseError.failedToUpdate(message)
       }
+    }
+  }
+
+  /// Migrates from schema v3 to v4 by adding analytics-critical indexes.
+  ///
+  /// Adds `idx_journal_strategy` on `strategy_id` for quick per-strategy
+  /// lookups and `idx_journal_created_curriculum` on `(created_at,
+  /// curriculum_id)` so date-range analytics queries can be answered
+  /// directly from the index without scanning the full table.
+  private func migrateToV4() throws {
+    guard let db else { throw JournalDatabaseError.databaseNotOpen }
+
+    let sql = """
+      CREATE INDEX IF NOT EXISTS idx_journal_strategy
+        ON journal_entry(strategy_id);
+
+      CREATE INDEX IF NOT EXISTS idx_journal_created_curriculum
+        ON journal_entry(created_at, curriculum_id);
+    """
+
+    var errorMessage: UnsafeMutablePointer<CChar>?
+    if sqlite3_exec(db, sql, nil, nil, &errorMessage) != SQLITE_OK {
+      let message = errorMessage.map { String(cString: $0) } ?? "Unknown error"
+      sqlite3_free(errorMessage)
+      throw JournalDatabaseError.failedToUpdate(message)
     }
   }
 
@@ -451,6 +485,84 @@ final class JournalDatabase {
     }
 
     return entries
+  }
+
+  /// Fetches entries whose `createdAt` falls within the inclusive date range.
+  ///
+  /// Uses the `idx_journal_created_curriculum` composite index so SQLite
+  /// can answer date-range analytics queries without scanning every row.
+  ///
+  /// - Parameters:
+  ///   - startDate: Lower bound (inclusive).
+  ///   - endDate: Upper bound (inclusive).
+  /// - Returns: Matching entries ordered newest first.
+  /// - Throws: `JournalDatabaseError` if query fails.
+  func fetchByDateRange(from startDate: Date, to endDate: Date) throws -> [LocalJournalEntry] {
+    guard let db else { throw JournalDatabaseError.databaseNotOpen }
+
+    let sql = """
+      SELECT * FROM journal_entry
+      WHERE created_at >= ? AND created_at <= ?
+      ORDER BY created_at DESC
+    """
+
+    var statement: OpaquePointer?
+    guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
+      let message = String(cString: sqlite3_errmsg(db))
+      throw JournalDatabaseError.failedToQuery(message)
+    }
+    defer { sqlite3_finalize(statement) }
+
+    sqlite3_bind_double(statement, 1, startDate.timeIntervalSince1970)
+    sqlite3_bind_double(statement, 2, endDate.timeIntervalSince1970)
+
+    var entries: [LocalJournalEntry] = []
+    while sqlite3_step(statement) == SQLITE_ROW {
+      if let entry = try parseEntry(from: statement) {
+        entries.append(entry)
+      }
+    }
+
+    return entries
+  }
+
+  /// Executes a raw SQL statement without returning rows.
+  ///
+  /// Intended for schema manipulation and test setup; regular CRUD paths
+  /// should go through the typed helpers above.
+  func execRaw(_ sql: String) throws {
+    guard let db else { throw JournalDatabaseError.databaseNotOpen }
+
+    var errorMessage: UnsafeMutablePointer<CChar>?
+    if sqlite3_exec(db, sql, nil, nil, &errorMessage) != SQLITE_OK {
+      let message = errorMessage.map { String(cString: $0) } ?? "Unknown error"
+      sqlite3_free(errorMessage)
+      throw JournalDatabaseError.failedToUpdate(message)
+    }
+  }
+
+  /// Returns the names of all indexes defined on `journal_entry`.
+  ///
+  /// Used by migration tests to verify expected indexes exist after open.
+  func listIndexes() throws -> [String] {
+    guard let db else { throw JournalDatabaseError.databaseNotOpen }
+
+    let sql = "SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'journal_entry'"
+
+    var statement: OpaquePointer?
+    guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
+      let message = String(cString: sqlite3_errmsg(db))
+      throw JournalDatabaseError.failedToQuery(message)
+    }
+    defer { sqlite3_finalize(statement) }
+
+    var names: [String] = []
+    while sqlite3_step(statement) == SQLITE_ROW {
+      if let cString = sqlite3_column_text(statement, 0) {
+        names.append(String(cString: cString))
+      }
+    }
+    return names
   }
 
   /// Fetches a single entry by ID.

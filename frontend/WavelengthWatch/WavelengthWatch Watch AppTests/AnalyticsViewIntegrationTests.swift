@@ -63,6 +63,12 @@ struct AnalyticsViewIntegrationTests {
       entries
     }
 
+    func fetchByDateRange(from startDate: Date, to endDate: Date) throws -> [LocalJournalEntry] {
+      entries
+        .filter { $0.createdAt >= startDate && $0.createdAt <= endDate }
+        .sorted { $0.createdAt > $1.createdAt }
+    }
+
     func fetchPendingSync() throws -> [LocalJournalEntry] {
       entries.filter { $0.syncStatus == .pending }
     }
