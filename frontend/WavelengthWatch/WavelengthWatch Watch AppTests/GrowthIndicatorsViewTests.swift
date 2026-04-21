@@ -30,54 +30,58 @@ struct GrowthIndicatorsViewTests {
     #expect(view.indicators.phaseCoverage == 5)
   }
 
-  @Test("trendDirection returns positive for trend above threshold")
-  func trendDirection_returnsPositiveForTrendAboveThreshold() {
+  // MARK: - Trend Direction (neutral descriptors)
+
+  @Test("trendDirection returns more for trend above threshold")
+  func trendDirection_returnsMoreForTrendAboveThreshold() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
       medicinalTrend: 0.055, // 5.5%, above 5% threshold
       layerDiversity: 3,
       phaseCoverage: 4
     ))
 
-    #expect(view.trendDirection == .positive)
+    #expect(view.trendDirection == .more)
   }
 
-  @Test("trendDirection returns varying for trend below negative threshold")
-  func trendDirection_returnsVaryingForTrendBelowThreshold() {
+  @Test("trendDirection returns quieter for trend below negative threshold")
+  func trendDirection_returnsQuieterForTrendBelowThreshold() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
-      medicinalTrend: -0.06, // -6%, below -5% threshold
+      medicinalTrend: -0.06,
       layerDiversity: 2,
       phaseCoverage: 3
     ))
 
-    #expect(view.trendDirection == .varying)
+    #expect(view.trendDirection == .quieter)
   }
 
-  @Test("trendDirection returns neutral for trend within thresholds")
-  func trendDirection_returnsNeutralForTrendWithinThresholds() {
+  @Test("trendDirection returns steady within threshold")
+  func trendDirection_returnsSteadyWithinThreshold() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
-      medicinalTrend: 0.02, // 2%, within ±5% threshold
+      medicinalTrend: 0.02,
       layerDiversity: 3,
       phaseCoverage: 4
     ))
 
-    #expect(view.trendDirection == .neutral)
+    #expect(view.trendDirection == .steady)
   }
 
-  @Test("trendDirection handles zero trend as neutral")
-  func trendDirection_handlesZeroTrendAsNeutral() {
+  @Test("trendDirection returns steady for zero trend")
+  func trendDirection_returnsSteadyForZeroTrend() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
       medicinalTrend: 0.0,
       layerDiversity: 1,
       phaseCoverage: 2
     ))
 
-    #expect(view.trendDirection == .neutral)
+    #expect(view.trendDirection == .steady)
   }
 
-  @Test("trendArrow returns up arrow for positive trend")
-  func trendArrow_returnsUpArrowForPositiveTrend() {
+  // MARK: - Trend Arrow (neutral direction indicator only)
+
+  @Test("trendArrow returns up arrow for more trend")
+  func trendArrow_returnsUpArrowForMoreTrend() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
-      medicinalTrend: 0.10, // 10%
+      medicinalTrend: 0.10,
       layerDiversity: 3,
       phaseCoverage: 4
     ))
@@ -85,10 +89,10 @@ struct GrowthIndicatorsViewTests {
     #expect(view.trendArrow == "arrow.up")
   }
 
-  @Test("trendArrow returns down arrow for varying trend")
-  func trendArrow_returnsDownArrowForVaryingTrend() {
+  @Test("trendArrow returns down arrow for quieter trend")
+  func trendArrow_returnsDownArrowForQuieterTrend() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
-      medicinalTrend: -0.08, // -8%
+      medicinalTrend: -0.08,
       layerDiversity: 2,
       phaseCoverage: 3
     ))
@@ -96,10 +100,10 @@ struct GrowthIndicatorsViewTests {
     #expect(view.trendArrow == "arrow.down")
   }
 
-  @Test("trendArrow returns forward arrow for neutral trend")
-  func trendArrow_returnsForwardArrowForNeutralTrend() {
+  @Test("trendArrow returns forward arrow for steady trend")
+  func trendArrow_returnsForwardArrowForSteadyTrend() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
-      medicinalTrend: 0.015, // 1.5%
+      medicinalTrend: 0.015,
       layerDiversity: 3,
       phaseCoverage: 4
     ))
@@ -107,47 +111,114 @@ struct GrowthIndicatorsViewTests {
     #expect(view.trendArrow == "arrow.forward")
   }
 
-  @Test("trendColor returns green for positive trend")
-  func trendColor_returnsGreenForPositiveTrend() {
+  // MARK: - Trend Color (neutral in all cases, Issue #282)
+
+  @Test("trendColor is neutral for more trend (no evaluative green)")
+  func trendColor_isNeutralForMoreTrend() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
-      medicinalTrend: 0.15, // 15%
+      medicinalTrend: 0.15,
       layerDiversity: 4,
       phaseCoverage: 5
     ))
 
-    #expect(view.trendColor == .green)
+    #expect(view.trendColor != .green)
+    #expect(view.trendColor != .red)
+    #expect(view.trendColor != .orange)
+    #expect(view.trendColor != .yellow)
   }
 
-  @Test("trendColor returns neutral color for varying trend")
-  func trendColor_returnsNeutralColorForVaryingTrend() {
+  @Test("trendColor is neutral for quieter trend")
+  func trendColor_isNeutralForQuieterTrend() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
-      medicinalTrend: -0.12, // -12%
+      medicinalTrend: -0.12,
       layerDiversity: 2,
       phaseCoverage: 3
     ))
 
-    // Should use a neutral, supportive color (not red/orange)
     #expect(view.trendColor != .red)
     #expect(view.trendColor != .orange)
+    #expect(view.trendColor != .green)
+    #expect(view.trendColor != .yellow)
   }
 
-  @Test("trendColor returns neutral color for neutral trend")
-  func trendColor_returnsNeutralColorForNeutralTrend() {
+  @Test("trendColor is neutral for steady trend")
+  func trendColor_isNeutralForSteadyTrend() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
-      medicinalTrend: 0.03, // 3%
+      medicinalTrend: 0.03,
       layerDiversity: 3,
       phaseCoverage: 4
     ))
 
-    // Should use a neutral color (not red/orange)
     #expect(view.trendColor != .red)
     #expect(view.trendColor != .orange)
+    #expect(view.trendColor != .green)
+    #expect(view.trendColor != .yellow)
   }
 
-  @Test("formattedTrend includes percentage and sign for positive trend")
-  func formattedTrend_includesPercentageAndSignForPositiveTrend() {
+  @Test("trendColor is identical across directions")
+  func trendColor_identicalAcrossDirections() {
+    let more = GrowthIndicatorsView(indicators: GrowthIndicators(
+      medicinalTrend: 0.20,
+      layerDiversity: 3,
+      phaseCoverage: 4
+    ))
+    let quieter = GrowthIndicatorsView(indicators: GrowthIndicators(
+      medicinalTrend: -0.20,
+      layerDiversity: 3,
+      phaseCoverage: 4
+    ))
+    let steady = GrowthIndicatorsView(indicators: GrowthIndicators(
+      medicinalTrend: 0.01,
+      layerDiversity: 3,
+      phaseCoverage: 4
+    ))
+
+    #expect(more.trendColor == quieter.trendColor)
+    #expect(quieter.trendColor == steady.trendColor)
+  }
+
+  // MARK: - Trend Description (no prescriptive language)
+
+  @Test("trendDescription avoids prescriptive language")
+  func trendDescription_avoidsPrescriptiveLanguage() {
+    let cases: [Double] = [0.15, -0.15, 0.0]
+    for trend in cases {
+      let view = GrowthIndicatorsView(indicators: GrowthIndicators(
+        medicinalTrend: trend,
+        layerDiversity: 3,
+        phaseCoverage: 4
+      ))
+      let text = view.trendDescription.lowercased()
+      #expect(!text.contains("declining"))
+      #expect(!text.contains("failure"))
+      #expect(!text.contains("should"))
+      #expect(!text.contains("need to"))
+      #expect(!text.contains("better"))
+      #expect(!text.contains("worse"))
+    }
+  }
+
+  // MARK: - Rhythm Context (supportive affirmation)
+
+  @Test("rhythmContext affirms natural ebbs and flows")
+  func rhythmContext_affirmsNaturalEbbAndFlow() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
-      medicinalTrend: 0.1234, // 12.34%
+      medicinalTrend: -0.05,
+      layerDiversity: 2,
+      phaseCoverage: 3
+    ))
+    let text = view.rhythmContext.lowercased()
+    #expect(text.contains("natural"))
+    #expect(!text.contains("should"))
+    #expect(!text.contains("goal"))
+  }
+
+  // MARK: - Formatted Trend (factual, unchanged)
+
+  @Test("formattedTrend includes percentage and sign for increase")
+  func formattedTrend_includesPercentageAndSignForIncrease() {
+    let view = GrowthIndicatorsView(indicators: GrowthIndicators(
+      medicinalTrend: 0.1234,
       layerDiversity: 3,
       phaseCoverage: 4
     ))
@@ -155,10 +226,10 @@ struct GrowthIndicatorsViewTests {
     #expect(view.formattedTrend == "+12.3%")
   }
 
-  @Test("formattedTrend includes percentage and sign for decreasing trend")
-  func formattedTrend_includesPercentageAndSignForDecreasingTrend() {
+  @Test("formattedTrend includes percentage and sign for decrease")
+  func formattedTrend_includesPercentageAndSignForDecrease() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
-      medicinalTrend: -0.0876, // -8.76%
+      medicinalTrend: -0.0876,
       layerDiversity: 2,
       phaseCoverage: 3
     ))
@@ -176,6 +247,8 @@ struct GrowthIndicatorsViewTests {
 
     #expect(view.formattedTrend == "0.0%")
   }
+
+  // MARK: - Diversity / Coverage Text
 
   @Test("layerDiversityText formats singular layer correctly")
   func layerDiversityText_formatsSingularLayerCorrectly() {
@@ -243,6 +316,8 @@ struct GrowthIndicatorsViewTests {
     #expect(view.phaseCoverageText == "0 of 6 phases")
   }
 
+  // MARK: - isEmpty
+
   @Test("isEmpty returns true when no data")
   func isEmpty_returnsTrueWhenNoData() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
@@ -276,8 +351,8 @@ struct GrowthIndicatorsViewTests {
     #expect(view.isEmpty == false)
   }
 
-  @Test("isEmpty returns false when has positive trend")
-  func isEmpty_returnsFalseWhenHasPositiveTrend() {
+  @Test("isEmpty returns false when has more trend")
+  func isEmpty_returnsFalseWhenHasMoreTrend() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
       medicinalTrend: 0.05,
       layerDiversity: 0,
@@ -287,8 +362,8 @@ struct GrowthIndicatorsViewTests {
     #expect(view.isEmpty == false)
   }
 
-  @Test("isEmpty returns false when has varying trend")
-  func isEmpty_returnsFalseWhenHasVaryingTrend() {
+  @Test("isEmpty returns false when has quieter trend")
+  func isEmpty_returnsFalseWhenHasQuieterTrend() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
       medicinalTrend: -0.05,
       layerDiversity: 0,
@@ -298,34 +373,36 @@ struct GrowthIndicatorsViewTests {
     #expect(view.isEmpty == false)
   }
 
-  @Test("integration test with realistic positive growth data")
-  func integrationTest_withRealisticPositiveGrowthData() {
+  // MARK: - Integration
+
+  @Test("integration test with realistic more-medicinal data")
+  func integrationTest_withRealisticMoreMedicinalData() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
-      medicinalTrend: 0.185, // 18.5%
+      medicinalTrend: 0.185,
       layerDiversity: 5,
       phaseCoverage: 6
     ))
 
-    #expect(view.trendDirection == .positive)
+    #expect(view.trendDirection == .more)
     #expect(view.trendArrow == "arrow.up")
-    #expect(view.trendColor == .green)
+    #expect(view.trendColor != .green)
+    #expect(view.trendColor != .red)
     #expect(view.formattedTrend == "+18.5%")
     #expect(view.layerDiversityText == "5 modes")
     #expect(view.phaseCoverageText == "6 of 6 phases")
     #expect(view.isEmpty == false)
   }
 
-  @Test("integration test with realistic varying growth data")
-  func integrationTest_withRealisticVaryingGrowthData() {
+  @Test("integration test with realistic quieter-phase data")
+  func integrationTest_withRealisticQuieterPhaseData() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
-      medicinalTrend: -0.152, // -15.2%
+      medicinalTrend: -0.152,
       layerDiversity: 2,
       phaseCoverage: 3
     ))
 
-    #expect(view.trendDirection == .varying)
+    #expect(view.trendDirection == .quieter)
     #expect(view.trendArrow == "arrow.down")
-    // Should use neutral, supportive color
     #expect(view.trendColor != .red)
     #expect(view.trendColor != .orange)
     #expect(view.formattedTrend == "-15.2%")
@@ -334,17 +411,16 @@ struct GrowthIndicatorsViewTests {
     #expect(view.isEmpty == false)
   }
 
-  @Test("integration test with realistic neutral growth data")
-  func integrationTest_withRealisticNeutralGrowthData() {
+  @Test("integration test with realistic steady data")
+  func integrationTest_withRealisticSteadyData() {
     let view = GrowthIndicatorsView(indicators: GrowthIndicators(
-      medicinalTrend: 0.025, // 2.5%
+      medicinalTrend: 0.025,
       layerDiversity: 3,
       phaseCoverage: 4
     ))
 
-    #expect(view.trendDirection == .neutral)
+    #expect(view.trendDirection == .steady)
     #expect(view.trendArrow == "arrow.forward")
-    // Should use neutral, supportive color
     #expect(view.trendColor != .red)
     #expect(view.trendColor != .orange)
     #expect(view.formattedTrend == "+2.5%")

@@ -41,12 +41,9 @@ extension AnalyticsView {
           .fill(Color.secondary.opacity(0.15))
       )
 
-      // Recent Activity Display
-      if overview.currentStreak > 0 || overview.totalEntries >= 2 {
-        StreakDisplayView(
-          currentStreak: overview.currentStreak,
-          longestStreak: overview.longestStreak
-        )
+      // Recent Activity Display — neutral monthly count (Issue #280)
+      if overview.totalEntries > 0 {
+        StreakDisplayView(monthlyCheckIns: overview.totalEntries)
       }
 
       // Last Check-In
@@ -83,14 +80,14 @@ extension AnalyticsView {
           .font(.caption)
           .foregroundColor(.secondary)
 
-        // Trend Indicator
+        // Neutral trend context — no evaluative colors (Issue #281)
         if overview.medicinalTrend != 0 {
           HStack(spacing: 4) {
-            Image(systemName: overview.medicinalTrend > 0 ? "arrow.up" : "arrow.down")
+            Image(systemName: "waveform.path")
               .font(.caption2)
-              .foregroundColor(overview.medicinalTrend > 0 ? .green : .orange)
+              .foregroundColor(.secondary)
 
-            Text(String(format: "%.1f%% this period", abs(overview.medicinalTrend * 100)))
+            Text(String(format: "%.1f%% shift this period", abs(overview.medicinalTrend * 100)))
               .font(.caption2)
               .foregroundColor(.secondary)
           }

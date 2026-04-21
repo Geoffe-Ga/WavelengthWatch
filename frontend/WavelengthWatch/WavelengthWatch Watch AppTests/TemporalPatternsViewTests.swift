@@ -13,7 +13,7 @@ struct TemporalPatternsViewTests {
     CatalogPhaseModel(id: 4, name: "Resting", medicinal: [], toxic: [], strategies: []),
   ]
 
-  // MARK: - Basic Initialization Tests
+  // MARK: - Basic Initialization
 
   @Test("view initializes with empty data")
   func view_initializesWithEmptyData() {
@@ -41,7 +41,33 @@ struct TemporalPatternsViewTests {
     #expect(view.patterns.hourlyDistribution.count == 3)
   }
 
-  // MARK: - Hour Label Tests
+  // MARK: - Copy (Issue #285)
+
+  @Test("title uses Your Natural Rhythm framing")
+  func title_usesNaturalRhythmFraming() {
+    #expect(TemporalPatternsView.title == "Your Natural Rhythm")
+  }
+
+  @Test("subtitle uses descriptive tend-to language")
+  func subtitle_usesDescriptiveLanguage() {
+    let text = TemporalPatternsView.subtitle.lowercased()
+    #expect(text.contains("naturally"))
+    #expect(text.contains("tend"))
+    #expect(!text.contains("should"))
+    #expect(!text.contains("need to"))
+  }
+
+  @Test("affirmation honors unique rhythms")
+  func affirmation_honorsUniqueRhythms() {
+    let text = TemporalPatternsView.affirmation.lowercased()
+    #expect(text.contains("unique"))
+    #expect(!text.contains("should"))
+    #expect(!text.contains("need to"))
+    #expect(!text.contains("better"))
+    #expect(!text.contains("worse"))
+  }
+
+  // MARK: - Hour Label
 
   @Test("hourLabel formats hours correctly")
   func hourLabel_formatsHoursCorrectly() {
@@ -54,7 +80,7 @@ struct TemporalPatternsViewTests {
     #expect(TemporalPatternsView.hourLabel(23) == "11 PM")
   }
 
-  // MARK: - Hourly Summary Tests
+  // MARK: - Hourly Summary
 
   @Test("hourlySummaries includes phase name when available")
   func hourlySummaries_includesPhaseNameWhenAvailable() {
@@ -139,24 +165,35 @@ struct TemporalPatternsViewTests {
     #expect(view.hourlySummaries.isEmpty)
   }
 
-  // MARK: - Dosage Color Tests
+  // MARK: - Neutral Dosage Color (Issue #285)
 
-  @Test("dosageColor returns green for Medicinal")
-  func dosageColor_returnsGreenForMedicinal() {
-    #expect(TemporalPatternsView.dosageColor(for: "Medicinal") == .green)
+  @Test("dosageColor returns neutral purple for Medicinal")
+  func dosageColor_returnsNeutralPurpleForMedicinal() {
+    #expect(TemporalPatternsView.dosageColor(for: "Medicinal") == .purple)
   }
 
-  @Test("dosageColor returns secondary for Toxic")
-  func dosageColor_returnsSecondaryForToxic() {
-    #expect(TemporalPatternsView.dosageColor(for: "Toxic") == .secondary)
+  @Test("dosageColor returns neutral purple for Toxic")
+  func dosageColor_returnsNeutralPurpleForToxic() {
+    #expect(TemporalPatternsView.dosageColor(for: "Toxic") == .purple)
   }
 
-  @Test("dosageColor returns purple as default")
-  func dosageColor_returnsPurpleAsDefault() {
+  @Test("dosageColor returns neutral purple for nil")
+  func dosageColor_returnsNeutralPurpleForNil() {
     #expect(TemporalPatternsView.dosageColor(for: nil) == .purple)
   }
 
-  // MARK: - Integration Tests
+  @Test("dosageColor never returns evaluative colors")
+  func dosageColor_neverReturnsEvaluativeColors() {
+    for dosage in ["Medicinal", "Toxic", nil] {
+      let color = TemporalPatternsView.dosageColor(for: dosage)
+      #expect(color != .red)
+      #expect(color != .green)
+      #expect(color != .orange)
+      #expect(color != .yellow)
+    }
+  }
+
+  // MARK: - Integration
 
   @Test("integration test with mixed phase and dosage data")
   func integrationTest_withMixedPhaseAndDosageData() {
