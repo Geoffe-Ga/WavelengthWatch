@@ -3,22 +3,28 @@ import SwiftUI
 /// Displays when a user naturally tends to check in — framed as their natural rhythm.
 ///
 /// When a `drilldownContext` is supplied, each hourly row becomes tappable
-/// and navigates to `JournalEntryListView` filtered to entries logged in that hour.
+/// and navigates to `JournalEntryListView` filtered to entries logged in that
+/// hour. When `dateRange` is also supplied, the drill-down list is scoped to
+/// the same window the analytics stat was computed over so a "9 AM" tap shows
+/// only the 9 AM entries from that window — not the user's lifetime history.
 struct TemporalPatternsView: View {
   let patterns: TemporalPatterns
   let phases: [CatalogPhaseModel]
   let drilldownContext: JournalDrilldownContext?
+  let dateRange: (startDate: Date, endDate: Date)?
 
   static let neutralColor: Color = .purple
 
   init(
     patterns: TemporalPatterns,
     phases: [CatalogPhaseModel],
-    drilldownContext: JournalDrilldownContext? = nil
+    drilldownContext: JournalDrilldownContext? = nil,
+    dateRange: (startDate: Date, endDate: Date)? = nil
   ) {
     self.patterns = patterns
     self.phases = phases
     self.drilldownContext = drilldownContext
+    self.dateRange = dateRange
   }
 
   var body: some View {
@@ -41,7 +47,8 @@ struct TemporalPatternsView: View {
                 JournalEntryListView(
                   filter: .byHour(hour: summary.hour),
                   journalRepository: context.journalRepository,
-                  catalog: context.catalog
+                  catalog: context.catalog,
+                  dateRange: dateRange
                 )
               } label: {
                 HourlyRow(summary: summary)
@@ -103,9 +110,7 @@ struct TemporalPatternsView: View {
   }
 
   static func hourLabel(_ hour: Int) -> String {
-    let adjustedHour = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour)
-    let period = hour < 12 ? "AM" : "PM"
-    return "\(adjustedHour) \(period)"
+    HourFormatter.display(hour)
   }
 
   static func dosageColor(for _: String?) -> Color {

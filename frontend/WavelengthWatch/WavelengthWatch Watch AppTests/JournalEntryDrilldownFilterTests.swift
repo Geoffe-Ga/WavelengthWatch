@@ -160,6 +160,7 @@ struct JournalEntryDrilldownFilterTests {
     #expect(JournalEntryDrilldownFilter.byLayer(layerId: 1, name: "Red").title == "Red Mode Entries")
     #expect(JournalEntryDrilldownFilter.byCurriculum(curriculumId: 1, expression: "Joy").title == "Entries: Joy")
     #expect(JournalEntryDrilldownFilter.byHour(hour: 0).title == "Entries at 12 AM")
+    #expect(JournalEntryDrilldownFilter.byHour(hour: 12).title == "Entries at 12 PM")
     #expect(JournalEntryDrilldownFilter.byHour(hour: 13).title == "Entries at 1 PM")
   }
 
@@ -203,5 +204,74 @@ struct JournalEntryDrilldownFilterTests {
     #expect(lookup[11] == 50)
     #expect(lookup[12] == 50)
     #expect(lookup[20] == 51)
+  }
+
+  // MARK: - Fetch dispatch
+
+  @Test("fetchEntries calls fetchAll when no dateRange is supplied")
+  func fetchEntries_callsFetchAll_whenNoDateRange() throws {
+    let repo = TrackingRepository()
+    let view = JournalEntryListView(
+      filter: .byStrategy(strategyId: 1, name: "X"),
+      journalRepository: repo,
+      catalog: Self.sampleCatalog
+    )
+
+    _ = try view.fetchEntries()
+
+    #expect(repo.fetchAllCalls == 1)
+    #expect(repo.fetchByDateRangeCalls.isEmpty)
+  }
+
+  @Test("fetchEntries calls fetchByDateRange when dateRange is supplied")
+  func fetchEntries_callsFetchByDateRange_whenDateRangeSupplied() throws {
+    let repo = TrackingRepository()
+    let start = Date(timeIntervalSince1970: 1_700_000_000)
+    let end = start.addingTimeInterval(3600)
+    let view = JournalEntryListView(
+      filter: .byHour(hour: 9),
+      journalRepository: repo,
+      catalog: Self.sampleCatalog,
+      dateRange: (startDate: start, endDate: end)
+    )
+
+    _ = try view.fetchEntries()
+
+    #expect(repo.fetchAllCalls == 0)
+    #expect(repo.fetchByDateRangeCalls.count == 1)
+    #expect(repo.fetchByDateRangeCalls[0].from == start)
+    #expect(repo.fetchByDateRangeCalls[0].to == end)
+  }
+}
+
+/// Repository spy that records which fetch method was invoked.
+private final class TrackingRepository: JournalRepositoryProtocol {
+  var fetchAllCalls = 0
+  var fetchByDateRangeCalls: [(from: Date, to: Date)] = []
+
+  func save(_: LocalJournalEntry) throws {}
+  func update(_: LocalJournalEntry) throws {}
+  func delete(id _: UUID) throws {}
+
+  func fetch(id _: UUID) throws -> LocalJournalEntry? {
+    nil
+  }
+
+  func fetchAll() throws -> [LocalJournalEntry] {
+    fetchAllCalls += 1
+    return []
+  }
+
+  func fetchByDateRange(from startDate: Date, to endDate: Date) throws -> [LocalJournalEntry] {
+    fetchByDateRangeCalls.append((from: startDate, to: endDate))
+    return []
+  }
+
+  func fetchPendingSync() throws -> [LocalJournalEntry] {
+    []
+  }
+
+  func count() throws -> Int {
+    0
   }
 }

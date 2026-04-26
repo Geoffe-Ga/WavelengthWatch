@@ -7,10 +7,30 @@ import SwiftUI
 /// Loads entries from the repository on `.task`, applies the supplied
 /// `JournalEntryDrilldownFilter`, and renders a compact list with
 /// timestamp plus emotion/strategy name resolution via the catalog.
+///
+/// When `dateRange` is supplied, the load path uses
+/// `fetchByDateRange(from:to:)` so the drill-down list only contains
+/// entries from the same window the analytics stat was computed over.
+/// Time-bound surfaces (e.g. `TemporalPatternsView` hourly rows) must
+/// pass this; surfaces that are inherently all-time (strategy / phase
+/// / layer drill-downs) leave it nil.
 struct JournalEntryListView: View {
   let filter: JournalEntryDrilldownFilter
   let journalRepository: JournalRepositoryProtocol
   let catalog: CatalogResponseModel
+  let dateRange: (startDate: Date, endDate: Date)?
+
+  init(
+    filter: JournalEntryDrilldownFilter,
+    journalRepository: JournalRepositoryProtocol,
+    catalog: CatalogResponseModel,
+    dateRange: (startDate: Date, endDate: Date)? = nil
+  ) {
+    self.filter = filter
+    self.journalRepository = journalRepository
+    self.catalog = catalog
+    self.dateRange = dateRange
+  }
 
   @State private var entries: [LocalJournalEntry] = []
   @State private var isLoading = true
@@ -42,12 +62,12 @@ struct JournalEntryListView: View {
         ProgressView()
           .frame(maxWidth: .infinity, maxHeight: .infinity)
       } else if let loadError {
-        ErrorState(message: loadError)
+        JournalEntryListErrorStateView(message: loadError)
       } else if filteredEntries.isEmpty {
-        EmptyState()
+        JournalEntryListEmptyStateView()
       } else {
         List(filteredEntries) { entry in
-          EntryRow(
+          JournalEntryRowView(
             entry: entry,
             expressionById: expressionById,
             strategyNameById: strategyNameById
@@ -77,11 +97,24 @@ struct JournalEntryListView: View {
     isLoading = true
     loadError = nil
     do {
-      entries = try journalRepository.fetchAll()
+      entries = try fetchEntries()
     } catch {
       loadError = error.localizedDescription
     }
     isLoading = false
+  }
+
+  /// Picks the repository method based on whether a date range was supplied.
+  /// Exposed (internal) for unit testing the dispatch logic without needing
+  /// to spin up SwiftUI's `.task` lifecycle.
+  func fetchEntries() throws -> [LocalJournalEntry] {
+    if let dateRange {
+      return try journalRepository.fetchByDateRange(
+        from: dateRange.startDate,
+        to: dateRange.endDate
+      )
+    }
+    return try journalRepository.fetchAll()
   }
 
   // MARK: - Lookup builders (exposed for testing)
@@ -132,83 +165,5 @@ struct JournalEntryListView: View {
       }
     }
     return result
-  }
-}
-
-// MARK: - Row
-
-private struct EntryRow: View {
-  let entry: LocalJournalEntry
-  let expressionById: [Int: String]
-  let strategyNameById: [Int: String]
-
-  var body: some View {
-    VStack(alignment: .leading, spacing: 2) {
-      Text(entry.createdAt, format: .dateTime.month().day().hour().minute())
-        .font(.caption)
-        .fontWeight(.semibold)
-
-      if let expression {
-        Text(expression)
-          .font(.caption2)
-          .foregroundColor(.secondary)
-          .lineLimit(1)
-      }
-
-      if let strategyName {
-        HStack(spacing: 4) {
-          Image(systemName: "leaf")
-            .font(.system(size: 9))
-            .foregroundColor(.secondary)
-          Text(strategyName)
-            .font(.system(size: 10))
-            .foregroundColor(.secondary)
-            .lineLimit(1)
-        }
-      }
-    }
-    .padding(.vertical, 2)
-  }
-
-  private var expression: String? {
-    guard let cid = entry.curriculumID else { return nil }
-    return expressionById[cid]
-  }
-
-  private var strategyName: String? {
-    guard let sid = entry.strategyID else { return nil }
-    return strategyNameById[sid]
-  }
-}
-
-private struct EmptyState: View {
-  var body: some View {
-    VStack(spacing: 8) {
-      Image(systemName: "tray")
-        .font(.title)
-        .foregroundColor(.secondary)
-      Text("No entries yet")
-        .font(.caption)
-        .foregroundColor(.secondary)
-    }
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
-  }
-}
-
-private struct ErrorState: View {
-  let message: String
-
-  var body: some View {
-    VStack(spacing: 8) {
-      Image(systemName: "exclamationmark.triangle")
-        .font(.title)
-        .foregroundColor(.orange)
-      Text(message)
-        .font(.caption2)
-        .foregroundColor(.secondary)
-        .multilineTextAlignment(.center)
-        .padding(.horizontal)
-    }
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
   }
 }
