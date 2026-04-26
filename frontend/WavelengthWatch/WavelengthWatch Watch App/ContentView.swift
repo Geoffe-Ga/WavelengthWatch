@@ -6,6 +6,9 @@ struct ContentView: View {
   @StateObject private var viewModel: ContentViewModel
   @StateObject private var flowCoordinator: FlowCoordinator
   @StateObject private var syncSettingsViewModel: SyncSettingsViewModel
+  @StateObject private var networkMonitor: NetworkMonitor
+  @StateObject private var journalQueue: JournalQueue
+  @StateObject private var syncService: JournalSyncService
   @EnvironmentObject private var notificationDelegate: NotificationDelegate
   let journalClient: JournalClientProtocol
   let journalRepository: JournalRepositoryProtocol
@@ -42,12 +45,23 @@ struct ContentView: View {
     self.journalRepository = journalRepository
     self.catalogRepository = repository
     let syncSettings = SyncSettings()
+    let journalQueue = Self.makeJournalQueue()
+    _journalQueue = StateObject(wrappedValue: journalQueue)
+    let monitor = NetworkMonitor()
+    _networkMonitor = StateObject(wrappedValue: monitor)
     let journalClient = JournalClient(
       apiClient: apiClient,
       repository: journalRepository,
-      syncSettings: syncSettings
+      syncSettings: syncSettings,
+      queue: journalQueue
     )
     self.journalClient = journalClient
+    let sync = JournalSyncService(
+      queue: journalQueue,
+      apiClient: apiClient,
+      networkMonitor: monitor
+    )
+    _syncService = StateObject(wrappedValue: sync)
     let initialLayer = UserDefaults.standard.integer(forKey: "selectedLayerIndex")
     let initialPhase = UserDefaults.standard.integer(forKey: "selectedPhaseIndex")
     let model = ContentViewModel(
@@ -63,6 +77,52 @@ struct ContentView: View {
     _flowCoordinator = StateObject(wrappedValue: coordinator)
     _layerSelection = State(initialValue: initialLayer)
     _phaseSelection = State(initialValue: initialPhase + 1)
+  }
+
+  /// Builds a JournalQueue with progressive fallback: documents directory →
+  /// NSTemporaryDirectory → in-memory SQLite. The in-memory leg has no
+  /// filesystem dependency, so it cannot fail in normal operation; if even
+  /// that throws, the device is in a state where no offline persistence is
+  /// possible and crashing surfaces the problem rather than silently
+  /// dropping entries.
+  private static func makeJournalQueue() -> JournalQueue {
+    do {
+      return try JournalQueue()
+    } catch {
+      print("⚠️ Documents-dir journal queue init failed: \(error). Trying temp dir.")
+    }
+    let fallbackPath = NSTemporaryDirectory() + "journal_queue_fallback.sqlite"
+    do {
+      return try JournalQueue(databasePath: fallbackPath)
+    } catch {
+      print("⚠️ Temp-dir journal queue init failed: \(error). Falling back to in-memory.")
+    }
+    do {
+      return try JournalQueue(databasePath: ":memory:")
+    } catch {
+      fatalError("In-memory journal queue init failed unexpectedly: \(error)")
+    }
+  }
+
+  /// Submits the current FlowCoordinator entry and renders the appropriate
+  /// feedback. Centralised so the two confirmation alerts (primary and
+  /// secondary) share identical queued/failure handling — the only thing
+  /// that varies is the failure copy.
+  @MainActor
+  private func submitFlowEntry(failurePrefix: String) async {
+    do {
+      try await flowCoordinator.submit()
+      flowCoordinator.reset()
+    } catch JournalError.queuedForRetry {
+      viewModel.journalFeedback = .init(
+        kind: .queued("Saved offline. Will sync automatically.")
+      )
+      flowCoordinator.reset()
+    } catch {
+      viewModel.journalFeedback = .init(
+        kind: .failure("\(failurePrefix): \(error.localizedDescription)")
+      )
+    }
   }
 
   /// Clamped layer selection that's always valid for the current filteredLayers
@@ -106,6 +166,15 @@ struct ContentView: View {
       }
       .ignoresSafeArea(edges: .bottom)
       .task { await viewModel.loadCatalog() }
+      .task {
+        // Kick off auto-sync once when the view appears. The service
+        // subscribes to NetworkMonitor and triggers a sync whenever
+        // connectivity is restored.
+        syncService.startAutoSync()
+      }
+      .onChange(of: syncService.syncStatus) { _, newValue in
+        viewModel.handleSyncStatusChange(newValue, totalPending: journalQueue.pendingCount)
+      }
       .onChange(of: viewModel.phaseOrder) {
         adjustPhaseSelection()
       }
@@ -175,6 +244,24 @@ struct ContentView: View {
             message: Text("Thanks for checking in."),
             dismissButton: .default(Text("OK")) { viewModel.journalFeedback = nil }
           )
+        case let .queued(message):
+          Alert(
+            title: Text("Saved Offline"),
+            message: Text(message),
+            dismissButton: .default(Text("OK")) { viewModel.journalFeedback = nil }
+          )
+        case let .syncing(current, total):
+          Alert(
+            title: Text("Syncing"),
+            message: Text("Syncing \(current) of \(total) entr\(total == 1 ? "y" : "ies")…"),
+            dismissButton: .default(Text("OK")) { viewModel.journalFeedback = nil }
+          )
+        case let .syncSuccess(count):
+          Alert(
+            title: Text("Synced"),
+            message: Text("\(count) entr\(count == 1 ? "y" : "ies") synced successfully."),
+            dismissButton: .default(Text("OK")) { viewModel.journalFeedback = nil }
+          )
         case let .failure(message):
           Alert(
             title: Text("Something went wrong"),
@@ -191,15 +278,7 @@ struct ContentView: View {
           flowCoordinator.promptForStrategy()
         }
         Button("Done") {
-          Task {
-            do {
-              try await flowCoordinator.submit()
-              // Success - reset flow state (quick log doesn't use review sheet)
-              flowCoordinator.reset()
-            } catch {
-              viewModel.journalFeedback = .init(kind: .failure("Failed to log emotion: \(error.localizedDescription)"))
-            }
-          }
+          Task { await submitFlowEntry(failurePrefix: "Failed to log emotion") }
         }
         Button("Cancel", role: .cancel) {
           flowCoordinator.cancel()
@@ -214,15 +293,7 @@ struct ContentView: View {
           flowCoordinator.promptForStrategy()
         }
         Button("Done") {
-          Task {
-            do {
-              try await flowCoordinator.submit()
-              // Success - reset flow state (quick log doesn't use review sheet)
-              flowCoordinator.reset()
-            } catch {
-              viewModel.journalFeedback = .init(kind: .failure("Failed to log emotions: \(error.localizedDescription)"))
-            }
-          }
+          Task { await submitFlowEntry(failurePrefix: "Failed to log emotions") }
         }
         Button("Cancel", role: .cancel) {
           flowCoordinator.cancel()
@@ -277,6 +348,9 @@ struct ContentView: View {
           MenuView(
             journalClient: journalClient,
             syncSettingsViewModel: syncSettingsViewModel,
+            journalQueue: journalQueue,
+            syncService: syncService,
+            networkMonitor: networkMonitor,
             isPresented: $showingMenu
           )
           .toolbar {

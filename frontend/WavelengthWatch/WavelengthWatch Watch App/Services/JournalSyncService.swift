@@ -138,8 +138,12 @@ final class JournalSyncService: ObservableObject {
       // Fetch pending entries from queue
       let pending = try queue.pendingEntries()
 
-      // Filter out entries that have exceeded max retries
-      let syncableEntries = pending.filter { $0.localEntry.retryCount < maxRetries }
+      // Filter out entries that have exceeded max retries. Use the queue
+      // item's persisted `retryCount`, not `localEntry.retryCount` — the
+      // latter is the JSON snapshot from when the entry was first enqueued
+      // and stays at zero forever, so reading it would silently bypass the
+      // retry cap.
+      let syncableEntries = pending.filter { $0.retryCount < maxRetries }
 
       guard !syncableEntries.isEmpty else {
         syncStatus = .success(syncedCount: 0)
@@ -170,10 +174,13 @@ final class JournalSyncService: ObservableObject {
             entryType: item.localEntry.entryType
           )
 
-          // Post to backend
+          // Post to backend with idempotency key derived from the entry's
+          // local UUID. Reusing the key across retry attempts lets the
+          // backend deduplicate replayed submissions.
           let _: JournalResponseModel = try await apiClient.post(
             APIPath.journal,
-            body: payload
+            body: payload,
+            headers: [JournalRequestHeader.idempotencyKey: item.localEntry.id.uuidString]
           )
 
           // Mark as synced in queue

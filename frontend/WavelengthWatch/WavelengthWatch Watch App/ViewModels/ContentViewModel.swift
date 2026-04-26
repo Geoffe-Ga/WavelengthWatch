@@ -61,6 +61,9 @@ final class ContentViewModel: ObservableObject {
   struct JournalFeedback: Identifiable, Equatable {
     enum Kind: Equatable {
       case success
+      case queued(String)
+      case syncing(current: Int, total: Int)
+      case syncSuccess(count: Int)
       case failure(String)
     }
 
@@ -124,6 +127,10 @@ final class ContentViewModel: ObservableObject {
         initiatedBy: initiatedBy
       )
       journalFeedback = JournalFeedback(kind: .success)
+    } catch JournalError.queuedForRetry {
+      journalFeedback = JournalFeedback(
+        kind: .queued("Saved offline. Will sync automatically.")
+      )
     } catch {
       journalFeedback = JournalFeedback(kind: .failure("We couldn't log your entry. Please try again."))
     }
@@ -154,6 +161,27 @@ final class ContentViewModel: ObservableObject {
   @MainActor
   func setInitiatedBy(_ value: InitiatedBy) {
     currentInitiatedBy = value
+  }
+
+  /// Updates `journalFeedback` in response to a sync status change.
+  ///
+  /// Translates the service-level `JournalSyncStatus` into a user-facing
+  /// `JournalFeedback` value. Single-entry syncs are skipped because they
+  /// complete faster than an alert can meaningfully render; calling code
+  /// should supply `totalPending` (current queue depth) so the progress
+  /// message maps to "current of total" counts rather than raw percentages.
+  @MainActor
+  func handleSyncStatusChange(_ status: JournalSyncStatus, totalPending: Int) {
+    switch status {
+    case let .syncing(progress):
+      guard totalPending > 1 else { return }
+      let current = min(totalPending, Int((progress * Double(totalPending)).rounded()) + 1)
+      journalFeedback = JournalFeedback(kind: .syncing(current: current, total: totalPending))
+    case let .success(count) where count > 0:
+      journalFeedback = JournalFeedback(kind: .syncSuccess(count: count))
+    case .idle, .success, .error:
+      break
+    }
   }
 
   /// Converts a layer ID to its index in the full layers array.

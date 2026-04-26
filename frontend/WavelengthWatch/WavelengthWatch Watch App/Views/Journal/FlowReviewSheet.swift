@@ -160,6 +160,11 @@ struct FlowReviewSheet: View {
         try await flowCoordinator.submit()
         isSubmitting = false
         showingSuccess = true
+      } catch JournalError.queuedForRetry {
+        // Entry is saved locally and will sync automatically once connectivity
+        // is restored. Treat this as a successful submission for UX purposes.
+        isSubmitting = false
+        showingSuccess = true
       } catch {
         isSubmitting = false
         errorMessage = "Failed to submit: \(error.localizedDescription)"

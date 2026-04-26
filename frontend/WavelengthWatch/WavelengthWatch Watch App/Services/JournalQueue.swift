@@ -56,6 +56,15 @@ protocol JournalQueueProtocol {
 /// ```
 @MainActor
 final class JournalQueue: ObservableObject, JournalQueueProtocol {
+  // MARK: - Published Properties
+
+  /// Count of entries currently in the queue with `pending` status.
+  ///
+  /// Published so SwiftUI views can reactively render an offline indicator
+  /// when entries are waiting to sync. Recomputed after every mutating
+  /// operation (`enqueue`, `markSyncing`, `markSynced`, `markFailed`).
+  @Published private(set) var pendingCount: Int = 0
+
   // MARK: - Private Properties
 
   /// SQLite database pointer.
@@ -102,10 +111,25 @@ final class JournalQueue: ObservableObject, JournalQueueProtocol {
 
     try openDatabase()
     try createTables()
+    refreshPendingCount()
   }
 
   deinit {
     closeDatabase()
+  }
+
+  /// Recomputes `pendingCount` from the database and publishes the new value.
+  ///
+  /// Called internally after every mutating operation. Failures are logged
+  /// but swallowed so observers never see a stale/invalid count propagate
+  /// as a thrown error on the caller.
+  private func refreshPendingCount() {
+    do {
+      let stats = try statistics()
+      pendingCount = stats.pending
+    } catch {
+      print("⚠️ Failed to refresh journal queue pending count: \(error)")
+    }
   }
 
   // MARK: - Public Methods
@@ -160,6 +184,8 @@ final class JournalQueue: ObservableObject, JournalQueueProtocol {
       let message = String(cString: sqlite3_errmsg(db))
       throw JournalQueueError.insertFailed(message)
     }
+
+    refreshPendingCount()
   }
 
   /// Retrieves all pending entries from the queue.
@@ -212,6 +238,7 @@ final class JournalQueue: ObservableObject, JournalQueueProtocol {
   /// - Throws: `JournalQueueError` if entry not found or update fails.
   func markSyncing(id: UUID) throws {
     try updateStatus(id: id, status: .syncing, incrementRetry: false)
+    refreshPendingCount()
   }
 
   /// Marks an entry as successfully synced.
@@ -222,6 +249,7 @@ final class JournalQueue: ObservableObject, JournalQueueProtocol {
   /// - Throws: `JournalQueueError` if entry not found or update fails.
   func markSynced(id: UUID) throws {
     try updateStatus(id: id, status: .synced, incrementRetry: false)
+    refreshPendingCount()
   }
 
   /// Marks an entry as failed to sync.
@@ -233,8 +261,9 @@ final class JournalQueue: ObservableObject, JournalQueueProtocol {
   ///   - id: The entry ID to update.
   ///   - error: The error that caused the failure (for logging).
   /// - Throws: `JournalQueueError` if entry not found or update fails.
-  func markFailed(id: UUID, error: Error) throws {
+  func markFailed(id: UUID, error _: Error) throws {
     try updateStatus(id: id, status: .failed, incrementRetry: true)
+    refreshPendingCount()
   }
 
   /// Removes synced entries older than the specified number of days.

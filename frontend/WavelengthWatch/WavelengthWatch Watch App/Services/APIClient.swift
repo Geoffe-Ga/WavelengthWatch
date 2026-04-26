@@ -13,12 +13,57 @@ enum APIPath {
 protocol APIClientProtocol {
   func get<T: Decodable>(_ path: String) async throws -> T
   func post<Response: Decodable>(_ path: String, body: some Encodable) async throws -> Response
+  func post<Response: Decodable>(
+    _ path: String,
+    body: some Encodable,
+    headers: [String: String]?
+  ) async throws -> Response
+}
+
+extension APIClientProtocol {
+  /// Default implementation that ignores headers and delegates to the 2-parameter post.
+  ///
+  /// Allows existing mocks/implementations that only define the 2-parameter post
+  /// to satisfy the 3-parameter requirement without explicit header handling.
+  func post<Response: Decodable>(
+    _ path: String,
+    body: some Encodable,
+    headers _: [String: String]?
+  ) async throws -> Response {
+    try await post(path, body: body)
+  }
 }
 
 enum APIClientError: Error {
   case invalidURL(String)
   case transport(Error)
   case badResponse(Int)
+}
+
+extension APIClientError {
+  /// Whether this error indicates a transient failure that may succeed on retry.
+  ///
+  /// Retryable errors include:
+  /// - Transport errors (network connectivity, timeouts)
+  /// - 5xx server errors (server overloaded or transient failure)
+  /// - 408 Request Timeout
+  /// - 429 Too Many Requests
+  ///
+  /// Non-retryable errors include:
+  /// - Invalid URL construction (permanent)
+  /// - 4xx client errors other than 408/429 (validation, auth, not found)
+  var isRetryable: Bool {
+    switch self {
+    case .invalidURL:
+      return false
+    case .transport:
+      return true
+    case let .badResponse(status):
+      if status >= 500 { return true }
+      if status == 408 || status == 429 { return true }
+      return false
+    }
+  }
 }
 
 final class APIClient: APIClientProtocol {
@@ -74,10 +119,23 @@ final class APIClient: APIClientProtocol {
   }
 
   func post<Response: Decodable>(_ path: String, body: some Encodable) async throws -> Response {
+    try await post(path, body: body, headers: nil)
+  }
+
+  func post<Response: Decodable>(
+    _ path: String,
+    body: some Encodable,
+    headers: [String: String]?
+  ) async throws -> Response {
     var request = try URLRequest(url: url(for: path))
     request.httpMethod = "POST"
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
     request.setValue("application/json", forHTTPHeaderField: "Accept")
+    if let headers {
+      for (field, value) in headers {
+        request.setValue(value, forHTTPHeaderField: field)
+      }
+    }
     request.httpBody = try encoder.encode(body)
 
     do {

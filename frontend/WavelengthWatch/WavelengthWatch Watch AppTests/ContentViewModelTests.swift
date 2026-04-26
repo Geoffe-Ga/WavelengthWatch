@@ -161,6 +161,93 @@ struct ContentViewModelTests {
     #expect(emotionsCount > strategiesCount)
   }
 
+  // MARK: - Queue Integration Feedback Tests (#216)
+
+  @Test @MainActor func journalQueuedEntryShowsQueuedFeedback() async {
+    let repository = CatalogRepositoryMock(cached: SampleData.catalog, result: .success(SampleData.catalog))
+    let journal = JournalClientMock()
+    journal.shouldQueue = true
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journal)
+
+    await viewModel.journal(curriculumID: 1)
+
+    switch viewModel.journalFeedback?.kind {
+    case let .queued(message)?:
+      #expect(message.contains("offline"))
+    default:
+      Issue.record("Expected queued feedback, got \(String(describing: viewModel.journalFeedback?.kind))")
+    }
+  }
+
+  @Test @MainActor func syncingStatusUpdatesFeedbackWhenMultiplePending() {
+    let repository = CatalogRepositoryMock(cached: SampleData.catalog, result: .success(SampleData.catalog))
+    let journal = JournalClientMock()
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journal)
+
+    viewModel.handleSyncStatusChange(.syncing(progress: 0.25), totalPending: 4)
+
+    switch viewModel.journalFeedback?.kind {
+    case let .syncing(current, total)?:
+      #expect(total == 4)
+      #expect(current == 2) // floor(0.25 * 4) + 1 = 2
+    default:
+      Issue.record("Expected syncing feedback, got \(String(describing: viewModel.journalFeedback?.kind))")
+    }
+  }
+
+  @Test @MainActor func syncingStatusSkippedForSingleEntry() {
+    let repository = CatalogRepositoryMock(cached: SampleData.catalog, result: .success(SampleData.catalog))
+    let journal = JournalClientMock()
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journal)
+
+    viewModel.handleSyncStatusChange(.syncing(progress: 0.5), totalPending: 1)
+
+    #expect(viewModel.journalFeedback == nil)
+  }
+
+  @Test @MainActor func syncSuccessUpdatesFeedback() {
+    let repository = CatalogRepositoryMock(cached: SampleData.catalog, result: .success(SampleData.catalog))
+    let journal = JournalClientMock()
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journal)
+
+    viewModel.handleSyncStatusChange(.success(syncedCount: 3), totalPending: 0)
+
+    switch viewModel.journalFeedback?.kind {
+    case let .syncSuccess(count)?:
+      #expect(count == 3)
+    default:
+      Issue.record("Expected syncSuccess feedback, got \(String(describing: viewModel.journalFeedback?.kind))")
+    }
+  }
+
+  @Test @MainActor func syncSuccessWithZeroCountDoesNotOverrideFeedback() {
+    let repository = CatalogRepositoryMock(cached: SampleData.catalog, result: .success(SampleData.catalog))
+    let journal = JournalClientMock()
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journal)
+
+    // Pre-set a different feedback
+    viewModel.journalFeedback = .init(kind: .success)
+    viewModel.handleSyncStatusChange(.success(syncedCount: 0), totalPending: 0)
+
+    // Existing feedback should remain unchanged (no-op for zero-count success)
+    #expect(viewModel.journalFeedback?.kind == .success)
+  }
+
+  @Test @MainActor func idleAndErrorStatusDoNotUpdateFeedback() {
+    let repository = CatalogRepositoryMock(cached: SampleData.catalog, result: .success(SampleData.catalog))
+    let journal = JournalClientMock()
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journal)
+
+    viewModel.journalFeedback = .init(kind: .success)
+
+    viewModel.handleSyncStatusChange(.idle, totalPending: 0)
+    #expect(viewModel.journalFeedback?.kind == .success)
+
+    enum DummyError: Error { case whatever }
+    viewModel.handleSyncStatusChange(.error(DummyError.whatever), totalPending: 0)
+    #expect(viewModel.journalFeedback?.kind == .success)
+  }
+
   @Test func filteredLayersWhenLayersEmptyReturnsEmpty() {
     let repository = CatalogRepositoryMock(result: .success(SampleData.catalog))
     let journal = JournalClientMock()
