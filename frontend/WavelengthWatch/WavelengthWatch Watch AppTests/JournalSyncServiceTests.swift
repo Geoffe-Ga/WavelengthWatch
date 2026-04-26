@@ -361,12 +361,32 @@ final class MockJournalQueue: JournalQueueProtocol {
 
   func pendingEntries() throws -> [JournalQueueItem] {
     pendingItems.map { entry in
-      JournalQueueItem(entry: entry)
+      // Mirror the entry's retryCount onto the queue item so tests can
+      // exercise JournalSyncService's maxRetries filter, which reads
+      // `JournalQueueItem.retryCount` (the SQLite-persisted counter), not
+      // the JSON-snapshot copy on `localEntry`.
+      JournalQueueItem(
+        id: entry.id,
+        localEntry: entry,
+        status: .pending,
+        retryCount: entry.retryCount,
+        lastAttempt: nil,
+        createdAt: Date()
+      )
     }
   }
 
   func fetch(id: UUID) throws -> JournalQueueItem? {
-    pendingItems.first(where: { $0.id == id }).map { JournalQueueItem(entry: $0) }
+    pendingItems.first(where: { $0.id == id }).map { entry in
+      JournalQueueItem(
+        id: entry.id,
+        localEntry: entry,
+        status: .pending,
+        retryCount: entry.retryCount,
+        lastAttempt: nil,
+        createdAt: Date()
+      )
+    }
   }
 
   func markSyncing(id: UUID) throws {
@@ -426,7 +446,10 @@ final class MockAPIClient: APIClientProtocol {
       initiatedBy: .self_initiated,
       entryType: .emotion
     )
-    return response as! Response
+    guard let typed = response as? Response else {
+      throw URLError(.badServerResponse)
+    }
+    return typed
   }
 }
 

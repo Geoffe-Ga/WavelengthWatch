@@ -45,19 +45,7 @@ struct ContentView: View {
     self.journalRepository = journalRepository
     self.catalogRepository = repository
     let syncSettings = SyncSettings()
-    let journalQueue: JournalQueue
-    do {
-      journalQueue = try JournalQueue()
-    } catch {
-      // The documents directory is unavailable in SwiftUI previews and on a
-      // few read-only storage configurations. Fall back to a temp-dir queue
-      // so the UI can still render even though entries won't persist across
-      // launches.
-      print("⚠️ Failed to initialize journal queue: \(error). Falling back to temp storage.")
-      let fallbackPath = NSTemporaryDirectory() + "journal_queue_fallback.sqlite"
-      // swiftlint:disable:next force_try  -- temp dir is always writable.
-      journalQueue = try! JournalQueue(databasePath: fallbackPath)
-    }
+    let journalQueue = Self.makeJournalQueue()
     _journalQueue = StateObject(wrappedValue: journalQueue)
     let monitor = NetworkMonitor()
     _networkMonitor = StateObject(wrappedValue: monitor)
@@ -89,6 +77,52 @@ struct ContentView: View {
     _flowCoordinator = StateObject(wrappedValue: coordinator)
     _layerSelection = State(initialValue: initialLayer)
     _phaseSelection = State(initialValue: initialPhase + 1)
+  }
+
+  /// Builds a JournalQueue with progressive fallback: documents directory →
+  /// NSTemporaryDirectory → in-memory SQLite. The in-memory leg has no
+  /// filesystem dependency, so it cannot fail in normal operation; if even
+  /// that throws, the device is in a state where no offline persistence is
+  /// possible and crashing surfaces the problem rather than silently
+  /// dropping entries.
+  private static func makeJournalQueue() -> JournalQueue {
+    do {
+      return try JournalQueue()
+    } catch {
+      print("⚠️ Documents-dir journal queue init failed: \(error). Trying temp dir.")
+    }
+    let fallbackPath = NSTemporaryDirectory() + "journal_queue_fallback.sqlite"
+    do {
+      return try JournalQueue(databasePath: fallbackPath)
+    } catch {
+      print("⚠️ Temp-dir journal queue init failed: \(error). Falling back to in-memory.")
+    }
+    do {
+      return try JournalQueue(databasePath: ":memory:")
+    } catch {
+      fatalError("In-memory journal queue init failed unexpectedly: \(error)")
+    }
+  }
+
+  /// Submits the current FlowCoordinator entry and renders the appropriate
+  /// feedback. Centralised so the two confirmation alerts (primary and
+  /// secondary) share identical queued/failure handling — the only thing
+  /// that varies is the failure copy.
+  @MainActor
+  private func submitFlowEntry(failurePrefix: String) async {
+    do {
+      try await flowCoordinator.submit()
+      flowCoordinator.reset()
+    } catch JournalError.queuedForRetry {
+      viewModel.journalFeedback = .init(
+        kind: .queued("Saved offline. Will sync automatically.")
+      )
+      flowCoordinator.reset()
+    } catch {
+      viewModel.journalFeedback = .init(
+        kind: .failure("\(failurePrefix): \(error.localizedDescription)")
+      )
+    }
   }
 
   /// Clamped layer selection that's always valid for the current filteredLayers
@@ -244,20 +278,7 @@ struct ContentView: View {
           flowCoordinator.promptForStrategy()
         }
         Button("Done") {
-          Task {
-            do {
-              try await flowCoordinator.submit()
-              // Success - reset flow state (quick log doesn't use review sheet)
-              flowCoordinator.reset()
-            } catch JournalError.queuedForRetry {
-              viewModel.journalFeedback = .init(
-                kind: .queued("Saved offline. Will sync automatically.")
-              )
-              flowCoordinator.reset()
-            } catch {
-              viewModel.journalFeedback = .init(kind: .failure("Failed to log emotion: \(error.localizedDescription)"))
-            }
-          }
+          Task { await submitFlowEntry(failurePrefix: "Failed to log emotion") }
         }
         Button("Cancel", role: .cancel) {
           flowCoordinator.cancel()
@@ -272,20 +293,7 @@ struct ContentView: View {
           flowCoordinator.promptForStrategy()
         }
         Button("Done") {
-          Task {
-            do {
-              try await flowCoordinator.submit()
-              // Success - reset flow state (quick log doesn't use review sheet)
-              flowCoordinator.reset()
-            } catch JournalError.queuedForRetry {
-              viewModel.journalFeedback = .init(
-                kind: .queued("Saved offline. Will sync automatically.")
-              )
-              flowCoordinator.reset()
-            } catch {
-              viewModel.journalFeedback = .init(kind: .failure("Failed to log emotions: \(error.localizedDescription)"))
-            }
-          }
+          Task { await submitFlowEntry(failurePrefix: "Failed to log emotions") }
         }
         Button("Cancel", role: .cancel) {
           flowCoordinator.cancel()

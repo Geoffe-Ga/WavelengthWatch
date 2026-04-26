@@ -603,6 +603,9 @@ final class ToggleableAPIClient: APIClientProtocol {
       initiatedBy: .self_initiated,
       entryType: .emotion
     )
-    return response as! Response
+    guard let typed = response as? Response else {
+      throw URLError(.badServerResponse)
+    }
+    return typed
   }
 }

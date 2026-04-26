@@ -536,7 +536,10 @@ final class StubAPIClientSpy: APIClientProtocol {
   func post<Response: Decodable>(_: String, body _: some Encodable) async throws -> Response {
     switch postResult {
     case let .success(response):
-      return response as! Response
+      guard let typed = response as? Response else {
+        throw URLError(.badServerResponse)
+      }
+      return typed
     case let .failure(error):
       throw error
     }
@@ -563,7 +566,10 @@ final class HeaderCapturingAPIClientSpy: APIClientProtocol {
       initiatedBy: .self_initiated,
       entryType: .emotion
     )
-    return response as! Response
+    guard let typed = response as? Response else {
+      throw URLError(.badServerResponse)
+    }
+    return typed
   }
 
   func post<Response: Decodable>(
@@ -580,7 +586,10 @@ final class HeaderCapturingAPIClientSpy: APIClientProtocol {
       initiatedBy: .self_initiated,
       entryType: .emotion
     )
-    return response as! Response
+    guard let typed = response as? Response else {
+      throw URLError(.badServerResponse)
+    }
+    return typed
   }
 }
 
@@ -601,7 +610,10 @@ final class SuccessfulAPIClientSpy: APIClientProtocol {
       initiatedBy: .self_initiated,
       entryType: .emotion
     )
-    return response as! T
+    guard let typed = response as? T else {
+      throw URLError(.badServerResponse)
+    }
+    return typed
   }
 }
 
@@ -634,7 +646,10 @@ final class TrackingAPIClientSpy: APIClientProtocol {
       initiatedBy: .self_initiated,
       entryType: .emotion
     )
-    return response as! T
+    guard let typed = response as? T else {
+      throw URLError(.badServerResponse)
+    }
+    return typed
   }
 }
 
@@ -656,7 +671,10 @@ final class RestAPIClientSpy: APIClientProtocol {
       initiatedBy: .self_initiated,
       entryType: .rest
     )
-    return response as! T
+    guard let typed = response as? T else {
+      throw URLError(.badServerResponse)
+    }
+    return typed
   }
 }
 
