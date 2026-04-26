@@ -31,7 +31,7 @@ enum JournalEntryDrilldownFilter: Equatable {
     case let .byPhase(_, name): "\(name) Entries"
     case let .byLayer(_, name): "\(name) Mode Entries"
     case let .byCurriculum(_, expression): "Entries: \(expression)"
-    case let .byHour(hour): "Entries at \(formatHour(hour))"
+    case let .byHour(hour): "Entries at \(HourFormatter.display(hour))"
     }
   }
 
@@ -69,11 +69,5 @@ enum JournalEntryDrilldownFilter: Equatable {
     case let .byHour(hour):
       return calendar.component(.hour, from: entry.createdAt) == hour
     }
-  }
-
-  private func formatHour(_ hour: Int) -> String {
-    let adjusted = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour)
-    let period = hour < 12 ? "AM" : "PM"
-    return "\(adjusted) \(period)"
   }
 }

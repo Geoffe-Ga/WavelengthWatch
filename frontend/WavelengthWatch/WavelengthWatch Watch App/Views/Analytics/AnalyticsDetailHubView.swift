@@ -270,7 +270,8 @@ private struct TemporalPatternsDetailView: View {
           TemporalPatternsView(
             patterns: patterns,
             phases: phases,
-            drilldownContext: drilldownContext
+            drilldownContext: drilldownContext,
+            dateRange: dateRange
           )
           .padding()
         case let .error(message):
