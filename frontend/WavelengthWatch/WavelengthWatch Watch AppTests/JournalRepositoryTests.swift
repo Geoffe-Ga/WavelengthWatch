@@ -403,7 +403,7 @@ struct JournalRepositoryTests {
       initiatedBy: .self_initiated
     )
     let tooOld = LocalJournalEntry(
-      createdAt: now.addingTimeInterval(-10_000),
+      createdAt: now.addingTimeInterval(-10000),
       userID: 1,
       curriculumID: 40,
       initiatedBy: .self_initiated
@@ -484,7 +484,7 @@ struct JournalRepositoryTests {
       initiatedBy: .self_initiated
     )
     let outOfWindow = LocalJournalEntry(
-      createdAt: now.addingTimeInterval(-86_400),
+      createdAt: now.addingTimeInterval(-86400),
       userID: 1,
       curriculumID: 20,
       initiatedBy: .self_initiated

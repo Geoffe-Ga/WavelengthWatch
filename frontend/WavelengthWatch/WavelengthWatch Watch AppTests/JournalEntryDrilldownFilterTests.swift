@@ -134,12 +134,16 @@ struct JournalEntryDrilldownFilterTests {
   // MARK: - byHour
 
   @Test("byHour matches entries whose createdAt hour equals the filter hour")
-  func byHour_matchesEntriesInTheSameHourBucket() {
+  func byHour_matchesEntriesInTheSameHourBucket() throws {
     var cal = Calendar(identifier: .gregorian)
-    cal.timeZone = TimeZone(identifier: "America/Los_Angeles")!
+    cal.timeZone = try #require(TimeZone(identifier: "America/Los_Angeles"))
 
-    let nine = cal.date(from: DateComponents(year: 2026, month: 4, day: 21, hour: 9, minute: 30))!
-    let ten = cal.date(from: DateComponents(year: 2026, month: 4, day: 21, hour: 10, minute: 0))!
+    let nine = try #require(
+      cal.date(from: DateComponents(year: 2026, month: 4, day: 21, hour: 9, minute: 30))
+    )
+    let ten = try #require(
+      cal.date(from: DateComponents(year: 2026, month: 4, day: 21, hour: 10, minute: 0))
+    )
 
     let filter = JournalEntryDrilldownFilter.byHour(hour: 9)
 
