@@ -409,7 +409,7 @@ struct OfflineQueueIntegrationTests {
     let restartedQueue = try JournalQueue(databasePath: dbPath)
     #expect(restartedQueue.pendingCount == 2)
     let pending = try restartedQueue.pendingEntries()
-    let curriculumIDs = pending.compactMap { $0.localEntry.curriculumID }.sorted()
+    let curriculumIDs = pending.compactMap(\.localEntry.curriculumID).sorted()
     #expect(curriculumIDs == [10, 20])
   }
 
@@ -448,7 +448,7 @@ struct OfflineQueueIntegrationTests {
     let restartedQueue = try JournalQueue(databasePath: dbPath)
     #expect(restartedQueue.pendingCount == 2)
     let pending = try restartedQueue.pendingEntries()
-    let pendingIDs = Set(pending.map { $0.localEntry.id })
+    let pendingIDs = Set(pending.map(\.localEntry.id))
     #expect(pendingIDs == Set(remainingIDs))
 
     // Sync drains the remaining entries.

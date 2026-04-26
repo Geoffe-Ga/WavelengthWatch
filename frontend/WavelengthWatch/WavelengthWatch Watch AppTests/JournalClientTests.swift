@@ -287,13 +287,13 @@ struct JournalClientQueueIntegrationTests {
       queuedID = entryID
     }
 
-    #expect(queuedID != nil)
+    let unwrappedID = try #require(queuedID)
     #expect(queue.enqueuedEntries.count == 1)
-    #expect(queue.enqueuedEntries.first?.id == queuedID)
+    #expect(queue.enqueuedEntries.first?.id == unwrappedID)
     // Entry is still saved locally.
-    #expect(try repository.count() == 1)
+    try #expect(repository.count() == 1)
     // Repository entry remains pending so sync service can retry.
-    #expect(try repository.fetch(id: queuedID!)?.syncStatus == .pending)
+    try #expect(repository.fetch(id: unwrappedID)?.syncStatus == .pending)
   }
 
   @Test func submit_retryableServerError_enqueuesEntry() async throws {
