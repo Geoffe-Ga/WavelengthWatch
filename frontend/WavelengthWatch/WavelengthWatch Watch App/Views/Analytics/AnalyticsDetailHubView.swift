@@ -33,6 +33,9 @@ struct AnalyticsDetailHubView: View {
   /// Phases from cached catalog for resolving phase names in views
   private let phases: [CatalogPhaseModel]
 
+  /// Full cached catalog for drill-down context (nil when catalog not cached)
+  private let cachedCatalog: CatalogResponseModel?
+
   init(
     journalRepository: JournalRepositoryProtocol,
     catalogRepository: CatalogRepositoryProtocol,
@@ -48,8 +51,17 @@ struct AnalyticsDetailHubView: View {
     self.analyticsService = AnalyticsService(apiClient: apiClient)
 
     let cachedCatalog = catalogRepository.cachedCatalog()
+    self.cachedCatalog = cachedCatalog
     self.localCalculator = cachedCatalog.map { LocalAnalyticsCalculator(catalog: $0) }
     self.phases = cachedCatalog?.layers.first?.phases ?? []
+  }
+
+  /// Drill-down context for views that support tap-to-filter. Nil when
+  /// the catalog is not cached (drill-down stays disabled in that case).
+  private var drilldownContext: JournalDrilldownContext? {
+    cachedCatalog.map {
+      JournalDrilldownContext(journalRepository: journalRepository, catalog: $0)
+    }
   }
 
   // MARK: - Helpers
@@ -129,7 +141,8 @@ struct AnalyticsDetailHubView: View {
       localCalculator: localCalculator,
       journalRepository: journalRepository,
       syncSettings: syncSettings,
-      phases: phases
+      phases: phases,
+      drilldownContext: drilldownContext
     )
   }
 
@@ -140,7 +153,8 @@ struct AnalyticsDetailHubView: View {
       journalRepository: journalRepository,
       syncSettings: syncSettings,
       dateRange: defaultDateRange,
-      phases: phases
+      phases: phases,
+      drilldownContext: drilldownContext
     )
   }
 
@@ -161,15 +175,18 @@ struct AnalyticsDetailHubView: View {
 private struct SelfCareDetailView: View {
   @StateObject private var viewModel: SelfCareViewModel
   private let phases: [CatalogPhaseModel]
+  private let drilldownContext: JournalDrilldownContext?
 
   init(
     analyticsService: AnalyticsService,
     localCalculator: LocalAnalyticsCalculatorProtocol?,
     journalRepository: JournalRepositoryProtocol,
     syncSettings: SyncSettings,
-    phases: [CatalogPhaseModel]
+    phases: [CatalogPhaseModel],
+    drilldownContext: JournalDrilldownContext?
   ) {
     self.phases = phases
+    self.drilldownContext = drilldownContext
     _viewModel = StateObject(
       wrappedValue: SelfCareViewModel(
         analyticsService: analyticsService,
@@ -187,8 +204,12 @@ private struct SelfCareDetailView: View {
         case .idle, .loading:
           AnalyticsLoadingStates.loadingView
         case let .loaded(analytics):
-          StrategyUsageView(analytics: analytics, phases: phases)
-            .padding()
+          StrategyUsageView(
+            analytics: analytics,
+            phases: phases,
+            drilldownContext: drilldownContext
+          )
+          .padding()
         case let .error(message):
           AnalyticsLoadingStates.errorView(
             message: message,
@@ -214,6 +235,7 @@ private struct TemporalPatternsDetailView: View {
   @StateObject private var viewModel: TemporalPatternsViewModel
   private let dateRange: (startDate: Date, endDate: Date)
   private let phases: [CatalogPhaseModel]
+  private let drilldownContext: JournalDrilldownContext?
 
   init(
     analyticsService: AnalyticsService,
@@ -221,10 +243,12 @@ private struct TemporalPatternsDetailView: View {
     journalRepository: JournalRepositoryProtocol,
     syncSettings: SyncSettings,
     dateRange: (startDate: Date, endDate: Date),
-    phases: [CatalogPhaseModel]
+    phases: [CatalogPhaseModel],
+    drilldownContext: JournalDrilldownContext?
   ) {
     self.dateRange = dateRange
     self.phases = phases
+    self.drilldownContext = drilldownContext
 
     _viewModel = StateObject(
       wrappedValue: TemporalPatternsViewModel(
@@ -243,8 +267,13 @@ private struct TemporalPatternsDetailView: View {
         case .idle, .loading:
           AnalyticsLoadingStates.loadingView
         case let .loaded(patterns):
-          TemporalPatternsView(patterns: patterns, phases: phases)
-            .padding()
+          TemporalPatternsView(
+            patterns: patterns,
+            phases: phases,
+            drilldownContext: drilldownContext,
+            dateRange: dateRange
+          )
+          .padding()
         case let .error(message):
           AnalyticsLoadingStates.errorView(
             message: message,

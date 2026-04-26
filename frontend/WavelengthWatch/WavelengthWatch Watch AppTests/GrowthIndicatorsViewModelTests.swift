@@ -141,6 +141,13 @@ struct GrowthIndicatorsViewModelTests {
       return entriesToReturn
     }
 
+    func fetchByDateRange(from startDate: Date, to endDate: Date) throws -> [LocalJournalEntry] {
+      if let error = errorToThrow { throw error }
+      return entriesToReturn
+        .filter { $0.createdAt >= startDate && $0.createdAt <= endDate }
+        .sorted { $0.createdAt > $1.createdAt }
+    }
+
     func fetchPendingSync() throws -> [LocalJournalEntry] {
       if let error = errorToThrow { throw error }
       return entriesToReturn.filter { $0.syncStatus == .pending }

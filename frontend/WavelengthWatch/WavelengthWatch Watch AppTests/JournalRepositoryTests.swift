@@ -377,4 +377,233 @@ struct JournalRepositoryTests {
       print("⚠️ Test cleanup failed to remove temp database at \(tempPath): \(error)")
     }
   }
+
+  // MARK: - Date-Range Fetch Tests (Issue #259)
+
+  @Test func inMemoryFetchByDateRangeFiltersOutsideWindow() throws {
+    let repo = InMemoryJournalRepository()
+    let now = Date()
+
+    let inside = LocalJournalEntry(
+      createdAt: now.addingTimeInterval(-3600),
+      userID: 1,
+      curriculumID: 10,
+      initiatedBy: .self_initiated
+    )
+    let onStart = LocalJournalEntry(
+      createdAt: now.addingTimeInterval(-7200),
+      userID: 1,
+      curriculumID: 20,
+      initiatedBy: .self_initiated
+    )
+    let onEnd = LocalJournalEntry(
+      createdAt: now,
+      userID: 1,
+      curriculumID: 30,
+      initiatedBy: .self_initiated
+    )
+    let tooOld = LocalJournalEntry(
+      createdAt: now.addingTimeInterval(-10000),
+      userID: 1,
+      curriculumID: 40,
+      initiatedBy: .self_initiated
+    )
+    let tooNew = LocalJournalEntry(
+      createdAt: now.addingTimeInterval(60),
+      userID: 1,
+      curriculumID: 50,
+      initiatedBy: .self_initiated
+    )
+
+    try repo.save(inside)
+    try repo.save(onStart)
+    try repo.save(onEnd)
+    try repo.save(tooOld)
+    try repo.save(tooNew)
+
+    let windowStart = now.addingTimeInterval(-7200)
+    let windowEnd = now
+    let result = try repo.fetchByDateRange(from: windowStart, to: windowEnd)
+
+    #expect(result.count == 3)
+    #expect(result.contains { $0.id == inside.id })
+    #expect(result.contains { $0.id == onStart.id })
+    #expect(result.contains { $0.id == onEnd.id })
+    #expect(!result.contains { $0.id == tooOld.id })
+    #expect(!result.contains { $0.id == tooNew.id })
+  }
+
+  @Test func inMemoryFetchByDateRangeOrdersNewestFirst() throws {
+    let repo = InMemoryJournalRepository()
+    let base = Date()
+
+    let oldest = LocalJournalEntry(
+      createdAt: base.addingTimeInterval(-300),
+      userID: 1,
+      curriculumID: 1,
+      initiatedBy: .self_initiated
+    )
+    let middle = LocalJournalEntry(
+      createdAt: base.addingTimeInterval(-150),
+      userID: 1,
+      curriculumID: 2,
+      initiatedBy: .self_initiated
+    )
+    let newest = LocalJournalEntry(
+      createdAt: base,
+      userID: 1,
+      curriculumID: 3,
+      initiatedBy: .self_initiated
+    )
+
+    try repo.save(middle)
+    try repo.save(oldest)
+    try repo.save(newest)
+
+    let result = try repo.fetchByDateRange(
+      from: base.addingTimeInterval(-3600),
+      to: base.addingTimeInterval(3600)
+    )
+
+    #expect(result.count == 3)
+    #expect(result[0].id == newest.id)
+    #expect(result[1].id == middle.id)
+    #expect(result[2].id == oldest.id)
+  }
+
+  @Test func sqliteFetchByDateRangeReturnsOnlyEntriesInRange() throws {
+    let tempPath = NSTemporaryDirectory() + UUID().uuidString + ".db"
+    let db = JournalDatabase(path: tempPath)
+    let repo = JournalRepository(database: db)
+    let now = Date()
+
+    let inWindow = LocalJournalEntry(
+      createdAt: now.addingTimeInterval(-3600),
+      userID: 1,
+      curriculumID: 10,
+      initiatedBy: .self_initiated
+    )
+    let outOfWindow = LocalJournalEntry(
+      createdAt: now.addingTimeInterval(-86400),
+      userID: 1,
+      curriculumID: 20,
+      initiatedBy: .self_initiated
+    )
+
+    try repo.save(inWindow)
+    try repo.save(outOfWindow)
+
+    let windowStart = now.addingTimeInterval(-7200)
+    let windowEnd = now
+    let result = try repo.fetchByDateRange(from: windowStart, to: windowEnd)
+
+    #expect(result.count == 1)
+    #expect(result[0].id == inWindow.id)
+
+    do {
+      try FileManager.default.removeItem(atPath: tempPath)
+    } catch {
+      print("⚠️ Test cleanup failed to remove temp database at \(tempPath): \(error)")
+    }
+  }
+
+  @Test func sqliteFetchByDateRangeSupportsInclusiveBoundaries() throws {
+    let tempPath = NSTemporaryDirectory() + UUID().uuidString + ".db"
+    let db = JournalDatabase(path: tempPath)
+    let repo = JournalRepository(database: db)
+    let windowStart = Date(timeIntervalSince1970: 1_700_000_000)
+    let windowEnd = windowStart.addingTimeInterval(3600)
+
+    let startEntry = LocalJournalEntry(
+      createdAt: windowStart,
+      userID: 1,
+      curriculumID: 1,
+      initiatedBy: .self_initiated
+    )
+    let endEntry = LocalJournalEntry(
+      createdAt: windowEnd,
+      userID: 1,
+      curriculumID: 2,
+      initiatedBy: .self_initiated
+    )
+
+    try repo.save(startEntry)
+    try repo.save(endEntry)
+
+    let result = try repo.fetchByDateRange(from: windowStart, to: windowEnd)
+    #expect(result.count == 2)
+
+    do {
+      try FileManager.default.removeItem(atPath: tempPath)
+    } catch {
+      print("⚠️ Test cleanup failed to remove temp database at \(tempPath): \(error)")
+    }
+  }
+
+  // MARK: - Index + Migration Tests (Issue #259)
+
+  @Test func sqliteSchemaVersionIsAtLeastFour() {
+    #expect(JournalDatabase.schemaVersion >= 4)
+  }
+
+  @Test func sqliteCreatesStrategyAndCompositeIndexes() throws {
+    let tempPath = NSTemporaryDirectory() + UUID().uuidString + ".db"
+    let db = JournalDatabase(path: tempPath)
+    try db.open()
+
+    let indexes = try db.listIndexes()
+
+    #expect(indexes.contains("idx_journal_strategy"))
+    #expect(indexes.contains("idx_journal_created_curriculum"))
+
+    db.close()
+    do {
+      try FileManager.default.removeItem(atPath: tempPath)
+    } catch {
+      print("⚠️ Test cleanup failed to remove temp database at \(tempPath): \(error)")
+    }
+  }
+
+  /// Simulates opening a v3 database (no analytics indexes) and verifies that
+  /// `migrateToV4` backfills the new indexes and preserves existing data.
+  @Test func sqliteMigratesV3DatabaseToV4PreservingData() throws {
+    let tempPath = NSTemporaryDirectory() + UUID().uuidString + ".db"
+
+    // Seed: open once to create the schema, insert an entry, then drop the
+    // v4 indexes and rewind schema_version to 3 to mimic an upgrade.
+    let seedDB = JournalDatabase(path: tempPath)
+    try seedDB.open()
+    let seedEntry = LocalJournalEntry(
+      createdAt: Date(timeIntervalSince1970: 1_700_000_000),
+      userID: 7,
+      curriculumID: 42,
+      initiatedBy: .self_initiated
+    )
+    try seedDB.insert(seedEntry)
+    try seedDB.execRaw("DROP INDEX IF EXISTS idx_journal_strategy")
+    try seedDB.execRaw("DROP INDEX IF EXISTS idx_journal_created_curriculum")
+    try seedDB.execRaw("UPDATE schema_version SET version = 3")
+    seedDB.close()
+
+    // Reopen: this should run migrateToV4 and add the missing indexes.
+    let upgradedDB = JournalDatabase(path: tempPath)
+    try upgradedDB.open()
+
+    let indexes = try upgradedDB.listIndexes()
+    #expect(indexes.contains("idx_journal_strategy"))
+    #expect(indexes.contains("idx_journal_created_curriculum"))
+
+    // Existing data survives the migration.
+    let repo = JournalRepository(database: upgradedDB)
+    let fetched = try repo.fetch(id: seedEntry.id)
+    #expect(fetched?.id == seedEntry.id)
+    #expect(fetched?.curriculumID == 42)
+
+    upgradedDB.close()
+    do {
+      try FileManager.default.removeItem(atPath: tempPath)
+    } catch {
+      print("⚠️ Test cleanup failed to remove temp database at \(tempPath): \(error)")
+    }
+  }
 }
