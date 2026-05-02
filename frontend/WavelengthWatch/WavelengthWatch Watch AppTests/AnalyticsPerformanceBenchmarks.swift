@@ -26,7 +26,6 @@ import Testing
 /// calculateLongestStreak  1000   6.2      6.7      7.3
 /// ```
 @Suite(
-  "AnalyticsPerformanceBenchmarks",
   .disabled(
     if: ProcessInfo.processInfo.environment["WWATCH_BENCHMARK"] != "1",
     "Set WWATCH_BENCHMARK=1 to run analytics benchmarks"

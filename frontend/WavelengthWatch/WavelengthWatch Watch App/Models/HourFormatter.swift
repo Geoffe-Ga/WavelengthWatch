@@ -23,6 +23,9 @@ enum HourFormatter {
     let formatter = DateFormatter()
     formatter.locale = locale
     formatter.setLocalizedDateFormatFromTemplate("h a")
-    return formatter.string(from: date)
+    // iOS 16+ inserts U+202F (NARROW NO-BREAK SPACE) between digit and AM/PM;
+    // normalize to a regular space so the rendered label matches the docstring
+    // contract ("9 AM") and stays stable across OS versions.
+    return formatter.string(from: date).replacingOccurrences(of: "\u{202F}", with: " ")
   }
 }
