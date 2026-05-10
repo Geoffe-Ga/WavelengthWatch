@@ -99,12 +99,21 @@ final class JournalDatabase {
   private func createTables() throws {
     guard let db else { throw JournalDatabaseError.databaseNotOpen }
 
-    // Schema version table
+    // Schema version table.
+    //
+    // Seeding rule: only insert a row if the table is empty. `INSERT OR
+    // IGNORE` skips on PK conflict (same `version`), but reopening an older
+    // database (e.g. version=3) with a newer schemaVersion (e.g. 4) has no
+    // PK conflict — it would *add* a second row. Two rows then break
+    // `migrate()`'s `UPDATE … SET version = N` because PK uniqueness rejects
+    // collapsing both to the same value.
     let versionSQL = """
       CREATE TABLE IF NOT EXISTS schema_version (
         version INTEGER PRIMARY KEY
       );
-      INSERT OR IGNORE INTO schema_version (version) VALUES (\(Self.schemaVersion));
+      INSERT INTO schema_version (version)
+        SELECT \(Self.schemaVersion)
+        WHERE NOT EXISTS (SELECT 1 FROM schema_version);
     """
 
     // Journal entries table with indexes for common queries
