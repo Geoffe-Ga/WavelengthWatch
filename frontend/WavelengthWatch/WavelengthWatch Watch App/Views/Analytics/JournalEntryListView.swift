@@ -30,31 +30,31 @@ struct JournalEntryListView: View {
     self.journalRepository = journalRepository
     self.catalog = catalog
     self.dateRange = dateRange
+    self.expressionById = Self.buildExpressionLookup(catalog: catalog)
+    self.strategyNameById = Self.buildStrategyLookup(catalog: catalog)
+    self.curriculumPhaseById = Self.buildCurriculumPhaseLookup(catalog: catalog)
+    self.curriculumLayerById = Self.buildCurriculumLayerLookup(catalog: catalog)
   }
 
   @State private var entries: [LocalJournalEntry] = []
+  @State private var filteredEntries: [LocalJournalEntry] = []
   @State private var isLoading = true
   @State private var loadError: String?
 
+  // Catalog lookups are derived once from the immutable `catalog` and
+  // stored, so renders don't pay the O(n) traversal cost on every pass.
+
   /// Emotion expression keyed by curriculum ID.
-  private var expressionById: [Int: String] {
-    JournalEntryListView.buildExpressionLookup(catalog: catalog)
-  }
+  private let expressionById: [Int: String]
 
   /// Strategy name keyed by strategy ID.
-  private var strategyNameById: [Int: String] {
-    JournalEntryListView.buildStrategyLookup(catalog: catalog)
-  }
+  private let strategyNameById: [Int: String]
 
   /// Curriculum → phase ID mapping for `byPhase` filtering.
-  private var curriculumPhaseById: [Int: Int] {
-    JournalEntryListView.buildCurriculumPhaseLookup(catalog: catalog)
-  }
+  private let curriculumPhaseById: [Int: Int]
 
   /// Curriculum → layer ID mapping for `byLayer` filtering.
-  private var curriculumLayerById: [Int: Int] {
-    JournalEntryListView.buildCurriculumLayerLookup(catalog: catalog)
-  }
+  private let curriculumLayerById: [Int: Int]
 
   var body: some View {
     Group {
@@ -82,22 +82,19 @@ struct JournalEntryListView: View {
     }
   }
 
-  /// Entries after the drill-down filter is applied, newest first.
-  var filteredEntries: [LocalJournalEntry] {
-    entries.filter {
-      filter.matches(
-        $0,
-        curriculumPhaseById: curriculumPhaseById,
-        curriculumLayerById: curriculumLayerById
-      )
-    }
-  }
-
   private func load() async {
     isLoading = true
     loadError = nil
     do {
-      entries = try fetchEntries()
+      let fetched = try fetchEntries()
+      entries = fetched
+      filteredEntries = fetched.filter {
+        filter.matches(
+          $0,
+          curriculumPhaseById: curriculumPhaseById,
+          curriculumLayerById: curriculumLayerById
+        )
+      }
     } catch {
       loadError = error.localizedDescription
     }

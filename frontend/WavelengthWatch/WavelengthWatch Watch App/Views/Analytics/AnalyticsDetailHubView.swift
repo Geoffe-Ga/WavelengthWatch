@@ -36,6 +36,13 @@ struct AnalyticsDetailHubView: View {
   /// Full cached catalog for drill-down context (nil when catalog not cached)
   private let cachedCatalog: CatalogResponseModel?
 
+  /// Drill-down context for views that support tap-to-filter. Nil when
+  /// the catalog is not cached (drill-down stays disabled in that case).
+  /// Stored (not computed) so passing it to multiple detail views in `body`
+  /// reuses a single struct instance per render instead of materializing one
+  /// per access.
+  private let drilldownContext: JournalDrilldownContext?
+
   init(
     journalRepository: JournalRepositoryProtocol,
     catalogRepository: CatalogRepositoryProtocol,
@@ -54,12 +61,7 @@ struct AnalyticsDetailHubView: View {
     self.cachedCatalog = cachedCatalog
     self.localCalculator = cachedCatalog.map { LocalAnalyticsCalculator(catalog: $0) }
     self.phases = cachedCatalog?.layers.first?.phases ?? []
-  }
-
-  /// Drill-down context for views that support tap-to-filter. Nil when
-  /// the catalog is not cached (drill-down stays disabled in that case).
-  private var drilldownContext: JournalDrilldownContext? {
-    cachedCatalog.map {
+    self.drilldownContext = cachedCatalog.map {
       JournalDrilldownContext(journalRepository: journalRepository, catalog: $0)
     }
   }

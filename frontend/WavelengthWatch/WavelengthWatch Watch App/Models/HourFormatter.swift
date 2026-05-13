@@ -12,20 +12,36 @@ import Foundation
 /// locale that uses different period markers (e.g. "오전 9시" in ko-KR)
 /// gets the appropriate localization.
 enum HourFormatter {
+  /// Shared calendar; `Calendar` is value-type so each call gets its own copy
+  /// of the underlying state. Hoisting it out of `display(_:)` avoids
+  /// re-allocating the calendar on every hourly-row render.
+  private static let sharedCalendar = Calendar(identifier: .gregorian)
+
+  /// Cached formatter for the device's current locale. `DateFormatter` is
+  /// thread-safe on iOS 7+ / macOS 10.9+ and is one of the more expensive
+  /// Foundation objects to allocate, so the production path (which always
+  /// uses `.current`) reuses a single instance instead of building one per
+  /// rendered row.
+  private static let sharedFormatter: DateFormatter = makeFormatter(locale: .current)
+
   static func display(_ hour: Int, locale: Locale = .current) -> String {
     var components = DateComponents()
     components.hour = hour
-    let calendar = Calendar(identifier: .gregorian)
-    guard let date = calendar.date(from: components) else {
+    guard let date = sharedCalendar.date(from: components) else {
       return "\(hour)"
     }
 
-    let formatter = DateFormatter()
-    formatter.locale = locale
-    formatter.setLocalizedDateFormatFromTemplate("h a")
+    let formatter = locale == .current ? sharedFormatter : makeFormatter(locale: locale)
     // iOS 16+ inserts U+202F (NARROW NO-BREAK SPACE) between digit and AM/PM;
     // normalize to a regular space so the rendered label matches the docstring
     // contract ("9 AM") and stays stable across OS versions.
     return formatter.string(from: date).replacingOccurrences(of: "\u{202F}", with: " ")
+  }
+
+  private static func makeFormatter(locale: Locale) -> DateFormatter {
+    let formatter = DateFormatter()
+    formatter.locale = locale
+    formatter.setLocalizedDateFormatFromTemplate("h a")
+    return formatter
   }
 }
