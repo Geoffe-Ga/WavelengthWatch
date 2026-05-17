@@ -2,8 +2,10 @@ import SwiftUI
 
 /// Modifier for navigation bar / toolbar area styling.
 ///
-/// On watchOS 26+, this will use `safeAreaBar` with glass effect.
-/// On older versions, it hides the default toolbar background.
+/// On watchOS 26+ the system renders Liquid Glass on the navigation chrome
+/// automatically when the toolbar background is visible — so we stop
+/// hiding it. On older runtimes we keep the previous behavior of hiding
+/// the default opaque toolbar background to let content show through.
 struct WLNavigationBarModifier: ViewModifier {
   let tint: Color?
 
@@ -12,12 +14,9 @@ struct WLNavigationBarModifier: ViewModifier {
   }
 
   func body(content: Content) -> some View {
-    if WLTheme.isGlassAvailable {
-      // TODO: watchOS 26 — Apply safeAreaBar with glass:
-      // content.safeAreaBar(edge: .top) {
-      //   Color.clear.glassEffect(.regular, in: .rect)
-      // }
-      applyFallback(to: content)
+    if #available(watchOS 26, *) {
+      // System-rendered Liquid Glass on the toolbar — no override needed.
+      content
     } else {
       applyFallback(to: content)
     }
