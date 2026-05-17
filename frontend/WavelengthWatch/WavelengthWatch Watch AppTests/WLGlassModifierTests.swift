@@ -34,8 +34,15 @@ struct WLGlassModifierTests {
     #expect(modifier.tint == .blue)
   }
 
-  @Test func glassAvailable_returnsFalseOnCurrentSDK() {
-    // Until Xcode 18 ships, Glass APIs are not available
-    #expect(WLTheme.isGlassAvailable == false)
+  @Test func glassAvailable_tracksRuntimeSDK() {
+    // The build now targets the watchOS 26 SDK (Xcode 26), so Glass APIs
+    // resolve at runtime against `if #available(watchOS 26, *)`. On a
+    // watchOS 26+ simulator the flag is true; on older runtimes it stays
+    // false and modifiers fall back automatically.
+    if #available(watchOS 26, *) {
+      #expect(WLTheme.isGlassAvailable == true)
+    } else {
+      #expect(WLTheme.isGlassAvailable == false)
+    }
   }
 }

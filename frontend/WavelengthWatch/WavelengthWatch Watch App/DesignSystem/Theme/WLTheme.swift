@@ -15,11 +15,13 @@ enum WLTheme {
   /// Checks watchOS 26 availability. On older versions, all Glass
   /// modifiers degrade to fallback styling automatically.
   ///
-  /// - Note: Until Xcode 18 ships with the watchOS 26 SDK, this
-  ///   always returns `false`. Remove the early return when the
-  ///   SDK is available.
+  /// The build now targets the watchOS 26 SDK (via Xcode 26), so the
+  /// `if #available(watchOS 26, *)` gate resolves to real API calls
+  /// at runtime on supported hardware and to fallbacks elsewhere.
   static var isGlassAvailable: Bool {
-    // TODO: watchOS 26 — Remove early return when Xcode 18 SDK ships
-    false
+    if #available(watchOS 26, *) {
+      return true
+    }
+    return false
   }
 }
