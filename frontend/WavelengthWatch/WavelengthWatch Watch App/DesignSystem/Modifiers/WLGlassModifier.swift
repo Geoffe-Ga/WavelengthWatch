@@ -42,6 +42,9 @@ struct WLGlassModifier: ViewModifier {
   @available(watchOS 26, *)
   @ViewBuilder
   private func applyGlass(to content: Content) -> some View {
+    // The watchOS 26 `Glass` type has `.regular` but no `.prominent`; the
+    // closest equivalent for our "prominent / interactive" intent is
+    // `.regular.interactive()`, which provides press-state feedback.
     let style: Glass = intensity == .prominent ? .regular.interactive() : .regular
     let shape = RoundedRectangle(cornerRadius: cornerRadius)
     if let tint {
