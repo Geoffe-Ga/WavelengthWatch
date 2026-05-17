@@ -83,20 +83,22 @@ jobs:
 
       - name: Select Xcode
         run: |
-          # Use Xcode 16.x for watchOS 11.x deployment targets (Swift 5 mode).
-          # The project hasn't migrated to the watchOS 26 SDK yet — switch to
-          # Xcode 26.x here once that migration is complete.
-          # GitHub runners use versioned names (Xcode_16.4.app, Xcode_26.3.app, etc.)
-          XCODE_16=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -1)
+          # Prefer Xcode 26.x so the build sees the watchOS 26 SDK and the
+          # `if #available(watchOS 26, *)` Liquid Glass gates resolve against
+          # real symbols. Fall back to Xcode 16.x if 26 is unavailable on the
+          # runner image — the project's deployment target (watchOS 11) and
+          # Swift 5 mode keep both toolchains buildable for now.
+          # GitHub runners use versioned names (Xcode_26.3.app, Xcode_16.4.app, etc.)
           XCODE_26=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
-          if [ -n "$XCODE_16" ]; then
-            echo "Selected: $XCODE_16"
-            sudo xcode-select -s "$XCODE_16/Contents/Developer"
-          elif [ -n "$XCODE_26" ]; then
-            echo "Falling back to: $XCODE_26"
+          XCODE_16=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -1)
+          if [ -n "$XCODE_26" ]; then
+            echo "Selected: $XCODE_26"
             sudo xcode-select -s "$XCODE_26/Contents/Developer"
+          elif [ -n "$XCODE_16" ]; then
+            echo "Falling back to: $XCODE_16"
+            sudo xcode-select -s "$XCODE_16/Contents/Developer"
           else
-            echo "No Xcode 16.x or 26.x found. Available installations:"
+            echo "No Xcode 26.x or 16.x found. Available installations:"
             ls /Applications/Xcode*.app 2>/dev/null || echo "  (none)"
             exit 1
           fi

@@ -141,29 +141,62 @@ struct ContentView: View {
 
   var body: some View {
     NavigationStack(path: $navigationPath) {
-      ZStack {
-        if viewModel.layers.isEmpty {
-          if viewModel.isLoading {
-            ProgressView("Loading curriculum…")
-              .foregroundStyle(.white)
-          } else if let error = viewModel.loadErrorMessage {
-            VStack(spacing: 12) {
-              Text(error)
-                .multilineTextAlignment(.center)
-              Button("Retry") {
-                Task { await viewModel.retry() }
-              }
-            }
-            .padding()
-          } else {
-            ProgressView("Loading curriculum…")
+      contentWithDialogs
+        .toolbar { toolbarContent }
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("")
+        .navigationDestination(for: DetailDestination.self) { destination in
+          switch destination {
+          case let .curriculum(layer, phase, colorName):
+            CurriculumDetailView(layer: layer, phase: phase, color: Color(stage: colorName))
+          case let .strategy(phase, colorName):
+            StrategyListView(phase: phase, color: Color(stage: colorName))
           }
-        } else if viewModel.phaseOrder.isEmpty {
-          Text("No phase information available.")
-        } else {
-          layeredContent
         }
+    }
+    .environmentObject(viewModel)
+    .environmentObject(flowCoordinator)
+    .environment(\.isShowingDetailView, $isShowingDetailView)
+  }
+
+  // MARK: - Body decomposition
+
+  // The view body chains ~30 modifiers across lifecycle, onChange, alerts,
+  // sheets, toolbar, and navigation. Swift 6's type checker can't resolve
+  // that single expression in reasonable time, so we stage the chain
+  // through intermediate `some View` properties — each return type erases
+  // the upstream complexity, letting the checker rest.
+
+  /// Inner content — the ZStack only, no modifiers.
+  private var contentZStack: some View {
+    ZStack {
+      if viewModel.layers.isEmpty {
+        if viewModel.isLoading {
+          ProgressView("Loading curriculum…")
+            .foregroundStyle(.white)
+        } else if let error = viewModel.loadErrorMessage {
+          VStack(spacing: 12) {
+            Text(error)
+              .multilineTextAlignment(.center)
+            Button("Retry") {
+              Task { await viewModel.retry() }
+            }
+          }
+          .padding()
+        } else {
+          ProgressView("Loading curriculum…")
+        }
+      } else if viewModel.phaseOrder.isEmpty {
+        Text("No phase information available.")
+      } else {
+        layeredContent
       }
+    }
+  }
+
+  /// Adds lifecycle hooks and state-sync `onChange` handlers.
+  private var contentWithEvents: some View {
+    contentZStack
       .ignoresSafeArea(edges: .bottom)
       .task { await viewModel.loadCatalog() }
       .task {
@@ -236,6 +269,11 @@ struct ContentView: View {
           phaseSelection = expected
         }
       }
+  }
+
+  /// Adds the alert presentations, sheet stack, and onboarding-check task.
+  private var contentWithDialogs: some View {
+    contentWithEvents
       .alert(item: $viewModel.journalFeedback) { feedback in
         switch feedback.kind {
         case .success:
@@ -378,46 +416,34 @@ struct ContentView: View {
           showingOnboarding = true
         }
       }
-      .toolbar {
-        if !isShowingDetailView {
-          ToolbarItem(placement: .topBarLeading) {
-            // Show back chevron when in flow mode, menu button otherwise
-            if flowCoordinator.currentStep != .idle {
-              Button {
-                flowCoordinator.cancel()
-              } label: {
-                Image(systemName: "chevron.left")
-                  .font(.system(size: UIConstants.menuButtonSize))
-                  .foregroundColor(.white.opacity(0.7))
-              }
-              .buttonStyle(.plain)
-            } else {
-              Button {
-                showingMenu = true
-              } label: {
-                Image(systemName: "ellipsis.circle")
-                  .font(.system(size: UIConstants.menuButtonSize))
-                  .foregroundColor(.white.opacity(0.7))
-              }
-              .buttonStyle(.plain)
-            }
+  }
+
+  /// Top-bar toolbar: back chevron when in flow mode, menu button otherwise.
+  @ToolbarContentBuilder
+  private var toolbarContent: some ToolbarContent {
+    if !isShowingDetailView {
+      ToolbarItem(placement: .topBarLeading) {
+        if flowCoordinator.currentStep != .idle {
+          Button {
+            flowCoordinator.cancel()
+          } label: {
+            Image(systemName: "chevron.left")
+              .font(.system(size: UIConstants.menuButtonSize))
+              .foregroundColor(.white.opacity(0.7))
           }
-        }
-      }
-      .navigationBarTitleDisplayMode(.inline)
-      .navigationTitle("")
-      .navigationDestination(for: DetailDestination.self) { destination in
-        switch destination {
-        case let .curriculum(layer, phase, colorName):
-          CurriculumDetailView(layer: layer, phase: phase, color: Color(stage: colorName))
-        case let .strategy(phase, colorName):
-          StrategyListView(phase: phase, color: Color(stage: colorName))
+          .buttonStyle(.plain)
+        } else {
+          Button {
+            showingMenu = true
+          } label: {
+            Image(systemName: "ellipsis.circle")
+              .font(.system(size: UIConstants.menuButtonSize))
+              .foregroundColor(.white.opacity(0.7))
+          }
+          .buttonStyle(.plain)
         }
       }
     }
-    .environmentObject(viewModel)
-    .environmentObject(flowCoordinator)
-    .environment(\.isShowingDetailView, $isShowingDetailView)
   }
 
   private var layeredContent: some View {

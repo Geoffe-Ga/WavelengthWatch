@@ -52,7 +52,7 @@ When the backend changes environment (e.g., staging vs. production), check in th
 ## Getting Started
 
 ### Frontend (watchOS)
-1. Open `frontend/WavelengthWatch/WavelengthWatch.xcodeproj` in Xcode 16.4 or newer.
+1. Open `frontend/WavelengthWatch/WavelengthWatch.xcodeproj` in Xcode 26.3 or newer (Xcode 16.4 still builds, but Liquid Glass APIs require the watchOS 26 SDK).
 2. Select an Apple Watch simulator (or paired device) as the run destination.
 3. Update `APIConfiguration.plist` with your backend URL, then press ▶ to build and run.
 

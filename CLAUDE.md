@@ -40,7 +40,7 @@ swiftformat frontend
 swiftformat --lint frontend  # Check formatting without modifying
 
 # Build (use Xcode for running)
-# Open frontend/WavelengthWatch/WavelengthWatch.xcodeproj in Xcode 16.4+ (or Xcode 18+)
+# Open frontend/WavelengthWatch/WavelengthWatch.xcodeproj in Xcode 26.3+ (Xcode 16.4 still builds, but Liquid Glass APIs need 26+)
 # Select Apple Watch target and build/run
 
 # Testing
