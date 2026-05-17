@@ -1,9 +1,11 @@
 import SwiftUI
 
-/// Primary action button style (Liquid Glass prominent or fallback).
+/// Primary action button style — fallback for pre-watchOS-26 runtimes.
 ///
-/// Used for main CTAs like "Submit Entry", "Continue", etc.
-/// On watchOS 26+ this will use `.glassProminent` button style.
+/// Used for main CTAs like "Submit Entry", "Continue", etc. On watchOS 26+
+/// the `wlPrimaryButtonStyle(tint:)` extension routes to the system
+/// `.glassProminent` style instead; this struct stays as the older-OS path
+/// and is still useful directly (e.g., in tests).
 struct WLPrimaryButtonStyle: ButtonStyle {
   let tint: Color
 
@@ -12,7 +14,6 @@ struct WLPrimaryButtonStyle: ButtonStyle {
   }
 
   func makeBody(configuration: Configuration) -> some View {
-    // TODO: watchOS 26 — Use .glassProminent style
     configuration.label
       .font(WLTypographyTokens.cardTitle)
       .fontWeight(.semibold)
@@ -29,9 +30,11 @@ struct WLPrimaryButtonStyle: ButtonStyle {
   }
 }
 
-/// Secondary/subtle button style (Liquid Glass regular or fallback).
+/// Secondary/subtle button style — fallback for pre-watchOS-26 runtimes.
 ///
-/// Used for less prominent actions, list items, option selectors.
+/// Used for less prominent actions, list items, option selectors. On
+/// watchOS 26+ the `wlSecondaryButtonStyle(tint:)` extension routes to the
+/// system `.glass` style instead.
 struct WLSecondaryButtonStyle: ButtonStyle {
   let tint: Color
 
@@ -40,7 +43,6 @@ struct WLSecondaryButtonStyle: ButtonStyle {
   }
 
   func makeBody(configuration: Configuration) -> some View {
-    // TODO: watchOS 26 — Use .glass style
     configuration.label
       .foregroundColor(.white)
       .padding(.horizontal, WLSpacingTokens.paddingM)
@@ -64,13 +66,25 @@ struct WLSecondaryButtonStyle: ButtonStyle {
 // MARK: - View Extensions
 
 extension View {
-  /// Applies the primary CTA button style.
+  /// Applies the primary CTA button style. Picks `.glassProminent` on
+  /// watchOS 26+, falls back to `WLPrimaryButtonStyle` otherwise.
+  @ViewBuilder
   func wlPrimaryButtonStyle(tint: Color = .accentColor) -> some View {
-    buttonStyle(WLPrimaryButtonStyle(tint: tint))
+    if #available(watchOS 26, *) {
+      buttonStyle(.glassProminent).tint(tint)
+    } else {
+      buttonStyle(WLPrimaryButtonStyle(tint: tint))
+    }
   }
 
-  /// Applies the secondary button style.
+  /// Applies the secondary button style. Picks `.glass` on watchOS 26+,
+  /// falls back to `WLSecondaryButtonStyle` otherwise.
+  @ViewBuilder
   func wlSecondaryButtonStyle(tint: Color = .secondary) -> some View {
-    buttonStyle(WLSecondaryButtonStyle(tint: tint))
+    if #available(watchOS 26, *) {
+      buttonStyle(.glass).tint(tint)
+    } else {
+      buttonStyle(WLSecondaryButtonStyle(tint: tint))
+    }
   }
 }
