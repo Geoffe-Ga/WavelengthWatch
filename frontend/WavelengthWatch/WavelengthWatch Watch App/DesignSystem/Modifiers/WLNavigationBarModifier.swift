@@ -7,12 +7,6 @@ import SwiftUI
 /// hiding it. On older runtimes we keep the previous behavior of hiding
 /// the default opaque toolbar background to let content show through.
 struct WLNavigationBarModifier: ViewModifier {
-  let tint: Color?
-
-  init(tint: Color? = nil) {
-    self.tint = tint
-  }
-
   func body(content: Content) -> some View {
     if #available(watchOS 26, *) {
       // System-rendered Liquid Glass on the toolbar — no override needed.
@@ -32,7 +26,7 @@ struct WLNavigationBarModifier: ViewModifier {
 
 extension View {
   /// Applies design-system navigation bar styling.
-  func wlNavigationBar(tint: Color? = nil) -> some View {
-    modifier(WLNavigationBarModifier(tint: tint))
+  func wlNavigationBar() -> some View {
+    modifier(WLNavigationBarModifier())
   }
 }
