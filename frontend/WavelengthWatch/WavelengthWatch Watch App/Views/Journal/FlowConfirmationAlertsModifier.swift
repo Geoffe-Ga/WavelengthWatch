@@ -57,11 +57,22 @@ struct FlowConfirmationAlertsModifier: ViewModifier {
       }
   }
 
-  /// `.constant`-style presenter that flips true while the coordinator is
-  /// in the given step. Dismissing the alert via a button reverts the
-  /// step to a non-confirming state, which auto-flips this back to false.
+  /// Binding whose value tracks whether the coordinator is in `step`.
+  /// Action buttons (Done / Continue / Cancel / etc.) transition the
+  /// coordinator out of the step explicitly. A swipe-down or tap-outside
+  /// dismissal writes `false` into the binding, which is treated as an
+  /// implicit cancel — without this, `.constant()` would silently ignore
+  /// the system dismissal and the alert would immediately re-present
+  /// because `currentStep == step` is still true.
   private func presenter(for step: FlowCoordinator.FlowStep) -> Binding<Bool> {
-    .constant(flowCoordinator.currentStep == step)
+    Binding(
+      get: { flowCoordinator.currentStep == step },
+      set: { isPresented in
+        if !isPresented, flowCoordinator.currentStep == step {
+          flowCoordinator.cancel()
+        }
+      }
+    )
   }
 }
 
