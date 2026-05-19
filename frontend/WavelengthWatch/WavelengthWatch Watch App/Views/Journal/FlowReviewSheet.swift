@@ -90,6 +90,11 @@ struct FlowReviewSheet: View {
       } message: {
         Text(errorMessage)
       }
+      // Block swipe-dismiss while a submission is in flight: after the
+      // #336 binding fix, swipe → `flowCoordinator.cancel()` fires
+      // immediately, but the still-pending submit Task can later
+      // resolve and write to `@State` on a dismissed view.
+      .interactiveDismissDisabled(isSubmitting)
     }
   }
 
