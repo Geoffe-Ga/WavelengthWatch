@@ -145,6 +145,7 @@ struct ContentView: View {
         .toolbar { toolbarContent }
         .navigationBarTitleDisplayMode(.inline)
         .navigationTitle("")
+        .wlNavigationBar()
         .navigationDestination(for: DetailDestination.self) { destination in
           switch destination {
           case let .curriculum(layer, phase, colorName):
