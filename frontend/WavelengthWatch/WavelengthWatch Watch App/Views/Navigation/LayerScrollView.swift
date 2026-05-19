@@ -31,7 +31,6 @@ struct LayerScrollView: View {
       ScrollViewReader { proxy in
         scrollView(geometry: geometry)
           .scrollTargetBehavior(.viewAligned)
-          .scrollDisabled(false)
           .scrollPosition(id: Binding<Int?>(
             get: { clampedSelection },
             set: { newId in
@@ -72,6 +71,12 @@ struct LayerScrollView: View {
                   layerSelection < viewModel.filteredLayers.count else { return }
             proxy.scrollTo(layerSelection, anchor: .center)
             flashIndicator()
+          }
+          .onDisappear {
+            // Mirror the LayerView pattern: any pending hide task that
+            // outlives the view would later try to mutate state on a
+            // detached view via `MainActor.run`.
+            hideIndicatorTask?.cancel()
           }
           .overlay(alignment: .trailing) {
             sideIndicator(in: geometry.size)
@@ -121,13 +126,16 @@ struct LayerScrollView: View {
   }
 
   private func sideIndicator(in size: CGSize) -> some View {
+    // The indicator stays in the hierarchy at all times — visibility is
+    // driven by opacity, animated through the `withAnimation` blocks in
+    // `flashIndicator()` / `scheduleHide()`. No `.transition(.opacity)`
+    // since the view is never inserted/removed.
     LayerSideIndicator(
       layers: viewModel.filteredLayers,
       selection: clampedSelection,
       size: size
     )
     .opacity(showIndicator ? 1 : 0)
-    .transition(.opacity)
   }
 
   // MARK: - Indicator lifecycle
