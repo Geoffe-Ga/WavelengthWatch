@@ -1,8 +1,8 @@
 import SwiftUI
 
 struct ContentView: View {
-  @AppStorage("selectedLayerIndex") private var storedLayerIndex = 0
-  @AppStorage("selectedPhaseIndex") private var storedPhaseIndex = 0
+  @AppStorage(AppStorageKeys.selectedLayerIndex) private var storedLayerIndex = 0
+  @AppStorage(AppStorageKeys.selectedPhaseIndex) private var storedPhaseIndex = 0
   @StateObject private var viewModel: ContentViewModel
   @StateObject private var flowCoordinator: FlowCoordinator
   @StateObject private var syncSettingsViewModel: SyncSettingsViewModel
@@ -38,7 +38,7 @@ struct ContentView: View {
     _journalQueue = StateObject(wrappedValue: dependencies.journalQueue)
     _syncService = StateObject(wrappedValue: dependencies.syncService)
     _layerSelection = State(initialValue: dependencies.initialLayer)
-    _phaseSelection = State(initialValue: dependencies.initialPhase + 1)
+    _phaseSelection = State(initialValue: dependencies.initialPhaseSelection)
   }
 
   /// Submits the current FlowCoordinator entry and renders the appropriate

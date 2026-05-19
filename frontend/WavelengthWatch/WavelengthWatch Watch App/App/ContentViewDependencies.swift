@@ -28,8 +28,14 @@ struct ContentViewDependencies {
   let journalClient: JournalClientProtocol
   let journalRepository: JournalRepositoryProtocol
   let catalogRepository: CatalogRepositoryProtocol
+  /// Persisted layer index (full-array, zero-indexed). Unpacked into
+  /// `ContentView.layerSelection` as-is.
   let initialLayer: Int
-  let initialPhase: Int
+
+  /// SwiftUI tab-model index for the inner phase scroller. Already
+  /// includes the +1 offset that the infinite-scroll TabView expects;
+  /// `init(dependencies:)` unpacks this directly with no arithmetic.
+  let initialPhaseSelection: Int
 
   /// Builds the live dependency graph: real API, on-disk SQLite,
   /// real network monitor. Used by the app's runtime entry point.
@@ -55,14 +61,14 @@ struct ContentViewDependencies {
       apiClient: apiClient,
       networkMonitor: networkMonitor
     )
-    let initialLayer = UserDefaults.standard.integer(forKey: "selectedLayerIndex")
-    let initialPhase = UserDefaults.standard.integer(forKey: "selectedPhaseIndex")
+    let initialLayer = UserDefaults.standard.integer(forKey: AppStorageKeys.selectedLayerIndex)
+    let storedPhase = UserDefaults.standard.integer(forKey: AppStorageKeys.selectedPhaseIndex)
     let viewModel = ContentViewModel(
       catalogRepository: catalogRepository,
       journalRepository: journalRepository,
       journalClient: journalClient,
       initialLayerIndex: initialLayer,
-      initialPhaseIndex: initialPhase
+      initialPhaseIndex: storedPhase
     )
     let flowCoordinator = FlowCoordinator(contentViewModel: viewModel)
     let syncSettingsViewModel = SyncSettingsViewModel(syncSettings: syncSettings)
@@ -77,7 +83,10 @@ struct ContentViewDependencies {
       journalRepository: journalRepository,
       catalogRepository: catalogRepository,
       initialLayer: initialLayer,
-      initialPhase: initialPhase
+      // +1: the infinite-scroll TabView treats index 0 as a "lead-in"
+      // page; the canonical zero-indexed phase value lives in
+      // ContentViewModel and is converted here for SwiftUI's tab model.
+      initialPhaseSelection: storedPhase + 1
     )
   }
 
