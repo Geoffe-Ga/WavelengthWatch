@@ -15,8 +15,6 @@ struct ContentView: View {
   let catalogRepository: CatalogRepositoryProtocol
   @State private var layerSelection: Int
   @State private var phaseSelection: Int
-  @State private var showLayerIndicator = false
-  @State private var hideIndicatorTask: Task<Void, Never>?
   @State private var showingMenu = false
   @State private var showingOnboarding = false
   @State private var isShowingDetailView = false
@@ -222,8 +220,6 @@ struct ContentView: View {
             storedLayerIndex = fullIndex
           }
         }
-        showLayerIndicator = true
-        scheduleLayerIndicatorHide()
       }
       .onChange(of: viewModel.selectedLayerId) { _, newLayerId in
         // When selectedLayerId changes, update layerSelection to match in filtered array
@@ -448,88 +444,11 @@ struct ContentView: View {
   }
 
   private var layeredContent: some View {
-    GeometryReader { geometry in
-      ScrollViewReader { proxy in
-        ScrollView(.vertical, showsIndicators: false) {
-          LazyVStack(spacing: -20) {
-            ForEach(viewModel.filteredLayers.indices, id: \.self) { index in
-              let layer = viewModel.filteredLayers[index]
-              LayerCardView(
-                layer: layer,
-                phaseCount: viewModel.phaseOrder.count,
-                selection: $phaseSelection,
-                layerIndex: index,
-                selectedLayerIndex: clampedLayerSelection,
-                geometry: geometry,
-                screenWidth: geometry.size.width
-              )
-              .id(index)
-            }
-          }
-          .scrollTargetLayout()
-        }
-        .scrollTargetBehavior(.viewAligned)
-        .scrollDisabled(false)
-        .scrollPosition(id: .init(
-          get: { clampedLayerSelection },
-          set: { newId in
-            if let newId = newId as? Int, newId != layerSelection {
-              layerSelection = newId
-            }
-          }
-        ))
-        .digitalCrownRotation(
-          .init(
-            get: { Double(clampedLayerSelection) },
-            set: { newValue in
-              guard viewModel.filteredLayers.count > 0 else { return }
-              let clampedValue = Int(round(newValue)).clamped(to: 0 ... (viewModel.filteredLayers.count - 1))
-              if clampedValue != layerSelection {
-                layerSelection = clampedValue
-              }
-            }
-          ),
-          from: 0,
-          through: Double(max(viewModel.filteredLayers.count - 1, 0)),
-          by: 1.0,
-          sensitivity: .medium,
-          isContinuous: false,
-          isHapticFeedbackEnabled: true
-        )
-        .onChange(of: layerSelection) { _, newValue in
-          guard viewModel.filteredLayers.count > 0, newValue < viewModel.filteredLayers.count else { return }
-          withAnimation(.easeInOut(duration: 0.3)) {
-            proxy.scrollTo(newValue, anchor: .center)
-          }
-        }
-        .onAppear {
-          guard viewModel.filteredLayers.count > 0, layerSelection < viewModel.filteredLayers.count else { return }
-          proxy.scrollTo(layerSelection, anchor: .center)
-          showLayerIndicator = true
-          scheduleLayerIndicatorHide()
-        }
-        .overlay(alignment: .trailing) {
-          enhancedLayerIndicator(in: geometry.size)
-        }
-        // Note: DragGesture uses raw layerSelection for bounds checking because we're
-        // setting a new value (not reading for display). The bounds check against
-        // filteredLayers.count is safe because we're modifying layerSelection, which
-        // will then be clamped via clampedLayerSelection for any binding reads.
-        .simultaneousGesture(
-          DragGesture()
-            .onEnded { value in
-              let threshold: CGFloat = 30
-              if value.translation.height > threshold, layerSelection > 0 {
-                layerSelection -= 1
-              } else if value.translation.height < -threshold, layerSelection < viewModel.filteredLayers.count - 1 {
-                layerSelection += 1
-              }
-              showLayerIndicator = true
-              scheduleLayerIndicatorHide()
-            }
-        )
-      }
-    }
+    LayerScrollView(
+      viewModel: viewModel,
+      layerSelection: $layerSelection,
+      phaseSelection: $phaseSelection
+    )
   }
 
   private func adjustPhaseSelection() {
@@ -537,83 +456,6 @@ struct ContentView: View {
     let adjusted = PhaseNavigator.adjustedSelection(phaseSelection, phaseCount: viewModel.phaseOrder.count)
     if adjusted != phaseSelection {
       phaseSelection = adjusted
-    }
-  }
-
-  private func enhancedLayerIndicator(in size: CGSize) -> some View {
-    VStack {
-      Spacer()
-      ZStack(alignment: .top) {
-        // Background track
-        Capsule()
-          .fill(Color.white.opacity(0.1))
-          .frame(width: 4, height: size.height * 0.5)
-
-        // Current layer indicators stack
-        VStack(spacing: 2) {
-          ForEach(viewModel.filteredLayers.indices, id: \.self) { index in
-            let layer = viewModel.filteredLayers[index]
-            let isSelected = index == clampedLayerSelection
-            let distance = abs(index - clampedLayerSelection)
-
-            Capsule()
-              .fill(
-                isSelected ?
-                  LinearGradient(
-                    gradient: Gradient(colors: [
-                      Color(stage: layer.color),
-                      Color(stage: layer.color).opacity(0.7),
-                    ]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                  ) :
-                  LinearGradient(
-                    gradient: Gradient(colors: [
-                      Color(stage: layer.color).opacity(0.3),
-                      Color(stage: layer.color).opacity(0.1),
-                    ]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                  )
-              )
-              .frame(
-                width: isSelected ? 8 : 4,
-                height: isSelected ? 16 : 8
-              )
-              .overlay(
-                Capsule()
-                  .stroke(
-                    isSelected ? Color.white.opacity(0.4) : Color.white.opacity(0.1),
-                    lineWidth: 0.5
-                  )
-              )
-              .shadow(
-                color: isSelected ? Color(stage: layer.color) : Color.clear,
-                radius: isSelected ? 3 : 0
-              )
-              .scaleEffect(distance > 2 ? 0.6 : 1.0)
-              .opacity(distance > 3 ? 0 : 1)
-              .animation(.interactiveSpring(response: 0.3, dampingFraction: 0.7), value: clampedLayerSelection)
-          }
-        }
-      }
-      .offset(x: -6) // Use offset instead of padding to avoid layout impact when opacity changes
-      Spacer()
-    }
-    .opacity(showLayerIndicator ? 1 : 0)
-    .transition(.opacity)
-  }
-
-  private func scheduleLayerIndicatorHide() {
-    hideIndicatorTask?.cancel()
-    hideIndicatorTask = Task {
-      try? await Task.sleep(nanoseconds: 1_000_000_000)
-      guard !Task.isCancelled else { return }
-      await MainActor.run {
-        withAnimation(.easeOut(duration: 0.3)) {
-          showLayerIndicator = false
-        }
-      }
     }
   }
 }
