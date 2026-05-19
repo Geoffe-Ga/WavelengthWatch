@@ -62,20 +62,6 @@ struct ContentView: View {
     }
   }
 
-  /// Clamped layer selection that's always valid for the current filteredLayers
-  ///
-  /// This fixes #183: scroll position and digital crown bindings must return valid indices
-  /// even when layerSelection is stale (e.g., after filter mode change).
-  ///
-  /// **Timing note:** `layerSelection` itself gets updated to the clamped value in
-  /// `onChange(of: viewModel.layerFilterMode)`, but that handler fires AFTER the initial
-  /// render. This computed property ensures bindings always return valid values even
-  /// during that timing window, preventing SwiftUI from rendering with invalid state.
-  private var clampedLayerSelection: Int {
-    guard viewModel.filteredLayers.count > 0 else { return 0 }
-    return min(layerSelection, viewModel.filteredLayers.count - 1)
-  }
-
   var body: some View {
     NavigationStack(path: $navigationPath) {
       contentWithDialogs
@@ -167,65 +153,19 @@ struct ContentView: View {
         onPrimarySubmit: { await submitFlowEntry(failurePrefix: "Failed to log emotion") },
         onSecondarySubmit: { await submitFlowEntry(failurePrefix: "Failed to log emotions") }
       )
-      .onChange(of: notificationDelegate.scheduledNotificationReceived) { _, newValue in
-        if let notification = newValue {
-          viewModel.setInitiatedBy(notification.initiatedBy)
-          notificationDelegate.clearNotificationState()
-        }
-      }
-      .onChange(of: flowCoordinator.currentStep) { _, newStep in
-        // Pop navigation to root when flow state transitions
-        // This fixes #157, #162, #164: prevents user from being stuck in detail views
-        switch newStep {
-        case .selectingPrimary, .selectingSecondary, .selectingStrategy:
-          // When transitioning to selection steps, pop to root so user can navigate freely
-          if !navigationPath.isEmpty {
-            navigationPath.removeLast(navigationPath.count)
-          }
-        case .idle:
-          // When flow completes or is canceled, pop to root
-          if !navigationPath.isEmpty {
-            navigationPath.removeLast(navigationPath.count)
-          }
-        default:
-          break
-        }
-      }
-      .sheet(isPresented: $showingMenu) {
-        NavigationStack {
-          MenuView(
-            journalClient: journalClient,
-            syncSettingsViewModel: syncSettingsViewModel,
-            journalQueue: journalQueue,
-            syncService: syncService,
-            networkMonitor: networkMonitor,
-            isPresented: $showingMenu
-          )
-          .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-              Button("Done") {
-                showingMenu = false
-              }
-            }
-          }
-        }
-      }
-      .sheet(isPresented: $showingOnboarding) {
-        OnboardingView(
-          viewModel: syncSettingsViewModel,
-          isPresented: $showingOnboarding
-        )
-        .interactiveDismissDisabled()
-      }
-      .sheet(isPresented: .constant(flowCoordinator.currentStep == .review)) {
-        FlowReviewSheet(flowCoordinator: flowCoordinator)
-      }
-      .task {
-        // Check onboarding completion once when view appears
-        if !syncSettingsViewModel.hasCompletedOnboarding {
-          showingOnboarding = true
-        }
-      }
+      .mainContentDialogs(
+        viewModel: viewModel,
+        flowCoordinator: flowCoordinator,
+        syncSettingsViewModel: syncSettingsViewModel,
+        notificationDelegate: notificationDelegate,
+        journalClient: journalClient,
+        journalQueue: journalQueue,
+        syncService: syncService,
+        networkMonitor: networkMonitor,
+        showingMenu: $showingMenu,
+        showingOnboarding: $showingOnboarding,
+        navigationPath: $navigationPath
+      )
   }
 
   /// Top-bar toolbar: back chevron when in flow mode, menu button otherwise.
