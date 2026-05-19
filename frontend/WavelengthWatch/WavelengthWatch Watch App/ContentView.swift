@@ -272,38 +272,7 @@ struct ContentView: View {
   private var contentWithDialogs: some View {
     contentWithEvents
       .alert(item: $viewModel.journalFeedback) { feedback in
-        switch feedback.kind {
-        case .success:
-          Alert(
-            title: Text("Entry Logged"),
-            message: Text("Thanks for checking in."),
-            dismissButton: .default(Text("OK")) { viewModel.journalFeedback = nil }
-          )
-        case let .queued(message):
-          Alert(
-            title: Text("Saved Offline"),
-            message: Text(message),
-            dismissButton: .default(Text("OK")) { viewModel.journalFeedback = nil }
-          )
-        case let .syncing(current, total):
-          Alert(
-            title: Text("Syncing"),
-            message: Text("Syncing \(current) of \(total) entr\(total == 1 ? "y" : "ies")…"),
-            dismissButton: .default(Text("OK")) { viewModel.journalFeedback = nil }
-          )
-        case let .syncSuccess(count):
-          Alert(
-            title: Text("Synced"),
-            message: Text("\(count) entr\(count == 1 ? "y" : "ies") synced successfully."),
-            dismissButton: .default(Text("OK")) { viewModel.journalFeedback = nil }
-          )
-        case let .failure(message):
-          Alert(
-            title: Text("Something went wrong"),
-            message: Text(message),
-            dismissButton: .default(Text("OK")) { viewModel.journalFeedback = nil }
-          )
-        }
+        JournalFeedbackAlert.make(feedback) { viewModel.journalFeedback = nil }
       }
       .alert("Primary emotion selected", isPresented: .constant(flowCoordinator.currentStep == .confirmingPrimary)) {
         Button("Add Secondary Emotion") {
@@ -416,31 +385,13 @@ struct ContentView: View {
   }
 
   /// Top-bar toolbar: back chevron when in flow mode, menu button otherwise.
-  @ToolbarContentBuilder
   private var toolbarContent: some ToolbarContent {
-    if !isShowingDetailView {
-      ToolbarItem(placement: .topBarLeading) {
-        if flowCoordinator.currentStep != .idle {
-          Button {
-            flowCoordinator.cancel()
-          } label: {
-            Image(systemName: "chevron.left")
-              .font(.system(size: UIConstants.menuButtonSize))
-              .foregroundColor(.white.opacity(0.7))
-          }
-          .buttonStyle(.plain)
-        } else {
-          Button {
-            showingMenu = true
-          } label: {
-            Image(systemName: "ellipsis.circle")
-              .font(.system(size: UIConstants.menuButtonSize))
-              .foregroundColor(.white.opacity(0.7))
-          }
-          .buttonStyle(.plain)
-        }
-      }
-    }
+    MainNavigationToolbar(
+      isShowingDetailView: isShowingDetailView,
+      isInFlow: flowCoordinator.currentStep != .idle,
+      onBack: { flowCoordinator.cancel() },
+      onMenu: { showingMenu = true }
+    )
   }
 
   private var layeredContent: some View {
