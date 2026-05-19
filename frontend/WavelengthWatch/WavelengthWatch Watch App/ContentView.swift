@@ -21,85 +21,24 @@ struct ContentView: View {
   @State private var navigationPath = NavigationPath()
 
   init() {
-    let configuration = AppConfiguration()
-    let apiClient = APIClient(baseURL: configuration.apiBaseURL)
-    let repository = CatalogRepository(
-      remote: CatalogAPIService(apiClient: apiClient),
-      cache: FileCatalogCacheStore()
-    )
-    let persistentRepo = JournalRepository()
-    let journalRepository: JournalRepositoryProtocol
-    do {
-      try persistentRepo.open()
-      journalRepository = persistentRepo
-    } catch {
-      // Fallback to in-memory storage when SQLite fails (e.g., in SwiftUI previews,
-      // during testing, or if database is corrupted). This keeps the app functional
-      // but data won't persist. Analytics will show empty until journal entries are
-      // logged in this session.
-      print("⚠️ Failed to open journal database: \(error). Falling back to in-memory storage.")
-      journalRepository = InMemoryJournalRepository()
-    }
-    self.journalRepository = journalRepository
-    self.catalogRepository = repository
-    let syncSettings = SyncSettings()
-    let journalQueue = Self.makeJournalQueue()
-    _journalQueue = StateObject(wrappedValue: journalQueue)
-    let monitor = NetworkMonitor()
-    _networkMonitor = StateObject(wrappedValue: monitor)
-    let journalClient = JournalClient(
-      apiClient: apiClient,
-      repository: journalRepository,
-      syncSettings: syncSettings,
-      queue: journalQueue
-    )
-    self.journalClient = journalClient
-    let sync = JournalSyncService(
-      queue: journalQueue,
-      apiClient: apiClient,
-      networkMonitor: monitor
-    )
-    _syncService = StateObject(wrappedValue: sync)
-    let initialLayer = UserDefaults.standard.integer(forKey: "selectedLayerIndex")
-    let initialPhase = UserDefaults.standard.integer(forKey: "selectedPhaseIndex")
-    let model = ContentViewModel(
-      catalogRepository: repository,
-      journalRepository: journalRepository,
-      journalClient: journalClient,
-      initialLayerIndex: initialLayer,
-      initialPhaseIndex: initialPhase
-    )
-    _viewModel = StateObject(wrappedValue: model)
-    _syncSettingsViewModel = StateObject(wrappedValue: SyncSettingsViewModel(syncSettings: syncSettings))
-    let coordinator = FlowCoordinator(contentViewModel: model)
-    _flowCoordinator = StateObject(wrappedValue: coordinator)
-    _layerSelection = State(initialValue: initialLayer)
-    _phaseSelection = State(initialValue: initialPhase + 1)
+    self.init(dependencies: .live())
   }
 
-  /// Builds a JournalQueue with progressive fallback: documents directory →
-  /// NSTemporaryDirectory → in-memory SQLite. The in-memory leg has no
-  /// filesystem dependency, so it cannot fail in normal operation; if even
-  /// that throws, the device is in a state where no offline persistence is
-  /// possible and crashing surfaces the problem rather than silently
-  /// dropping entries.
-  private static func makeJournalQueue() -> JournalQueue {
-    do {
-      return try JournalQueue()
-    } catch {
-      print("⚠️ Documents-dir journal queue init failed: \(error). Trying temp dir.")
-    }
-    let fallbackPath = NSTemporaryDirectory() + "journal_queue_fallback.sqlite"
-    do {
-      return try JournalQueue(databasePath: fallbackPath)
-    } catch {
-      print("⚠️ Temp-dir journal queue init failed: \(error). Falling back to in-memory.")
-    }
-    do {
-      return try JournalQueue(databasePath: ":memory:")
-    } catch {
-      fatalError("In-memory journal queue init failed unexpectedly: \(error)")
-    }
+  /// Designated initializer; takes a pre-built dependency bundle so the
+  /// `live()` graph is testable and substitutable. See
+  /// `ContentViewDependencies` for the construction logic.
+  init(dependencies: ContentViewDependencies) {
+    self.journalRepository = dependencies.journalRepository
+    self.catalogRepository = dependencies.catalogRepository
+    self.journalClient = dependencies.journalClient
+    _viewModel = StateObject(wrappedValue: dependencies.viewModel)
+    _flowCoordinator = StateObject(wrappedValue: dependencies.flowCoordinator)
+    _syncSettingsViewModel = StateObject(wrappedValue: dependencies.syncSettingsViewModel)
+    _networkMonitor = StateObject(wrappedValue: dependencies.networkMonitor)
+    _journalQueue = StateObject(wrappedValue: dependencies.journalQueue)
+    _syncService = StateObject(wrappedValue: dependencies.syncService)
+    _layerSelection = State(initialValue: dependencies.initialLayer)
+    _phaseSelection = State(initialValue: dependencies.initialPhase + 1)
   }
 
   /// Submits the current FlowCoordinator entry and renders the appropriate
