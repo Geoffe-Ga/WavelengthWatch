@@ -193,7 +193,8 @@ struct ContentView: View {
     }
   }
 
-  /// Adds lifecycle hooks and state-sync `onChange` handlers.
+  /// Adds lifecycle hooks and routes navigation-state synchronization
+  /// through `NavigationSyncModifier`.
   private var contentWithEvents: some View {
     contentZStack
       .ignoresSafeArea(edges: .bottom)
@@ -207,65 +208,13 @@ struct ContentView: View {
       .onChange(of: syncService.syncStatus) { _, newValue in
         viewModel.handleSyncStatusChange(newValue, totalPending: journalQueue.pendingCount)
       }
-      .onChange(of: viewModel.phaseOrder) {
-        adjustPhaseSelection()
-      }
-      .onChange(of: layerSelection) { _, newValue in
-        // Convert filtered index to layer ID
-        if let layerId = viewModel.filteredIndexToLayerId(newValue) {
-          viewModel.selectedLayerId = layerId
-          // Convert layer ID to full array index
-          if let fullIndex = viewModel.layerIdToIndex(layerId) {
-            viewModel.selectedLayerIndex = fullIndex
-            storedLayerIndex = fullIndex
-          }
-        }
-      }
-      .onChange(of: viewModel.selectedLayerId) { _, newLayerId in
-        // When selectedLayerId changes, update layerSelection to match in filtered array
-        guard let layerId = newLayerId else { return }
-        if let filteredIndex = viewModel.layerIdToFilteredIndex(layerId) {
-          if layerSelection != filteredIndex {
-            layerSelection = filteredIndex
-          }
-        }
-      }
-      .onChange(of: viewModel.layerFilterMode) { _, _ in
-        // When filter mode changes, actively sync layerSelection to the correct filtered index
-        // for the current selectedLayerId. This fixes #180: strategy cards rendering tiny after
-        // flow completion because layerSelection wasn't synced to the new filtered index.
-        guard let layerId = viewModel.selectedLayerId,
-              let filteredIndex = viewModel.layerIdToFilteredIndex(layerId)
-        else {
-          // Fallback: clamp to valid range if no selected layer ID
-          let maxIndex = max(0, viewModel.filteredLayers.count - 1)
-          if layerSelection > maxIndex {
-            layerSelection = maxIndex
-          }
-          return
-        }
-
-        // Actively set layerSelection to the correct filtered index for the selected layer
-        if layerSelection != filteredIndex {
-          layerSelection = filteredIndex
-        }
-      }
-      .onChange(of: phaseSelection) { _, newValue in
-        guard viewModel.phaseOrder.count > 0 else { return }
-        let adjusted = PhaseNavigator.adjustedSelection(newValue, phaseCount: viewModel.phaseOrder.count)
-        if adjusted != newValue {
-          phaseSelection = adjusted
-        }
-        let normalized = PhaseNavigator.normalizedIndex(adjusted, phaseCount: viewModel.phaseOrder.count)
-        viewModel.selectedPhaseIndex = normalized
-        storedPhaseIndex = normalized
-      }
-      .onChange(of: viewModel.selectedPhaseIndex) { _, newValue in
-        let expected = newValue + 1
-        if phaseSelection != expected {
-          phaseSelection = expected
-        }
-      }
+      .navigationSync(
+        viewModel: viewModel,
+        layerSelection: $layerSelection,
+        phaseSelection: $phaseSelection,
+        storedLayerIndex: $storedLayerIndex,
+        storedPhaseIndex: $storedPhaseIndex
+      )
   }
 
   /// Adds the alert presentations, sheet stack, and onboarding-check task.
@@ -356,14 +305,6 @@ struct ContentView: View {
       layerSelection: $layerSelection,
       phaseSelection: $phaseSelection
     )
-  }
-
-  private func adjustPhaseSelection() {
-    guard viewModel.phaseOrder.count > 0 else { return }
-    let adjusted = PhaseNavigator.adjustedSelection(phaseSelection, phaseCount: viewModel.phaseOrder.count)
-    if adjusted != phaseSelection {
-      phaseSelection = adjusted
-    }
   }
 }
 
