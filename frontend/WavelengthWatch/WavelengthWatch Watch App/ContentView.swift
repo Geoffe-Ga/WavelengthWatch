@@ -274,55 +274,11 @@ struct ContentView: View {
       .alert(item: $viewModel.journalFeedback) { feedback in
         JournalFeedbackAlert.make(feedback) { viewModel.journalFeedback = nil }
       }
-      .alert("Primary emotion selected", isPresented: .constant(flowCoordinator.currentStep == .confirmingPrimary)) {
-        Button("Add Secondary Emotion") {
-          flowCoordinator.promptForSecondary()
-        }
-        Button("Add Strategy") {
-          flowCoordinator.promptForStrategy()
-        }
-        Button("Done") {
-          Task { await submitFlowEntry(failurePrefix: "Failed to log emotion") }
-        }
-        Button("Cancel", role: .cancel) {
-          flowCoordinator.cancel()
-        }
-      } message: {
-        if let primary = flowCoordinator.selections.primary {
-          Text("You selected \"\(primary.expression)\". What would you like to do next?")
-        }
-      }
-      .alert("Secondary emotion selected", isPresented: .constant(flowCoordinator.currentStep == .confirmingSecondary)) {
-        Button("Add Strategy") {
-          flowCoordinator.promptForStrategy()
-        }
-        Button("Done") {
-          Task { await submitFlowEntry(failurePrefix: "Failed to log emotions") }
-        }
-        Button("Cancel", role: .cancel) {
-          flowCoordinator.cancel()
-        }
-      } message: {
-        if let secondary = flowCoordinator.selections.secondary {
-          Text("You selected \"\(secondary.expression)\". What would you like to do next?")
-        } else {
-          Text("What would you like to do next?")
-        }
-      }
-      .alert("Strategy selected", isPresented: .constant(flowCoordinator.currentStep == .confirmingStrategy)) {
-        Button("Continue to Review") {
-          flowCoordinator.showReview()
-        }
-        Button("Cancel", role: .cancel) {
-          flowCoordinator.cancel()
-        }
-      } message: {
-        if let strategy = flowCoordinator.selections.strategy {
-          Text("You selected \"\(strategy.strategy)\". Continue to review?")
-        } else {
-          Text("Continue to review?")
-        }
-      }
+      .flowConfirmationAlerts(
+        flowCoordinator: flowCoordinator,
+        onPrimarySubmit: { await submitFlowEntry(failurePrefix: "Failed to log emotion") },
+        onSecondarySubmit: { await submitFlowEntry(failurePrefix: "Failed to log emotions") }
+      )
       .onChange(of: notificationDelegate.scheduledNotificationReceived) { _, newValue in
         if let notification = newValue {
           viewModel.setInitiatedBy(notification.initiatedBy)
