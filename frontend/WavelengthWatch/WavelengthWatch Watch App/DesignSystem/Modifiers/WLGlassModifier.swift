@@ -32,13 +32,25 @@ struct WLGlassModifier: ViewModifier {
   }
 
   func body(content: Content) -> some View {
-    if WLTheme.isGlassAvailable {
-      // TODO: watchOS 26 — Replace fallback with:
-      // content.glassEffect(.regular, in: .rect(cornerRadius: cornerRadius))
-      // or .glassEffect(.prominent, ...) based on intensity
-      applyFallback(to: content)
+    if #available(watchOS 26, *) {
+      applyGlass(to: content)
     } else {
       applyFallback(to: content)
+    }
+  }
+
+  @available(watchOS 26, *)
+  @ViewBuilder
+  private func applyGlass(to content: Content) -> some View {
+    // The watchOS 26 `Glass` type has `.regular` but no `.prominent`; the
+    // closest equivalent for our "prominent / interactive" intent is
+    // `.regular.interactive()`, which provides press-state feedback.
+    let style: Glass = intensity == .prominent ? .regular.interactive() : .regular
+    let shape = RoundedRectangle(cornerRadius: cornerRadius)
+    if let tint {
+      content.glassEffect(style.tint(tint), in: shape)
+    } else {
+      content.glassEffect(style, in: shape)
     }
   }
 
