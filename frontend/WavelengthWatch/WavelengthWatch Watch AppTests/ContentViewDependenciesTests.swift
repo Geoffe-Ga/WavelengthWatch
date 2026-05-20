@@ -60,11 +60,21 @@ struct ContentViewDependenciesTests {
 
   // MARK: - live()
 
-  @Test("live composes the full dependency graph without crashing")
+  @Test("live composes the dependency graph with shared instances wired through")
   func live_composesGraph() {
     let deps = ContentViewDependencies.live()
-    // initialPhaseSelection carries the +1 infinite-scroll offset, so it is
-    // always >= 1; reaching this assertion proves every field was built.
-    #expect(deps.initialPhaseSelection >= 1)
+    // The flow coordinator must be built against the same view-model the
+    // bundle hands to ContentView — a real wiring invariant, not just
+    // "live() didn't crash".
+    #expect(deps.flowCoordinator.contentViewModel === deps.viewModel)
+  }
+
+  @Test("live exposes a usable syncSettings handle for test injection")
+  func live_exposesSyncSettings() {
+    let deps = ContentViewDependencies.live()
+    let original = deps.syncSettings.cloudSyncEnabled
+    deps.syncSettings.cloudSyncEnabled = !original
+    #expect(deps.syncSettings.cloudSyncEnabled == !original)
+    deps.syncSettings.cloudSyncEnabled = original
   }
 }

@@ -146,6 +146,10 @@ struct ContentViewDependencies {
   ///
   /// The three legs are injectable so the fallthrough order can be
   /// tested without genuinely unwritable directories.
+  ///
+  /// The closure parameters are `@MainActor` because their default values
+  /// construct the main-actor-isolated `JournalQueue`, and default-argument
+  /// expressions evaluate outside the enclosing type's actor isolation.
   static func makeJournalQueue(
     documentsQueue: @MainActor () throws -> JournalQueue = { try JournalQueue() },
     tempQueue: @MainActor () throws -> JournalQueue = {
