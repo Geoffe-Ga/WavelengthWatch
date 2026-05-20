@@ -47,7 +47,7 @@ struct MainContentDialogsModifier: ViewModifier {
       }
       .sheet(isPresented: $showingMenu) { menuSheet }
       .sheet(isPresented: $showingOnboarding) { onboardingSheet }
-      .sheet(isPresented: flowReviewPresenter) {
+      .sheet(isPresented: Self.flowReviewPresenter(for: flowCoordinator)) {
         FlowReviewSheet(flowCoordinator: flowCoordinator)
       }
       .task {
@@ -95,7 +95,7 @@ struct MainContentDialogsModifier: ViewModifier {
   /// fires when neither button was tapped and the user closed via the
   /// swipe gesture. The step guard prevents a spurious cancel if the
   /// coordinator has already moved on by the time SwiftUI writes false.
-  private var flowReviewPresenter: Binding<Bool> {
+  static func flowReviewPresenter(for flowCoordinator: FlowCoordinator) -> Binding<Bool> {
     Binding(
       get: { flowCoordinator.currentStep == .review },
       set: { isPresented in
