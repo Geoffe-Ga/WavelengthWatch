@@ -169,7 +169,7 @@ struct FlowReviewSheet: View {
     isSubmitting = true
     submitTask = Task {
       do {
-        try await SubmitTimeout.run(seconds: 30) {
+        try await SubmitTimeout.run(seconds: SubmitTimeout.journalSubmitDeadlineSeconds) {
           try await flowCoordinator.submit()
         }
         isSubmitting = false

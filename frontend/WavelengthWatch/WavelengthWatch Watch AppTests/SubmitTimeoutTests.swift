@@ -14,7 +14,7 @@ struct SubmitTimeoutTests {
   @Test("an operation exceeding the deadline throws SubmitTimeoutError")
   func slowOperation_timesOut() async {
     await #expect(throws: SubmitTimeoutError.self) {
-      try await SubmitTimeout.run(seconds: 0.05) {
+      try await SubmitTimeout.run(seconds: 0.2) {
         try await Task.sleep(for: .seconds(10))
       }
     }

@@ -6,6 +6,10 @@ struct SubmitTimeoutError: Error, Equatable {}
 
 /// Races an async operation against a wall-clock deadline.
 enum SubmitTimeout {
+  /// Deadline applied to a journal submission, co-located with the
+  /// mechanism that enforces it.
+  static let journalSubmitDeadlineSeconds: Double = 30
+
   /// Runs `operation`, throwing `SubmitTimeoutError` if it does not finish
   /// within `seconds`. The losing branch is always cancelled, and a real
   /// error from `operation` propagates unchanged rather than being masked
