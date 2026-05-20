@@ -90,6 +90,8 @@ struct FlowReviewSheet: View {
       } message: {
         Text(errorMessage)
       }
+      // Prevent cancel() racing a still-pending submit Task writing @State after dismiss.
+      .interactiveDismissDisabled(isSubmitting)
     }
   }
 
