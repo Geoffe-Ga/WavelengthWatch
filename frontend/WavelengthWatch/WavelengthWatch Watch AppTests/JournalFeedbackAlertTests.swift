@@ -1,13 +1,7 @@
 import Testing
 @testable import WavelengthWatch_Watch_App
 
-/// Coverage for `JournalFeedbackAlert`'s copy contract — one assertion
-/// per `JournalFeedback.Kind` branch plus the entry-count pluralization
-/// boundaries for `.syncing` and `.syncSuccess` (filed as #325).
-///
-/// `Alert` itself is opaque to Swift Testing, so these exercise the
-/// extracted `title(for:)` / `message(for:)` factories that `make`
-/// composes into the alert.
+/// Copy and pluralization coverage for `JournalFeedbackAlert` (#325).
 struct JournalFeedbackAlertTests {
   // MARK: - Titles
 
@@ -45,6 +39,10 @@ struct JournalFeedbackAlertTests {
 
   @Test("syncSuccess message pluralizes on count")
   func message_syncSuccessPluralization() {
+    #expect(
+      JournalFeedbackAlert.message(for: .syncSuccess(count: 0))
+        == "0 entries synced successfully."
+    )
     #expect(
       JournalFeedbackAlert.message(for: .syncSuccess(count: 1))
         == "1 entry synced successfully."
