@@ -13,39 +13,46 @@ enum JournalFeedbackAlert {
     _ feedback: ContentViewModel.JournalFeedback,
     dismiss: @escaping () -> Void
   ) -> Alert {
-    switch feedback.kind {
-    case .success:
-      return Alert(
-        title: Text("Entry Logged"),
-        message: Text("Thanks for checking in."),
-        dismissButton: .default(Text("OK"), action: dismiss)
-      )
-    case let .queued(message):
-      return Alert(
-        title: Text("Saved Offline"),
-        message: Text(message),
-        dismissButton: .default(Text("OK"), action: dismiss)
-      )
-    case let .syncing(current, total):
-      let suffix = total == 1 ? "y" : "ies"
-      return Alert(
-        title: Text("Syncing"),
-        message: Text("Syncing \(current) of \(total) entr\(suffix)…"),
-        dismissButton: .default(Text("OK"), action: dismiss)
-      )
-    case let .syncSuccess(count):
-      let suffix = count == 1 ? "y" : "ies"
-      return Alert(
-        title: Text("Synced"),
-        message: Text("\(count) entr\(suffix) synced successfully."),
-        dismissButton: .default(Text("OK"), action: dismiss)
-      )
-    case let .failure(message):
-      return Alert(
-        title: Text("Something went wrong"),
-        message: Text(message),
-        dismissButton: .default(Text("OK"), action: dismiss)
-      )
+    Alert(
+      title: Text(title(for: feedback.kind)),
+      message: Text(message(for: feedback.kind)),
+      dismissButton: .default(Text("OK"), action: dismiss)
+    )
+  }
+
+  /// The alert title copy for a feedback `Kind`. Extracted so the copy
+  /// contract is unit-testable without introspecting an opaque `Alert`.
+  static func title(for kind: ContentViewModel.JournalFeedback.Kind) -> String {
+    switch kind {
+    case .success: "Entry Logged"
+    case .queued: "Saved Offline"
+    case .syncing: "Syncing"
+    case .syncSuccess: "Synced"
+    case .failure: "Something went wrong"
     }
+  }
+
+  /// The alert message copy for a feedback `Kind`, including the
+  /// entry-count pluralization for the `.syncing` and `.syncSuccess`
+  /// cases. Extracted alongside `title(for:)` for unit testability.
+  static func message(for kind: ContentViewModel.JournalFeedback.Kind) -> String {
+    switch kind {
+    case .success:
+      "Thanks for checking in."
+    case let .queued(message):
+      message
+    case let .syncing(current, total):
+      "Syncing \(current) of \(total) entr\(pluralSuffix(for: total))…"
+    case let .syncSuccess(count):
+      "\(count) entr\(pluralSuffix(for: count)) synced successfully."
+    case let .failure(message):
+      message
+    }
+  }
+
+  /// The "entr-" suffix: singular `y` for a count of 1, plural `ies`
+  /// otherwise.
+  private static func pluralSuffix(for count: Int) -> String {
+    count == 1 ? "y" : "ies"
   }
 }
