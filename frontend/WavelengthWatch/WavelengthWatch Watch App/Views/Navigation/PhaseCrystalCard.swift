@@ -167,7 +167,7 @@ struct PhaseCrystalCard: View {
     subtitle: "Power",
     phases: [phase]
   )
-  return PhaseCrystalCard(layer: layer, phase: phase, color: .red, scale: 1.0)
+  PhaseCrystalCard(layer: layer, phase: phase, color: .red, scale: 1.0)
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .background(Color.black)
 }
@@ -187,7 +187,7 @@ struct PhaseCrystalCard: View {
     subtitle: "Magic",
     phases: [phase]
   )
-  return PhaseCrystalCard(layer: layer, phase: phase, color: .purple, scale: 1.0)
+  PhaseCrystalCard(layer: layer, phase: phase, color: .purple, scale: 1.0)
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .background(Color.black)
 }
