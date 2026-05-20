@@ -28,4 +28,17 @@ struct SubmitTimeoutTests {
       }
     }
   }
+
+  @Test("cancelling the enclosing task propagates CancellationError")
+  func externalCancellation_propagates() async {
+    let task = Task {
+      try await SubmitTimeout.run(seconds: 30) {
+        try await Task.sleep(for: .seconds(30))
+      }
+    }
+    task.cancel()
+    await #expect(throws: CancellationError.self) {
+      try await task.value
+    }
+  }
 }

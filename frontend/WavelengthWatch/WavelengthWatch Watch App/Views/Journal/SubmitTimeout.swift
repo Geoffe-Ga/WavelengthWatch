@@ -5,16 +5,15 @@ import Foundation
 struct SubmitTimeoutError: Error, Equatable {}
 
 /// Races an async operation against a wall-clock deadline.
-///
-/// `FlowReviewSheet` disables interactive dismissal while a submission is
-/// in flight, so an indefinitely-hung `submit()` would leave the sheet
-/// permanently stuck. Wrapping the submission here guarantees it either
-/// resolves or throws `SubmitTimeoutError` within `seconds`.
 enum SubmitTimeout {
   /// Runs `operation`, throwing `SubmitTimeoutError` if it does not finish
-  /// within `seconds`. The operation is cancelled when either branch wins,
-  /// and any error it throws propagates unchanged (the timeout never masks
-  /// a real failure).
+  /// within `seconds`. The losing branch is always cancelled, and a real
+  /// error from `operation` propagates unchanged rather than being masked
+  /// as a timeout.
+  ///
+  /// `FlowReviewSheet` disables interactive dismissal while a submission is
+  /// in flight, so without this an indefinitely-hung `submit()` would leave
+  /// the sheet permanently stuck.
   static func run(
     seconds: Double,
     operation: @escaping @Sendable () async throws -> Void
