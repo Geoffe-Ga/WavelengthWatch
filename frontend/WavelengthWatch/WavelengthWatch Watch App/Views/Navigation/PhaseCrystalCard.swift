@@ -50,9 +50,7 @@ struct PhaseCrystalCard: View {
       crystalAccent
     }
     .padding(.horizontal, 20 * scale)
-    // Vertical rhythm stays fixed: the card's content (caption + title3 + accent) is
-    // already a fixed visual height, so scaling the pad only pushes the orb out without
-    // improving readability on larger watches.
+    // Fixed: content is a fixed visual height; scaling this pad only pushes the orb out.
     .padding(.vertical, 16)
     .frame(minWidth: UIConstants.phaseCardMinWidth * scale)
     .background(cardBackground)
@@ -161,10 +159,10 @@ struct PhaseCrystalCard: View {
     strategies: []
   )
   let layer = CatalogLayerModel(
-    id: 4,
+    id: 3,
     color: "Red",
-    title: "Red",
-    subtitle: "Power",
+    title: "RED",
+    subtitle: "(Power)",
     phases: [phase]
   )
   PhaseCrystalCard(layer: layer, phase: phase, color: .red, scale: 1.0)
@@ -183,8 +181,8 @@ struct PhaseCrystalCard: View {
   let layer = CatalogLayerModel(
     id: 2,
     color: "Purple",
-    title: "Purple",
-    subtitle: "Magic",
+    title: "PURPLE",
+    subtitle: "(Tribal)",
     phases: [phase]
   )
   PhaseCrystalCard(layer: layer, phase: phase, color: .purple, scale: 1.0)
