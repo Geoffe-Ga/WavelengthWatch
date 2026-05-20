@@ -50,6 +50,7 @@ struct PhaseCrystalCard: View {
       crystalAccent
     }
     .padding(.horizontal, 20 * scale)
+    // Fixed: content is a fixed visual height; scaling this pad only pushes the orb out.
     .padding(.vertical, 16)
     .frame(minWidth: UIConstants.phaseCardMinWidth * scale)
     .background(cardBackground)
@@ -147,4 +148,44 @@ struct PhaseCrystalCard: View {
       .shadow(color: color.opacity(0.2), radius: 8)
       .shadow(color: .black.opacity(0.3), radius: 4)
   }
+}
+
+#Preview("Red layer, Peaking phase") {
+  let phase = CatalogPhaseModel(
+    id: 2,
+    name: "Peaking",
+    medicinal: [],
+    toxic: [],
+    strategies: []
+  )
+  let layer = CatalogLayerModel(
+    id: 3,
+    color: "Red",
+    title: "RED",
+    subtitle: "(Power)",
+    phases: [phase]
+  )
+  PhaseCrystalCard(layer: layer, phase: phase, color: .red, scale: 1.0)
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .background(Color.black)
+}
+
+#Preview("Edge case — Bottoming Out") {
+  let phase = CatalogPhaseModel(
+    id: 5,
+    name: "Bottoming Out",
+    medicinal: [],
+    toxic: [],
+    strategies: []
+  )
+  let layer = CatalogLayerModel(
+    id: 2,
+    color: "Purple",
+    title: "PURPLE",
+    subtitle: "(Tribal)",
+    phases: [phase]
+  )
+  PhaseCrystalCard(layer: layer, phase: phase, color: .purple, scale: 1.0)
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .background(Color.black)
 }
