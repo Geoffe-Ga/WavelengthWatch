@@ -6,6 +6,7 @@ struct FlowReviewSheet: View {
   @State private var showingSuccess = false
   @State private var showingError = false
   @State private var errorMessage = ""
+  @State private var submitTask: Task<Void, Never>?
 
   var body: some View {
     NavigationStack {
@@ -92,6 +93,14 @@ struct FlowReviewSheet: View {
       }
       // Prevent cancel() racing a still-pending submit Task writing @State after dismiss.
       .interactiveDismissDisabled(isSubmitting)
+      // Any transition off .review (toolbar Cancel, success-alert OK, or
+      // the system swipe-dismiss binding) means the user backed out — drop
+      // the in-flight submit so a hung request can't strand isSubmitting.
+      .onChange(of: flowCoordinator.currentStep) { _, newStep in
+        if newStep != .review {
+          submitTask?.cancel()
+        }
+      }
     }
   }
 
@@ -155,11 +164,14 @@ struct FlowReviewSheet: View {
     .cornerRadius(10)
   }
 
+  @MainActor
   private func submitEntry() {
     isSubmitting = true
-    Task {
+    submitTask = Task {
       do {
-        try await flowCoordinator.submit()
+        try await SubmitTimeout.run(seconds: 30) {
+          try await flowCoordinator.submit()
+        }
         isSubmitting = false
         showingSuccess = true
       } catch JournalError.queuedForRetry {
@@ -167,6 +179,14 @@ struct FlowReviewSheet: View {
         // is restored. Treat this as a successful submission for UX purposes.
         isSubmitting = false
         showingSuccess = true
+      } catch is CancellationError {
+        // The flow was cancelled out from under the submit; the sheet is
+        // already going away, so reset state without surfacing an error.
+        isSubmitting = false
+      } catch is SubmitTimeoutError {
+        isSubmitting = false
+        errorMessage = "Submission timed out. Check your connection and try again."
+        showingError = true
       } catch {
         isSubmitting = false
         errorMessage = "Failed to submit: \(error.localizedDescription)"
