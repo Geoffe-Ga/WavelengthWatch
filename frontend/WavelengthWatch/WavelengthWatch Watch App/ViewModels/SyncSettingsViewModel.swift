@@ -25,7 +25,9 @@ final class SyncSettingsViewModel: ObservableObject {
   /// Private setter ensures only the view model can mark onboarding complete.
   @Published private(set) var hasCompletedOnboarding: Bool
 
-  private let syncSettings: SyncSettings
+  /// Shared sync-preferences store. Not `private` so tests can verify the
+  /// dependency graph wires a single `SyncSettings` instance everywhere.
+  let syncSettings: SyncSettings
 
   /// Creates a view model with the specified sync settings.
   ///

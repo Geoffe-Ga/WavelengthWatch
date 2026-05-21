@@ -69,12 +69,9 @@ struct ContentViewDependenciesTests {
     #expect(deps.flowCoordinator.contentViewModel === deps.viewModel)
   }
 
-  @Test("live exposes a usable syncSettings handle for test injection")
-  func live_exposesSyncSettings() {
+  @Test("live wires a single shared syncSettings instance through the graph")
+  func live_exposesSharedSyncSettings() {
     let deps = ContentViewDependencies.live()
-    let original = deps.syncSettings.cloudSyncEnabled
-    deps.syncSettings.cloudSyncEnabled = !original
-    #expect(deps.syncSettings.cloudSyncEnabled == !original)
-    deps.syncSettings.cloudSyncEnabled = original
+    #expect(deps.syncSettings === deps.syncSettingsViewModel.syncSettings)
   }
 }

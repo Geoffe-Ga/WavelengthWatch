@@ -59,6 +59,7 @@ struct ContentViewDependencies {
 
   /// Builds the live dependency graph: real API, on-disk SQLite,
   /// real network monitor. Used by the app's runtime entry point.
+  @MainActor
   static func live() -> ContentViewDependencies {
     let configuration = AppConfiguration()
     let apiClient = APIClient(baseURL: configuration.apiBaseURL)
@@ -120,6 +121,7 @@ struct ContentViewDependencies {
   ///
   /// `openPersistent` is injectable so the fallback branch can be tested
   /// without a genuinely corrupt database file.
+  @MainActor
   static func makeJournalRepository(
     openPersistent: () throws -> JournalRepositoryProtocol = {
       let repository = JournalRepository()
@@ -149,7 +151,9 @@ struct ContentViewDependencies {
   ///
   /// The closure parameters are `@MainActor` because their default values
   /// construct the main-actor-isolated `JournalQueue`, and default-argument
-  /// expressions evaluate outside the enclosing type's actor isolation.
+  /// expressions evaluate outside the enclosing type's actor isolation —
+  /// the annotation on the function alone does not reach them.
+  @MainActor
   static func makeJournalQueue(
     documentsQueue: @MainActor () throws -> JournalQueue = { try JournalQueue() },
     tempQueue: @MainActor () throws -> JournalQueue = {
