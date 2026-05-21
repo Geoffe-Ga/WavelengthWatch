@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 /// Bundle of everything `ContentView` needs to wire up its root view
 /// hierarchy: the live API client, repositories, queue, journal client,
@@ -22,6 +23,10 @@ struct ContentViewDependencies {
   let viewModel: ContentViewModel
   let flowCoordinator: FlowCoordinator
   let syncSettingsViewModel: SyncSettingsViewModel
+  /// Shared sync-preferences store backing both `journalClient` and
+  /// `syncSettingsViewModel`. Exposed on the bundle so a test config can
+  /// inject a known state without reconstructing the whole graph.
+  let syncSettings: SyncSettings
   let networkMonitor: NetworkMonitor
   let journalQueue: JournalQueue
   let syncService: JournalSyncService
@@ -37,8 +42,24 @@ struct ContentViewDependencies {
   /// `init(dependencies:)` unpacks this directly with no arithmetic.
   let initialPhaseSelection: Int
 
+  private static let logger = Logger(
+    subsystem: "com.wavelengthwatch.watch",
+    category: "ContentViewDependencies"
+  )
+
+  /// Filesystem path for the temp-directory journal-queue fallback,
+  /// composed via `URL` so it stays correct even if `NSTemporaryDirectory`
+  /// ever stops returning a trailing-slash path.
+  static let tempJournalQueueFallbackPath = URL(
+    fileURLWithPath: NSTemporaryDirectory(),
+    isDirectory: true
+  )
+  .appendingPathComponent("journal_queue_fallback.sqlite")
+  .path
+
   /// Builds the live dependency graph: real API, on-disk SQLite,
   /// real network monitor. Used by the app's runtime entry point.
+  @MainActor
   static func live() -> ContentViewDependencies {
     let configuration = AppConfiguration()
     let apiClient = APIClient(baseURL: configuration.apiBaseURL)
@@ -76,6 +97,7 @@ struct ContentViewDependencies {
       viewModel: viewModel,
       flowCoordinator: flowCoordinator,
       syncSettingsViewModel: syncSettingsViewModel,
+      syncSettings: syncSettings,
       networkMonitor: networkMonitor,
       journalQueue: journalQueue,
       syncService: syncService,
@@ -96,13 +118,23 @@ struct ContentViewDependencies {
   /// in-memory storage if open fails (SwiftUI previews, test harness,
   /// or a corrupted database file). The fallback keeps the app
   /// functional but entries logged in the session don't persist.
-  private static func makeJournalRepository() -> JournalRepositoryProtocol {
-    let persistentRepo = JournalRepository()
+  ///
+  /// `openPersistent` is injectable so the fallback branch can be tested
+  /// without a genuinely corrupt database file.
+  @MainActor
+  static func makeJournalRepository(
+    openPersistent: () throws -> JournalRepositoryProtocol = {
+      let repository = JournalRepository()
+      try repository.open()
+      return repository
+    }
+  ) -> JournalRepositoryProtocol {
     do {
-      try persistentRepo.open()
-      return persistentRepo
+      return try openPersistent()
     } catch {
-      print("⚠️ Failed to open journal database: \(error). Falling back to in-memory storage.")
+      logger.warning(
+        "Journal database open failed: \(error.localizedDescription, privacy: .public). Falling back to in-memory storage."
+      )
       return InMemoryJournalRepository()
     }
   }
@@ -113,20 +145,40 @@ struct ContentViewDependencies {
   /// normal operation; if even that throws, the device is in a state
   /// where no offline persistence is possible and crashing surfaces
   /// the problem rather than silently dropping entries.
-  private static func makeJournalQueue() -> JournalQueue {
-    do {
-      return try JournalQueue()
-    } catch {
-      print("⚠️ Documents-dir journal queue init failed: \(error). Trying temp dir.")
+  ///
+  /// The three legs are injectable so the fallthrough order can be
+  /// tested without genuinely unwritable directories.
+  ///
+  /// The closure parameters are `@MainActor` because their default values
+  /// construct the main-actor-isolated `JournalQueue`, and default-argument
+  /// expressions evaluate outside the enclosing type's actor isolation —
+  /// the annotation on the function alone does not reach them.
+  @MainActor
+  static func makeJournalQueue(
+    documentsQueue: @MainActor () throws -> JournalQueue = { try JournalQueue() },
+    tempQueue: @MainActor () throws -> JournalQueue = {
+      try JournalQueue(databasePath: tempJournalQueueFallbackPath)
+    },
+    inMemoryQueue: @MainActor () throws -> JournalQueue = {
+      try JournalQueue(databasePath: ":memory:")
     }
-    let fallbackPath = NSTemporaryDirectory() + "journal_queue_fallback.sqlite"
+  ) -> JournalQueue {
     do {
-      return try JournalQueue(databasePath: fallbackPath)
+      return try documentsQueue()
     } catch {
-      print("⚠️ Temp-dir journal queue init failed: \(error). Falling back to in-memory.")
+      logger.warning(
+        "Documents-dir journal queue init failed: \(error.localizedDescription, privacy: .public). Trying temp dir."
+      )
     }
     do {
-      return try JournalQueue(databasePath: ":memory:")
+      return try tempQueue()
+    } catch {
+      logger.warning(
+        "Temp-dir journal queue init failed: \(error.localizedDescription, privacy: .public). Falling back to in-memory."
+      )
+    }
+    do {
+      return try inMemoryQueue()
     } catch {
       fatalError("In-memory journal queue init failed unexpectedly: \(error)")
     }
