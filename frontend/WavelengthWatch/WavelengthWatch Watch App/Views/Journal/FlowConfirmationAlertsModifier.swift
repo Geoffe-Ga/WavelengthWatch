@@ -10,17 +10,20 @@ import SwiftUI
 /// know about journal persistence, queueing, or feedback rendering.
 struct FlowConfirmationAlertsModifier: ViewModifier {
   @ObservedObject var flowCoordinator: FlowCoordinator
-  let onPrimarySubmit: () async -> Void
-  let onSecondarySubmit: () async -> Void
+  let onPrimarySubmit: @MainActor () async -> Void
+  let onSecondarySubmit: @MainActor () async -> Void
 
   func body(content: Content) -> some View {
     content
       .alert(
         "Primary emotion selected",
-        isPresented: presenter(for: .confirmingPrimary)
+        isPresented: Self.presenter(for: .confirmingPrimary, coordinator: flowCoordinator)
       ) {
         Button("Add Secondary Emotion") { flowCoordinator.promptForSecondary() }
         Button("Add Strategy") { flowCoordinator.promptForStrategy() }
+        // Known race deferred to the Phase 2b coordinator-owned submit: a
+        // swipe-dismiss right after Done lets the presenter binding fire
+        // cancel() alongside the still-running submit Task.
         Button("Done") { Task { await onPrimarySubmit() } }
         Button("Cancel", role: .cancel) { flowCoordinator.cancel() }
       } message: {
@@ -30,12 +33,13 @@ struct FlowConfirmationAlertsModifier: ViewModifier {
       }
       .alert(
         "Secondary emotion selected",
-        isPresented: presenter(for: .confirmingSecondary)
+        isPresented: Self.presenter(for: .confirmingSecondary, coordinator: flowCoordinator)
       ) {
         Button("Add Strategy") { flowCoordinator.promptForStrategy() }
         Button("Done") { Task { await onSecondarySubmit() } }
         Button("Cancel", role: .cancel) { flowCoordinator.cancel() }
       } message: {
+        // A nil secondary is the legitimate "user skipped it" path, not a bug.
         if let secondary = flowCoordinator.selections.secondary {
           Text("You selected \"\(secondary.expression)\". What would you like to do next?")
         } else {
@@ -44,11 +48,12 @@ struct FlowConfirmationAlertsModifier: ViewModifier {
       }
       .alert(
         "Strategy selected",
-        isPresented: presenter(for: .confirmingStrategy)
+        isPresented: Self.presenter(for: .confirmingStrategy, coordinator: flowCoordinator)
       ) {
         Button("Continue to Review") { flowCoordinator.showReview() }
         Button("Cancel", role: .cancel) { flowCoordinator.cancel() }
       } message: {
+        // A nil strategy is the legitimate "user skipped it" path, not a bug.
         if let strategy = flowCoordinator.selections.strategy {
           Text("You selected \"\(strategy.strategy)\". Continue to review?")
         } else {
@@ -64,12 +69,18 @@ struct FlowConfirmationAlertsModifier: ViewModifier {
   /// implicit cancel — without this, `.constant()` would silently ignore
   /// the system dismissal and the alert would immediately re-present
   /// because `currentStep == step` is still true.
-  private func presenter(for step: FlowCoordinator.FlowStep) -> Binding<Bool> {
+  ///
+  /// `static` taking an explicit `coordinator` so the binding's get/set
+  /// contract is unit-testable without rendering the modifier.
+  static func presenter(
+    for step: FlowCoordinator.FlowStep,
+    coordinator: FlowCoordinator
+  ) -> Binding<Bool> {
     Binding(
-      get: { flowCoordinator.currentStep == step },
+      get: { coordinator.currentStep == step },
       set: { isPresented in
-        if !isPresented, flowCoordinator.currentStep == step {
-          flowCoordinator.cancel()
+        if !isPresented, coordinator.currentStep == step {
+          coordinator.cancel()
         }
       }
     )
@@ -81,8 +92,8 @@ extension View {
   /// See `FlowConfirmationAlertsModifier` for the per-alert contract.
   func flowConfirmationAlerts(
     flowCoordinator: FlowCoordinator,
-    onPrimarySubmit: @escaping () async -> Void,
-    onSecondarySubmit: @escaping () async -> Void
+    onPrimarySubmit: @escaping @MainActor () async -> Void,
+    onSecondarySubmit: @escaping @MainActor () async -> Void
   ) -> some View {
     modifier(FlowConfirmationAlertsModifier(
       flowCoordinator: flowCoordinator,
