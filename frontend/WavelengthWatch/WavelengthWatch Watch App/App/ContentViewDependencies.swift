@@ -33,14 +33,9 @@ struct ContentViewDependencies {
   let journalClient: JournalClientProtocol
   let journalRepository: JournalRepositoryProtocol
   let catalogRepository: CatalogRepositoryProtocol
-  /// Persisted layer index (full-array, zero-indexed). Unpacked into
-  /// `ContentView.layerSelection` as-is.
-  let initialLayer: Int
-
-  /// SwiftUI tab-model index for the inner phase scroller. Already
-  /// includes the +1 offset that the infinite-scroll TabView expects;
-  /// `init(dependencies:)` unpacks this directly with no arithmetic.
-  let initialPhaseSelection: Int
+  /// Owns the dual-axis navigation selection and its reconciliation with
+  /// `viewModel`; `ContentView` holds it as its single navigation state.
+  let navigationViewModel: NavigationViewModel
 
   private static let logger = Logger(
     subsystem: "com.wavelengthwatch.watch",
@@ -93,6 +88,13 @@ struct ContentViewDependencies {
     )
     let flowCoordinator = FlowCoordinator(contentViewModel: viewModel)
     let syncSettingsViewModel = SyncSettingsViewModel(syncSettings: syncSettings)
+    let navigationViewModel = NavigationViewModel(
+      contentViewModel: viewModel,
+      initialLayer: initialLayer,
+      // +1: the infinite-scroll TabView treats index 0 as a "lead-in"
+      // page; ContentViewModel holds the canonical zero-indexed phase.
+      initialPhaseSelection: storedPhase + 1
+    )
     return ContentViewDependencies(
       viewModel: viewModel,
       flowCoordinator: flowCoordinator,
@@ -104,11 +106,7 @@ struct ContentViewDependencies {
       journalClient: journalClient,
       journalRepository: journalRepository,
       catalogRepository: catalogRepository,
-      initialLayer: initialLayer,
-      // +1: the infinite-scroll TabView treats index 0 as a "lead-in"
-      // page; the canonical zero-indexed phase value lives in
-      // ContentViewModel and is converted here for SwiftUI's tab model.
-      initialPhaseSelection: storedPhase + 1
+      navigationViewModel: navigationViewModel
     )
   }
 
