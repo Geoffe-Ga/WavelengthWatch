@@ -197,6 +197,23 @@ struct NavigationViewModelTests {
     #expect(nav.phaseSelection == 5)
   }
 
+  @Test("a phaseSelection write round-trips back to the same offset")
+  func phaseSelection_roundTripsThroughModel() {
+    let viewModel = makeViewModel()
+    viewModel.phaseOrder = sixPhases
+    let nav = NavigationViewModel(
+      contentViewModel: viewModel,
+      initialLayer: 0,
+      initialPhaseSelection: 1,
+      userDefaults: freshDefaults()
+    )
+
+    nav.phaseSelection = 4
+    nav.modelPhaseIndexChanged()
+
+    #expect(nav.phaseSelection == 4)
+  }
+
   // MARK: - Path 1: phaseOrder change re-normalizes a stale offset
 
   @Test("a phaseOrder change re-normalizes a stale sentinel offset")
@@ -213,6 +230,21 @@ struct NavigationViewModelTests {
     nav.phaseOrderChanged()
 
     #expect(nav.phaseSelection == 1)
+  }
+
+  @Test("a phaseOrder change is a no-op when phaseOrder is empty")
+  func phaseOrderChanged_emptyPhaseOrder_isNoOp() {
+    let viewModel = makeViewModel() // phaseOrder defaults to []
+    let nav = NavigationViewModel(
+      contentViewModel: viewModel,
+      initialLayer: 0,
+      initialPhaseSelection: 7,
+      userDefaults: freshDefaults()
+    )
+
+    nav.phaseOrderChanged()
+
+    #expect(nav.phaseSelection == 7)
   }
 
   // MARK: - Round-trip

@@ -147,7 +147,9 @@ final class NavigationViewModel: ObservableObject {
           let filteredIndex = contentViewModel.layerIdToFilteredIndex(layerId)
     else {
       // Either no layer is selected, or the selected layer fell out of the
-      // filtered set — clamp the index into the new filtered range.
+      // filtered set — clamp the index into the new filtered range. The
+      // assignment cascades through `didSet` → `layerSelectionChanged()`,
+      // which reconciles `selectedLayerId` once this returns.
       let maxIndex = max(0, contentViewModel.filteredLayers.count - 1)
       if layerSelection > maxIndex {
         layerSelection = maxIndex
