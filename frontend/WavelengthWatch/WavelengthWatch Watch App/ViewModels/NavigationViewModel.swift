@@ -101,6 +101,11 @@ final class NavigationViewModel: ObservableObject {
   /// are normalized virtually here; `phaseSelection` itself is corrected
   /// by `modelPhaseIndexChanged()` on the resulting model change, so this
   /// never mutates `phaseSelection` inside its own `didSet`.
+  ///
+  /// Because that correction arrives one async hop later (via the Combine
+  /// sink → `Task`), SwiftUI may briefly render the sentinel page before
+  /// it snaps to the wrapped phase. This is imperceptible on device; the
+  /// old `NavigationSyncModifier` corrected it synchronously.
   func phaseSelectionChanged() {
     guard !contentViewModel.phaseOrder.isEmpty else { return }
     let count = contentViewModel.phaseOrder.count

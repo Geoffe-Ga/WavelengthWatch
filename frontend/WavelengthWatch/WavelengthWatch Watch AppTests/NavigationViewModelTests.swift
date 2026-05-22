@@ -71,6 +71,25 @@ struct NavigationViewModelTests {
     #expect(nav.layerSelection == 1)
   }
 
+  @Test("a nil layer ID leaves layerSelection untouched")
+  func modelLayerIdChanged_nilLayerId_isNoOp() {
+    let viewModel = makeViewModel()
+    viewModel.layers = [makeLayer(0), makeLayer(1), makeLayer(2)]
+    let nav = NavigationViewModel(
+      contentViewModel: viewModel,
+      initialLayer: 1,
+      initialPhaseSelection: 1,
+      userDefaults: freshDefaults()
+    )
+
+    // Valid before the catalog finishes loading; the guard must early-exit
+    // rather than derive an index from a missing ID.
+    viewModel.selectedLayerId = nil
+    nav.modelLayerIdChanged()
+
+    #expect(nav.layerSelection == 1)
+  }
+
   // MARK: - Path 4: filter-mode change re-derives the filtered index (#180)
 
   @Test("a filter-mode change re-derives the filtered index for the selected layer")
@@ -119,7 +138,10 @@ struct NavigationViewModelTests {
       initialPhaseSelection: 1,
       userDefaults: freshDefaults()
     )
-    viewModel.selectedLayerId = 1 // an emotion layer
+    // Layer categorization is purely ID-based (`LayerFilterMode.filter`):
+    // id 0 is the strategies layer, ids >= 1 are emotion layers. So id 1
+    // belongs to `.emotionsOnly` and is dropped by `.strategiesOnly`.
+    viewModel.selectedLayerId = 1
 
     viewModel.layerFilterMode = .strategiesOnly // [0]; layer 1 is filtered out
     nav.filterModeChanged()
