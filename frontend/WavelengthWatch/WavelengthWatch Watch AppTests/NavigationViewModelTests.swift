@@ -109,6 +109,24 @@ struct NavigationViewModelTests {
     #expect(nav.layerSelection == 0)
   }
 
+  @Test("a filter-mode change clamps when the selected layer is filtered out")
+  func filterModeChanged_clampsWhenLayerFilteredOut() {
+    let viewModel = makeViewModel()
+    viewModel.layers = [makeLayer(0), makeLayer(1), makeLayer(2)]
+    let nav = NavigationViewModel(
+      contentViewModel: viewModel,
+      initialLayer: 2,
+      initialPhaseSelection: 1,
+      userDefaults: freshDefaults()
+    )
+    viewModel.selectedLayerId = 1 // an emotion layer
+
+    viewModel.layerFilterMode = .strategiesOnly // [0]; layer 1 is filtered out
+    nav.filterModeChanged()
+
+    #expect(nav.layerSelection == 0)
+  }
+
   // MARK: - Path 5: phaseSelection → model
 
   @Test("a phaseSelection change normalizes the offset and writes the model + AppStorage")
@@ -127,6 +145,21 @@ struct NavigationViewModelTests {
 
     #expect(viewModel.selectedPhaseIndex == 2)
     #expect(defaults.integer(forKey: AppStorageKeys.selectedPhaseIndex) == 2)
+  }
+
+  @Test("a phaseSelection change is a no-op when phaseOrder is empty")
+  func phaseSelectionChanged_emptyPhaseOrder_isNoOp() {
+    let viewModel = makeViewModel() // phaseOrder defaults to []
+    let nav = NavigationViewModel(
+      contentViewModel: viewModel,
+      initialLayer: 0,
+      initialPhaseSelection: 1,
+      userDefaults: freshDefaults()
+    )
+
+    nav.phaseSelection = 3
+
+    #expect(viewModel.selectedPhaseIndex == 0)
   }
 
   @Test("a sentinel phaseSelection wraps to the opposite-end phase index")

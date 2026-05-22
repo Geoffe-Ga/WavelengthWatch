@@ -79,6 +79,10 @@ final class NavigationViewModel: ObservableObject {
       .store(in: &cancellables)
   }
 
+  // The six reconciliation handlers below are `internal` (not `private`)
+  // so `NavigationViewModelTests` can drive each path directly and
+  // synchronously; they are not meant to be called from elsewhere.
+
   // MARK: - View → model
 
   /// A new filtered index resolves to a layer ID; mirror it into the
@@ -102,6 +106,8 @@ final class NavigationViewModel: ObservableObject {
     let count = contentViewModel.phaseOrder.count
     let adjusted = PhaseNavigator.adjustedSelection(phaseSelection, phaseCount: count)
     let normalized = PhaseNavigator.normalizedIndex(adjusted, phaseCount: count)
+    // phaseSelection is intentionally not corrected here; a sentinel page
+    // is fixed by modelPhaseIndexChanged() once this model write settles.
     contentViewModel.selectedPhaseIndex = normalized
     userDefaults.set(normalized, forKey: AppStorageKeys.selectedPhaseIndex)
   }
@@ -140,6 +146,8 @@ final class NavigationViewModel: ObservableObject {
     guard let layerId = contentViewModel.selectedLayerId,
           let filteredIndex = contentViewModel.layerIdToFilteredIndex(layerId)
     else {
+      // Either no layer is selected, or the selected layer fell out of the
+      // filtered set — clamp the index into the new filtered range.
       let maxIndex = max(0, contentViewModel.filteredLayers.count - 1)
       if layerSelection > maxIndex {
         layerSelection = maxIndex
