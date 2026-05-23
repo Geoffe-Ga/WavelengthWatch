@@ -1,8 +1,6 @@
 import SwiftUI
 
 struct ContentView: View {
-  @AppStorage(AppStorageKeys.selectedLayerIndex) private var storedLayerIndex = 0
-  @AppStorage(AppStorageKeys.selectedPhaseIndex) private var storedPhaseIndex = 0
   @StateObject private var viewModel: ContentViewModel
   @StateObject private var flowCoordinator: FlowCoordinator
   @StateObject private var syncSettingsViewModel: SyncSettingsViewModel
@@ -13,8 +11,7 @@ struct ContentView: View {
   let journalClient: JournalClientProtocol
   let journalRepository: JournalRepositoryProtocol
   let catalogRepository: CatalogRepositoryProtocol
-  @State private var layerSelection: Int
-  @State private var phaseSelection: Int
+  @StateObject private var navigationViewModel: NavigationViewModel
   @State private var showingMenu = false
   @State private var showingOnboarding = false
   @State private var isShowingDetailView = false
@@ -37,8 +34,7 @@ struct ContentView: View {
     _networkMonitor = StateObject(wrappedValue: dependencies.networkMonitor)
     _journalQueue = StateObject(wrappedValue: dependencies.journalQueue)
     _syncService = StateObject(wrappedValue: dependencies.syncService)
-    _layerSelection = State(initialValue: dependencies.initialLayer)
-    _phaseSelection = State(initialValue: dependencies.initialPhaseSelection)
+    _navigationViewModel = StateObject(wrappedValue: dependencies.navigationViewModel)
   }
 
   /// Submits the current FlowCoordinator entry and renders the appropriate
@@ -118,8 +114,8 @@ struct ContentView: View {
     }
   }
 
-  /// Adds lifecycle hooks and routes navigation-state synchronization
-  /// through `NavigationSyncModifier`.
+  /// Adds lifecycle hooks. Navigation-state reconciliation now lives in
+  /// `navigationViewModel`, which observes `viewModel` directly.
   private var contentWithEvents: some View {
     contentZStack
       .ignoresSafeArea(edges: .bottom)
@@ -133,13 +129,6 @@ struct ContentView: View {
       .onChange(of: syncService.syncStatus) { _, newValue in
         viewModel.handleSyncStatusChange(newValue, totalPending: journalQueue.pendingCount)
       }
-      .navigationSync(
-        viewModel: viewModel,
-        layerSelection: $layerSelection,
-        phaseSelection: $phaseSelection,
-        storedLayerIndex: $storedLayerIndex,
-        storedPhaseIndex: $storedPhaseIndex
-      )
   }
 
   /// Adds the alert presentations, sheet stack, and onboarding-check task.
@@ -181,8 +170,8 @@ struct ContentView: View {
   private var layeredContent: some View {
     LayerScrollView(
       viewModel: viewModel,
-      layerSelection: $layerSelection,
-      phaseSelection: $phaseSelection
+      layerSelection: $navigationViewModel.layerSelection,
+      phaseSelection: $navigationViewModel.phaseSelection
     )
   }
 }
