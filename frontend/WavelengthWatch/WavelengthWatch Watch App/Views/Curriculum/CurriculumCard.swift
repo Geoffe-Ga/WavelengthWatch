@@ -16,7 +16,7 @@ struct CurriculumCard: View {
         Text(title)
           .font(.caption)
           .fontWeight(.medium)
-          .foregroundColor(.white.opacity(0.7))
+          .foregroundColor(WLColorTokens.secondaryText)
           .tracking(1.5)
 
         Text(expression)
