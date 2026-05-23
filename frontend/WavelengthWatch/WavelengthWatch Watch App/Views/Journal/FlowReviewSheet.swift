@@ -135,7 +135,7 @@ struct FlowReviewSheet: View {
     .padding(12)
     .background(
       RoundedRectangle(cornerRadius: 8)
-        .fill(Color.secondary.opacity(0.15))
+        .fill(WLColorTokens.cardFill)
     )
   }
 
@@ -160,7 +160,7 @@ struct FlowReviewSheet: View {
     }
     .padding(.vertical, 12)
     .padding(.horizontal, 16)
-    .background(Color.secondary.opacity(0.1))
+    .background(WLColorTokens.elevatedCardFill)
     .cornerRadius(10)
   }
 
