@@ -57,6 +57,13 @@ final class NavigationViewModel: ObservableObject {
   /// Combine replays on subscribe; each handler is dispatched onto a
   /// fresh main-actor `Task` so it runs *after* the model property — and
   /// any `didSet` it triggers — has fully settled.
+  ///
+  /// The `Task` gap is also a small window where a user swipe could
+  /// race the reconciliation: the publisher fires, the user moves the
+  /// selection, then the Task overwrites it. Each handler's equality
+  /// guard (`if layerSelection != filteredIndex`, etc.) keeps this race
+  /// from clobbering an unrelated user move — it only writes when the
+  /// view-side value still disagrees with the model's intent.
   private func observeModel() {
     contentViewModel.$phaseOrder
       .dropFirst()
@@ -104,10 +111,11 @@ final class NavigationViewModel: ObservableObject {
   /// Normalize the infinite-scroll offset to a canonical zero-based phase
   /// index and write it to the model + persistence. A sentinel page is
   /// corrected eagerly here, matching the synchronous behavior of the old
-  /// `NavigationSyncModifier`: the write to `phaseSelection` re-enters
-  /// this `didSet` once with the wrapped value, and the `return` exits
-  /// the sentinel-frame invocation before any model write happens — so
-  /// SwiftUI never renders the sentinel page.
+  /// `NavigationSyncModifier`. The write to `phaseSelection = adjusted`
+  /// triggers a second `didSet` invocation with the now-valid page; the
+  /// `return` below exits *this* (sentinel) invocation so the second one
+  /// falls through to normalize and persist — and SwiftUI never renders
+  /// the sentinel frame.
   func phaseSelectionChanged() {
     guard !contentViewModel.phaseOrder.isEmpty else { return }
     let count = contentViewModel.phaseOrder.count

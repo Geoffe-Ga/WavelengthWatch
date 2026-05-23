@@ -51,6 +51,26 @@ struct NavigationViewModelTests {
     #expect(defaults.integer(forKey: AppStorageKeys.selectedLayerIndex) == 2)
   }
 
+  @Test("layerSelectionChanged is a no-op when the resolved layer ID is already selected")
+  func layerSelectionChanged_sameLayerId_isNoOp() {
+    let viewModel = makeViewModel()
+    viewModel.layers = [makeLayer(0), makeLayer(1), makeLayer(2)]
+    viewModel.selectedLayerId = 2
+    let defaults = freshDefaults()
+    let nav = NavigationViewModel(
+      contentViewModel: viewModel,
+      initialLayer: 2,
+      initialPhaseSelection: 1,
+      userDefaults: defaults
+    )
+
+    // No value change — didSet fires but the equality guard should
+    // short-circuit before any model or UserDefaults write.
+    nav.layerSelectionChanged()
+
+    #expect(defaults.object(forKey: AppStorageKeys.selectedLayerIndex) == nil)
+  }
+
   // MARK: - Path 3: model layer ID → layerSelection
 
   @Test("an externally-set layer ID is mirrored into the filtered index")
