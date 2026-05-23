@@ -25,7 +25,7 @@ struct ClearLightEmotionCard: View {
 
           Text(emotion.layerTitle)
             .font(.caption2)
-            .foregroundColor(.white.opacity(0.5))
+            .foregroundColor(WLColorTokens.tertiaryText)
         }
 
         Spacer()

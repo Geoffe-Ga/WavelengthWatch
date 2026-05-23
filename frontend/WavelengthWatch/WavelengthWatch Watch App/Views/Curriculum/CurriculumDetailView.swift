@@ -78,7 +78,7 @@ struct CurriculumDetailView: View {
             VStack(alignment: .leading, spacing: 12) {
               Text("MEDICINAL")
                 .font(.caption)
-                .foregroundColor(.white.opacity(0.7))
+                .foregroundColor(WLColorTokens.secondaryText)
                 .tracking(1.5)
                 .padding(.horizontal, 16)
 
@@ -96,7 +96,7 @@ struct CurriculumDetailView: View {
             VStack(alignment: .leading, spacing: 12) {
               Text("TOXIC")
                 .font(.caption)
-                .foregroundColor(.white.opacity(0.7))
+                .foregroundColor(WLColorTokens.secondaryText)
                 .tracking(1.5)
                 .padding(.horizontal, 16)
 
@@ -143,7 +143,7 @@ struct CurriculumDetailView: View {
             VStack(alignment: .leading, spacing: 12) {
               Text("STRATEGIES")
                 .font(.caption)
-                .foregroundColor(.white.opacity(0.7))
+                .foregroundColor(WLColorTokens.secondaryText)
                 .tracking(1.5)
               ForEach(phase.strategies) { strategy in
                 StrategyCard(
