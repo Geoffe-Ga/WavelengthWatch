@@ -62,7 +62,7 @@ struct JournalReviewView: View {
         .padding(.vertical, 8)
         .padding(.horizontal, 12)
         .frame(maxWidth: .infinity)
-        .background(Color.secondary.opacity(0.1))
+        .background(WLColorTokens.elevatedCardFill)
         .cornerRadius(8)
 
         Divider()
@@ -186,7 +186,7 @@ struct JournalReviewView: View {
     }
     .padding(.vertical, 12)
     .padding(.horizontal, 16)
-    .background(Color.secondary.opacity(0.1))
+    .background(WLColorTokens.elevatedCardFill)
     .cornerRadius(10)
   }
 
@@ -212,7 +212,7 @@ struct JournalReviewView: View {
     }
     .padding(.vertical, 12)
     .padding(.horizontal, 16)
-    .background(Color.secondary.opacity(0.1))
+    .background(WLColorTokens.elevatedCardFill)
     .cornerRadius(10)
   }
 
