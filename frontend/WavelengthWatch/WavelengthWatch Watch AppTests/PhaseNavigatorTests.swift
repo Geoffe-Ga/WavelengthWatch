@@ -28,17 +28,20 @@ struct PhaseNavigatorTests {
 
   @Test("a single-phase order wraps both sentinels back to the only page")
   func adjustedSelection_phaseCount1_collapsesToSinglePage() {
+    // Real-page pass-through at phaseCount: 1 is covered by the contract
+    // pinned in adjustedSelection_realPages_passThrough; this test focuses
+    // strictly on the sentinel wrap.
     #expect(PhaseNavigator.adjustedSelection(0, phaseCount: 1) == 1)
     #expect(PhaseNavigator.adjustedSelection(2, phaseCount: 1) == 1)
-    #expect(PhaseNavigator.adjustedSelection(1, phaseCount: 1) == 1)
   }
 
   // MARK: - normalizedIndex: sentinel and real-page mapping
 
   @Test("real pages 1...phaseCount map to indices 0...phaseCount - 1")
   func normalizedIndex_realPages_mapZeroBased() {
-    #expect(PhaseNavigator.normalizedIndex(1, phaseCount: 6) == 0)
-    #expect(PhaseNavigator.normalizedIndex(6, phaseCount: 6) == 5)
+    for page in 1 ... 6 {
+      #expect(PhaseNavigator.normalizedIndex(page, phaseCount: 6) == page - 1)
+    }
   }
 
   @Test("leading sentinel (0) normalizes directly to the last index")
