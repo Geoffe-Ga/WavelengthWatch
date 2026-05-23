@@ -7,6 +7,10 @@ import Foundation
 /// extra page on either end so the user can move from the first phase
 /// to the last (and vice‑versa) without interruption. These helpers
 /// manage the bookkeeping for that behaviour.
+///
+/// - Precondition: `phaseCount >= 1`. The modulo math in
+///   `normalizedIndex(_:phaseCount:)` traps on `% 0`; callers (today
+///   `NavigationViewModel`) are responsible for the empty-order guard.
 enum PhaseNavigator {
   /// Returns a selection value confined to the valid range of pages.
   ///
