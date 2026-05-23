@@ -26,12 +26,12 @@ struct PhaseNavigatorTests {
     }
   }
 
-  @Test("a single-phase order wraps both sentinels back to the only page")
+  @Test("a single-phase order maps both sentinels and the only page to 1")
   func adjustedSelection_phaseCount1_collapsesToSinglePage() {
-    // Real-page pass-through at phaseCount: 1 is covered by the contract
-    // pinned in adjustedSelection_realPages_passThrough; this test focuses
-    // strictly on the sentinel wrap.
+    // The pass-through test only iterates phaseCount: 6, so the real-page
+    // case at phaseCount: 1 lives here alongside the sentinel wrap.
     #expect(PhaseNavigator.adjustedSelection(0, phaseCount: 1) == 1)
+    #expect(PhaseNavigator.adjustedSelection(1, phaseCount: 1) == 1)
     #expect(PhaseNavigator.adjustedSelection(2, phaseCount: 1) == 1)
   }
 
@@ -46,9 +46,7 @@ struct PhaseNavigatorTests {
 
   @Test("leading sentinel (0) normalizes directly to the last index")
   func normalizedIndex_leadingSentinel_mapsToLastIndex() {
-    // Equivalent to `normalizedIndex(adjustedSelection(0, 6), 6)` — the
-    // modulo math wraps in a single step, so adjustedSelection is not a
-    // prerequisite for normalizedIndex to handle a sentinel.
+    // Modulo wraps in one step — adjustedSelection is not required first.
     #expect(PhaseNavigator.normalizedIndex(0, phaseCount: 6) == 5)
   }
 
@@ -57,10 +55,13 @@ struct PhaseNavigatorTests {
     #expect(PhaseNavigator.normalizedIndex(7, phaseCount: 6) == 0)
   }
 
-  @Test("a single-phase order normalizes every real page to index 0")
-  func normalizedIndex_phaseCount1_alwaysReturnsZero() {
+  @Test("a single-phase order normalizes the only real page to index 0")
+  func normalizedIndex_phaseCount1_realPage_returnsZero() {
     #expect(PhaseNavigator.normalizedIndex(1, phaseCount: 1) == 0)
-    // And the sentinels too — both wrap to the only index.
+  }
+
+  @Test("a single-phase order normalizes both sentinels to index 0")
+  func normalizedIndex_phaseCount1_sentinels_returnZero() {
     #expect(PhaseNavigator.normalizedIndex(0, phaseCount: 1) == 0)
     #expect(PhaseNavigator.normalizedIndex(2, phaseCount: 1) == 0)
   }
