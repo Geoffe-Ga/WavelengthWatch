@@ -201,6 +201,9 @@ struct NavigationViewModelTests {
 
     nav.phaseSelection = 3
 
+    // View-side value is left as the user set it; only the model write
+    // is suppressed. The early-return path must not eagerly clamp.
+    #expect(nav.phaseSelection == 3)
     #expect(viewModel.selectedPhaseIndex == 0)
   }
 
