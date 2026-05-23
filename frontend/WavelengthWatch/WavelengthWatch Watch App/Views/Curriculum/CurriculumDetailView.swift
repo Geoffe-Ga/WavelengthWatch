@@ -159,13 +159,7 @@ struct CurriculumDetailView: View {
       }
       .padding(.vertical, 16)
     }
-    .background(
-      LinearGradient(
-        gradient: Gradient(colors: [Color.black, Color.black.opacity(0.8)]),
-        startPoint: .top,
-        endPoint: .bottom
-      )
-    )
+    .background(WLColorTokens.pageBackground())
     .onAppear {
       isShowingDetailView.wrappedValue = true
       // Cache aggregated emotions once for Clear Light (avoids re-computation on every render)
