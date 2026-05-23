@@ -84,13 +84,7 @@ struct StrategyListView: View {
       }
       .padding(.vertical, 16)
     }
-    .background(
-      LinearGradient(
-        gradient: Gradient(colors: [Color.black, Color.black.opacity(0.8)]),
-        startPoint: .top,
-        endPoint: .bottom
-      )
-    )
+    .background(WLColorTokens.pageBackground())
     .alert("Log Strategy", isPresented: $showingJournalConfirmation) {
       Button("Yes") {
         handleLogAction()
