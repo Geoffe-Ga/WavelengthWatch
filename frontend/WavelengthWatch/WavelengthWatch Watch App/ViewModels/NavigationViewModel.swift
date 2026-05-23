@@ -86,9 +86,14 @@ final class NavigationViewModel: ObservableObject {
   // MARK: - View → model
 
   /// A new filtered index resolves to a layer ID; mirror it into the
-  /// model's ID + full-array index and persist the latter.
+  /// model's ID + full-array index and persist the latter. Skipped if the
+  /// resolved ID is already the model's selection — avoids redundant
+  /// `UserDefaults` writes and matches the equality-guard pattern used by
+  /// the four model→view handlers.
   func layerSelectionChanged() {
-    guard let layerId = contentViewModel.filteredIndexToLayerId(layerSelection) else { return }
+    guard let layerId = contentViewModel.filteredIndexToLayerId(layerSelection),
+          contentViewModel.selectedLayerId != layerId
+    else { return }
     contentViewModel.selectedLayerId = layerId
     if let fullIndex = contentViewModel.layerIdToIndex(layerId) {
       contentViewModel.selectedLayerIndex = fullIndex
@@ -97,22 +102,21 @@ final class NavigationViewModel: ObservableObject {
   }
 
   /// Normalize the infinite-scroll offset to a canonical zero-based phase
-  /// index and write it to the model + persistence. The sentinel pages
-  /// are normalized virtually here; `phaseSelection` itself is corrected
-  /// by `modelPhaseIndexChanged()` on the resulting model change, so this
-  /// never mutates `phaseSelection` inside its own `didSet`.
-  ///
-  /// Because that correction arrives one async hop later (via the Combine
-  /// sink → `Task`), SwiftUI may briefly render the sentinel page before
-  /// it snaps to the wrapped phase. This is imperceptible on device; the
-  /// old `NavigationSyncModifier` corrected it synchronously.
+  /// index and write it to the model + persistence. A sentinel page is
+  /// corrected eagerly here, matching the synchronous behavior of the old
+  /// `NavigationSyncModifier`: the write to `phaseSelection` re-enters
+  /// this `didSet` once with the wrapped value, and the `return` exits
+  /// the sentinel-frame invocation before any model write happens — so
+  /// SwiftUI never renders the sentinel page.
   func phaseSelectionChanged() {
     guard !contentViewModel.phaseOrder.isEmpty else { return }
     let count = contentViewModel.phaseOrder.count
     let adjusted = PhaseNavigator.adjustedSelection(phaseSelection, phaseCount: count)
+    if adjusted != phaseSelection {
+      phaseSelection = adjusted
+      return
+    }
     let normalized = PhaseNavigator.normalizedIndex(adjusted, phaseCount: count)
-    // phaseSelection is intentionally not corrected here; a sentinel page
-    // is fixed by modelPhaseIndexChanged() once this model write settles.
     contentViewModel.selectedPhaseIndex = normalized
     userDefaults.set(normalized, forKey: AppStorageKeys.selectedPhaseIndex)
   }

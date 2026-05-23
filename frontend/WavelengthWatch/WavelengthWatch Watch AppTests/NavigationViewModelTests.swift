@@ -184,7 +184,7 @@ struct NavigationViewModelTests {
     #expect(viewModel.selectedPhaseIndex == 0)
   }
 
-  @Test("a sentinel phaseSelection wraps to the opposite-end phase index")
+  @Test("a sentinel phaseSelection wraps eagerly and writes the snapped index")
   func phaseSelectionChanged_sentinelWraps() {
     let viewModel = makeViewModel()
     viewModel.phaseOrder = sixPhases
@@ -195,9 +195,29 @@ struct NavigationViewModelTests {
       userDefaults: freshDefaults()
     )
 
-    nav.phaseSelection = 0 // leading sentinel → wraps to last phase (index 5)
+    nav.phaseSelection = 0 // leading sentinel → wraps to last real page (6)
 
+    // Eager correction: phaseSelection is snapped synchronously inside the
+    // same didSet so SwiftUI never renders the sentinel frame.
+    #expect(nav.phaseSelection == 6)
     #expect(viewModel.selectedPhaseIndex == 5)
+  }
+
+  @Test("a trailing-sentinel phaseSelection wraps eagerly to the first real page")
+  func phaseSelectionChanged_trailingSentinelWraps() {
+    let viewModel = makeViewModel()
+    viewModel.phaseOrder = sixPhases
+    let nav = NavigationViewModel(
+      contentViewModel: viewModel,
+      initialLayer: 0,
+      initialPhaseSelection: 1,
+      userDefaults: freshDefaults()
+    )
+
+    nav.phaseSelection = 7 // trailing sentinel → wraps to first real page (1)
+
+    #expect(nav.phaseSelection == 1)
+    #expect(viewModel.selectedPhaseIndex == 0)
   }
 
   // MARK: - Path 6: model phase index → phaseSelection
