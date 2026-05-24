@@ -40,7 +40,7 @@ struct ScheduleSettingsView: View {
       } header: {
         Text("Journal Prompts")
           .font(.caption)
-          .foregroundColor(.white.opacity(0.7))
+          .foregroundColor(WLColorTokens.secondaryText)
       }
 
       Button {

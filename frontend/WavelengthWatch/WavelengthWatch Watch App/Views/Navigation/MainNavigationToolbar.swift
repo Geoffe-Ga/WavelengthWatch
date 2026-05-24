@@ -17,14 +17,14 @@ struct MainNavigationToolbar: ToolbarContent {
           Button(action: onBack) {
             Image(systemName: "chevron.left")
               .font(.system(size: UIConstants.menuButtonSize))
-              .foregroundColor(.white.opacity(0.7))
+              .foregroundColor(WLColorTokens.secondaryText)
           }
           .buttonStyle(.plain)
         } else {
           Button(action: onMenu) {
             Image(systemName: "ellipsis.circle")
               .font(.system(size: UIConstants.menuButtonSize))
-              .foregroundColor(.white.opacity(0.7))
+              .foregroundColor(WLColorTokens.secondaryText)
           }
           .buttonStyle(.plain)
         }

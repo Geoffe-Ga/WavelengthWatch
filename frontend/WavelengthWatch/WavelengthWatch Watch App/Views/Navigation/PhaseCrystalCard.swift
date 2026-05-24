@@ -61,7 +61,7 @@ struct PhaseCrystalCard: View {
       Text(layer.title)
         .font(.caption)
         .fontWeight(.medium)
-        .foregroundColor(.white.opacity(0.7))
+        .foregroundColor(WLColorTokens.secondaryText)
         .tracking(1.5)
         .textCase(.uppercase)
         .lineLimit(1)
@@ -69,7 +69,7 @@ struct PhaseCrystalCard: View {
 
       Text(layer.subtitle)
         .font(.caption2)
-        .foregroundColor(.white.opacity(0.5))
+        .foregroundColor(WLColorTokens.tertiaryText)
         .lineLimit(1)
         .minimumScaleFactor(0.8)
     }
