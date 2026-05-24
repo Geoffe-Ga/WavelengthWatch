@@ -27,7 +27,7 @@ struct StrategyCard: View {
       }
       .padding(8)
       .background(
-        RoundedRectangle(cornerRadius: 8)
+        RoundedRectangle(cornerRadius: WLSpacingTokens.cardCornerRadiusSmall)
           .fill(color.opacity(0.08))
       )
       .onTapGesture {

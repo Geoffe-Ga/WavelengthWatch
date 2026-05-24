@@ -134,7 +134,7 @@ struct FlowReviewSheet: View {
     .frame(maxWidth: .infinity, alignment: .leading)
     .padding(12)
     .background(
-      RoundedRectangle(cornerRadius: 8)
+      RoundedRectangle(cornerRadius: WLSpacingTokens.cardCornerRadiusSmall)
         .fill(WLColorTokens.cardFill)
     )
   }
