@@ -14,10 +14,10 @@ struct CurriculumCard: View {
     ZStack(alignment: .topTrailing) {
       VStack(alignment: .leading, spacing: 8) {
         Text(title)
-          .font(.caption)
-          .fontWeight(.medium)
+          .font(WLTypographyTokens.sectionHeader)
+          .fontWeight(WLTypographyTokens.sectionHeaderWeight)
           .foregroundColor(WLColorTokens.secondaryText)
-          .tracking(1.5)
+          .tracking(WLTypographyTokens.sectionHeaderTracking)
 
         Text(expression)
           .font(.body)

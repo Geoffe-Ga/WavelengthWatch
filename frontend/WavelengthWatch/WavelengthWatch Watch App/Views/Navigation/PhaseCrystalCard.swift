@@ -59,10 +59,10 @@ struct PhaseCrystalCard: View {
   private var layerContext: some View {
     VStack(spacing: 4 * scale) {
       Text(layer.title)
-        .font(.caption)
-        .fontWeight(.medium)
+        .font(WLTypographyTokens.sectionHeader)
+        .fontWeight(WLTypographyTokens.sectionHeaderWeight)
         .foregroundColor(WLColorTokens.secondaryText)
-        .tracking(1.5)
+        .tracking(WLTypographyTokens.sectionHeaderTracking)
         .textCase(.uppercase)
         .lineLimit(1)
         .minimumScaleFactor(0.8)
