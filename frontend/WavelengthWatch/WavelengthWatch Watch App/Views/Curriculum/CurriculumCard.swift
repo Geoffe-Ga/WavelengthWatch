@@ -30,13 +30,7 @@ struct CurriculumCard: View {
       .padding(.vertical, 12)
       .background(
         RoundedRectangle(cornerRadius: 12)
-          .fill(
-            LinearGradient(
-              gradient: Gradient(colors: [accent.opacity(0.3), accent.opacity(0.1)]),
-              startPoint: .topLeading,
-              endPoint: .bottomTrailing
-            )
-          )
+          .fill(WLColorTokens.cardGradient(accent))
           .overlay(
             RoundedRectangle(cornerRadius: 12)
               .stroke(accent.opacity(0.5), lineWidth: 0.5)
