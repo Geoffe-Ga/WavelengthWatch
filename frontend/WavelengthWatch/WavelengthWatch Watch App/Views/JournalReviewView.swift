@@ -43,7 +43,7 @@ struct JournalReviewView: View {
           .padding(.vertical, 12)
           .frame(maxWidth: .infinity)
           .background(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: WLSpacingTokens.cardCornerRadius)
               .fill(Color.purple.opacity(0.1))
           )
         }

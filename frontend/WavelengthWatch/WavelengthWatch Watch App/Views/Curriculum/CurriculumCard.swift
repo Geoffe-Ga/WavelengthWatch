@@ -29,10 +29,10 @@ struct CurriculumCard: View {
       .padding(.horizontal, 16)
       .padding(.vertical, 12)
       .background(
-        RoundedRectangle(cornerRadius: 12)
+        RoundedRectangle(cornerRadius: WLSpacingTokens.cardCornerRadius)
           .fill(WLColorTokens.cardGradient(accent))
           .overlay(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: WLSpacingTokens.cardCornerRadius)
               .stroke(accent.opacity(0.5), lineWidth: 0.5)
           )
       )

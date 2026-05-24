@@ -33,7 +33,7 @@ struct ClearLightEmotionCard: View {
       .padding(.horizontal, 16)
       .padding(.vertical, 10)
       .background(
-        RoundedRectangle(cornerRadius: 12)
+        RoundedRectangle(cornerRadius: WLSpacingTokens.cardCornerRadius)
           .fill(
             LinearGradient(
               gradient: Gradient(colors: [
@@ -45,7 +45,7 @@ struct ClearLightEmotionCard: View {
             )
           )
           .overlay(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: WLSpacingTokens.cardCornerRadius)
               .stroke(emotion.sourceColor.opacity(0.3), lineWidth: 0.5)
           )
       )

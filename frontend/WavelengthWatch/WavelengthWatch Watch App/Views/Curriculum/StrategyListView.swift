@@ -58,7 +58,7 @@ struct StrategyListView: View {
               .padding(.horizontal, 16)
               .padding(.vertical, 10)
               .background(
-                RoundedRectangle(cornerRadius: 8)
+                RoundedRectangle(cornerRadius: WLSpacingTokens.cardCornerRadiusSmall)
                   .fill(color.opacity(0.1))
               )
               .onTapGesture {

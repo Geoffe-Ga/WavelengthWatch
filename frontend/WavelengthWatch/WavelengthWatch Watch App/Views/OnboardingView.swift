@@ -137,10 +137,10 @@ struct OnboardingView: View {
       }
       .padding(12)
       .background(
-        RoundedRectangle(cornerRadius: 12)
+        RoundedRectangle(cornerRadius: WLSpacingTokens.cardCornerRadius)
           .fill(selectedMode == mode ? Color.accentColor.opacity(0.15) : Color.clear)
           .overlay(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: WLSpacingTokens.cardCornerRadius)
               .stroke(selectedMode == mode ? Color.accentColor : Color.secondary.opacity(0.3), lineWidth: 1)
           )
       )
