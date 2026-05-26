@@ -87,37 +87,10 @@ struct ContentView: View {
   // through intermediate `some View` properties — each return type erases
   // the upstream complexity, letting the checker rest.
 
-  /// Inner content — the ZStack only, no modifiers.
-  private var contentZStack: some View {
-    ZStack {
-      if viewModel.layers.isEmpty {
-        if viewModel.isLoading {
-          ProgressView("Loading curriculum…")
-            .foregroundStyle(.white)
-        } else if let error = viewModel.loadErrorMessage {
-          VStack(spacing: 12) {
-            Text(error)
-              .multilineTextAlignment(.center)
-            Button("Retry") {
-              Task { await viewModel.retry() }
-            }
-          }
-          .padding()
-        } else {
-          ProgressView("Loading curriculum…")
-        }
-      } else if viewModel.phaseOrder.isEmpty {
-        Text("No phase information available.")
-      } else {
-        layeredContent
-      }
-    }
-  }
-
   /// Adds lifecycle hooks. Navigation-state reconciliation now lives in
   /// `navigationViewModel`, which observes `viewModel` directly.
   private var contentWithEvents: some View {
-    contentZStack
+    MainContentStates(viewModel: viewModel, navigationViewModel: navigationViewModel)
       .ignoresSafeArea(edges: .bottom)
       .task { await viewModel.loadCatalog() }
       .task {
@@ -164,14 +137,6 @@ struct ContentView: View {
       isInFlow: flowCoordinator.currentStep != .idle,
       onBack: { flowCoordinator.cancel() },
       onMenu: { showingMenu = true }
-    )
-  }
-
-  private var layeredContent: some View {
-    LayerScrollView(
-      viewModel: viewModel,
-      layerSelection: $navigationViewModel.layerSelection,
-      phaseSelection: $navigationViewModel.phaseSelection
     )
   }
 }
