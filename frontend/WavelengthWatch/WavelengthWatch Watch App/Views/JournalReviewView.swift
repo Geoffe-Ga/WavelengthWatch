@@ -27,7 +27,6 @@ struct JournalReviewView: View {
           .fontWeight(.semibold)
           .padding(.top)
 
-        // Supportive message for REST entries
         if flowViewModel.entryType == .rest {
           JournalReviewRestHeader()
         }

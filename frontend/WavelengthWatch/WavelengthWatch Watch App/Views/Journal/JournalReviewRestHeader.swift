@@ -12,11 +12,11 @@ struct JournalReviewRestHeader: View {
     VStack(spacing: 8) {
       Image(systemName: "moon.zzz.fill")
         .font(.system(size: 36))
-        .foregroundColor(.purple.opacity(0.8))
+        .foregroundStyle(.purple.opacity(0.8))
 
       Text("Your natural rhythm may be asking you to rest")
         .font(.body)
-        .foregroundColor(.secondary)
+        .foregroundStyle(.secondary)
         .multilineTextAlignment(.center)
         .padding(.horizontal)
     }
