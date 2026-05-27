@@ -71,7 +71,7 @@ struct JournalReviewView: View {
         if flowViewModel.entryType == .emotion {
           // Primary emotion
           if let primary = flowViewModel.getPrimaryCurriculum() {
-            emotionCard(
+            JournalReviewEmotionCard(
               label: "Primary Emotion",
               expression: primary.expression,
               dosage: primary.dosage
@@ -80,7 +80,7 @@ struct JournalReviewView: View {
 
           // Secondary emotion (if selected)
           if let secondary = flowViewModel.getSecondaryCurriculum() {
-            emotionCard(
+            JournalReviewEmotionCard(
               label: "Secondary Emotion",
               expression: secondary.expression,
               dosage: secondary.dosage
@@ -89,7 +89,7 @@ struct JournalReviewView: View {
 
           // Strategy (if selected)
           if let strategy = flowViewModel.getStrategy() {
-            strategyCard(strategy: strategy)
+            JournalReviewStrategyCard(strategy: strategy)
           }
 
           Divider()
@@ -158,76 +158,6 @@ struct JournalReviewView: View {
 
   private var formattedTimestamp: String {
     Self.timestampFormatter.string(from: Date())
-  }
-
-  private func emotionCard(label: String, expression: String, dosage: CatalogDosage) -> some View {
-    VStack(alignment: .leading, spacing: 8) {
-      Text(label)
-        .font(.caption)
-        .foregroundColor(.secondary)
-        .textCase(.uppercase)
-
-      HStack {
-        Circle()
-          .fill(dosage == .medicinal ? Color.green : Color.red)
-          .frame(width: 10, height: 10)
-
-        Text(expression)
-          .font(.body)
-          .fontWeight(.medium)
-          .foregroundColor(.primary)
-
-        Spacer()
-
-        Text(dosage == .medicinal ? "Medicinal" : "Toxic")
-          .font(.caption)
-          .foregroundColor(.secondary)
-      }
-    }
-    .padding(.vertical, 12)
-    .padding(.horizontal, 16)
-    .background(WLColorTokens.elevatedCardFill)
-    .cornerRadius(10)
-  }
-
-  private func strategyCard(strategy: CatalogStrategyModel) -> some View {
-    VStack(alignment: .leading, spacing: 8) {
-      Text("Strategy")
-        .font(.caption)
-        .foregroundColor(.secondary)
-        .textCase(.uppercase)
-
-      HStack {
-        Circle()
-          .fill(colorForStrategy(strategy.color))
-          .frame(width: 10, height: 10)
-
-        Text(strategy.strategy)
-          .font(.body)
-          .fontWeight(.medium)
-          .foregroundColor(.primary)
-
-        Spacer()
-      }
-    }
-    .padding(.vertical, 12)
-    .padding(.horizontal, 16)
-    .background(WLColorTokens.elevatedCardFill)
-    .cornerRadius(10)
-  }
-
-  private func colorForStrategy(_ colorName: String) -> Color {
-    switch colorName.lowercased() {
-    case "blue": .blue
-    case "cyan": .cyan
-    case "green": .green
-    case "yellow": .yellow
-    case "orange": .orange
-    case "red": .red
-    case "purple": .purple
-    case "pink": .pink
-    default: .gray
-    }
   }
 
   private func submitEntry() {
