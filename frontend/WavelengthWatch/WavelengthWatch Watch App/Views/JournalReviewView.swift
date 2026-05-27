@@ -29,23 +29,7 @@ struct JournalReviewView: View {
 
         // Supportive message for REST entries
         if flowViewModel.entryType == .rest {
-          VStack(spacing: 8) {
-            Image(systemName: "moon.zzz.fill")
-              .font(.system(size: 36))
-              .foregroundColor(.purple.opacity(0.8))
-
-            Text("Your natural rhythm may be asking you to rest")
-              .font(.body)
-              .foregroundColor(.secondary)
-              .multilineTextAlignment(.center)
-              .padding(.horizontal)
-          }
-          .padding(.vertical, 12)
-          .frame(maxWidth: .infinity)
-          .background(
-            RoundedRectangle(cornerRadius: WLSpacingTokens.cardCornerRadius)
-              .fill(Color.purple.opacity(0.1))
-          )
+          JournalReviewRestHeader()
         }
 
         // Timestamp
