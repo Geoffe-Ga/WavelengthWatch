@@ -10,6 +10,13 @@ import UserNotifications
 
 @main
 struct WavelengthWatch_Watch_AppApp: App {
+  // MARK: - Dependency Ownership
+
+  //
+  // All app-wide ObservableObject ownership roots here so ContentView
+  // can stay a thin composition shell holding only its own @State and
+  // forwarding the dependencies into the view hierarchy.
+
   @StateObject private var notificationDelegate: NotificationDelegate = {
     let delegate = NotificationDelegate()
     // Register delegate immediately upon creation to avoid race condition
@@ -18,7 +25,30 @@ struct WavelengthWatch_Watch_AppApp: App {
     return delegate
   }()
 
+  @StateObject private var viewModel: ContentViewModel
+  @StateObject private var flowCoordinator: FlowCoordinator
+  @StateObject private var syncSettingsViewModel: SyncSettingsViewModel
+  @StateObject private var networkMonitor: NetworkMonitor
+  @StateObject private var journalQueue: JournalQueue
+  @StateObject private var syncService: JournalSyncService
+  @StateObject private var navigationViewModel: NavigationViewModel
+
+  private let journalClient: JournalClientProtocol
+  private let journalRepository: JournalRepositoryProtocol
+  private let catalogRepository: CatalogRepositoryProtocol
+
   init() {
+    let deps = ContentViewDependencies.live()
+    _viewModel = StateObject(wrappedValue: deps.viewModel)
+    _flowCoordinator = StateObject(wrappedValue: deps.flowCoordinator)
+    _syncSettingsViewModel = StateObject(wrappedValue: deps.syncSettingsViewModel)
+    _networkMonitor = StateObject(wrappedValue: deps.networkMonitor)
+    _journalQueue = StateObject(wrappedValue: deps.journalQueue)
+    _syncService = StateObject(wrappedValue: deps.syncService)
+    _navigationViewModel = StateObject(wrappedValue: deps.navigationViewModel)
+    self.journalClient = deps.journalClient
+    self.journalRepository = deps.journalRepository
+    self.catalogRepository = deps.catalogRepository
     configureNotificationCategories()
     configureTestMode()
   }
@@ -51,8 +81,19 @@ struct WavelengthWatch_Watch_AppApp: App {
 
   var body: some Scene {
     WindowGroup {
-      ContentView()
-        .environmentObject(notificationDelegate)
+      ContentView(
+        viewModel: viewModel,
+        flowCoordinator: flowCoordinator,
+        syncSettingsViewModel: syncSettingsViewModel,
+        networkMonitor: networkMonitor,
+        journalQueue: journalQueue,
+        syncService: syncService,
+        navigationViewModel: navigationViewModel,
+        journalClient: journalClient,
+        journalRepository: journalRepository,
+        catalogRepository: catalogRepository
+      )
+      .environmentObject(notificationDelegate)
     }
   }
 }
