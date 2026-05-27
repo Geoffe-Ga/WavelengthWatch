@@ -37,25 +37,8 @@ struct ContentView: View {
     _navigationViewModel = StateObject(wrappedValue: dependencies.navigationViewModel)
   }
 
-  /// Submits the current FlowCoordinator entry and renders the appropriate
-  /// feedback. Centralised so the two confirmation alerts (primary and
-  /// secondary) share identical queued/failure handling — the only thing
-  /// that varies is the failure copy.
-  @MainActor
-  private func submitFlowEntry(failurePrefix: String) async {
-    do {
-      try await flowCoordinator.submit()
-      flowCoordinator.reset()
-    } catch JournalError.queuedForRetry {
-      viewModel.journalFeedback = .init(
-        kind: .queued("Saved offline. Will sync automatically.")
-      )
-      flowCoordinator.reset()
-    } catch {
-      viewModel.journalFeedback = .init(
-        kind: .failure("\(failurePrefix): \(error.localizedDescription)")
-      )
-    }
+  private var flowSubmissionPresenter: FlowSubmissionPresenter {
+    FlowSubmissionPresenter(flowCoordinator: flowCoordinator, viewModel: viewModel)
   }
 
   var body: some View {
@@ -112,8 +95,8 @@ struct ContentView: View {
       }
       .flowConfirmationAlerts(
         flowCoordinator: flowCoordinator,
-        onPrimarySubmit: { await submitFlowEntry(failurePrefix: "Failed to log emotion") },
-        onSecondarySubmit: { await submitFlowEntry(failurePrefix: "Failed to log emotions") }
+        onPrimarySubmit: { await flowSubmissionPresenter.submit(failurePrefix: "Failed to log emotion") },
+        onSecondarySubmit: { await flowSubmissionPresenter.submit(failurePrefix: "Failed to log emotions") }
       )
       .mainContentDialogs(
         viewModel: viewModel,
