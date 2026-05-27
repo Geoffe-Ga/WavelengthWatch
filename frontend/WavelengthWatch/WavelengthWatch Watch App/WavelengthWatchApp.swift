@@ -82,17 +82,17 @@ struct WavelengthWatch_Watch_AppApp: App {
   var body: some Scene {
     WindowGroup {
       ContentView(
-        viewModel: viewModel,
-        flowCoordinator: flowCoordinator,
-        syncSettingsViewModel: syncSettingsViewModel,
-        networkMonitor: networkMonitor,
-        journalQueue: journalQueue,
-        syncService: syncService,
-        navigationViewModel: navigationViewModel,
         journalClient: journalClient,
         journalRepository: journalRepository,
         catalogRepository: catalogRepository
       )
+      .environmentObject(viewModel)
+      .environmentObject(flowCoordinator)
+      .environmentObject(syncSettingsViewModel)
+      .environmentObject(networkMonitor)
+      .environmentObject(journalQueue)
+      .environmentObject(syncService)
+      .environmentObject(navigationViewModel)
       .environmentObject(notificationDelegate)
     }
   }
