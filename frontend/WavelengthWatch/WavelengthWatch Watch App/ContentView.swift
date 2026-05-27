@@ -1,41 +1,21 @@
 import SwiftUI
 
 struct ContentView: View {
-  @StateObject private var viewModel: ContentViewModel
-  @StateObject private var flowCoordinator: FlowCoordinator
-  @StateObject private var syncSettingsViewModel: SyncSettingsViewModel
-  @StateObject private var networkMonitor: NetworkMonitor
-  @StateObject private var journalQueue: JournalQueue
-  @StateObject private var syncService: JournalSyncService
+  @ObservedObject var viewModel: ContentViewModel
+  @ObservedObject var flowCoordinator: FlowCoordinator
+  @ObservedObject var syncSettingsViewModel: SyncSettingsViewModel
+  @ObservedObject var networkMonitor: NetworkMonitor
+  @ObservedObject var journalQueue: JournalQueue
+  @ObservedObject var syncService: JournalSyncService
+  @ObservedObject var navigationViewModel: NavigationViewModel
   @EnvironmentObject private var notificationDelegate: NotificationDelegate
   let journalClient: JournalClientProtocol
   let journalRepository: JournalRepositoryProtocol
   let catalogRepository: CatalogRepositoryProtocol
-  @StateObject private var navigationViewModel: NavigationViewModel
   @State private var showingMenu = false
   @State private var showingOnboarding = false
   @State private var isShowingDetailView = false
   @State private var navigationPath = NavigationPath()
-
-  init() {
-    self.init(dependencies: .live())
-  }
-
-  /// Designated initializer; takes a pre-built dependency bundle so the
-  /// `live()` graph is testable and substitutable. See
-  /// `ContentViewDependencies` for the construction logic.
-  init(dependencies: ContentViewDependencies) {
-    self.journalRepository = dependencies.journalRepository
-    self.catalogRepository = dependencies.catalogRepository
-    self.journalClient = dependencies.journalClient
-    _viewModel = StateObject(wrappedValue: dependencies.viewModel)
-    _flowCoordinator = StateObject(wrappedValue: dependencies.flowCoordinator)
-    _syncSettingsViewModel = StateObject(wrappedValue: dependencies.syncSettingsViewModel)
-    _networkMonitor = StateObject(wrappedValue: dependencies.networkMonitor)
-    _journalQueue = StateObject(wrappedValue: dependencies.journalQueue)
-    _syncService = StateObject(wrappedValue: dependencies.syncService)
-    _navigationViewModel = StateObject(wrappedValue: dependencies.navigationViewModel)
-  }
 
   private var flowSubmissionPresenter: FlowSubmissionPresenter {
     FlowSubmissionPresenter(flowCoordinator: flowCoordinator, viewModel: viewModel)
@@ -59,14 +39,13 @@ struct ContentView: View {
 
   // MARK: - Body decomposition
 
+  //
   // The view body chains ~30 modifiers across lifecycle, onChange, alerts,
   // sheets, toolbar, and navigation. Swift 6's type checker can't resolve
   // that single expression in reasonable time, so we stage the chain
   // through intermediate `some View` properties — each return type erases
   // the upstream complexity, letting the checker rest.
 
-  /// Adds lifecycle hooks via `MainContentLifecycleModifier`.
-  /// Navigation-state reconciliation lives in `navigationViewModel`.
   private var contentWithEvents: some View {
     MainContentStates(viewModel: viewModel, navigationViewModel: navigationViewModel)
       .mainContentLifecycle(
@@ -76,7 +55,6 @@ struct ContentView: View {
       )
   }
 
-  /// Adds the alert presentations, sheet stack, and onboarding-check task.
   private var contentWithDialogs: some View {
     contentWithEvents
       .journalFlowAlerts(
@@ -99,7 +77,6 @@ struct ContentView: View {
       )
   }
 
-  /// Top-bar toolbar: back chevron when in flow mode, menu button otherwise.
   private var toolbarContent: some ToolbarContent {
     MainNavigationToolbar(
       isShowingDetailView: isShowingDetailView,
@@ -111,5 +88,18 @@ struct ContentView: View {
 }
 
 #Preview {
-  ContentView()
+  let deps = ContentViewDependencies.live()
+  return ContentView(
+    viewModel: deps.viewModel,
+    flowCoordinator: deps.flowCoordinator,
+    syncSettingsViewModel: deps.syncSettingsViewModel,
+    networkMonitor: deps.networkMonitor,
+    journalQueue: deps.journalQueue,
+    syncService: deps.syncService,
+    navigationViewModel: deps.navigationViewModel,
+    journalClient: deps.journalClient,
+    journalRepository: deps.journalRepository,
+    catalogRepository: deps.catalogRepository
+  )
+  .environmentObject(NotificationDelegate())
 }
