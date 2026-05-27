@@ -41,3 +41,25 @@ struct JournalReviewEmotionCard: View {
     .cornerRadius(10)
   }
 }
+
+#if DEBUG
+#Preview("Emotion Card — Medicinal") {
+  JournalReviewEmotionCard(
+    label: "Primary Emotion",
+    expression: "Gratitude",
+    dosage: .medicinal
+  )
+  .padding()
+  .background(Color.black)
+}
+
+#Preview("Emotion Card — Toxic") {
+  JournalReviewEmotionCard(
+    label: "Secondary Emotion",
+    expression: "Resentment",
+    dosage: .toxic
+  )
+  .padding()
+  .background(Color.black)
+}
+#endif

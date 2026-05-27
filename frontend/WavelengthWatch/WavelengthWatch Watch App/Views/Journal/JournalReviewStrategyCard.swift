@@ -38,7 +38,7 @@ struct JournalReviewStrategyCard: View {
     .cornerRadius(10)
   }
 
-  static func colorForStrategy(_ colorName: String) -> Color {
+  private static func colorForStrategy(_ colorName: String) -> Color {
     switch colorName.lowercased() {
     case "blue": .blue
     case "cyan": .cyan
@@ -52,3 +52,13 @@ struct JournalReviewStrategyCard: View {
     }
   }
 }
+
+#if DEBUG
+#Preview("Strategy Card") {
+  JournalReviewStrategyCard(
+    strategy: CatalogStrategyModel(id: 1, strategy: "Take a deep breath", color: "blue")
+  )
+  .padding()
+  .background(Color.black)
+}
+#endif
