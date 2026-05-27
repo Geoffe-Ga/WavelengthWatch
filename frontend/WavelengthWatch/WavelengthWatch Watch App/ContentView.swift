@@ -70,21 +70,15 @@ struct ContentView: View {
   // through intermediate `some View` properties — each return type erases
   // the upstream complexity, letting the checker rest.
 
-  /// Adds lifecycle hooks. Navigation-state reconciliation now lives in
-  /// `navigationViewModel`, which observes `viewModel` directly.
+  /// Adds lifecycle hooks via `MainContentLifecycleModifier`.
+  /// Navigation-state reconciliation lives in `navigationViewModel`.
   private var contentWithEvents: some View {
     MainContentStates(viewModel: viewModel, navigationViewModel: navigationViewModel)
-      .ignoresSafeArea(edges: .bottom)
-      .task { await viewModel.loadCatalog() }
-      .task {
-        // Kick off auto-sync once when the view appears. The service
-        // subscribes to NetworkMonitor and triggers a sync whenever
-        // connectivity is restored.
-        syncService.startAutoSync()
-      }
-      .onChange(of: syncService.syncStatus) { _, newValue in
-        viewModel.handleSyncStatusChange(newValue, totalPending: journalQueue.pendingCount)
-      }
+      .mainContentLifecycle(
+        viewModel: viewModel,
+        syncService: syncService,
+        journalQueue: journalQueue
+      )
   }
 
   /// Adds the alert presentations, sheet stack, and onboarding-check task.
