@@ -49,12 +49,7 @@ struct ContentView: View {
         .navigationTitle("")
         .wlNavigationBar()
         .navigationDestination(for: DetailDestination.self) { destination in
-          switch destination {
-          case let .curriculum(layer, phase, colorName):
-            CurriculumDetailView(layer: layer, phase: phase, color: Color(stage: colorName))
-          case let .strategy(phase, colorName):
-            StrategyListView(phase: phase, color: Color(stage: colorName))
-          }
+          DetailDestinationView(destination: destination)
         }
     }
     .environmentObject(viewModel)
