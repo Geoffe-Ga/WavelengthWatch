@@ -90,13 +90,10 @@ struct ContentView: View {
   /// Adds the alert presentations, sheet stack, and onboarding-check task.
   private var contentWithDialogs: some View {
     contentWithEvents
-      .alert(item: $viewModel.journalFeedback) { feedback in
-        JournalFeedbackAlert.make(feedback) { viewModel.journalFeedback = nil }
-      }
-      .flowConfirmationAlerts(
+      .journalFlowAlerts(
+        viewModel: viewModel,
         flowCoordinator: flowCoordinator,
-        onPrimarySubmit: { await flowSubmissionPresenter.submit(failurePrefix: "Failed to log emotion") },
-        onSecondarySubmit: { await flowSubmissionPresenter.submit(failurePrefix: "Failed to log emotions") }
+        flowSubmissionPresenter: flowSubmissionPresenter
       )
       .mainContentDialogs(
         viewModel: viewModel,
