@@ -78,34 +78,11 @@ struct JournalReviewView: View {
           Divider()
         }
 
-        // Action buttons
-        VStack(spacing: 12) {
-          Button {
-            submitEntry()
-          } label: {
-            if isSubmitting {
-              ProgressView()
-                .progressViewStyle(CircularProgressViewStyle())
-            } else {
-              Text("Submit Entry")
-                .fontWeight(.semibold)
-            }
-          }
-          .disabled(isSubmitting)
-          .frame(maxWidth: .infinity)
-          .padding(.vertical, 12)
-          .background(isSubmitting ? Color.gray : Color.blue)
-          .foregroundColor(.white)
-          .cornerRadius(10)
-
-          Button {
-            onEdit()
-          } label: {
-            Text("Edit")
-              .foregroundColor(.blue)
-          }
-          .disabled(isSubmitting)
-        }
+        JournalReviewActions(
+          isSubmitting: isSubmitting,
+          onSubmit: submitEntry,
+          onEdit: onEdit
+        )
         .padding(.bottom)
       }
       .padding(.horizontal)
