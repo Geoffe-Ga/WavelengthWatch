@@ -31,22 +31,7 @@ struct JournalReviewView: View {
           JournalReviewRestHeader()
         }
 
-        // Timestamp
-        VStack(spacing: 4) {
-          Text("Logged At")
-            .font(.caption)
-            .foregroundColor(.secondary)
-            .textCase(.uppercase)
-
-          Text(formattedTimestamp)
-            .font(.body)
-            .foregroundColor(.primary)
-        }
-        .padding(.vertical, 8)
-        .padding(.horizontal, 12)
-        .frame(maxWidth: .infinity)
-        .background(WLColorTokens.elevatedCardFill)
-        .cornerRadius(8)
+        JournalReviewTimestamp()
 
         Divider()
 
@@ -107,17 +92,6 @@ struct JournalReviewView: View {
       submitTask = nil
       isSubmitting = false
     }
-  }
-
-  private static let timestampFormatter: DateFormatter = {
-    let formatter = DateFormatter()
-    formatter.dateStyle = .medium
-    formatter.timeStyle = .short
-    return formatter
-  }()
-
-  private var formattedTimestamp: String {
-    Self.timestampFormatter.string(from: Date())
   }
 
   private func submitEntry() {
