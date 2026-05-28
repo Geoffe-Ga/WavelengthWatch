@@ -187,6 +187,21 @@ struct FlowCoordinatorTests {
     #expect(coordinator.currentStep == FlowCoordinator.FlowStep.idle)
   }
 
+  @Test("rest entry returns to clean state after a successful submit + reset")
+  func submit_inRestMode_thenReset_returnsToCleanState() async throws {
+    let (viewModel, coordinator, _) = await createTestSetup()
+
+    coordinator.startRestPeriod()
+    try await coordinator.submit()
+    // Mirrors the success-alert "OK" path, which calls cancel()/reset().
+    coordinator.reset()
+
+    #expect(coordinator.entryType == EntryType.emotion)
+    #expect(coordinator.currentStep == FlowCoordinator.FlowStep.idle)
+    #expect(coordinator.selections.primary == nil)
+    #expect(viewModel.layerFilterMode == LayerFilterMode.all)
+  }
+
   // MARK: - Cancellation Tests
 
   @Test("cancel resets to idle state and clears selections")

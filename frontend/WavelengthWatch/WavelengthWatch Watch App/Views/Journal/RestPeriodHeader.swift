@@ -9,6 +9,7 @@ struct RestPeriodHeader: View {
       Image(systemName: "moon.zzz.fill")
         .font(.system(size: 36))
         .foregroundStyle(.purple.opacity(0.8))
+        .accessibilityHidden(true)
 
       Text("Your natural rhythm may be asking you to rest")
         .font(.body)
