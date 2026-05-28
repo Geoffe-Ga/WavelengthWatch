@@ -54,6 +54,12 @@ enum WLColorTokens {
   /// checkmarks, editable values).
   static let interactiveAccent: Color = .blue
 
+  /// Positive status (online, sync succeeded).
+  static let statusPositive: Color = .green
+
+  /// Negative status (offline, sync failed).
+  static let statusNegative: Color = .red
+
   // MARK: - Text Colors
 
   static let primaryText: Color = .white

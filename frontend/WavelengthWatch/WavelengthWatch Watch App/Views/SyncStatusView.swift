@@ -17,12 +17,14 @@ struct SyncStatusView: View {
       Section("Network") {
         HStack {
           Image(systemName: networkMonitor.isConnected ? "wifi" : "wifi.slash")
-            .foregroundColor(networkMonitor.isConnected ? .green : .red)
+            .foregroundStyle(networkMonitor.isConnected ? WLColorTokens.statusPositive : WLColorTokens.statusNegative)
+            .accessibilityHidden(true)
           Text(networkMonitor.isConnected ? "Online" : "Offline")
           Spacer()
           Circle()
-            .fill(networkMonitor.isConnected ? Color.green : Color.red)
+            .fill(networkMonitor.isConnected ? WLColorTokens.statusPositive : WLColorTokens.statusNegative)
             .frame(width: 8, height: 8)
+            .accessibilityHidden(true)
         }
       }
 
@@ -31,7 +33,7 @@ struct SyncStatusView: View {
           Text("Pending Entries")
           Spacer()
           Text("\(queue.pendingCount)")
-            .foregroundColor(.secondary)
+            .foregroundStyle(.secondary)
             .monospacedDigit()
         }
 
@@ -41,7 +43,7 @@ struct SyncStatusView: View {
               .progressViewStyle(.linear)
             Text("\(Int(progress * 100))%")
               .font(.caption2)
-              .foregroundColor(.secondary)
+              .foregroundStyle(.secondary)
               .monospacedDigit()
           }
         } else if syncService.isSyncing {
@@ -70,13 +72,14 @@ struct SyncStatusView: View {
         Section("Last Error") {
           Text(manualSyncError)
             .font(.caption)
-            .foregroundColor(.red)
+            .foregroundStyle(WLColorTokens.statusNegative)
         }
       } else if case let .success(count) = syncService.syncStatus, count > 0 {
         Section("Last Sync") {
           HStack {
             Image(systemName: "checkmark.circle.fill")
-              .foregroundColor(.green)
+              .foregroundStyle(WLColorTokens.statusPositive)
+              .accessibilityHidden(true)
             Text("Synced \(count) entr\(count == 1 ? "y" : "ies")")
               .font(.caption)
           }
