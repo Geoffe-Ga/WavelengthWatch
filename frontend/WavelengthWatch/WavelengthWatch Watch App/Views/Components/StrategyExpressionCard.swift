@@ -8,10 +8,9 @@ import SwiftUI
 /// strategy listing, and any future surfaces that need to render a
 /// single tinted strategy — see Phase 3b (#298).
 ///
-/// First call site: `JournalReviewView`. Promoted to `Views/Components/`
-/// from its earlier home in `Views/Journal/` so non-journal callers can
-/// discover and reuse it. Named `StrategyExpressionCard` to avoid
-/// colliding with `Curriculum/StrategyCard` (a tap-action wrapper) and
+/// Rendered by the live journal flow's `FlowReviewSheet`. Named
+/// `StrategyExpressionCard` to avoid colliding with
+/// `Curriculum/StrategyCard` (a tap-action wrapper) and
 /// `Components/StrategySummaryCard` (an analytics aggregate).
 struct StrategyExpressionCard: View {
   let strategy: CatalogStrategyModel
