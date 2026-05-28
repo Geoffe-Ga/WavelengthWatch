@@ -38,6 +38,12 @@ enum WLColorTokens {
   /// Elevated card fill (for review sheets, etc.)
   static let elevatedCardFill = Color.secondary.opacity(0.1)
 
+  // MARK: - Semantic Accents
+
+  /// Accent for rest-period UI (calm/contraction). Distinct from the
+  /// "Purple" layer color even though both currently resolve to `.purple`.
+  static let restAccent: Color = .purple
+
   // MARK: - Text Colors
 
   static let primaryText: Color = .white
@@ -70,6 +76,19 @@ enum WLColorTokens {
         color.opacity(surfaceOpacityMedium),
         color.opacity(surfaceOpacityLow),
       ]),
+      startPoint: .topLeading,
+      endPoint: .bottomTrailing
+    )
+  }
+
+  /// Celebratory tint for the primary journal-submit action. Renders a
+  /// muted gray while a submission is in flight and the blue→purple→indigo
+  /// flourish otherwise.
+  static func submitButtonGradient(isSubmitting: Bool) -> LinearGradient {
+    LinearGradient(
+      colors: isSubmitting
+        ? [Color.gray.opacity(0.6), Color.gray.opacity(0.4)]
+        : [Color.blue.opacity(0.8), restAccent.opacity(0.6), Color.indigo.opacity(0.7)],
       startPoint: .topLeading,
       endPoint: .bottomTrailing
     )

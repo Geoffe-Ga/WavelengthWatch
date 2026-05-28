@@ -57,15 +57,7 @@ struct FlowReviewSheet: View {
           }
           .disabled(isSubmitting)
           .buttonStyle(.borderedProminent)
-          .tint(
-            LinearGradient(
-              colors: isSubmitting
-                ? [Color.gray.opacity(0.6), Color.gray.opacity(0.4)]
-                : [Color.blue.opacity(0.8), Color.purple.opacity(0.6), Color.indigo.opacity(0.7)],
-              startPoint: .topLeading,
-              endPoint: .bottomTrailing
-            )
-          )
+          .tint(WLColorTokens.submitButtonGradient(isSubmitting: isSubmitting))
           .frame(maxWidth: .infinity)
         }
         .padding()
