@@ -1,10 +1,19 @@
 name: CI
 
 on:
+  # Run on direct pushes to main and on every PR. Restricting push to main
+  # (rather than "**") stops PR branches from spawning a duplicate run for the
+  # same commit — one via push, one via pull_request — which doubled cost and
+  # flake exposure and produced an ambiguous mixed check status.
   push:
-    branches: [ "**" ]
+    branches: [ main ]
   pull_request:
     branches: [ "**" ]
+
+# Cancel superseded runs for the same ref so rapid pushes don't pile up.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -110,10 +119,23 @@ jobs:
         run: swiftformat --lint frontend
 
       - name: Build and test watchOS app
-        timeout-minutes: 25
+        timeout-minutes: 35
         run: |
           cd frontend/WavelengthWatch
-          # Clean simulator state to prevent "termination assertions" errors
-          xcrun simctl shutdown all || true
-          xcrun simctl erase all || true
-          ./run-tests-individually.sh
+          # The watchOS simulator intermittently refuses to launch the app with
+          # "Application has termination assertions" (FBSOpenApplicationServiceErrorDomain),
+          # an infrastructure flake unrelated to the build. Reset simulator state
+          # and retry once before declaring failure.
+          for attempt in 1 2; do
+            echo "::group::watchOS test attempt $attempt"
+            xcrun simctl shutdown all || true
+            xcrun simctl erase all || true
+            if ./run-tests-individually.sh; then
+              echo "::endgroup::"
+              exit 0
+            fi
+            echo "::endgroup::"
+            echo "Attempt $attempt failed; resetting simulator and retrying."
+          done
+          echo "watchOS tests failed after 2 attempts."
+          exit 1
