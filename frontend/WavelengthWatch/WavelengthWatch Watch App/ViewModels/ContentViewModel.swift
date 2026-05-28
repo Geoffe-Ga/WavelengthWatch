@@ -158,6 +158,18 @@ final class ContentViewModel: ObservableObject {
     currentInitiatedBy = .self_initiated
   }
 
+  /// Throwing rest-period submission for use by FlowCoordinator.
+  ///
+  /// Mirrors `journalThrowing` but logs a rest period (no curriculum/strategy),
+  /// propagating errors so callers can preserve state for retry.
+  @MainActor
+  func journalRestThrowing(initiatedBy: InitiatedBy? = nil) async throws {
+    let effectiveInitiatedBy = initiatedBy ?? currentInitiatedBy
+    _ = try await journalClient.submitRestPeriod(initiatedBy: effectiveInitiatedBy)
+    // Reset to self-initiated after successful submission
+    currentInitiatedBy = .self_initiated
+  }
+
   @MainActor
   func setInitiatedBy(_ value: InitiatedBy) {
     currentInitiatedBy = value

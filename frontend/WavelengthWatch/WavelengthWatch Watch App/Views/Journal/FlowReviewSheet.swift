@@ -17,24 +17,28 @@ struct FlowReviewSheet: View {
             .fontWeight(.semibold)
             .padding(.top)
 
-          if let primary = flowCoordinator.selections.primary {
-            EmotionExpressionCard(
-              label: "Primary Emotion",
-              expression: primary.expression,
-              dosage: primary.dosage
-            )
-          }
+          if flowCoordinator.entryType == .rest {
+            RestPeriodHeader()
+          } else {
+            if let primary = flowCoordinator.selections.primary {
+              EmotionExpressionCard(
+                label: "Primary Emotion",
+                expression: primary.expression,
+                dosage: primary.dosage
+              )
+            }
 
-          if let secondary = flowCoordinator.selections.secondary {
-            EmotionExpressionCard(
-              label: "Secondary Emotion",
-              expression: secondary.expression,
-              dosage: secondary.dosage
-            )
-          }
+            if let secondary = flowCoordinator.selections.secondary {
+              EmotionExpressionCard(
+                label: "Secondary Emotion",
+                expression: secondary.expression,
+                dosage: secondary.dosage
+              )
+            }
 
-          if let strategy = flowCoordinator.selections.strategy {
-            StrategyExpressionCard(strategy: strategy)
+            if let strategy = flowCoordinator.selections.strategy {
+              StrategyExpressionCard(strategy: strategy)
+            }
           }
 
           // Submit button with celebratory gradient styling (fixes #160)
