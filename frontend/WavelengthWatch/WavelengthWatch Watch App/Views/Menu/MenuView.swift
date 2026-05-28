@@ -27,6 +27,17 @@ struct MenuView: View {
       .accessibilityLabel("Log your current emotion")
       .accessibilityHint("Opens emotion logging flow")
 
+      // Rest periods need no catalog, so this stays enabled even when
+      // the catalog is empty, and jumps straight to the review sheet.
+      Button {
+        flowCoordinator.startRestPeriod()
+        isPresented = false
+      } label: {
+        Label("Honoring Rest", systemImage: "moon.zzz")
+      }
+      .accessibilityLabel("Log a rest period")
+      .accessibilityHint("Records that you are honoring a natural rest")
+
       NavigationLink(destination: ScheduleSettingsView()) {
         Label("Schedules", systemImage: "clock")
       }

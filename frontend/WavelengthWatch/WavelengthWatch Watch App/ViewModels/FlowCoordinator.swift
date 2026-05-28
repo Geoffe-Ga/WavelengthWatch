@@ -23,6 +23,10 @@ final class FlowCoordinator: ObservableObject {
   /// Current step in the flow state machine
   @Published var currentStep: FlowStep = .idle
 
+  /// Whether this run logs an emotion or a rest period. Rest periods skip
+  /// emotion/secondary/strategy selection and go straight to review.
+  @Published var entryType: EntryType = .emotion
+
   /// User selections throughout the flow
   @Published var selections: Selections = .init()
 
@@ -40,6 +44,15 @@ final class FlowCoordinator: ObservableObject {
   func startPrimarySelection() {
     contentViewModel.layerFilterMode = .emotionsOnly
     currentStep = .selectingPrimary
+  }
+
+  /// Starts a rest-period entry.
+  ///
+  /// Rest periods carry no emotion/strategy selections, so this skips the
+  /// browsing steps entirely and jumps straight to review for confirmation.
+  func startRestPeriod() {
+    entryType = .rest
+    currentStep = .review
   }
 
   /// Captures the primary emotion selection
@@ -105,6 +118,13 @@ final class FlowCoordinator: ObservableObject {
   /// - Throws: FlowError.missingPrimaryEmotion if no primary emotion is selected
   /// - Throws: Network/API errors from journal client
   func submit() async throws {
+    // Rest periods carry no emotion selection, so they bypass the
+    // primary-emotion guard and log directly.
+    if entryType == .rest {
+      try await contentViewModel.journalRestThrowing(initiatedBy: .self_initiated)
+      return
+    }
+
     guard let primary = selections.primary else {
       throw FlowError.missingPrimaryEmotion
     }
@@ -137,6 +157,7 @@ final class FlowCoordinator: ObservableObject {
   /// This ensures users can browse the full catalog after flow completion.
   func reset() {
     currentStep = .idle
+    entryType = .emotion
     selections = .init()
     contentViewModel.layerFilterMode = .all
   }

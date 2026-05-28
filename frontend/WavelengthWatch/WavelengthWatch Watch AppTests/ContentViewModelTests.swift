@@ -91,6 +91,18 @@ struct ContentViewModelTests {
     #expect(submission.2 == nil) // strategyID
   }
 
+  @Test func journalRestThrowingSubmitsRestPeriod() async throws {
+    let repository = CatalogRepositoryMock(cached: SampleData.catalog, result: .success(SampleData.catalog))
+    let journal = JournalClientMock()
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journal)
+
+    try await viewModel.journalRestThrowing(initiatedBy: .self_initiated)
+
+    #expect(journal.restSubmissions.count == 1)
+    #expect(journal.submissions.isEmpty)
+    #expect(journal.restSubmissions[0] == .self_initiated)
+  }
+
   // MARK: - Layer Filtering Tests
 
   @Test func filteredLayersDefaultsToAll() async {

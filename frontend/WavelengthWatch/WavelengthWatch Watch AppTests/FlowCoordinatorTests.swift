@@ -129,6 +129,64 @@ struct FlowCoordinatorTests {
     #expect(coordinator.currentStep == FlowCoordinator.FlowStep.review)
   }
 
+  // MARK: - Rest Period Tests
+
+  @Test("startRestPeriod sets rest entry type and jumps to review")
+  func startRestPeriod_setsRestEntryTypeAndReview() async {
+    let (viewModel, coordinator, _) = await createTestSetup()
+
+    coordinator.startRestPeriod()
+
+    #expect(coordinator.entryType == EntryType.rest)
+    #expect(coordinator.currentStep == FlowCoordinator.FlowStep.review)
+    // Rest needs no emotion browsing, so the catalog stays fully visible.
+    #expect(viewModel.layerFilterMode == LayerFilterMode.all)
+  }
+
+  @Test("rest flow defaults to emotion entry type before starting")
+  func entryType_defaultsToEmotion() async {
+    let (_, coordinator, _) = await createTestSetup()
+
+    #expect(coordinator.entryType == EntryType.emotion)
+  }
+
+  @Test("submit in rest mode calls submitRestPeriod, not emotion submit")
+  func submit_inRestMode_callsRestSubmission() async throws {
+    let catalog = CatalogTestHelper.createTestCatalog()
+    let repository = CatalogRepositoryMock(cached: catalog, result: .success(catalog))
+    let journalClient = JournalClientMock()
+    let viewModel = ContentViewModel(catalogRepository: repository, journalRepository: InMemoryJournalRepository(), journalClient: journalClient)
+    await viewModel.loadCatalog()
+    let coordinator = FlowCoordinator(contentViewModel: viewModel)
+
+    coordinator.startRestPeriod()
+    try await coordinator.submit()
+
+    #expect(journalClient.restSubmissions.count == 1)
+    #expect(journalClient.submissions.isEmpty)
+  }
+
+  @Test("submit in rest mode does not require a primary emotion")
+  func submit_inRestMode_withoutPrimary_doesNotThrow() async throws {
+    let (_, coordinator, _) = await createTestSetup()
+
+    coordinator.startRestPeriod()
+
+    // Should not throw FlowError.missingPrimaryEmotion despite no primary.
+    try await coordinator.submit()
+  }
+
+  @Test("reset clears rest entry type back to emotion")
+  func reset_clearsRestEntryType() async {
+    let (_, coordinator, _) = await createTestSetup()
+
+    coordinator.startRestPeriod()
+    coordinator.reset()
+
+    #expect(coordinator.entryType == EntryType.emotion)
+    #expect(coordinator.currentStep == FlowCoordinator.FlowStep.idle)
+  }
+
   // MARK: - Cancellation Tests
 
   @Test("cancel resets to idle state and clears selections")
