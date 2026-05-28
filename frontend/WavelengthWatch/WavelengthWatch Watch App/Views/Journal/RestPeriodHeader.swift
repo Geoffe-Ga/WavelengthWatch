@@ -8,7 +8,7 @@ struct RestPeriodHeader: View {
     VStack(spacing: 8) {
       Image(systemName: "moon.zzz.fill")
         .font(.system(size: 36))
-        .foregroundStyle(.purple.opacity(0.8))
+        .foregroundStyle(WLColorTokens.restAccent.opacity(0.8))
         .accessibilityHidden(true)
 
       Text("Your natural rhythm may be asking you to rest")
@@ -21,7 +21,7 @@ struct RestPeriodHeader: View {
     .frame(maxWidth: .infinity)
     .background(
       RoundedRectangle(cornerRadius: WLSpacingTokens.cardCornerRadius)
-        .fill(Color.purple.opacity(0.1))
+        .fill(WLColorTokens.restAccent.opacity(0.1))
     )
   }
 }
