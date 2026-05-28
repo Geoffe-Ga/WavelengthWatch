@@ -1,12 +1,17 @@
 import SwiftUI
 
-/// Card displayed in `JournalReviewView` for each selected emotion
-/// (primary or secondary). Shows the label, expression, and a
-/// medicinal/toxic indicator with matching tint.
+/// Shared display card for a single emotion expression with its
+/// medicinal / toxic dosage indicator. ViewModel-free; takes a label,
+/// the expression text, and the dosage as init parameters.
 ///
-/// Extracted from `JournalReviewView` so the review screen's body
-/// reads as composition rather than inline form-building.
-struct JournalReviewEmotionCard: View {
+/// Designed to be reusable across browsing (curriculum detail rails),
+/// journal selection (flow review), and any future surfaces that need
+/// to render a single dosage-tinted expression — see Phase 3b (#298).
+///
+/// First call site: `JournalReviewView`. Promoted to `Views/Components/`
+/// from its earlier home in `Views/Journal/` so non-journal callers can
+/// discover and reuse it without leaking journal-specific naming.
+struct EmotionExpressionCard: View {
   let label: String
   let expression: String
   let dosage: CatalogDosage
@@ -15,7 +20,7 @@ struct JournalReviewEmotionCard: View {
     VStack(alignment: .leading, spacing: 8) {
       Text(label)
         .font(.caption)
-        .foregroundColor(.secondary)
+        .foregroundStyle(.secondary)
         .textCase(.uppercase)
 
       HStack {
@@ -26,13 +31,13 @@ struct JournalReviewEmotionCard: View {
         Text(expression)
           .font(.body)
           .fontWeight(.medium)
-          .foregroundColor(.primary)
+          .foregroundStyle(.primary)
 
         Spacer()
 
         Text(dosage == .medicinal ? "Medicinal" : "Toxic")
           .font(.caption)
-          .foregroundColor(.secondary)
+          .foregroundStyle(.secondary)
       }
     }
     .padding(.vertical, 12)
@@ -44,7 +49,7 @@ struct JournalReviewEmotionCard: View {
 
 #if DEBUG
 #Preview("Emotion Card — Medicinal") {
-  JournalReviewEmotionCard(
+  EmotionExpressionCard(
     label: "Primary Emotion",
     expression: "Gratitude",
     dosage: .medicinal
@@ -54,7 +59,7 @@ struct JournalReviewEmotionCard: View {
 }
 
 #Preview("Emotion Card — Toxic") {
-  JournalReviewEmotionCard(
+  EmotionExpressionCard(
     label: "Secondary Emotion",
     expression: "Resentment",
     dosage: .toxic

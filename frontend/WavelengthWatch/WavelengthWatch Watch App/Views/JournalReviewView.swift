@@ -39,7 +39,7 @@ struct JournalReviewView: View {
         if flowViewModel.entryType == .emotion {
           // Primary emotion
           if let primary = flowViewModel.getPrimaryCurriculum() {
-            JournalReviewEmotionCard(
+            EmotionExpressionCard(
               label: "Primary Emotion",
               expression: primary.expression,
               dosage: primary.dosage
@@ -48,7 +48,7 @@ struct JournalReviewView: View {
 
           // Secondary emotion (if selected)
           if let secondary = flowViewModel.getSecondaryCurriculum() {
-            JournalReviewEmotionCard(
+            EmotionExpressionCard(
               label: "Secondary Emotion",
               expression: secondary.expression,
               dosage: secondary.dosage
@@ -57,7 +57,7 @@ struct JournalReviewView: View {
 
           // Strategy (if selected)
           if let strategy = flowViewModel.getStrategy() {
-            JournalReviewStrategyCard(strategy: strategy)
+            StrategyExpressionCard(strategy: strategy)
           }
 
           Divider()
