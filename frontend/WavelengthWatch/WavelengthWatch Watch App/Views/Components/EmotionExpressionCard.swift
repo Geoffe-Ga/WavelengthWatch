@@ -8,9 +8,9 @@ import SwiftUI
 /// journal selection (flow review), and any future surfaces that need
 /// to render a single dosage-tinted expression — see Phase 3b (#298).
 ///
-/// First call site: `JournalReviewView`. Promoted to `Views/Components/`
-/// from its earlier home in `Views/Journal/` so non-journal callers can
-/// discover and reuse it without leaking journal-specific naming.
+/// Canonical review card used by the live journal flow (`FlowReviewSheet`).
+/// Layout puts the dosage tag *below* the expression for legibility on the
+/// narrow watch screen (per #159) rather than crowding it onto the same row.
 struct EmotionExpressionCard: View {
   let label: String
   let expression: String
@@ -22,28 +22,30 @@ struct EmotionExpressionCard: View {
         .font(.caption)
         .foregroundStyle(.secondary)
         .textCase(.uppercase)
+        .tracking(1.2)
 
-      HStack {
+      Text(expression)
+        .font(.body)
+        .fontWeight(.bold)
+        .lineLimit(nil)
+
+      HStack(spacing: 6) {
         Circle()
           .fill(dosage == .medicinal ? Color.green : Color.red)
-          .frame(width: 10, height: 10)
-
-        Text(expression)
-          .font(.body)
-          .fontWeight(.medium)
-          .foregroundStyle(.primary)
-
-        Spacer()
+          .frame(width: WLSpacingTokens.indicatorDotMedium, height: WLSpacingTokens.indicatorDotMedium)
 
         Text(dosage == .medicinal ? "Medicinal" : "Toxic")
-          .font(.caption)
+          .font(.caption2)
           .foregroundStyle(.secondary)
+          .textCase(.uppercase)
       }
     }
-    .padding(.vertical, 12)
-    .padding(.horizontal, 16)
-    .background(WLColorTokens.elevatedCardFill)
-    .cornerRadius(10)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .padding(WLSpacingTokens.cardPaddingStandard)
+    .background(
+      RoundedRectangle(cornerRadius: WLSpacingTokens.cardCornerRadiusSmall)
+        .fill(WLColorTokens.cardFill)
+    )
   }
 }
 
