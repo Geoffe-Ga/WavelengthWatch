@@ -50,6 +50,10 @@ enum WLColorTokens {
   /// Accent for privacy / local-only affordances.
   static let privacyAccent: Color = .green
 
+  /// Accent for generic interactive affordances (action buttons, selected
+  /// checkmarks, editable values).
+  static let interactiveAccent: Color = .blue
+
   // MARK: - Text Colors
 
   static let primaryText: Color = .white

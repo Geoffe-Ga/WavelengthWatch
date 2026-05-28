@@ -44,10 +44,10 @@ struct ScheduleEditView: View {
         } label: {
           HStack {
             Text("Set Time")
-              .foregroundColor(.primary)
+              .foregroundStyle(.primary)
             Spacer()
             Text(timeString)
-              .foregroundColor(.blue)
+              .foregroundStyle(WLColorTokens.interactiveAccent)
           }
         }
       } header: {
@@ -62,11 +62,11 @@ struct ScheduleEditView: View {
           } label: {
             HStack {
               Text(dayName(day))
-                .foregroundColor(.primary)
+                .foregroundStyle(.primary)
               Spacer()
               if selectedDays.contains(day) {
                 Image(systemName: "checkmark")
-                  .foregroundColor(.blue)
+                  .foregroundStyle(WLColorTokens.interactiveAccent)
               }
             }
           }
@@ -79,7 +79,7 @@ struct ScheduleEditView: View {
       Button("Save") {
         saveSchedule()
       }
-      .foregroundColor(.blue)
+      .foregroundStyle(WLColorTokens.interactiveAccent)
     }
     .navigationTitle(schedule == nil ? "New Schedule" : "Edit Schedule")
     .navigationBarTitleDisplayMode(.inline)

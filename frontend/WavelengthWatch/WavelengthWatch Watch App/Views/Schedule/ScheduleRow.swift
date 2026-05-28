@@ -23,7 +23,7 @@ struct ScheduleRow: View {
           .font(.headline)
         Text(daysString)
           .font(.caption)
-          .foregroundColor(.secondary)
+          .foregroundStyle(.secondary)
       }
 
       Spacer()

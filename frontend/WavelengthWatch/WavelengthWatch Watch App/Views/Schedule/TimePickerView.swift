@@ -28,7 +28,7 @@ struct TimePickerView: View {
         Button("Done") {
           dismiss()
         }
-        .foregroundColor(.blue)
+        .foregroundStyle(WLColorTokens.interactiveAccent)
         .padding(.bottom)
       }
       .toolbar {
