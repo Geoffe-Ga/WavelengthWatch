@@ -40,14 +40,14 @@ struct ScheduleSettingsView: View {
       } header: {
         Text("Journal Prompts")
           .font(.caption)
-          .foregroundColor(WLColorTokens.secondaryText)
+          .foregroundStyle(WLColorTokens.secondaryText)
       }
 
       Button {
         showingAddSchedule = true
       } label: {
         Label("Add Schedule", systemImage: "plus.circle.fill")
-          .foregroundColor(.blue)
+          .foregroundStyle(WLColorTokens.interactiveAccent)
       }
     }
     .navigationTitle("Schedules")
