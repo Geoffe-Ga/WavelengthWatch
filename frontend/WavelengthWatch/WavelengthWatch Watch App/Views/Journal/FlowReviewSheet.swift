@@ -18,7 +18,7 @@ struct FlowReviewSheet: View {
             .padding(.top)
 
           if let primary = flowCoordinator.selections.primary {
-            emotionCard(
+            EmotionExpressionCard(
               label: "Primary Emotion",
               expression: primary.expression,
               dosage: primary.dosage
@@ -26,7 +26,7 @@ struct FlowReviewSheet: View {
           }
 
           if let secondary = flowCoordinator.selections.secondary {
-            emotionCard(
+            EmotionExpressionCard(
               label: "Secondary Emotion",
               expression: secondary.expression,
               dosage: secondary.dosage
@@ -34,7 +34,7 @@ struct FlowReviewSheet: View {
           }
 
           if let strategy = flowCoordinator.selections.strategy {
-            strategyCard(strategy: strategy)
+            StrategyExpressionCard(strategy: strategy)
           }
 
           // Submit button with celebratory gradient styling (fixes #160)
@@ -102,66 +102,6 @@ struct FlowReviewSheet: View {
         }
       }
     }
-  }
-
-  private func emotionCard(label: String, expression: String, dosage: CatalogDosage) -> some View {
-    VStack(alignment: .leading, spacing: 8) {
-      // Label
-      Text(label)
-        .font(.caption)
-        .foregroundColor(.secondary)
-        .textCase(.uppercase)
-        .tracking(1.2)
-
-      // Expression (main content)
-      Text(expression)
-        .font(.body)
-        .fontWeight(.bold)
-        .lineLimit(nil)
-
-      // Dosage tag underneath (fixes #159: increased circle size for visibility)
-      HStack(spacing: 6) {
-        Circle()
-          .fill(dosage == .medicinal ? Color.green : Color.red)
-          .frame(width: 10, height: 10)
-
-        Text(dosage == .medicinal ? "Medicinal" : "Toxic")
-          .font(.caption2)
-          .foregroundColor(.secondary)
-          .textCase(.uppercase)
-      }
-    }
-    .frame(maxWidth: .infinity, alignment: .leading)
-    .padding(12)
-    .background(
-      RoundedRectangle(cornerRadius: WLSpacingTokens.cardCornerRadiusSmall)
-        .fill(WLColorTokens.cardFill)
-    )
-  }
-
-  private func strategyCard(strategy: CatalogStrategyModel) -> some View {
-    VStack(alignment: .leading, spacing: 8) {
-      Text("Strategy")
-        .font(.caption)
-        .foregroundColor(.secondary)
-        .textCase(.uppercase)
-
-      HStack {
-        Circle()
-          .fill(Color(stage: strategy.color))
-          .frame(width: 10, height: 10)
-
-        Text(strategy.strategy)
-          .font(.body)
-          .fontWeight(.medium)
-
-        Spacer()
-      }
-    }
-    .padding(.vertical, 12)
-    .padding(.horizontal, 16)
-    .background(WLColorTokens.elevatedCardFill)
-    .cornerRadius(10)
   }
 
   @MainActor
