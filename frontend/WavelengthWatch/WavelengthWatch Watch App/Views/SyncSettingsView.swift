@@ -17,66 +17,59 @@ struct SyncSettingsView: View {
   @ObservedObject var viewModel: SyncSettingsViewModel
   @Environment(\.dismiss) private var dismiss
 
-  /// Accent for the active mode: blue when cloud sync is on, green when
-  /// the journal stays local-only.
-  private var accent: Color {
-    viewModel.cloudSyncEnabled ? WLColorTokens.syncAccent : WLColorTokens.privacyAccent
-  }
-
   var body: some View {
-    Form {
-      Section {
+    ScrollView {
+      VStack(spacing: 16) {
         VStack(spacing: 8) {
           Image(systemName: viewModel.cloudSyncEnabled ? "icloud.fill" : "lock.shield.fill")
             .font(.system(size: 40))
-            .foregroundStyle(accent)
-            .accessibilityHidden(true)
+            .foregroundColor(viewModel.cloudSyncEnabled ? .blue : .green)
 
           Text(viewModel.cloudSyncEnabled ? "Cloud Backup" : "Privacy First")
             .font(.headline)
         }
-        .frame(maxWidth: .infinity)
-        .listRowBackground(Color.clear)
-      }
 
-      Section {
         Toggle("Sync to Cloud", isOn: $viewModel.cloudSyncEnabled)
           .accessibilityLabel("Cloud sync toggle")
-      } footer: {
-        Text("You can change this anytime")
-          .font(WLTypographyTokens.tag)
-          .foregroundStyle(.secondary)
-      }
 
-      Section {
-        if viewModel.cloudSyncEnabled {
-          privacyExplanation(
-            icon: "checkmark.circle.fill",
-            color: WLColorTokens.syncAccent,
-            title: "Cloud Backup Active",
-            description: "Your journal entries are backed up to the cloud for safe keeping and future device transfers."
-          )
-          privacyExplanation(
-            icon: "lock.fill",
-            color: WLColorTokens.syncAccent,
-            title: "Your Data",
-            description: "Entries are associated with your device ID, not your Apple ID. Data is used for anonymized analytics aggregation."
-          )
-        } else {
-          privacyExplanation(
-            icon: "lock.shield.fill",
-            color: WLColorTokens.privacyAccent,
-            title: "Complete Privacy",
-            description: "Your journal stays on this watch. No data transmission, complete privacy."
-          )
-          privacyExplanation(
-            icon: "checkmark.circle.fill",
-            color: WLColorTokens.privacyAccent,
-            title: "Analytics Work Offline",
-            description: "All insights and analytics are computed locally on your device."
-          )
+        VStack(spacing: 12) {
+          if viewModel.cloudSyncEnabled {
+            privacyExplanation(
+              icon: "checkmark.circle.fill",
+              color: .blue,
+              title: "Cloud Backup Active",
+              description: "Your journal entries are backed up to the cloud for safe keeping and future device transfers."
+            )
+            privacyExplanation(
+              icon: "lock.fill",
+              color: .blue,
+              title: "Your Data",
+              description: "Entries are associated with your device ID, not your Apple ID. Data is used for anonymized analytics aggregation."
+            )
+          } else {
+            privacyExplanation(
+              icon: "lock.shield.fill",
+              color: .green,
+              title: "Complete Privacy",
+              description: "Your journal stays on this watch. No data transmission, complete privacy."
+            )
+            privacyExplanation(
+              icon: "checkmark.circle.fill",
+              color: .green,
+              title: "Analytics Work Offline",
+              description: "All insights and analytics are computed locally on your device."
+            )
+          }
         }
+
+        Text("You can change this anytime")
+          .font(.caption2)
+          .foregroundColor(.secondary)
+          .multilineTextAlignment(.center)
+
+        Spacer()
       }
+      .padding()
     }
     .navigationTitle("Sync Settings")
     .navigationBarTitleDisplayMode(.inline)
@@ -85,10 +78,9 @@ struct SyncSettingsView: View {
   private func privacyExplanation(icon: String, color: Color, title: String, description: String) -> some View {
     HStack(alignment: .top, spacing: 8) {
       Image(systemName: icon)
-        .foregroundStyle(color)
+        .foregroundColor(color)
         .font(.caption)
         .frame(width: 16)
-        .accessibilityHidden(true)
 
       VStack(alignment: .leading, spacing: 2) {
         Text(title)
@@ -97,7 +89,7 @@ struct SyncSettingsView: View {
 
         Text(description)
           .font(.caption2)
-          .foregroundStyle(.secondary)
+          .foregroundColor(.secondary)
       }
     }
   }
