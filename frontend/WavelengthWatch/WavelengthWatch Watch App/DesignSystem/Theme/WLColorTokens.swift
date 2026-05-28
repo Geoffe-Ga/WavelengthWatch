@@ -44,6 +44,12 @@ enum WLColorTokens {
   /// "Purple" layer color even though both currently resolve to `.purple`.
   static let restAccent: Color = .purple
 
+  /// Accent for cloud-sync / backup affordances.
+  static let syncAccent: Color = .blue
+
+  /// Accent for privacy / local-only affordances.
+  static let privacyAccent: Color = .green
+
   // MARK: - Text Colors
 
   static let primaryText: Color = .white
