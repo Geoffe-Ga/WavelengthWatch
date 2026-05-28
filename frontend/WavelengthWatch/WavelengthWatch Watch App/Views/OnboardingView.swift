@@ -73,7 +73,7 @@ struct OnboardingView: View {
 
         Text("How would you like to store your journal?")
           .font(.caption)
-          .foregroundColor(.secondary)
+          .foregroundStyle(.secondary)
           .multilineTextAlignment(.center)
           .accessibilityIdentifier("onboarding_storage_question")
 
@@ -87,16 +87,15 @@ struct OnboardingView: View {
           completeOnboarding()
         } label: {
           Text("Continue")
-            .font(.headline)
             .frame(maxWidth: .infinity)
         }
-        .buttonStyle(.borderedProminent)
+        .wlPrimaryButtonStyle()
         .accessibilityLabel("Continue with selected storage mode")
         .accessibilityIdentifier("onboarding_continue_button")
 
         Text("You can change this anytime in Settings")
           .font(.caption2)
-          .foregroundColor(.secondary)
+          .foregroundStyle(.secondary)
           .multilineTextAlignment(.center)
           .accessibilityIdentifier("onboarding_settings_hint")
       }
@@ -111,17 +110,18 @@ struct OnboardingView: View {
       HStack(spacing: 12) {
         Image(systemName: mode.icon)
           .font(.title2)
-          .foregroundColor(selectedMode == mode ? .accentColor : .secondary)
+          .foregroundStyle(selectedMode == mode ? Color.accentColor : .secondary)
           .frame(width: 30)
+          .accessibilityHidden(true)
 
         VStack(alignment: .leading, spacing: 4) {
           Text(mode.title)
             .font(.headline)
-            .foregroundColor(.primary)
+            .foregroundStyle(.primary)
 
           Text(mode.description)
             .font(.caption2)
-            .foregroundColor(.secondary)
+            .foregroundStyle(.secondary)
             .multilineTextAlignment(.leading)
         }
 
@@ -129,10 +129,12 @@ struct OnboardingView: View {
 
         if selectedMode == mode {
           Image(systemName: "checkmark.circle.fill")
-            .foregroundColor(.accentColor)
+            .foregroundStyle(Color.accentColor)
+            .accessibilityHidden(true)
         } else {
           Image(systemName: "circle")
-            .foregroundColor(.secondary)
+            .foregroundStyle(.secondary)
+            .accessibilityHidden(true)
         }
       }
       .padding(12)
