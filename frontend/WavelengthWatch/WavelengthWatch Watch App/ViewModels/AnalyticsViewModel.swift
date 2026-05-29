@@ -24,6 +24,7 @@ final class AnalyticsViewModel: ObservableObject {
   private let localCalculator: LocalAnalyticsCalculatorProtocol?
   private let journalRepository: JournalRepositoryProtocol?
   private let catalogRepository: CatalogRepositoryProtocol?
+  private let syncSettings: SyncSettings
   private let userDefaults: UserDefaults
   private let userDefaultsKey = "com.wavelengthwatch.userIdentifier"
 
@@ -32,24 +33,38 @@ final class AnalyticsViewModel: ObservableObject {
     localCalculator: LocalAnalyticsCalculatorProtocol? = nil,
     journalRepository: JournalRepositoryProtocol? = nil,
     catalogRepository: CatalogRepositoryProtocol? = nil,
+    syncSettings: SyncSettings = SyncSettings(),
     userDefaults: UserDefaults = .standard
   ) {
     self.analyticsService = analyticsService
     self.localCalculator = localCalculator
     self.journalRepository = journalRepository
     self.catalogRepository = catalogRepository
+    self.syncSettings = syncSettings
     self.userDefaults = userDefaults
   }
 
-  /// Fetches analytics overview data from backend with local fallback.
+  /// Loads analytics overview, choosing the data source by the user's sync
+  /// preference (per #187: "analytics read from local SQLite DB — works for
+  /// both modes").
   ///
-  /// Strategy:
-  /// 1. Try backend first for fresh data
-  /// 2. If backend fails and local components available, calculate from local storage
-  /// 3. If both fail, report error
+  /// - Cloud sync **enabled**: try backend first, fall back to local on error.
+  /// - Cloud sync **disabled**: use the local calculator exclusively. Hitting
+  ///   the backend in local-only mode would return zero entries for this user
+  ///   (sync is off, nothing's there), making the screen appear empty even
+  ///   though local SQLite has the user's data.
   func loadAnalytics() async {
     state = .loading
 
+    if syncSettings.cloudSyncEnabled {
+      await loadWithBackendFallback()
+    } else {
+      await loadFromLocalOnly()
+    }
+  }
+
+  /// Loads from backend with fallback to local calculator on backend error.
+  private func loadWithBackendFallback() async {
     do {
       let userId = numericUserIdentifier()
       let overview = try await analyticsService.getOverview(userId: userId)
@@ -61,6 +76,15 @@ final class AnalyticsViewModel: ObservableObject {
       } else {
         state = .error("Failed to load analytics: \(error.localizedDescription)")
       }
+    }
+  }
+
+  /// Loads exclusively from the local calculator (cloud sync disabled mode).
+  private func loadFromLocalOnly() async {
+    if let localOverview = await tryLocalCalculation() {
+      state = .loaded(localOverview)
+    } else {
+      state = .error("Local analytics not available. Please enable cloud sync or try again later.")
     }
   }
 
