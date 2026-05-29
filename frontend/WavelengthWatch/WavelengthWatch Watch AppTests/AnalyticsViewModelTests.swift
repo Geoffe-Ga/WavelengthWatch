@@ -250,7 +250,7 @@ struct AnalyticsViewModelTests {
     let viewModel = AnalyticsViewModel(
       analyticsService: mockService,
       syncSettings: cloudSyncOn(),
-      userDefaults: .standard
+      userDefaults: UserDefaults(suiteName: UUID().uuidString) ?? .standard
     )
 
     await viewModel.loadAnalytics()
@@ -612,7 +612,7 @@ struct AnalyticsViewModelTests {
     await viewModel.loadAnalytics()
 
     if case let .error(message) = viewModel.state {
-      #expect(message.contains("Local analytics not available"))
+      #expect(message.contains("temporarily unavailable"))
     } else {
       Issue.record("Expected error state, got \(viewModel.state)")
     }

@@ -1,14 +1,18 @@
 import Foundation
 
-/// View model for analytics overview screen.
+/// View model for the analytics overview screen.
 ///
-/// Fetches and manages analytics data from the backend with local fallback,
-/// handling loading states, errors, and empty data scenarios.
+/// Chooses its data source based on `SyncSettings.cloudSyncEnabled`
+/// (per #187: "analytics read from local SQLite DB — works for both modes"):
+/// - **Cloud sync on**: tries backend first, falls back to the local
+///   calculator on a thrown error.
+/// - **Cloud sync off**: reads exclusively from the local calculator.
+///   Hitting the backend in local-only mode would return an empty overview
+///   (nothing has been synced for this user), making the screen appear empty.
 ///
-/// ## Data Strategy
-/// - Tries backend first for fresh data
-/// - Falls back to local calculation if backend fails
-/// - Requires local calculator, journal repository, and catalog for offline support
+/// Note: `SyncSettings` is read at each `loadAnalytics()` call, not observed.
+/// If the user toggles sync while the screen is open, the new mode applies on
+/// the next load/retry.
 @MainActor
 final class AnalyticsViewModel: ObservableObject {
   enum LoadingState: Equatable {
@@ -84,7 +88,10 @@ final class AnalyticsViewModel: ObservableObject {
     if let localOverview = await tryLocalCalculation() {
       state = .loaded(localOverview)
     } else {
-      state = .error("Local analytics not available. Please enable cloud sync or try again later.")
+      // Reached only when the view is constructed without local components
+      // (a wiring bug, not user-facing). Avoid telling a user who deliberately
+      // disabled cloud sync to "enable cloud sync".
+      state = .error("Analytics are temporarily unavailable. Please try again later.")
     }
   }
 
