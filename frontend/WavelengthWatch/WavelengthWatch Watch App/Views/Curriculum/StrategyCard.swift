@@ -53,6 +53,17 @@ struct StrategyCard: View {
     } message: {
       Text("Would you like to log \"\(strategy.strategy)\"?")
     }
+    // Tapped via onTapGesture; expose as one labeled VoiceOver button whose
+    // action mirrors the tap's actionable guard.
+    .accessibilityElement(children: .ignore)
+    .accessibilityAddTraits(.isButton)
+    .accessibilityLabel("Strategy: \(strategy.strategy)")
+    .accessibilityHint("Logs this strategy")
+    .accessibilityAction {
+      if primaryID != nil || flowCoordinator.currentStep == .selectingStrategy {
+        showingJournalConfirmation = true
+      }
+    }
   }
 
   private func handleLogAction() {

@@ -78,6 +78,18 @@ struct StrategyListView: View {
                   }
               }
             }
+            // Tapped via onTapGesture; expose each row as one labeled
+            // VoiceOver button whose action mirrors the tap's guard.
+            .accessibilityElement(children: .ignore)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityLabel("Strategy: \(item.strategy)")
+            .accessibilityHint("Logs this strategy")
+            .accessibilityAction {
+              if fallbackCurriculumID != nil {
+                selectedStrategy = item
+                showingJournalConfirmation = true
+              }
+            }
           }
         }
         .padding(.horizontal, 8)

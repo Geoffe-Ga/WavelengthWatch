@@ -55,6 +55,13 @@ struct CurriculumCard: View {
     } message: {
       Text("Would you like to log \"\(expression)\"?")
     }
+    // The card is tapped via onTapGesture, which SwiftUI does not expose as a
+    // VoiceOver action; present it as one labeled button instead.
+    .accessibilityElement(children: .ignore)
+    .accessibilityAddTraits(.isButton)
+    .accessibilityLabel("\(title): \(expression)")
+    .accessibilityHint("Logs this entry")
+    .accessibilityAction { showingJournalConfirmation = true }
   }
 
   private func handleLogAction() {
