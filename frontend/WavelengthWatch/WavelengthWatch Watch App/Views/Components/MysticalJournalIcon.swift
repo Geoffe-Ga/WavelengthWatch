@@ -34,5 +34,11 @@ struct MysticalJournalIcon: View {
         isGlowing = true
       }
     }
+    // Stay reactive if Reduce Motion is toggled mid-session: snap to the
+    // static base when enabled (so the icon doesn't freeze mid-glow) and
+    // resume the loop when disabled.
+    .onChange(of: reduceMotion) { _, nowReducing in
+      isGlowing = !nowReducing
+    }
   }
 }
