@@ -47,11 +47,12 @@ struct FlowSubmissionPresenterTests {
     await presenter.submit(failurePrefix: "Failed to log emotion")
 
     if case .queued = viewModel.journalFeedback?.kind {
-      #expect(Bool(true))
+      // Reaching this branch is the assertion.
     } else {
-      #expect(Bool(false), "Expected queued feedback")
+      Issue.record("Expected queued feedback, got \(String(describing: viewModel.journalFeedback?.kind))")
     }
     #expect(coordinator.currentStep == FlowCoordinator.FlowStep.idle)
+    #expect(coordinator.selections.primary == nil)
   }
 
   @Test("failed submit shows prefixed failure feedback and preserves state for retry")
@@ -64,7 +65,7 @@ struct FlowSubmissionPresenterTests {
     if case let .failure(message) = viewModel.journalFeedback?.kind {
       #expect(message.contains("Failed to log emotion"))
     } else {
-      #expect(Bool(false), "Expected failure feedback")
+      Issue.record("Expected failure feedback, got \(String(describing: viewModel.journalFeedback?.kind))")
     }
     // On unrecoverable failure the flow is NOT reset, so the user can retry.
     #expect(coordinator.currentStep != FlowCoordinator.FlowStep.idle)
