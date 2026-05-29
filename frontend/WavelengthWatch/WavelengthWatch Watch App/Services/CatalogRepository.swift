@@ -39,7 +39,14 @@ final class FileCatalogCacheStore: CatalogCachePersisting {
   }
 
   convenience init(fileName: String = "catalog-cache.json", fileManager: FileManager = .default) {
-    let directory = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first ?? URL(fileURLWithPath: NSTemporaryDirectory())
+    // Use Documents (persistent) rather than Caches (purgeable by the OS under
+    // storage pressure). The watch is an offline-first surface — losing the
+    // catalog leaves the user with no curriculum to browse. We fall back to
+    // the Caches dir, then a temp path, only if Documents is unavailable.
+    let directory =
+      fileManager.urls(for: .documentDirectory, in: .userDomainMask).first
+        ?? fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first
+        ?? URL(fileURLWithPath: NSTemporaryDirectory())
     self.init(fileURL: directory.appendingPathComponent(fileName), fileManager: fileManager)
   }
 
@@ -138,12 +145,25 @@ final class CatalogRepository: CatalogRepositoryProtocol {
   }
 
   func loadCatalog(forceRefresh: Bool = false) async throws -> CatalogResponseModel {
-    if !forceRefresh, let envelope = readEnvelope(), isFresh(envelope) {
+    let envelope = readEnvelope()
+    if !forceRefresh, let envelope, isFresh(envelope) {
       return envelope.catalog
     }
-    let catalog = try await remote.fetchCatalog()
-    try? writeEnvelope(catalog)
-    return catalog
+    do {
+      let catalog = try await remote.fetchCatalog()
+      try? writeEnvelope(catalog)
+      return catalog
+    } catch {
+      // Remote failed (offline / backend down). Rather than wiping the user's
+      // curriculum every 24h once the TTL expires, fall back to any cached
+      // envelope we have — even if it's stale. The user keeps browsing; the
+      // next successful load will refresh. Only `forceRefresh` callers (e.g.
+      // an explicit "refresh now" tap) propagate the error.
+      if !forceRefresh, let envelope {
+        return envelope.catalog
+      }
+      throw error
+    }
   }
 
   func refreshCatalog() async throws -> CatalogResponseModel {
