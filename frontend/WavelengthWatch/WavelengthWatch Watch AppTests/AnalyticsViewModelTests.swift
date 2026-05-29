@@ -64,13 +64,30 @@ struct AnalyticsViewModelTests {
     }
   }
 
+  // MARK: - SyncSettings Helpers
+
+  /// SyncSettings backed by mock persistence with cloud sync enabled — so
+  /// tests exercising the backend path use this instead of polluting
+  /// UserDefaults.standard.
+  private func cloudSyncOn() -> SyncSettings {
+    let settings = SyncSettings(persistence: MockSyncSettingsPersistence())
+    settings.cloudSyncEnabled = true
+    return settings
+  }
+
+  /// SyncSettings backed by mock persistence with cloud sync disabled (the
+  /// privacy-first default).
+  private func cloudSyncOff() -> SyncSettings {
+    SyncSettings(persistence: MockSyncSettingsPersistence())
+  }
+
   // MARK: - Initialization Tests
 
   @Test("viewModel starts in idle state")
   @MainActor
   func viewModel_startsInIdleState() {
     let mockService = MockAnalyticsService()
-    let viewModel = AnalyticsViewModel(analyticsService: mockService)
+    let viewModel = AnalyticsViewModel(analyticsService: mockService, syncSettings: cloudSyncOn())
 
     #expect(viewModel.state == .idle)
   }
@@ -97,7 +114,7 @@ struct AnalyticsViewModelTests {
     )
     mockService.overviewToReturn = mockOverview
 
-    let viewModel = AnalyticsViewModel(analyticsService: mockService)
+    let viewModel = AnalyticsViewModel(analyticsService: mockService, syncSettings: cloudSyncOn())
 
     await viewModel.loadAnalytics()
 
@@ -115,7 +132,7 @@ struct AnalyticsViewModelTests {
     let mockService = MockAnalyticsService()
     mockService.errorToThrow = NSError(domain: "test", code: -1, userInfo: [NSLocalizedDescriptionKey: "Network error"])
 
-    let viewModel = AnalyticsViewModel(analyticsService: mockService)
+    let viewModel = AnalyticsViewModel(analyticsService: mockService, syncSettings: cloudSyncOn())
 
     await viewModel.loadAnalytics()
 
@@ -147,7 +164,7 @@ struct AnalyticsViewModelTests {
       secondaryEmotionsPct: 0
     )
 
-    let viewModel = AnalyticsViewModel(analyticsService: mockService)
+    let viewModel = AnalyticsViewModel(analyticsService: mockService, syncSettings: cloudSyncOn())
 
     // Start loading but don't await
     let task = Task {
@@ -177,7 +194,7 @@ struct AnalyticsViewModelTests {
     let mockService = MockAnalyticsService()
     mockService.errorToThrow = NSError(domain: "test", code: -1)
 
-    let viewModel = AnalyticsViewModel(analyticsService: mockService)
+    let viewModel = AnalyticsViewModel(analyticsService: mockService, syncSettings: cloudSyncOn())
 
     await viewModel.loadAnalytics()
     #expect(mockService.getOverviewCallCount == 1)
@@ -232,7 +249,8 @@ struct AnalyticsViewModelTests {
 
     let viewModel = AnalyticsViewModel(
       analyticsService: mockService,
-      userDefaults: .standard
+      syncSettings: cloudSyncOn(),
+      userDefaults: UserDefaults(suiteName: UUID().uuidString) ?? .standard
     )
 
     await viewModel.loadAnalytics()
@@ -414,7 +432,8 @@ struct AnalyticsViewModelTests {
       analyticsService: mockService,
       localCalculator: mockCalculator,
       journalRepository: mockRepository,
-      catalogRepository: mockCatalog
+      catalogRepository: mockCatalog,
+      syncSettings: cloudSyncOn()
     )
 
     await viewModel.loadAnalytics()
@@ -444,7 +463,8 @@ struct AnalyticsViewModelTests {
       analyticsService: mockService,
       localCalculator: nil,
       journalRepository: mockRepository,
-      catalogRepository: mockCatalog
+      catalogRepository: mockCatalog,
+      syncSettings: cloudSyncOn()
     )
 
     await viewModel.loadAnalytics()
@@ -485,7 +505,8 @@ struct AnalyticsViewModelTests {
       analyticsService: mockService,
       localCalculator: mockCalculator,
       journalRepository: mockRepository,
-      catalogRepository: mockCatalog
+      catalogRepository: mockCatalog,
+      syncSettings: cloudSyncOn()
     )
 
     await viewModel.loadAnalytics()
@@ -524,5 +545,77 @@ struct AnalyticsViewModelTests {
         ),
       ]
     )
+  }
+
+  // MARK: - Local-only mode (cloud sync disabled)
+
+  @Test("viewModel uses local calculator exclusively when cloud sync is disabled")
+  @MainActor
+  func viewModel_usesLocalOnlyWhenCloudSyncDisabled() async {
+    // Backend is wired but should NOT be called when cloud sync is off, even
+    // if it would have succeeded: hitting it returns zero entries for this
+    // user (sync is off, nothing's there) and would erase the user's view.
+    let mockService = MockAnalyticsService()
+    let backendOverview = AnalyticsOverview(
+      totalEntries: 0, currentStreak: 0, longestStreak: 0,
+      avgFrequency: 0, lastCheckIn: nil, medicinalRatio: 0, medicinalTrend: 0,
+      dominantLayerId: nil, dominantPhaseId: nil,
+      uniqueEmotions: 0, strategiesUsed: 0, secondaryEmotionsPct: 0
+    )
+    mockService.overviewToReturn = backendOverview
+
+    let mockCalculator = MockLocalAnalyticsCalculator()
+    let localOverview = AnalyticsOverview(
+      totalEntries: 7, currentStreak: 2, longestStreak: 4,
+      avgFrequency: 1.5, lastCheckIn: Date(), medicinalRatio: 0.6, medicinalTrend: 0.1,
+      dominantLayerId: 2, dominantPhaseId: 1,
+      uniqueEmotions: 5, strategiesUsed: 3, secondaryEmotionsPct: 0.5
+    )
+    mockCalculator.overviewToReturn = localOverview
+
+    let mockRepository = MockJournalRepository()
+    mockRepository.entriesToReturn = [
+      LocalJournalEntry(createdAt: Date(), userID: 1, curriculumID: 1, entryType: .emotion),
+    ]
+    let mockCatalog = MockCatalogRepository()
+    mockCatalog.catalogToReturn = testCatalog()
+
+    let viewModel = AnalyticsViewModel(
+      analyticsService: mockService,
+      localCalculator: mockCalculator,
+      journalRepository: mockRepository,
+      catalogRepository: mockCatalog,
+      syncSettings: cloudSyncOff()
+    )
+
+    await viewModel.loadAnalytics()
+
+    if case let .loaded(overview) = viewModel.state {
+      #expect(overview == localOverview)
+    } else {
+      Issue.record("Expected loaded state with local data, got \(viewModel.state)")
+    }
+    #expect(mockService.getOverviewCallCount == 0, "Backend must not be called in local-only mode")
+    #expect(mockCalculator.calculateOverviewCallCount == 1)
+  }
+
+  @Test("viewModel surfaces a friendly error when local-only and the calculator is unavailable")
+  @MainActor
+  func viewModel_reportsErrorWhenLocalOnlyAndCalculatorUnavailable() async {
+    let mockService = MockAnalyticsService()
+    let viewModel = AnalyticsViewModel(
+      analyticsService: mockService,
+      // No local calculator / repository / catalog wired.
+      syncSettings: cloudSyncOff()
+    )
+
+    await viewModel.loadAnalytics()
+
+    if case let .error(message) = viewModel.state {
+      #expect(message.contains("temporarily unavailable"))
+    } else {
+      Issue.record("Expected error state, got \(viewModel.state)")
+    }
+    #expect(mockService.getOverviewCallCount == 0)
   }
 }

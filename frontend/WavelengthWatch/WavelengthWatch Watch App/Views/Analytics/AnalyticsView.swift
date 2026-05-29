@@ -17,9 +17,11 @@ struct AnalyticsView: View {
   /// - Parameters:
   ///   - journalRepository: Repository for fetching local journal entries
   ///   - catalogRepository: Repository with cached catalog (required for offline analytics)
+  ///   - syncSettings: Cloud-sync preference; analytics use local data exclusively when sync is disabled
   init(
     journalRepository: JournalRepositoryProtocol,
-    catalogRepository: CatalogRepositoryProtocol
+    catalogRepository: CatalogRepositoryProtocol,
+    syncSettings: SyncSettings = SyncSettings()
   ) {
     self.journalRepository = journalRepository
     self.catalogRepository = catalogRepository
@@ -41,7 +43,8 @@ struct AnalyticsView: View {
         analyticsService: analyticsService,
         localCalculator: localCalculator,
         journalRepository: journalRepository,
-        catalogRepository: catalogRepository
+        catalogRepository: catalogRepository,
+        syncSettings: syncSettings
       )
     )
   }
