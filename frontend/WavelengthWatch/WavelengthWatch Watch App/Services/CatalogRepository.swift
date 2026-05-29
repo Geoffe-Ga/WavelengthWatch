@@ -19,6 +19,11 @@ protocol CatalogRepositoryProtocol {
 
 protocol CatalogRepositoryLogging {
   func cacheDecodingFailed(_ error: Error)
+  func remoteFailedServingStaleCatalog(_ error: Error)
+}
+
+extension CatalogRepositoryLogging {
+  func remoteFailedServingStaleCatalog(_ error: Error) {}
 }
 
 struct CatalogAPIService: CatalogRemoteServicing {
@@ -39,7 +44,14 @@ final class FileCatalogCacheStore: CatalogCachePersisting {
   }
 
   convenience init(fileName: String = "catalog-cache.json", fileManager: FileManager = .default) {
-    let directory = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first ?? URL(fileURLWithPath: NSTemporaryDirectory())
+    // Use Documents (persistent) rather than Caches (purgeable by the OS under
+    // storage pressure). The watch is an offline-first surface — losing the
+    // catalog leaves the user with no curriculum to browse. We fall back to
+    // the Caches dir, then a temp path, only if Documents is unavailable.
+    let directory =
+      fileManager.urls(for: .documentDirectory, in: .userDomainMask).first
+        ?? fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first
+        ?? URL(fileURLWithPath: NSTemporaryDirectory())
     self.init(fileURL: directory.appendingPathComponent(fileName), fileManager: fileManager)
   }
 
@@ -62,22 +74,6 @@ final class FileCatalogCacheStore: CatalogCachePersisting {
     if fileManager.fileExists(atPath: fileURL.path) {
       try fileManager.removeItem(at: fileURL)
     }
-  }
-}
-
-final class InMemoryCatalogCache: CatalogCachePersisting {
-  private var storage: Data?
-
-  func loadCatalogData() throws -> Data? {
-    storage
-  }
-
-  func writeCatalogData(_ data: Data) throws {
-    storage = data
-  }
-
-  func removeCatalogData() throws {
-    storage = nil
   }
 }
 
@@ -138,14 +134,31 @@ final class CatalogRepository: CatalogRepositoryProtocol {
   }
 
   func loadCatalog(forceRefresh: Bool = false) async throws -> CatalogResponseModel {
-    if !forceRefresh, let envelope = readEnvelope(), isFresh(envelope) {
+    let envelope = readEnvelope()
+    if !forceRefresh, let envelope, isFresh(envelope) {
       return envelope.catalog
     }
-    let catalog = try await remote.fetchCatalog()
-    try? writeEnvelope(catalog)
-    return catalog
+    do {
+      let catalog = try await remote.fetchCatalog()
+      try? writeEnvelope(catalog)
+      return catalog
+    } catch {
+      // Remote failed (offline / backend down). Rather than wiping the user's
+      // curriculum every 24h once the TTL expires, fall back to any cached
+      // envelope we have — even if it's stale. The user keeps browsing; the
+      // next successful load will refresh. Only `forceRefresh` callers (e.g.
+      // an explicit "refresh now" tap) propagate the error.
+      if !forceRefresh, let envelope {
+        logger.remoteFailedServingStaleCatalog(error)
+        return envelope.catalog
+      }
+      throw error
+    }
   }
 
+  /// Force-refreshes the catalog from the remote. Always throws on remote
+  /// failure rather than falling back to a stale cache — callers are explicit
+  /// user actions ("refresh now") that should surface the failure.
   func refreshCatalog() async throws -> CatalogResponseModel {
     let catalog = try await remote.fetchCatalog()
     try? writeEnvelope(catalog)
@@ -158,5 +171,9 @@ struct DefaultCatalogRepositoryLogger: CatalogRepositoryLogging {
 
   func cacheDecodingFailed(_ error: Error) {
     DefaultCatalogRepositoryLogger.logger.error("Failed to decode catalog cache: \(error.localizedDescription, privacy: .public)")
+  }
+
+  func remoteFailedServingStaleCatalog(_ error: Error) {
+    DefaultCatalogRepositoryLogger.logger.warning("Remote catalog fetch failed; serving stale cache: \(error.localizedDescription, privacy: .public)")
   }
 }
