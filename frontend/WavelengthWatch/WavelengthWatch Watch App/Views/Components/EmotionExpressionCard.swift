@@ -42,10 +42,7 @@ struct EmotionExpressionCard: View {
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .padding(WLSpacingTokens.cardPaddingStandard)
-    .background(
-      RoundedRectangle(cornerRadius: WLSpacingTokens.cardCornerRadiusSmall)
-        .fill(WLColorTokens.cardFill)
-    )
+    .wlCardSurface(WLColorTokens.cardFill, cornerRadius: WLSpacingTokens.cardCornerRadiusSmall)
   }
 }
 

@@ -19,10 +19,7 @@ struct RestPeriodHeader: View {
     }
     .padding(.vertical, 12)
     .frame(maxWidth: .infinity)
-    .background(
-      RoundedRectangle(cornerRadius: WLSpacingTokens.cardCornerRadius)
-        .fill(WLColorTokens.restAccent.opacity(0.1))
-    )
+    .wlCardSurface(WLColorTokens.restAccent.opacity(0.1), cornerRadius: WLSpacingTokens.cardCornerRadius)
   }
 }
 
