@@ -20,6 +20,7 @@ struct WLGlassModifier: ViewModifier {
   let intensity: WLGlassIntensity
   let tint: Color?
   let cornerRadius: CGFloat
+  @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
   init(
     intensity: WLGlassIntensity = .regular,
@@ -32,11 +33,30 @@ struct WLGlassModifier: ViewModifier {
   }
 
   func body(content: Content) -> some View {
-    if #available(watchOS 26, *) {
+    if reduceTransparency {
+      // "Reduce Transparency" on: skip glass/translucency entirely and use a
+      // solid, legible surface (Liquid Glass degrades to opaque).
+      applyOpaque(to: content)
+    } else if #available(watchOS 26, *) {
       applyGlass(to: content)
     } else {
       applyFallback(to: content)
     }
+  }
+
+  private func applyOpaque(to content: Content) -> some View {
+    content
+      .background(
+        RoundedRectangle(cornerRadius: cornerRadius)
+          .fill(WLColorTokens.opaqueSurface)
+          .overlay(
+            RoundedRectangle(cornerRadius: cornerRadius)
+              .stroke(
+                (tint ?? Color.white).opacity(0.3),
+                lineWidth: WLSpacingTokens.cardBorderWidth
+              )
+          )
+      )
   }
 
   @available(watchOS 26, *)

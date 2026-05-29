@@ -37,8 +37,7 @@ struct StrategyExpressionCard: View {
     }
     .padding(.vertical, 12)
     .padding(.horizontal, 16)
-    .background(WLColorTokens.elevatedCardFill)
-    .cornerRadius(10)
+    .wlCardSurface(WLColorTokens.elevatedCardFill, cornerRadius: 10)
   }
 }
 

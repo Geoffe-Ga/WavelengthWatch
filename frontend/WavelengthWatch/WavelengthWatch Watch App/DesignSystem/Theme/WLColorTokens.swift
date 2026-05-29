@@ -38,6 +38,10 @@ enum WLColorTokens {
   /// Elevated card fill (for review sheets, etc.)
   static let elevatedCardFill = Color.secondary.opacity(0.1)
 
+  /// Solid, fully opaque card surface used when the "Reduce Transparency"
+  /// accessibility setting is on, so translucent fills don't reduce legibility.
+  static let opaqueSurface = Color(white: 0.18)
+
   // MARK: - Semantic Accents
 
   /// Accent for rest-period UI (calm/contraction). Distinct from the
