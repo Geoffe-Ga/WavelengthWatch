@@ -102,4 +102,18 @@ struct CatalogRepositoryFallbackTests {
       _ = try await repository.loadCatalog(forceRefresh: false)
     }
   }
+
+  @Test("loadCatalog with forceRefresh throws when remote fails and there is no cache")
+  func loadCatalog_forceRefreshWithEmptyCache_throws() async throws {
+    let cache = InMemoryCatalogCacheMock()
+    let repository = makeRepository(
+      remote: FailingRemoteStub(error: NetworkDown()),
+      cache: cache,
+      now: Date(timeIntervalSince1970: 1_700_000_000)
+    )
+
+    await #expect(throws: Error.self) {
+      _ = try await repository.loadCatalog(forceRefresh: true)
+    }
+  }
 }

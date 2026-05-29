@@ -19,6 +19,11 @@ protocol CatalogRepositoryProtocol {
 
 protocol CatalogRepositoryLogging {
   func cacheDecodingFailed(_ error: Error)
+  func remoteFailedServingStaleCatalog(_ error: Error)
+}
+
+extension CatalogRepositoryLogging {
+  func remoteFailedServingStaleCatalog(_ error: Error) {}
 }
 
 struct CatalogAPIService: CatalogRemoteServicing {
@@ -144,12 +149,16 @@ final class CatalogRepository: CatalogRepositoryProtocol {
       // next successful load will refresh. Only `forceRefresh` callers (e.g.
       // an explicit "refresh now" tap) propagate the error.
       if !forceRefresh, let envelope {
+        logger.remoteFailedServingStaleCatalog(error)
         return envelope.catalog
       }
       throw error
     }
   }
 
+  /// Force-refreshes the catalog from the remote. Always throws on remote
+  /// failure rather than falling back to a stale cache — callers are explicit
+  /// user actions ("refresh now") that should surface the failure.
   func refreshCatalog() async throws -> CatalogResponseModel {
     let catalog = try await remote.fetchCatalog()
     try? writeEnvelope(catalog)
@@ -162,5 +171,9 @@ struct DefaultCatalogRepositoryLogger: CatalogRepositoryLogging {
 
   func cacheDecodingFailed(_ error: Error) {
     DefaultCatalogRepositoryLogger.logger.error("Failed to decode catalog cache: \(error.localizedDescription, privacy: .public)")
+  }
+
+  func remoteFailedServingStaleCatalog(_ error: Error) {
+    DefaultCatalogRepositoryLogger.logger.warning("Remote catalog fetch failed; serving stale cache: \(error.localizedDescription, privacy: .public)")
   }
 }
