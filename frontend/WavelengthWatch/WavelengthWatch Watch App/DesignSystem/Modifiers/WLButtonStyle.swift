@@ -26,7 +26,7 @@ struct WLPrimaryButtonStyle: ButtonStyle {
           .fill(tint.opacity(configuration.isPressed ? 0.5 : 0.8))
       )
       .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
-      .animation(.easeInOut(duration: 0.15), value: configuration.isPressed)
+      .wlAnimation(.easeInOut(duration: 0.15), value: configuration.isPressed)
   }
 }
 
@@ -59,7 +59,7 @@ struct WLSecondaryButtonStyle: ButtonStyle {
           )
       )
       .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
-      .animation(.easeInOut(duration: 0.15), value: configuration.isPressed)
+      .wlAnimation(.easeInOut(duration: 0.15), value: configuration.isPressed)
   }
 }
 
