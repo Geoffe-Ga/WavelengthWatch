@@ -48,6 +48,12 @@ final class ContentViewModel: ObservableObject {
   let journalRepository: JournalRepositoryProtocol
   private let journalClient: JournalClientProtocol
 
+  /// True when journal storage couldn't be opened on disk and the app fell
+  /// back to in-memory storage — entries logged this session won't persist.
+  /// Set once at construction by `ContentViewDependencies.makeJournalRepository`;
+  /// the App layer surfaces this to the user as a "Storage Error" alert.
+  let journalStorageIsEphemeral: Bool
+
   /// Returns layers filtered according to the current filter mode.
   ///
   /// The filtered layers change based on `layerFilterMode`:
@@ -76,13 +82,15 @@ final class ContentViewModel: ObservableObject {
     journalRepository: JournalRepositoryProtocol,
     journalClient: JournalClientProtocol,
     initialLayerIndex: Int = 0,
-    initialPhaseIndex: Int = 0
+    initialPhaseIndex: Int = 0,
+    journalStorageIsEphemeral: Bool = false
   ) {
     self.catalogRepository = catalogRepository
     self.journalRepository = journalRepository
     self.journalClient = journalClient
     self.selectedLayerIndex = initialLayerIndex
     self.selectedPhaseIndex = initialPhaseIndex
+    self.journalStorageIsEphemeral = journalStorageIsEphemeral
   }
 
   @MainActor

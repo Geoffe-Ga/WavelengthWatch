@@ -11,16 +11,18 @@ struct ContentViewDependenciesTests {
   @Test("makeJournalRepository returns the persistent repo when the open succeeds")
   func makeJournalRepository_returnsPersistentOnSuccess() {
     let persistent = InMemoryJournalRepository()
-    let repo = ContentViewDependencies.makeJournalRepository(openPersistent: { persistent })
-    #expect(repo as AnyObject === persistent)
+    let result = ContentViewDependencies.makeJournalRepository(openPersistent: { persistent })
+    #expect(result.repository as AnyObject === persistent)
+    #expect(result.isInMemoryFallback == false)
   }
 
-  @Test("makeJournalRepository falls back to in-memory when the open fails")
+  @Test("makeJournalRepository falls back to in-memory and signals isInMemoryFallback when the open fails")
   func makeJournalRepository_fallsBackOnOpenFailure() {
-    let repo = ContentViewDependencies.makeJournalRepository(openPersistent: {
+    let result = ContentViewDependencies.makeJournalRepository(openPersistent: {
       throw FactoryFailure()
     })
-    #expect(repo is InMemoryJournalRepository)
+    #expect(result.repository is InMemoryJournalRepository)
+    #expect(result.isInMemoryFallback == true)
   }
 
   // MARK: - makeJournalQueue

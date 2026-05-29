@@ -32,6 +32,9 @@ struct RootShellView: View {
   @State private var showingOnboarding = false
   @State private var isShowingDetailView = false
   @State private var navigationPath = NavigationPath()
+  /// True when this session has surfaced the journal-storage warning to the
+  /// user. Reset on relaunch so the warning re-fires until storage recovers.
+  @State private var showingStorageWarning = false
 
   private var flowSubmissionPresenter: FlowSubmissionPresenter {
     FlowSubmissionPresenter(flowCoordinator: flowCoordinator, viewModel: viewModel)
@@ -49,6 +52,19 @@ struct RootShellView: View {
         }
     }
     .environment(\.isShowingDetailView, $isShowingDetailView)
+    // Warn the user immediately if journal storage couldn't open and the app
+    // is running on the in-memory fallback — otherwise entries silently vanish
+    // on the next termination.
+    .task {
+      if viewModel.journalStorageIsEphemeral, !showingStorageWarning {
+        showingStorageWarning = true
+      }
+    }
+    .alert("Storage Error", isPresented: $showingStorageWarning) {
+      Button("OK", role: .cancel) {}
+    } message: {
+      Text("Your journal couldn't be opened, so entries logged this session won't be saved. Please reopen the app; if the problem continues, contact support.")
+    }
   }
 
   // MARK: - Body decomposition

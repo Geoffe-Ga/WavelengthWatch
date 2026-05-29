@@ -32,6 +32,11 @@ struct ContentViewDependencies {
   let syncService: JournalSyncService
   let journalClient: JournalClientProtocol
   let journalRepository: JournalRepositoryProtocol
+  /// True when `makeJournalRepository` couldn't open the on-disk SQLite store
+  /// and fell back to `InMemoryJournalRepository`. Journal entries logged in
+  /// this session will not persist past app termination; the App layer should
+  /// surface this to the user.
+  let journalStorageIsEphemeral: Bool
   let catalogRepository: CatalogRepositoryProtocol
   /// Owns the dual-axis navigation selection and its reconciliation with
   /// `viewModel`; `ContentView` holds it as its single navigation state.
@@ -62,7 +67,7 @@ struct ContentViewDependencies {
       remote: CatalogAPIService(apiClient: apiClient),
       cache: FileCatalogCacheStore()
     )
-    let journalRepository = Self.makeJournalRepository()
+    let (journalRepository, journalStorageIsEphemeral) = Self.makeJournalRepository()
     let syncSettings = SyncSettings()
     let journalQueue = Self.makeJournalQueue()
     let networkMonitor = NetworkMonitor()
@@ -84,7 +89,8 @@ struct ContentViewDependencies {
       journalRepository: journalRepository,
       journalClient: journalClient,
       initialLayerIndex: initialLayer,
-      initialPhaseIndex: storedPhase
+      initialPhaseIndex: storedPhase,
+      journalStorageIsEphemeral: journalStorageIsEphemeral
     )
     let flowCoordinator = FlowCoordinator(contentViewModel: viewModel)
     let syncSettingsViewModel = SyncSettingsViewModel(syncSettings: syncSettings)
@@ -105,6 +111,7 @@ struct ContentViewDependencies {
       syncService: syncService,
       journalClient: journalClient,
       journalRepository: journalRepository,
+      journalStorageIsEphemeral: journalStorageIsEphemeral,
       catalogRepository: catalogRepository,
       navigationViewModel: navigationViewModel
     )
@@ -112,10 +119,14 @@ struct ContentViewDependencies {
 
   // MARK: - Repository / queue construction
 
-  /// Opens the on-disk SQLite journal repository, falling back to
-  /// in-memory storage if open fails (SwiftUI previews, test harness,
-  /// or a corrupted database file). The fallback keeps the app
-  /// functional but entries logged in the session don't persist.
+  /// Opens the on-disk SQLite journal repository, falling back to in-memory
+  /// storage if open fails (SwiftUI previews, test harness, or a corrupted
+  /// database file). The fallback keeps the app functional but entries logged
+  /// in the session don't persist — callers must surface that to the user.
+  ///
+  /// Returns the repository plus an `isInMemoryFallback` flag so the App layer
+  /// can show a "Storage Error" warning rather than silently lose data on the
+  /// next app termination.
   ///
   /// `openPersistent` is injectable so the fallback branch can be tested
   /// without a genuinely corrupt database file.
@@ -126,14 +137,14 @@ struct ContentViewDependencies {
       try repository.open()
       return repository
     }
-  ) -> JournalRepositoryProtocol {
+  ) -> (repository: JournalRepositoryProtocol, isInMemoryFallback: Bool) {
     do {
-      return try openPersistent()
+      return try (openPersistent(), false)
     } catch {
       logger.warning(
         "Journal database open failed: \(error.localizedDescription, privacy: .public). Falling back to in-memory storage."
       )
-      return InMemoryJournalRepository()
+      return (InMemoryJournalRepository(), true)
     }
   }
 
