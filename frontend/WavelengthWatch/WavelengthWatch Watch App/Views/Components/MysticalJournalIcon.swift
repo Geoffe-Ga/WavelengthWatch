@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MysticalJournalIcon: View {
   let color: Color
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var isGlowing = false
 
   var body: some View {
@@ -22,12 +23,22 @@ struct MysticalJournalIcon: View {
         .foregroundColor(color.opacity(isGlowing ? 0.9 : 0.6))
     }
     .scaleEffect(isGlowing ? 1.1 : 1.0)
-    .animation(
+    .wlAnimation(
       .easeInOut(duration: 1.5).repeatForever(autoreverses: true),
       value: isGlowing
     )
     .onAppear {
-      isGlowing = true
+      // Don't start the perpetual glow loop under Reduce Motion — leave the
+      // icon static at its base appearance.
+      if !reduceMotion {
+        isGlowing = true
+      }
+    }
+    // Stay reactive if Reduce Motion is toggled mid-session: snap to the
+    // static base when enabled (so the icon doesn't freeze mid-glow) and
+    // resume the loop when disabled.
+    .onChange(of: reduceMotion) { _, nowReducing in
+      isGlowing = !nowReducing
     }
   }
 }
