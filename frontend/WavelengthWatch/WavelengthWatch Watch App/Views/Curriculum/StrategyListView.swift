@@ -78,6 +78,18 @@ struct StrategyListView: View {
                   }
               }
             }
+            // Tapped via onTapGesture; expose each row as one labeled VoiceOver
+            // element. Only advertise the button trait / action when a tap
+            // would log something, so VoiceOver never announces a dead button.
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Strategy: \(item.strategy)")
+            .accessibilityAddTraits(fallbackCurriculumID != nil ? .isButton : [])
+            .accessibilityHint(fallbackCurriculumID != nil ? "Logs this strategy" : "")
+            .accessibilityAction {
+              guard fallbackCurriculumID != nil else { return }
+              selectedStrategy = item
+              showingJournalConfirmation = true
+            }
           }
         }
         .padding(.horizontal, 8)

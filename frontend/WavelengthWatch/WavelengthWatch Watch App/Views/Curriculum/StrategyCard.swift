@@ -12,6 +12,12 @@ struct StrategyCard: View {
     phase.medicinal.first?.id ?? phase.toxic.first?.id
   }
 
+  /// Whether tapping logs anything: either a curriculum entry exists to log
+  /// the strategy against, or we're inside the strategy-selection flow.
+  private var isActionable: Bool {
+    primaryID != nil || flowCoordinator.currentStep == .selectingStrategy
+  }
+
   var body: some View {
     ZStack(alignment: .topTrailing) {
       HStack {
@@ -31,12 +37,12 @@ struct StrategyCard: View {
           .fill(WLColorTokens.cardFill(tinted: color))
       )
       .onTapGesture {
-        if primaryID != nil || flowCoordinator.currentStep == .selectingStrategy {
+        if isActionable {
           showingJournalConfirmation = true
         }
       }
 
-      if primaryID != nil || flowCoordinator.currentStep == .selectingStrategy {
+      if isActionable {
         MysticalJournalIcon(color: color)
           .padding(.top, 6)
           .padding(.trailing, 8)
@@ -52,6 +58,17 @@ struct StrategyCard: View {
       Button("Cancel", role: .cancel) {}
     } message: {
       Text("Would you like to log \"\(strategy.strategy)\"?")
+    }
+    // Tapped via onTapGesture; expose as one labeled VoiceOver element. Only
+    // advertise the button trait / action when a tap would actually log
+    // something, so VoiceOver never announces a dead button.
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel("Strategy: \(strategy.strategy)")
+    .accessibilityAddTraits(isActionable ? .isButton : [])
+    .accessibilityHint(isActionable ? "Logs this strategy" : "")
+    .accessibilityAction {
+      guard isActionable else { return }
+      showingJournalConfirmation = true
     }
   }
 
