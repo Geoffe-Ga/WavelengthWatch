@@ -28,13 +28,10 @@ struct CurriculumCard: View {
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(.horizontal, 16)
       .padding(.vertical, 12)
-      .background(
-        RoundedRectangle(cornerRadius: WLSpacingTokens.cardCornerRadius)
-          .fill(WLColorTokens.cardGradient(accent))
-          .overlay(
-            RoundedRectangle(cornerRadius: WLSpacingTokens.cardCornerRadius)
-              .stroke(accent.opacity(0.5), lineWidth: 0.5)
-          )
+      .wlCardSurface(
+        WLColorTokens.cardGradient(accent),
+        cornerRadius: WLSpacingTokens.cardCornerRadius,
+        stroke: accent.opacity(0.5)
       )
       .onTapGesture {
         showingJournalConfirmation = true
