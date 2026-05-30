@@ -32,9 +32,9 @@ struct StrategyCard: View {
         Spacer(minLength: 20)
       }
       .padding(8)
-      .background(
-        RoundedRectangle(cornerRadius: WLSpacingTokens.cardCornerRadiusSmall)
-          .fill(WLColorTokens.cardFill(tinted: color))
+      .wlCardSurface(
+        WLColorTokens.cardFill(tinted: color),
+        cornerRadius: WLSpacingTokens.cardCornerRadiusSmall
       )
       .onTapGesture {
         if isActionable {

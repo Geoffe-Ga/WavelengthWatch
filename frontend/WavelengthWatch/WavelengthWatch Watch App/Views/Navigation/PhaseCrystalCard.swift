@@ -11,6 +11,7 @@ struct PhaseCrystalCard: View {
   let phase: CatalogPhaseModel
   let color: Color
   let scale: CGFloat
+  @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
   var body: some View {
     ZStack {
@@ -118,18 +119,29 @@ struct PhaseCrystalCard: View {
     }
   }
 
+  /// Translucent dark scrim normally; a solid opaque surface when "Reduce
+  /// Transparency" is on so the layer-tinted page can't bleed through and
+  /// reduce legibility. The gradient stroke and depth shadows are preserved
+  /// in both modes.
+  private var cardFill: AnyShapeStyle {
+    if reduceTransparency {
+      return AnyShapeStyle(WLColorTokens.opaqueSurface)
+    }
+    return AnyShapeStyle(
+      LinearGradient(
+        gradient: Gradient(colors: [
+          Color.black.opacity(0.4),
+          Color.black.opacity(0.6),
+        ]),
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+      )
+    )
+  }
+
   private var cardBackground: some View {
     RoundedRectangle(cornerRadius: 16)
-      .fill(
-        LinearGradient(
-          gradient: Gradient(colors: [
-            Color.black.opacity(0.4),
-            Color.black.opacity(0.6),
-          ]),
-          startPoint: .topLeading,
-          endPoint: .bottomTrailing
-        )
-      )
+      .fill(cardFill)
       .overlay(
         RoundedRectangle(cornerRadius: 16)
           .stroke(
