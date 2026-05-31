@@ -13,11 +13,21 @@ import SwiftUI
 /// `Curriculum/StrategyCard` (a tap-action wrapper) and
 /// `Components/StrategySummaryCard` (an analytics aggregate).
 struct StrategyExpressionCard: View {
+  let label: String
   let strategy: CatalogStrategyModel
+
+  /// - Parameters:
+  ///   - label: Section label above the strategy (default "Strategy"), for
+  ///     parity with `EmotionExpressionCard`'s `label`.
+  ///   - strategy: The strategy to render.
+  init(label: String = "Strategy", strategy: CatalogStrategyModel) {
+    self.label = label
+    self.strategy = strategy
+  }
 
   var body: some View {
     VStack(alignment: .leading, spacing: 8) {
-      Text("Strategy")
+      Text(label)
         .font(.caption)
         .foregroundStyle(.secondary)
         .textCase(.uppercase)

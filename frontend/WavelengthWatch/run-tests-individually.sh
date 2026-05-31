@@ -53,6 +53,8 @@ ALL_SUITES=(
   "MysticalJournalIconTests"
   "LayerFilterModeTests"
   "EmotionSummaryCardTests"
+  "EmotionExpressionCardTests"
+  "StrategyExpressionCardTests"
   "ContentViewFilteringTests"
   "JournalFlowViewModelTests"
   "JournalQueueTests"
