@@ -204,7 +204,7 @@ private struct SelfCareDetailView: View {
       VStack(spacing: 16) {
         switch viewModel.state {
         case .idle, .loading:
-          AnalyticsLoadingStates.loadingView
+          AnalyticsLoadingView()
         case let .loaded(analytics):
           StrategyUsageView(
             analytics: analytics,
@@ -213,7 +213,7 @@ private struct SelfCareDetailView: View {
           )
           .padding()
         case let .error(message):
-          AnalyticsLoadingStates.errorView(
+          AnalyticsErrorView(
             message: message,
             retry: { await viewModel.retry(limit: AnalyticsDetailHubView.defaultTopStrategiesLimit) }
           )
@@ -267,7 +267,7 @@ private struct TemporalPatternsDetailView: View {
       VStack(spacing: 16) {
         switch viewModel.state {
         case .idle, .loading:
-          AnalyticsLoadingStates.loadingView
+          AnalyticsLoadingView()
         case let .loaded(patterns):
           TemporalPatternsView(
             patterns: patterns,
@@ -277,7 +277,7 @@ private struct TemporalPatternsDetailView: View {
           )
           .padding()
         case let .error(message):
-          AnalyticsLoadingStates.errorView(
+          AnalyticsErrorView(
             message: message,
             retry: {
               await viewModel.retry(
@@ -333,12 +333,12 @@ private struct GrowthIndicatorsDetailView: View {
       VStack(spacing: 16) {
         switch viewModel.state {
         case .idle, .loading:
-          AnalyticsLoadingStates.loadingView
+          AnalyticsLoadingView()
         case let .loaded(indicators):
           GrowthIndicatorsView(indicators: indicators)
             .padding()
         case let .error(message):
-          AnalyticsLoadingStates.errorView(
+          AnalyticsErrorView(
             message: message,
             retry: {
               await viewModel.retry(
@@ -360,48 +360,5 @@ private struct GrowthIndicatorsDetailView: View {
         )
       }
     }
-  }
-}
-
-// MARK: - Shared UI Components
-
-/// Shared loading and error states for analytics detail views.
-///
-/// Extracted to avoid duplication across SelfCare, Temporal, and Growth detail views.
-private enum AnalyticsLoadingStates {
-  static var loadingView: some View {
-    VStack(spacing: 16) {
-      ProgressView()
-        .progressViewStyle(.circular)
-        .tint(.white)
-
-      Text("Loading analytics...")
-        .font(.caption)
-        .foregroundColor(.secondary)
-    }
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
-    .padding(.top, 40)
-  }
-
-  static func errorView(message: String, retry: @escaping () async -> Void) -> some View {
-    VStack(spacing: 16) {
-      Image(systemName: "exclamationmark.triangle")
-        .font(.system(size: 40))
-        .foregroundColor(.orange)
-
-      Text("Error")
-        .font(.headline)
-
-      Text(message)
-        .font(.caption)
-        .foregroundColor(.secondary)
-        .multilineTextAlignment(.center)
-
-      Button("Retry") {
-        Task { await retry() }
-      }
-      .buttonStyle(.borderedProminent)
-    }
-    .padding(.top, 40)
   }
 }
