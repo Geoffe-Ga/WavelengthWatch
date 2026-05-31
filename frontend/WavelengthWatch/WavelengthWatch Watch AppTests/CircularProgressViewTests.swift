@@ -63,62 +63,31 @@ struct CircularProgressViewTests {
     #expect(view.size == 200.0)
   }
 
-  // MARK: - Color Tests
+  // MARK: - Tint Tests
 
-  @Test("green color for high percentage (>70%)")
-  func greenColor_forHighPercentage() {
+  // Color is no longer derived from the value (the green/yellow/orange
+  // "performance grading" was removed per #281); the tint is a fixed input.
+
+  @Test("view uses the neutral interactive accent tint by default")
+  func view_usesDefaultTint() {
     let view = CircularProgressView(percentage: 85.0)
 
-    #expect(view.progressColor == .green)
+    #expect(view.tint == WLColorTokens.interactiveAccent)
   }
 
-  @Test("green color for exactly 71%")
-  func greenColor_forExactly71Percent() {
-    let view = CircularProgressView(percentage: 71.0)
+  @Test("default tint does not depend on the percentage value")
+  func view_defaultTintIsValueIndependent() {
+    let low = CircularProgressView(percentage: 10.0)
+    let high = CircularProgressView(percentage: 95.0)
 
-    #expect(view.progressColor == .green)
+    #expect(low.tint == high.tint)
   }
 
-  @Test("yellow color for medium percentage (50-70%)")
-  func yellowColor_forMediumPercentage() {
-    let view = CircularProgressView(percentage: 60.0)
+  @Test("view preserves a custom tint")
+  func view_preservesCustomTint() {
+    let view = CircularProgressView(percentage: 50.0, tint: WLColorTokens.teal)
 
-    #expect(view.progressColor == .yellow)
-  }
-
-  @Test("yellow color for exactly 70%")
-  func yellowColor_forExactly70Percent() {
-    let view = CircularProgressView(percentage: 70.0)
-
-    #expect(view.progressColor == .yellow)
-  }
-
-  @Test("yellow color for exactly 50%")
-  func yellowColor_forExactly50Percent() {
-    let view = CircularProgressView(percentage: 50.0)
-
-    #expect(view.progressColor == .yellow)
-  }
-
-  @Test("orange color for low percentage (<50%)")
-  func orangeColor_forLowPercentage() {
-    let view = CircularProgressView(percentage: 30.0)
-
-    #expect(view.progressColor == .orange)
-  }
-
-  @Test("orange color for exactly 49%")
-  func orangeColor_forExactly49Percent() {
-    let view = CircularProgressView(percentage: 49.0)
-
-    #expect(view.progressColor == .orange)
-  }
-
-  @Test("orange color for 0%")
-  func orangeColor_for0Percent() {
-    let view = CircularProgressView(percentage: 0.0)
-
-    #expect(view.progressColor == .orange)
+    #expect(view.tint == WLColorTokens.teal)
   }
 
   // MARK: - Edge Case Tests
@@ -191,12 +160,13 @@ struct CircularProgressViewTests {
   func view_worksWithAllParameters() {
     let view = CircularProgressView(
       percentage: 85.5,
-      size: 150.0
+      size: 150.0,
+      tint: WLColorTokens.purple
     )
 
     #expect(view.percentage == 85.5)
     #expect(view.size == 150.0)
-    #expect(view.progressColor == .green)
+    #expect(view.tint == WLColorTokens.purple)
     #expect(view.formattedPercentage == "85.5%")
   }
 }

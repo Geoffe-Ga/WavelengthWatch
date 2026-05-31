@@ -1,58 +1,62 @@
 import SwiftUI
 
-/// A reusable circular progress indicator with percentage display and color coding.
+/// A reusable circular progress indicator with a centered percentage label.
 ///
-/// This component displays progress in a circular format with a centered percentage value.
-/// The color automatically adjusts based on the percentage value:
-/// - Green: >70% (high performance)
-/// - Yellow: 50-70% (medium performance)
-/// - Orange: <50% (low performance)
+/// The ring renders in a single `tint` color (default
+/// `WLColorTokens.interactiveAccent`) and never derives its color from the
+/// value — progress is shown descriptively, not graded good/bad. The previous
+/// green/yellow/orange "performance grading" was removed per #281.
+///
+/// The track holds more contrast under Reduce Transparency so the unfilled
+/// portion stays legible, and the fill animation is suppressed under Reduce
+/// Motion via `wlAnimation`.
 ///
 /// ## Usage
 /// ```swift
-/// // Default size (100pt)
-/// CircularProgressView(percentage: 75.0)
-///
-/// // Custom size
-/// CircularProgressView(percentage: 60.0, size: 120.0)
-///
-/// // With animation
-/// @State private var progress: Double = 0
-/// CircularProgressView(percentage: progress)
-///   .onAppear {
-///     withAnimation {
-///       progress = 75.0
-///     }
-///   }
+/// CircularProgressView(percentage: 75.0)                       // default tint + size
+/// CircularProgressView(percentage: 60.0, size: 120.0)          // custom size
+/// CircularProgressView(percentage: 40.0, tint: WLColorTokens.teal)
 /// ```
 struct CircularProgressView: View {
-  /// The percentage value to display (0-100)
+  /// The percentage value to display (0–100).
   let percentage: Double
 
-  /// The size of the circular progress view in points
+  /// The diameter of the ring in points.
   let size: CGFloat
 
-  /// Creates a new circular progress view
+  /// The ring's fill color. Neutral by default; callers may pass a section or
+  /// layer accent, but the component never derives color from the value.
+  let tint: Color
+
+  @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+  /// Creates a new circular progress view.
   /// - Parameters:
-  ///   - percentage: The percentage value to display (0-100)
-  ///   - size: The size of the view in points (default: 100)
-  init(percentage: Double, size: CGFloat = 100.0) {
+  ///   - percentage: The percentage value to display (0–100).
+  ///   - size: The diameter of the view in points (default: 100).
+  ///   - tint: The ring fill color (default: `WLColorTokens.interactiveAccent`).
+  init(
+    percentage: Double,
+    size: CGFloat = 100.0,
+    tint: Color = WLColorTokens.interactiveAccent
+  ) {
     self.percentage = percentage
     self.size = size
+    self.tint = tint
   }
 
   var body: some View {
     ZStack {
-      // Background circle
+      // Track circle
       Circle()
-        .stroke(Color.secondary.opacity(0.2), lineWidth: strokeWidth)
+        .stroke(trackColor, lineWidth: strokeWidth)
         .frame(width: size, height: size)
 
       // Progress circle
       Circle()
         .trim(from: 0, to: clampedProgress)
         .stroke(
-          progressColor,
+          tint,
           style: StrokeStyle(
             lineWidth: strokeWidth,
             lineCap: .round
@@ -60,30 +64,19 @@ struct CircularProgressView: View {
         )
         .frame(width: size, height: size)
         .rotationEffect(.degrees(-90)) // Start from top
-        .animation(.easeInOut(duration: 0.5), value: percentage)
+        .wlAnimation(.easeInOut(duration: 0.5), value: percentage)
 
       // Percentage text
       Text(formattedPercentage)
         .font(percentageFontSize)
         .fontWeight(.bold)
-        .foregroundColor(progressColor)
+        .foregroundColor(WLColorTokens.primaryText)
     }
   }
 
   // MARK: - Computed Properties
 
-  /// Returns the progress color based on percentage thresholds
-  var progressColor: Color {
-    if percentage > 70 {
-      .green
-    } else if percentage >= 50 {
-      .yellow
-    } else {
-      .orange
-    }
-  }
-
-  /// Returns the formatted percentage string
+  /// Returns the formatted percentage string.
   var formattedPercentage: String {
     // Show one decimal place if needed, otherwise show whole number
     if percentage.truncatingRemainder(dividingBy: 1) == 0 {
@@ -93,17 +86,24 @@ struct CircularProgressView: View {
     }
   }
 
-  /// Clamps the progress value between 0 and 1 for the trim modifier
+  /// Track (unfilled) ring color. Holds more contrast under Reduce
+  /// Transparency so the ring stays visible without relying on faint
+  /// translucency.
+  private var trackColor: Color {
+    Color.secondary.opacity(reduceTransparency ? 0.4 : 0.2)
+  }
+
+  /// Clamps the progress value between 0 and 1 for the trim modifier.
   private var clampedProgress: CGFloat {
     min(max(percentage / 100.0, 0.0), 1.0)
   }
 
-  /// Calculates the stroke width based on size
+  /// Calculates the stroke width based on size (10% of the diameter).
   private var strokeWidth: CGFloat {
-    size * 0.1 // 10% of the size
+    size * 0.1
   }
 
-  /// Calculates the font size based on size
+  /// Adapts the centered label font to the ring size.
   private var percentageFontSize: Font {
     if size < 80 {
       .caption
@@ -117,50 +117,40 @@ struct CircularProgressView: View {
 
 // MARK: - Previews
 
-#Preview("High Progress (85%)") {
-  CircularProgressView(percentage: 85.0)
-    .padding()
-    .previewDisplayName("Green - High")
+#Preview("Default tint") {
+  VStack(spacing: 20) {
+    CircularProgressView(percentage: 85.0)
+    CircularProgressView(percentage: 35.0)
+  }
+  .padding()
 }
 
-#Preview("Medium Progress (60%)") {
-  CircularProgressView(percentage: 60.0)
-    .padding()
-    .previewDisplayName("Yellow - Medium")
+#Preview("Custom tints") {
+  VStack(spacing: 20) {
+    CircularProgressView(percentage: 70.0, tint: WLColorTokens.teal)
+    CircularProgressView(percentage: 45.0, tint: WLColorTokens.purple)
+  }
+  .padding()
 }
 
-#Preview("Low Progress (35%)") {
-  CircularProgressView(percentage: 35.0)
-    .padding()
-    .previewDisplayName("Orange - Low")
+#Preview("Sizes") {
+  VStack(spacing: 20) {
+    CircularProgressView(percentage: 75.0, size: 150.0)
+    CircularProgressView(percentage: 45.0, size: 60.0)
+  }
+  .padding()
 }
 
-#Preview("Custom Size (150pt)") {
-  CircularProgressView(percentage: 75.0, size: 150.0)
-    .padding()
-    .previewDisplayName("Large Size")
-}
-
-#Preview("Small Size (60pt)") {
-  CircularProgressView(percentage: 45.0, size: 60.0)
-    .padding()
-    .previewDisplayName("Small Size")
-}
-
-#Preview("Edge Cases") {
+#Preview("Edge cases") {
   VStack(spacing: 20) {
     CircularProgressView(percentage: 0.0)
     CircularProgressView(percentage: 100.0)
-    CircularProgressView(percentage: 50.0)
-    CircularProgressView(percentage: 70.0)
   }
   .padding()
-  .previewDisplayName("Edge Cases")
 }
 
 #Preview("Animation Demo") {
   AnimatedProgressPreview()
-    .previewDisplayName("Animated")
 }
 
 /// Helper view for animation preview
