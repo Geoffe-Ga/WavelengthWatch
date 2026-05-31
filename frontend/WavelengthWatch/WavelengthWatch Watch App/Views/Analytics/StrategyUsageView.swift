@@ -26,7 +26,7 @@ struct StrategyUsageView: View {
         .foregroundColor(.secondary)
 
       if analytics.topStrategies.isEmpty, phaseGroups.isEmpty {
-        EmptyStateView()
+        AnalyticsEmptyView(systemImage: "chart.bar.xaxis", title: "No strategies used yet")
       } else {
         VStack(alignment: .leading, spacing: 12) {
           // Overall diversity
@@ -190,20 +190,5 @@ private struct StrategyCardView: View {
         .fontWeight(.medium)
         .foregroundColor(.secondary)
     }
-  }
-}
-
-private struct EmptyStateView: View {
-  var body: some View {
-    VStack(spacing: 8) {
-      Image(systemName: "chart.bar.xaxis")
-        .font(.title)
-        .foregroundColor(.secondary)
-      Text("No strategies used yet")
-        .font(.caption)
-        .foregroundColor(.secondary)
-    }
-    .frame(maxWidth: .infinity)
-    .padding(.vertical, 20)
   }
 }

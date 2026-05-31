@@ -61,6 +61,7 @@ ALL_SUITES=(
   "JournalReviewViewTests"
   "CircularProgressViewTests"
   "AnalyticsErrorViewTests"
+  "AnalyticsEmptyViewTests"
   "StreakDisplayViewTests"
   "HorizontalBarChartTests"
   "AnalyticsViewModelTests"

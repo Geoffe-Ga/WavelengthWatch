@@ -12,7 +12,7 @@ struct PhaseJourneyView: View {
         .foregroundColor(.secondary)
 
       if phaseDistribution.isEmpty {
-        EmptyStateView()
+        AnalyticsEmptyView(systemImage: "chart.line.uptrend.xyaxis", title: "No data")
       } else {
         HorizontalBarChart(items: barChartItems)
       }
@@ -48,20 +48,5 @@ struct PhaseJourneyView: View {
     default:
       .gray // Unknown phases
     }
-  }
-}
-
-private struct EmptyStateView: View {
-  var body: some View {
-    VStack(spacing: 8) {
-      Image(systemName: "chart.line.uptrend.xyaxis")
-        .font(.title)
-        .foregroundColor(.secondary)
-      Text("No data")
-        .font(.caption)
-        .foregroundColor(.secondary)
-    }
-    .frame(maxWidth: .infinity)
-    .padding(.vertical, 20)
   }
 }

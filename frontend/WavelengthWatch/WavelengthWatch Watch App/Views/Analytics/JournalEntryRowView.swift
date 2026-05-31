@@ -45,18 +45,3 @@ struct JournalEntryRowView: View {
     return strategyNameById[sid]
   }
 }
-
-/// Placeholder shown when the drill-down filter matches no journal entries.
-struct JournalEntryListEmptyStateView: View {
-  var body: some View {
-    VStack(spacing: 8) {
-      Image(systemName: "tray")
-        .font(.title)
-        .foregroundColor(.secondary)
-      Text("No entries yet")
-        .font(.caption)
-        .foregroundColor(.secondary)
-    }
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
-  }
-}

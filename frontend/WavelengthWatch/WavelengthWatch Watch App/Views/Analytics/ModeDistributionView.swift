@@ -12,7 +12,7 @@ struct ModeDistributionView: View {
         .foregroundColor(.secondary)
 
       if layerDistribution.isEmpty {
-        EmptyStateView()
+        AnalyticsEmptyView(systemImage: "chart.bar.xaxis", title: "No data")
       } else {
         HorizontalBarChart(items: barChartItems)
       }
@@ -32,21 +32,6 @@ struct ModeDistributionView: View {
         color: Color(hex: layer.color) ?? .gray
       )
     }
-  }
-}
-
-private struct EmptyStateView: View {
-  var body: some View {
-    VStack(spacing: 8) {
-      Image(systemName: "chart.bar.xaxis")
-        .font(.title)
-        .foregroundColor(.secondary)
-      Text("No data")
-        .font(.caption)
-        .foregroundColor(.secondary)
-    }
-    .frame(maxWidth: .infinity)
-    .padding(.vertical, 20)
   }
 }
 

@@ -137,19 +137,11 @@ struct AnalyticsView: View {
   // MARK: - Empty State
 
   var emptyStateView: some View {
-    VStack(spacing: 16) {
-      Image(systemName: "chart.bar")
-        .font(.system(size: 48))
-        .foregroundColor(.blue.opacity(0.6))
-
-      Text("No Data Yet")
-        .font(.headline)
-
-      Text("Start logging your emotions to see insights and patterns.")
-        .font(.caption)
-        .foregroundColor(.secondary)
-        .multilineTextAlignment(.center)
-    }
-    .padding(.top, 40)
+    AnalyticsEmptyView(
+      systemImage: "chart.bar",
+      title: "No Data Yet",
+      message: "Start logging your emotions to see insights and patterns.",
+      prominence: .prominent
+    )
   }
 }
