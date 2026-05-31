@@ -140,10 +140,10 @@ struct PhaseCrystalCard: View {
   }
 
   private var cardBackground: some View {
-    RoundedRectangle(cornerRadius: 16)
+    RoundedRectangle(cornerRadius: WLSpacingTokens.cardCornerRadiusLarge)
       .fill(cardFill)
       .overlay(
-        RoundedRectangle(cornerRadius: 16)
+        RoundedRectangle(cornerRadius: WLSpacingTokens.cardCornerRadiusLarge)
           .stroke(
             LinearGradient(
               gradient: Gradient(colors: [
