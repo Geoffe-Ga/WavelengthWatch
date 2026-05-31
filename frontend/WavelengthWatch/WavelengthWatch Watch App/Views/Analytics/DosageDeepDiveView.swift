@@ -11,7 +11,7 @@ struct DosageDeepDiveView: View {
         .foregroundColor(.secondary)
 
       if topEmotions.isEmpty {
-        EmptyStateView()
+        AnalyticsEmptyView(systemImage: "heart.text.square", title: "No emotions tracked")
       } else {
         ScrollView {
           VStack(alignment: .leading, spacing: 16) {
@@ -98,20 +98,5 @@ private struct EmotionRow: View {
     .padding(.horizontal, 8)
     .background(Color.secondary.opacity(0.1))
     .cornerRadius(6)
-  }
-}
-
-private struct EmptyStateView: View {
-  var body: some View {
-    VStack(spacing: 8) {
-      Image(systemName: "heart.text.square")
-        .font(.title)
-        .foregroundColor(.secondary)
-      Text("No emotions tracked")
-        .font(.caption)
-        .foregroundColor(.secondary)
-    }
-    .frame(maxWidth: .infinity)
-    .padding(.vertical, 20)
   }
 }

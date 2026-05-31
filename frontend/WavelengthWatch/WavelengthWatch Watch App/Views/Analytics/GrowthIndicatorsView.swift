@@ -11,7 +11,7 @@ struct GrowthIndicatorsView: View {
         .foregroundColor(.secondary)
 
       if isEmpty {
-        EmptyStateView()
+        AnalyticsEmptyView(systemImage: "waveform.path", title: "No activity data yet")
       } else {
         VStack(alignment: .leading, spacing: 8) {
           MedicinalTrendView(
@@ -169,20 +169,5 @@ private struct DiversityCoverageView: View {
       }
     }
     .padding(.top, 4)
-  }
-}
-
-private struct EmptyStateView: View {
-  var body: some View {
-    VStack(spacing: 8) {
-      Image(systemName: "waveform.path")
-        .font(.title)
-        .foregroundColor(.secondary)
-      Text("No activity data yet")
-        .font(.caption)
-        .foregroundColor(.secondary)
-    }
-    .frame(maxWidth: .infinity)
-    .padding(.vertical, 20)
   }
 }

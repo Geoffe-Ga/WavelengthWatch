@@ -64,7 +64,8 @@ struct JournalEntryListView: View {
       } else if let loadError {
         AnalyticsErrorView(message: loadError)
       } else if filteredEntries.isEmpty {
-        JournalEntryListEmptyStateView()
+        AnalyticsEmptyView(systemImage: "tray", title: "No entries yet")
+          .frame(maxHeight: .infinity)
       } else {
         List(filteredEntries) { entry in
           JournalEntryRowView(

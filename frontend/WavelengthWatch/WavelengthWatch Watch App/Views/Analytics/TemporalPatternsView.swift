@@ -38,7 +38,7 @@ struct TemporalPatternsView: View {
         .foregroundColor(.secondary)
 
       if patterns.hourlyDistribution.isEmpty {
-        EmptyStateView()
+        AnalyticsEmptyView(systemImage: "clock", title: "No rhythm data yet")
       } else {
         VStack(alignment: .leading, spacing: 6) {
           ForEach(hourlySummaries, id: \.hour) { summary in
@@ -164,20 +164,5 @@ private struct HourlyRow: View {
         .foregroundColor(.secondary)
         .frame(width: 20, alignment: .trailing)
     }
-  }
-}
-
-private struct EmptyStateView: View {
-  var body: some View {
-    VStack(spacing: 8) {
-      Image(systemName: "clock")
-        .font(.title)
-        .foregroundColor(.secondary)
-      Text("No rhythm data yet")
-        .font(.caption)
-        .foregroundColor(.secondary)
-    }
-    .frame(maxWidth: .infinity)
-    .padding(.vertical, 20)
   }
 }
