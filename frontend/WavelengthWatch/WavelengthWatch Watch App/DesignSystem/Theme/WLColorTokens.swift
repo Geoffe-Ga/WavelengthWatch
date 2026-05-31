@@ -64,6 +64,11 @@ enum WLColorTokens {
   /// Negative status (offline, sync failed).
   static let statusNegative: Color = .red
 
+  /// Warning / recoverable-error affordance (e.g. error-state icons). Distinct
+  /// from `statusNegative` — signals "something went wrong, try again" rather
+  /// than a hard failure state.
+  static let warningAccent: Color = .orange
+
   // MARK: - Text Colors
 
   static let primaryText: Color = .white

@@ -60,22 +60,3 @@ struct JournalEntryListEmptyStateView: View {
     .frame(maxWidth: .infinity, maxHeight: .infinity)
   }
 }
-
-/// Placeholder shown when entry fetch fails.
-struct JournalEntryListErrorStateView: View {
-  let message: String
-
-  var body: some View {
-    VStack(spacing: 8) {
-      Image(systemName: "exclamationmark.triangle")
-        .font(.title)
-        .foregroundColor(.orange)
-      Text(message)
-        .font(.caption2)
-        .foregroundColor(.secondary)
-        .multilineTextAlignment(.center)
-        .padding(.horizontal)
-    }
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
-  }
-}

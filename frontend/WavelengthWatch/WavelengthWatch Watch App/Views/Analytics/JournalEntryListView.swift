@@ -59,10 +59,10 @@ struct JournalEntryListView: View {
   var body: some View {
     Group {
       if isLoading {
-        ProgressView()
-          .frame(maxWidth: .infinity, maxHeight: .infinity)
+        AnalyticsLoadingView()
+          .padding()
       } else if let loadError {
-        JournalEntryListErrorStateView(message: loadError)
+        AnalyticsErrorView(message: loadError)
       } else if filteredEntries.isEmpty {
         JournalEntryListEmptyStateView()
       } else {

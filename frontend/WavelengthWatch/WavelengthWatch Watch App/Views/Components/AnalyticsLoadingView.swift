@@ -33,33 +33,43 @@ struct AnalyticsLoadingView: View {
   }
 }
 
-/// A view modifier that adds a shimmer animation effect to loading skeletons
+/// A view modifier that adds a shimmer animation effect to loading skeletons.
+///
+/// The shimmer is a perpetual translucent sweep, so it is suppressed under
+/// either Reduce Motion (no perpetual animation) or Reduce Transparency (no
+/// decorative translucent overlay) — leaving a static skeleton in those modes.
 struct ShimmerModifier: ViewModifier {
   @State private var phase: CGFloat = 0
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
   func body(content: Content) -> some View {
-    content
-      .overlay(
-        GeometryReader { geometry in
-          LinearGradient(
-            gradient: Gradient(colors: [
-              Color.clear,
-              Color.white.opacity(0.3),
-              Color.clear,
-            ]),
-            startPoint: .leading,
-            endPoint: .trailing
-          )
-          .frame(width: geometry.size.width * 2)
-          .offset(x: -geometry.size.width + (geometry.size.width * 2 * phase))
+    if reduceMotion || reduceTransparency {
+      content
+    } else {
+      content
+        .overlay(
+          GeometryReader { geometry in
+            LinearGradient(
+              gradient: Gradient(colors: [
+                Color.clear,
+                Color.white.opacity(0.3),
+                Color.clear,
+              ]),
+              startPoint: .leading,
+              endPoint: .trailing
+            )
+            .frame(width: geometry.size.width * 2)
+            .offset(x: -geometry.size.width + (geometry.size.width * 2 * phase))
+          }
+          .mask(content)
+        )
+        .onAppear {
+          withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
+            phase = 1
+          }
         }
-        .mask(content)
-      )
-      .onAppear {
-        withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
-          phase = 1
-        }
-      }
+    }
   }
 }
 
