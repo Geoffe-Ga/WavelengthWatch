@@ -17,8 +17,7 @@ struct StrategyExpressionCard: View {
   let strategy: CatalogStrategyModel
 
   /// - Parameters:
-  ///   - label: Section label above the strategy (default "Strategy"), for
-  ///     parity with `EmotionExpressionCard`'s `label`.
+  ///   - label: Section label rendered above the strategy name (defaults to "Strategy").
   ///   - strategy: The strategy to render.
   init(label: String = "Strategy", strategy: CatalogStrategyModel) {
     self.label = label
