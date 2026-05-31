@@ -111,9 +111,11 @@ private struct BarRow: View {
         }
       }
     }
+    // Single self-sufficient label (e.g. "Green: 24%"); the chart context is
+    // already conveyed by the parent. No separate accessibilityValue, which
+    // would otherwise double-announce the percentage.
     .accessibilityElement(children: .combine)
     .accessibilityLabel("\(item.label): \(formattedPercentage(item.percentage))")
-    .accessibilityValue("Bar chart showing \(formattedPercentage(item.percentage))")
   }
 
   /// Track (unfilled) bar color. Holds more contrast under Reduce
