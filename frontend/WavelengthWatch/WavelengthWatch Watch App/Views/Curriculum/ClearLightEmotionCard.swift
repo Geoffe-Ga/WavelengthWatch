@@ -32,22 +32,17 @@ struct ClearLightEmotionCard: View {
       }
       .padding(.horizontal, 16)
       .padding(.vertical, 10)
-      .background(
-        RoundedRectangle(cornerRadius: WLSpacingTokens.cardCornerRadius)
-          .fill(
-            LinearGradient(
-              gradient: Gradient(colors: [
-                emotion.sourceColor.opacity(0.2),
-                emotion.sourceColor.opacity(0.1),
-              ]),
-              startPoint: .topLeading,
-              endPoint: .bottomTrailing
-            )
-          )
-          .overlay(
-            RoundedRectangle(cornerRadius: WLSpacingTokens.cardCornerRadius)
-              .stroke(emotion.sourceColor.opacity(0.3), lineWidth: 0.5)
-          )
+      .wlCardSurface(
+        LinearGradient(
+          gradient: Gradient(colors: [
+            emotion.sourceColor.opacity(0.2),
+            emotion.sourceColor.opacity(0.1),
+          ]),
+          startPoint: .topLeading,
+          endPoint: .bottomTrailing
+        ),
+        cornerRadius: WLSpacingTokens.cardCornerRadius,
+        stroke: emotion.sourceColor.opacity(0.3)
       )
       .padding(.horizontal, 8)
       .onTapGesture {

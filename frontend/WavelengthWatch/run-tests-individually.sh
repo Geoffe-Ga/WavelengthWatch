@@ -76,6 +76,7 @@ ALL_SUITES=(
   "WLSpacingTokensTests"
   "WLTypographyTokensTests"
   "WLGlassModifierTests"
+  "WLSurfaceModifierTests"
   "WLCardModifierTests"
   "WLButtonStyleTests"
 )
