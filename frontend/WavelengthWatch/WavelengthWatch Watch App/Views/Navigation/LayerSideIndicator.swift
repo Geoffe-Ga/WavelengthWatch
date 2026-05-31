@@ -54,7 +54,6 @@ struct LayerSideIndicator: View {
       )
       .scaleEffect(distance > 2 ? 0.6 : 1.0)
       .opacity(distance > 3 ? 0 : 1)
-      // Decorative capsule resize/scale morph — suppressed under Reduce Motion.
       .wlAnimation(.interactiveSpring(response: 0.3, dampingFraction: 0.7), value: selection)
   }
 

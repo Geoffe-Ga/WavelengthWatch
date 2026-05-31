@@ -38,6 +38,9 @@ extension View {
   /// Applies a rounded card background that degrades from `translucentFill` to
   /// a solid opaque surface under Reduce Transparency. Pass a `Color` or a
   /// `LinearGradient` as the fill, and an optional `stroke` border.
+  ///
+  /// - Parameter strokeWidth: Border width; has no effect unless `stroke` is
+  ///   non-nil (the border is only drawn when a stroke color is supplied).
   func wlCardSurface(
     _ translucentFill: some ShapeStyle,
     cornerRadius: CGFloat,

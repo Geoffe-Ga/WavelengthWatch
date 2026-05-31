@@ -10,8 +10,7 @@ import Testing
 /// degradation itself lives in `body` behind `@Environment` and is a visual
 /// behavior validated on-device per the Phase 6b checklist (#302).
 struct WLSurfaceModifierTests {
-  @Test("Corner radius is preserved")
-  func cornerRadius_isPreserved() {
+  @Test func cornerRadius_isPreserved() {
     let modifier = WLCardSurface(
       translucentFill: AnyShapeStyle(Color.red),
       cornerRadius: 18,
@@ -21,24 +20,7 @@ struct WLSurfaceModifierTests {
     #expect(modifier.cornerRadius == 18)
   }
 
-  @Test("Stroke defaults to nil via the View extension")
-  func stroke_defaultsToNil() {
-    let view = Color.clear.wlCardSurface(Color.red, cornerRadius: 12)
-    // The extension returns a ModifiedContent whose modifier carries the
-    // defaults; constructing the modifier directly mirrors that default.
-    let modifier = WLCardSurface(
-      translucentFill: AnyShapeStyle(Color.red),
-      cornerRadius: 12,
-      stroke: nil,
-      strokeWidth: 0.5
-    )
-    #expect(modifier.stroke == nil)
-    #expect(modifier.strokeWidth == 0.5)
-    _ = view
-  }
-
-  @Test("Stroke color is preserved")
-  func stroke_isPreserved() {
+  @Test func stroke_isPreserved() {
     let modifier = WLCardSurface(
       translucentFill: AnyShapeStyle(Color.green),
       cornerRadius: 10,
@@ -49,8 +31,7 @@ struct WLSurfaceModifierTests {
     #expect(modifier.strokeWidth == 2)
   }
 
-  @Test("A gradient fill is accepted without a stroke")
-  func gradientFill_isAccepted() {
+  @Test func gradientFill_withoutStroke_isAccepted() {
     let gradient = LinearGradient(
       colors: [.purple, .indigo],
       startPoint: .top,

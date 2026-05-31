@@ -42,7 +42,6 @@ struct LayerCardView: View {
     .offset(y: transformEffect.offset)
     .opacity(transformEffect.opacity)
     .zIndex(layerIndex == selectedLayerIndex ? 10 : Double(10 - abs(layerIndex - selectedLayerIndex)))
-    // Decorative 3D card morph — suppressed under Reduce Motion.
     .wlAnimation(.interactiveSpring(response: 0.4, dampingFraction: 0.8), value: selectedLayerIndex)
   }
 }

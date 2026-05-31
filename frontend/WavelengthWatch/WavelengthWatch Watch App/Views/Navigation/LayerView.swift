@@ -59,7 +59,6 @@ struct LayerView: View {
         Circle()
           .fill(isSelected ? Color.white : Color.white.opacity(0.3))
           .frame(width: isSelected ? 6 : 4, height: isSelected ? 6 : 4)
-          // Decorative page-dot resize — suppressed under Reduce Motion.
           .wlAnimation(.easeInOut(duration: 0.2), value: selection)
       }
     }
