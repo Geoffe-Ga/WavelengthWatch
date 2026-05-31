@@ -86,8 +86,6 @@ struct FlowReviewSheet: View {
         Button("Cancel", role: .cancel) {
           // Back out of the flow entirely (mirrors the toolbar Cancel) so the
           // user isn't stranded on the review sheet after dismissing the error.
-          // The presenter binding's `currentStep == .review` guard then keeps
-          // the sheet's swipe-dismiss path from firing a second cancel. (#339)
           flowCoordinator.cancel()
         }
       } message: {
