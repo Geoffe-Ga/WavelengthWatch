@@ -76,13 +76,16 @@ struct CircularProgressView: View {
 
   // MARK: - Computed Properties
 
-  /// Returns the formatted percentage string.
+  /// Returns the formatted percentage string, clamped to 0–100 so the label
+  /// can't disagree with the ring fill (which clamps via `clampedProgress`).
+  /// `internal` for test access.
   var formattedPercentage: String {
+    let clamped = min(max(percentage, 0), 100)
     // Show one decimal place if needed, otherwise show whole number
-    if percentage.truncatingRemainder(dividingBy: 1) == 0 {
-      "\(Int(percentage))%"
+    if clamped.truncatingRemainder(dividingBy: 1) == 0 {
+      return "\(Int(clamped))%"
     } else {
-      String(format: "%.1f%%", percentage)
+      return String(format: "%.1f%%", clamped)
     }
   }
 

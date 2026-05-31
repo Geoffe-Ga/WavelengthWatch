@@ -92,22 +92,20 @@ struct CircularProgressViewTests {
 
   // MARK: - Edge Case Tests
 
-  @Test("view handles percentage over 100")
+  @Test("view stores raw over-100 percentage but clamps the label to 100%")
   func view_handlesPercentageOver100() {
     let view = CircularProgressView(percentage: 150.0)
 
-    // Should clamp display to 100%
     #expect(view.percentage == 150.0)
-    // Visual clamping happens in the view rendering
+    #expect(view.formattedPercentage == "100%")
   }
 
-  @Test("view handles negative percentage")
+  @Test("view stores raw negative percentage but clamps the label to 0%")
   func view_handlesNegativePercentage() {
     let view = CircularProgressView(percentage: -10.0)
 
-    // Should clamp display to 0%
     #expect(view.percentage == -10.0)
-    // Visual clamping happens in the view rendering
+    #expect(view.formattedPercentage == "0%")
   }
 
   // MARK: - Animation Tests
