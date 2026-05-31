@@ -83,7 +83,11 @@ struct FlowReviewSheet: View {
         Button("Retry") {
           submitEntry()
         }
-        Button("Cancel", role: .cancel) {}
+        Button("Cancel", role: .cancel) {
+          // Back out of the flow entirely (mirrors the toolbar Cancel) so the
+          // user isn't stranded on the review sheet after dismissing the error.
+          flowCoordinator.cancel()
+        }
       } message: {
         Text(errorMessage)
       }
