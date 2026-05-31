@@ -26,4 +26,20 @@ struct StrategyExpressionCardTests {
 
     #expect(card.strategy.id == 7)
   }
+
+  @Test("card label defaults to Strategy")
+  func card_labelDefaultsToStrategy() {
+    let strategy = CatalogStrategyModel(id: 1, strategy: "Take a deep breath", color: "Blue")
+    let card = StrategyExpressionCard(strategy: strategy)
+
+    #expect(card.label == "Strategy")
+  }
+
+  @Test("card preserves a custom label")
+  func card_preservesCustomLabel() {
+    let strategy = CatalogStrategyModel(id: 1, strategy: "Take a deep breath", color: "Blue")
+    let card = StrategyExpressionCard(label: "Coping Strategy", strategy: strategy)
+
+    #expect(card.label == "Coping Strategy")
+  }
 }
