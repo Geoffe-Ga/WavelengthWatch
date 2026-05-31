@@ -16,9 +16,6 @@ struct StrategyExpressionCard: View {
   let label: String
   let strategy: CatalogStrategyModel
 
-  /// - Parameters:
-  ///   - label: Section label rendered above the strategy name (defaults to "Strategy").
-  ///   - strategy: The strategy to render.
   init(label: String = "Strategy", strategy: CatalogStrategyModel) {
     self.label = label
     self.strategy = strategy
