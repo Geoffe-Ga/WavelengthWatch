@@ -34,8 +34,10 @@ struct HorizontalBarChart: View {
   /// The items to display in the chart
   let items: [BarChartItem]
 
-  /// The maximum width available for bars (calculated from geometry)
-  private let barSpacing: CGFloat = 4
+  // Component geometry. Row height and the label/value column widths are
+  // chart-specific layout (not global spacing), so they stay local; the
+  // inter-row gap reuses the shared spacing scale.
+  private let barSpacing = WLSpacingTokens.paddingXS
   private let rowHeight: CGFloat = 20
 
   var body: some View {
@@ -55,25 +57,31 @@ private struct BarRow: View {
   let rowHeight: CGFloat
 
   @State private var animatedPercentage: Double = 0
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+  private let labelWidth: CGFloat = 50
+  private let valueWidth: CGFloat = 35
+  private let barCornerRadius: CGFloat = 3
 
   var body: some View {
-    HStack(spacing: 8) {
+    HStack(spacing: WLSpacingTokens.paddingS) {
       // Label
       Text(item.label)
-        .font(.caption2)
+        .font(WLTypographyTokens.tag)
         .lineLimit(1)
-        .frame(width: 50, alignment: .leading)
+        .frame(width: labelWidth, alignment: .leading)
 
       // Bar with background and foreground
       GeometryReader { geometry in
         ZStack(alignment: .leading) {
           // Background track
-          RoundedRectangle(cornerRadius: 3)
-            .fill(Color.secondary.opacity(0.2))
+          RoundedRectangle(cornerRadius: barCornerRadius)
+            .fill(trackColor)
             .frame(height: rowHeight)
 
           // Foreground bar
-          RoundedRectangle(cornerRadius: 3)
+          RoundedRectangle(cornerRadius: barCornerRadius)
             .fill(item.color)
             .frame(
               width: barWidth(
@@ -88,18 +96,32 @@ private struct BarRow: View {
 
       // Percentage
       Text(formattedPercentage(item.percentage))
-        .font(.caption2)
-        .foregroundColor(.secondary)
-        .frame(width: 35, alignment: .trailing)
+        .font(WLTypographyTokens.tag)
+        .foregroundColor(WLColorTokens.secondaryText)
+        .frame(width: valueWidth, alignment: .trailing)
     }
     .onAppear {
-      withAnimation(.easeOut(duration: 0.6)) {
+      // Animate the bar growing in — but Reduce Motion shows the final
+      // width immediately rather than the decorative sweep.
+      if reduceMotion {
         animatedPercentage = item.percentage
+      } else {
+        withAnimation(.easeOut(duration: 0.6)) {
+          animatedPercentage = item.percentage
+        }
       }
     }
+    // Single self-sufficient label (e.g. "Green: 24%"); the chart context is
+    // already conveyed by the parent. No separate accessibilityValue, which
+    // would otherwise double-announce the percentage.
     .accessibilityElement(children: .combine)
     .accessibilityLabel("\(item.label): \(formattedPercentage(item.percentage))")
-    .accessibilityValue("Bar chart showing \(formattedPercentage(item.percentage))")
+  }
+
+  /// Track (unfilled) bar color. Holds more contrast under Reduce
+  /// Transparency so the track stays visible without faint translucency.
+  private var trackColor: Color {
+    Color.secondary.opacity(reduceTransparency ? 0.4 : 0.2)
   }
 
   /// Calculates the bar width based on percentage
@@ -108,12 +130,14 @@ private struct BarRow: View {
     return availableWidth * (clampedPercentage / 100.0)
   }
 
-  /// Formats the percentage for display
+  /// Formats the percentage for display, clamped to 0–100 so the label can't
+  /// disagree with the bar width (which clamps via `barWidth`).
   private func formattedPercentage(_ percentage: Double) -> String {
-    if percentage.truncatingRemainder(dividingBy: 1) == 0 {
-      "\(Int(percentage))%"
+    let clamped = min(max(percentage, 0), 100)
+    if clamped.truncatingRemainder(dividingBy: 1) == 0 {
+      return "\(Int(clamped))%"
     } else {
-      String(format: "%.1f%%", percentage)
+      return String(format: "%.1f%%", clamped)
     }
   }
 }
@@ -166,7 +190,6 @@ extension HorizontalBarChart {
     ])
   }
   .padding()
-  .previewDisplayName("Mode Distribution")
 }
 
 #Preview("Edge Cases") {
@@ -181,13 +204,11 @@ extension HorizontalBarChart {
     ])
   }
   .padding()
-  .previewDisplayName("Edge Cases")
 }
 
 #Preview("Empty State") {
   HorizontalBarChart(items: [])
     .padding()
-    .previewDisplayName("Empty")
 }
 
 #Preview("Many Items") {
@@ -211,5 +232,4 @@ extension HorizontalBarChart {
     }
     .padding()
   }
-  .previewDisplayName("Many Items")
 }
