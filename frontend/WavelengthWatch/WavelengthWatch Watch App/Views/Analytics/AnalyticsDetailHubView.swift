@@ -362,10 +362,3 @@ private struct GrowthIndicatorsDetailView: View {
     }
   }
 }
-
-// MARK: - Shared UI Components
-
-//
-// Loading and error states are now the shared `AnalyticsLoadingView` and
-// `AnalyticsErrorView` primitives (Views/Components), replacing the previous
-// per-file `AnalyticsLoadingStates` enum.

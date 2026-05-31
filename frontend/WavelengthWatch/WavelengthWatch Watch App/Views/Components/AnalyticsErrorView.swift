@@ -13,10 +13,8 @@ struct AnalyticsErrorView: View {
   let message: String
   let retry: (() async -> Void)?
 
-  /// Creates an error state.
-  /// - Parameters:
-  ///   - message: The user-facing failure description.
-  ///   - retry: Optional async action; when provided, a "Retry" button is shown.
+  /// Explicit init only so `retry` can default to nil — Swift's synthesized
+  /// memberwise init doesn't add parameter defaults.
   init(message: String, retry: (() async -> Void)? = nil) {
     self.message = message
     self.retry = retry
@@ -24,18 +22,25 @@ struct AnalyticsErrorView: View {
 
   var body: some View {
     VStack(spacing: WLSpacingTokens.paddingL) {
-      Image(systemName: "exclamationmark.triangle")
-        .font(.system(size: 40))
-        .foregroundColor(WLColorTokens.warningAccent)
+      // Icon + heading + message read as one VoiceOver element ("Error,
+      // <message>"); the decorative icon is hidden. The Retry button stays
+      // outside the group so it remains a separate, actionable element.
+      VStack(spacing: WLSpacingTokens.paddingL) {
+        Image(systemName: "exclamationmark.triangle")
+          .font(.system(size: 40))
+          .foregroundColor(WLColorTokens.warningAccent)
+          .accessibilityHidden(true)
 
-      Text("Error")
-        .font(.headline)
-        .foregroundColor(WLColorTokens.primaryText)
+        Text("Error")
+          .font(.headline)
+          .foregroundColor(WLColorTokens.primaryText)
 
-      Text(message)
-        .font(.caption)
-        .foregroundColor(WLColorTokens.secondaryText)
-        .multilineTextAlignment(.center)
+        Text(message)
+          .font(.caption)
+          .foregroundColor(WLColorTokens.secondaryText)
+          .multilineTextAlignment(.center)
+      }
+      .accessibilityElement(children: .combine)
 
       if let retry {
         Button("Retry") {
