@@ -6,8 +6,9 @@ struct LayerView: View {
   @Binding var selection: Int
   let screenWidth: CGFloat // Stable width from parent GeometryReader
   @EnvironmentObject private var viewModel: ContentViewModel
-  @State private var showPageIndicator = false
-  @State private var hideIndicatorTask: Task<Void, Never>?
+
+  /// Ambient opacity for the always-visible phase position rail.
+  private let pageDotsAmbientOpacity: Double = 0.5
 
   var body: some View {
     TabView(selection: $selection) {
@@ -35,22 +36,16 @@ struct LayerView: View {
       }
       let normalized = PhaseNavigator.normalizedIndex(adjusted, phaseCount: phaseCount)
       viewModel.selectedPhaseIndex = normalized
-      showIndicator()
     }
     .overlay(alignment: .bottom) {
-      if showPageIndicator {
+      if phaseCount > 1 {
         pageIndicator
-          .transition(.opacity)
       }
-    }
-    .onAppear {
-      showIndicator()
-    }
-    .onDisappear {
-      hideIndicatorTask?.cancel()
     }
   }
 
+  /// Minimal, always-visible phase position rail (which phase of how many).
+  /// Held at a low opacity as ambient context; it no longer hides on a timer.
   private var pageIndicator: some View {
     HStack(spacing: 4) {
       ForEach(0 ..< phaseCount, id: \.self) { index in
@@ -73,21 +68,6 @@ struct LayerView: View {
         )
     )
     .padding(.bottom, 8)
-  }
-
-  private func showIndicator() {
-    withAnimation(.easeIn(duration: 0.2)) {
-      showPageIndicator = true
-    }
-    hideIndicatorTask?.cancel()
-    hideIndicatorTask = Task {
-      try? await Task.sleep(nanoseconds: 1_000_000_000)
-      guard !Task.isCancelled else { return }
-      await MainActor.run {
-        withAnimation(.easeOut(duration: 0.3)) {
-          showPageIndicator = false
-        }
-      }
-    }
+    .opacity(pageDotsAmbientOpacity)
   }
 }
