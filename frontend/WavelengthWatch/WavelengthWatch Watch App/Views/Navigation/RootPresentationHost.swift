@@ -4,42 +4,94 @@ import SwiftUI
 /// NavigationStack push so the presentations it renders are never deferred
 /// behind an in-flight navigation transaction.
 ///
-/// In this skeleton (issue #405) the host owns the `storageError` alert —
-/// the simplest fully self-contained surface — proving the
-/// coordinator-driven host renders end-to-end. The `menu` and `onboarding`
-/// sheets are coordinator-driven from this same `PresentationCoordinator`
-/// but still presented from `MainContentDialogsModifier` for now; #406 /
-/// #407 relocate their content here and fold the publisher-driven journal
-/// feedback and flow review onto the host too.
+/// The host renders the `storageError` alert, the journal log-confirmation
+/// (#406, B2), the journal feedback alert, and the flow review sheet — all
+/// driven by the coordinator's single `active` slot. Two bridges keep the
+/// coordinator in sync with state that still lives on its original owner:
+/// `ContentViewModel.journalFeedback` (the direct-log path) and
+/// `FlowCoordinator.currentStep == .review`.
 struct RootPresentationHost: ViewModifier {
   @ObservedObject var coordinator: PresentationCoordinator
   @EnvironmentObject private var flowCoordinator: FlowCoordinator
   @EnvironmentObject private var viewModel: ContentViewModel
 
+  /// The presentation chain is staged through `some View` helpers: each
+  /// erases the upstream modifier complexity so Swift's type-checker can
+  /// resolve the body without timing out (same approach as RootShellView).
   func body(content: Content) -> some View {
-    content
-      .alert(
-        "Storage Error",
-        isPresented: coordinator.isPresented(for: .storageError)
-      ) {
-        Button("OK", role: .cancel) {}
-      } message: {
-        Text("Your journal couldn't be opened, so entries logged this session won't be saved. Please reopen the app; if the problem continues, contact support.")
-      }
-      // The journal log-confirmation, hoisted above the navigation push so
-      // it presents immediately rather than waiting for a back-out (B2).
-      .alert(
-        logConfirmation?.alertTitle ?? "",
-        isPresented: logConfirmationPresented
-      ) {
-        Button("Yes") {
-          if let action = logConfirmation?.action {
-            Task { await handler.perform(action) }
-          }
+    let withStorage = storageErrorAlert(content)
+    let withLog = logConfirmationAlert(withStorage)
+    let withFeedback = journalFeedbackAlert(withLog)
+    let withReview = flowReviewSheet(withFeedback)
+    return bridges(withReview)
+  }
+
+  // MARK: - Presentation surfaces
+
+  private func storageErrorAlert(_ view: some View) -> some View {
+    view.alert(
+      "Storage Error",
+      isPresented: coordinator.isPresented(for: .storageError)
+    ) {
+      Button("OK", role: .cancel) {}
+    } message: {
+      Text("Your journal couldn't be opened, so entries logged this session won't be saved. Please reopen the app; if the problem continues, contact support.")
+    }
+  }
+
+  /// The journal log-confirmation, hoisted above the navigation push so it
+  /// presents immediately rather than waiting for a back-out (B2).
+  private func logConfirmationAlert(_ view: some View) -> some View {
+    view.alert(
+      logConfirmation?.alertTitle ?? "",
+      isPresented: logConfirmationPresented
+    ) {
+      Button("Yes") {
+        if let action = logConfirmation?.action {
+          Task { await handler.perform(action) }
         }
-        Button("Cancel", role: .cancel) {}
-      } message: {
-        Text(logConfirmation?.message ?? "")
+      }
+      Button("Cancel", role: .cancel) {}
+    } message: {
+      Text(logConfirmation?.message ?? "")
+    }
+  }
+
+  /// Journal feedback (success / queued / failure), queued behind any
+  /// interactive presentation by the coordinator's priority policy.
+  private func journalFeedbackAlert(_ view: some View) -> some View {
+    view.alert(item: journalFeedbackItem) { feedback in
+      JournalFeedbackAlert.make(feedback) { coordinator.dismiss() }
+    }
+  }
+
+  /// The flow review sheet, driven by the coordinator.
+  private func flowReviewSheet(_ view: some View) -> some View {
+    view.sheet(isPresented: flowReviewPresented) {
+      FlowReviewSheet(flowCoordinator: flowCoordinator)
+    }
+  }
+
+  // MARK: - Coordinator bridges
+
+  /// Keeps the coordinator in sync with state that still lives on its
+  /// original owner: ContentViewModel's direct-log feedback (consumed
+  /// one-shot, since ContentViewModel must not depend on the coordinator)
+  /// and FlowCoordinator's review step.
+  private func bridges(_ view: some View) -> some View {
+    view
+      .onChange(of: viewModel.journalFeedback) { _, newValue in
+        if let feedback = newValue {
+          coordinator.request(.journalFeedback(feedback))
+          viewModel.journalFeedback = nil
+        }
+      }
+      .onChange(of: flowCoordinator.currentStep) { _, newStep in
+        if newStep == .review {
+          coordinator.request(.flowReview)
+        } else if coordinator.active == .flowReview {
+          coordinator.dismiss()
+        }
       }
   }
 
@@ -56,6 +108,48 @@ struct RootPresentationHost: ViewModifier {
       get: { logConfirmation != nil },
       set: { isPresented in
         if !isPresented { coordinator.dismiss() }
+      }
+    )
+  }
+
+  /// Optional binding for the journal-feedback `.alert(item:)`. Reads the
+  /// active feedback; clearing it (alert dismissed) advances the coordinator.
+  private var journalFeedbackItem: Binding<ContentViewModel.JournalFeedback?> {
+    Binding(
+      get: {
+        if case let .journalFeedback(feedback) = coordinator.active { return feedback }
+        return nil
+      },
+      set: { newValue in
+        if newValue == nil, case .journalFeedback = coordinator.active {
+          coordinator.dismiss()
+        }
+      }
+    )
+  }
+
+  private var flowReviewPresented: Binding<Bool> {
+    Self.flowReviewPresented(coordinator: coordinator, flowCoordinator: flowCoordinator)
+  }
+
+  /// Presentation binding for the flow review sheet. A swipe-dismiss cancels
+  /// the flow, mirroring the prior `MainContentDialogsModifier.flowReviewPresenter`
+  /// behavior; the sheet's own buttons transition `currentStep` explicitly,
+  /// and the `currentStep` bridge then dismisses this presentation. `static`
+  /// with explicit dependencies so the get/set contract is unit-testable
+  /// without rendering the host.
+  static func flowReviewPresented(
+    coordinator: PresentationCoordinator,
+    flowCoordinator: FlowCoordinator
+  ) -> Binding<Bool> {
+    Binding(
+      get: { coordinator.active == .flowReview },
+      set: { isPresented in
+        guard !isPresented else { return }
+        coordinator.dismiss()
+        if flowCoordinator.currentStep == .review {
+          flowCoordinator.cancel()
+        }
       }
     )
   }
