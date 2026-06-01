@@ -66,5 +66,8 @@ final class PresentationCoordinator: ObservableObject {
     case menu
     case onboarding
     case storageError
+    /// The "Would you like to log …?" journal confirmation, carrying the
+    /// alert copy and the action to perform on "Yes".
+    case logConfirmation(LogConfirmationRequest)
   }
 }

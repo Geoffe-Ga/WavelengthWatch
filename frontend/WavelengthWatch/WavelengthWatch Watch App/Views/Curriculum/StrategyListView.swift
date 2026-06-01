@@ -4,10 +4,8 @@ struct StrategyListView: View {
   let phase: CatalogPhaseModel
   let color: Color
   @EnvironmentObject private var viewModel: ContentViewModel
-  @EnvironmentObject private var flowCoordinator: FlowCoordinator
+  @EnvironmentObject private var presentationCoordinator: PresentationCoordinator
   @Environment(\.isShowingDetailView) private var isShowingDetailView
-  @State private var showingJournalConfirmation = false
-  @State private var selectedStrategy: CatalogStrategyModel?
 
   /// For strategies-only phases, find a curriculum ID from any available layer/phase
   private var fallbackCurriculumID: Int? {
@@ -63,8 +61,7 @@ struct StrategyListView: View {
               )
               .onTapGesture {
                 if fallbackCurriculumID != nil {
-                  selectedStrategy = item
-                  showingJournalConfirmation = true
+                  presentationCoordinator.request(logRequest(for: item))
                 }
               }
 
@@ -73,8 +70,7 @@ struct StrategyListView: View {
                   .padding(.top, 8)
                   .padding(.trailing, 12)
                   .onTapGesture {
-                    selectedStrategy = item
-                    showingJournalConfirmation = true
+                    presentationCoordinator.request(logRequest(for: item))
                   }
               }
             }
@@ -87,8 +83,7 @@ struct StrategyListView: View {
             .accessibilityHint(fallbackCurriculumID != nil ? "Logs this strategy" : "")
             .accessibilityAction {
               guard fallbackCurriculumID != nil else { return }
-              selectedStrategy = item
-              showingJournalConfirmation = true
+              presentationCoordinator.request(logRequest(for: item))
             }
           }
         }
@@ -97,14 +92,6 @@ struct StrategyListView: View {
       .padding(.vertical, 16)
     }
     .background(WLColorTokens.pageBackground())
-    .alert("Log Strategy", isPresented: $showingJournalConfirmation) {
-      Button("Yes") {
-        handleLogAction()
-      }
-      Button("Cancel", role: .cancel) {}
-    } message: {
-      Text("Would you like to log \"\(selectedStrategy?.strategy ?? "")\"?")
-    }
     .onAppear {
       isShowingDetailView.wrappedValue = true
     }
@@ -113,18 +100,14 @@ struct StrategyListView: View {
     }
   }
 
-  private func handleLogAction() {
-    if flowCoordinator.currentStep == .selectingStrategy {
-      flowCoordinator.captureStrategy(selectedStrategy)
-    } else {
-      if let curriculumID = fallbackCurriculumID, let strategy = selectedStrategy {
-        Task {
-          await viewModel.journal(
-            curriculumID: curriculumID,
-            strategyID: strategy.id
-          )
-        }
-      }
-    }
+  /// The confirmation request for a tapped strategy row; the root host
+  /// renders it and `LogConfirmationHandler` performs the same branching
+  /// the view's former `handleLogAction` did.
+  private func logRequest(for strategy: CatalogStrategyModel) -> PresentationCoordinator.ActivePresentation {
+    .logConfirmation(LogConfirmationRequest(
+      alertTitle: "Log Strategy",
+      message: "Would you like to log \"\(strategy.strategy)\"?",
+      action: .strategy(strategy: strategy, curriculumID: fallbackCurriculumID)
+    ))
   }
 }
