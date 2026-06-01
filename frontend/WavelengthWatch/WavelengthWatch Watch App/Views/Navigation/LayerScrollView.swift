@@ -30,7 +30,7 @@ struct LayerScrollView: View {
     GeometryReader { geometry in
       ScrollViewReader { proxy in
         scrollView(geometry: geometry)
-          .scrollTargetBehavior(.viewAligned)
+          .scrollTargetBehavior(.paging)
           .scrollPosition(id: Binding<Int?>(
             get: { clampedSelection },
             set: { newId in
@@ -105,17 +105,18 @@ struct LayerScrollView: View {
   // MARK: - Subviews
 
   private func scrollView(geometry: GeometryProxy) -> some View {
+    // Zero spacing + per-page `containerRelativeFrame` (in LayerCardView) +
+    // `.paging` give exact, non-overlapping pages. The previous negative
+    // spacing was half of the B3 bump; the depth transforms were the other
+    // half (both removed — depth returns in #409 via scrollTransition).
     ScrollView(.vertical, showsIndicators: false) {
-      LazyVStack(spacing: -20) {
+      LazyVStack(spacing: 0) {
         ForEach(viewModel.filteredLayers.indices, id: \.self) { index in
           let layer = viewModel.filteredLayers[index]
           LayerCardView(
             layer: layer,
             phaseCount: viewModel.phaseOrder.count,
             selection: $phaseSelection,
-            layerIndex: index,
-            selectedLayerIndex: clampedSelection,
-            geometry: geometry,
             screenWidth: geometry.size.width
           )
           .id(index)
