@@ -24,6 +24,10 @@ enum WLSpacingTokens {
   static let cardBorderWidth: CGFloat = 0.5
   static let cardPaddingStandard: CGFloat = 12
   static let cardPaddingCompact: CGFloat = 8
+  /// Effectively-circular radius for small "pill" chips (e.g. the glass
+  /// chips behind the affordance chevrons): any value past half the chip's
+  /// size yields a capsule/circle.
+  static let pillCornerRadius: CGFloat = 99
 
   // MARK: - Indicator Sizes
 
