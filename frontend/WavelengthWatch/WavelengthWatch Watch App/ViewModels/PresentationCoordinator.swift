@@ -13,52 +13,91 @@ import SwiftUI
 /// host, anchored above the navigation push, render exactly one
 /// presentation at a time.
 ///
-/// This skeleton (issue #405) owns the three presentations that were
-/// previously plain local `@State` booleans on the shell — `menu`,
-/// `onboarding`, and `storageError`. The publisher-driven surfaces
-/// (journal feedback, flow review) and the leaf log-confirmation migrate
-/// onto the same coordinator in #406 / #407 as their owners are
-/// retargeted, at which point the conflict policy graduates from the
-/// simple "replace" used here to the queue/priority rules in #407.
+/// The coordinator owns every transient root presentation: the shell's
+/// former local-`@State` surfaces (`menu`, `onboarding`, `storageError`),
+/// the leaf log-confirmation (#406), and the previously publisher-driven
+/// journal feedback and flow review (#407). When two presentations contend,
+/// the priority/queue policy on `request`/`dismiss` decides ordering —
+/// informational feedback queues behind interactive presentations rather
+/// than racing them.
 @MainActor
 final class PresentationCoordinator: ObservableObject {
   /// The presentation currently requested for display, or `.idle`.
   @Published private(set) var active: ActivePresentation = .idle
 
-  /// Requests that `presentation` become the active presentation.
+  /// Presentations queued behind the active one, awaiting `dismiss()`.
+  private var pending: [ActivePresentation] = []
+
+  /// Requests that `presentation` be shown.
   ///
-  /// Skeleton policy: a new request replaces whatever is active. Issue
-  /// #407 refines this into a priority/queue policy so that, e.g., a
-  /// data-loss `storageError` is never silently dropped by a lower-value
-  /// request.
+  /// Single-active policy (#407, SPEC §11 Q4): exactly one presentation is
+  /// visible at a time. A request of strictly higher priority than the
+  /// active one preempts it — the displaced presentation is queued, never
+  /// dropped — while an equal- or lower-priority request waits in the
+  /// queue. `dismiss()` then promotes the highest-priority queued
+  /// presentation. This is what lets informational journal feedback queue
+  /// politely behind an interactive confirmation instead of racing it.
   func request(_ presentation: ActivePresentation) {
-    active = presentation
+    guard presentation != .idle else { return }
+    if active == .idle {
+      active = presentation
+    } else if Self.priority(of: presentation) > Self.priority(of: active) {
+      pending.append(active)
+      active = presentation
+    } else {
+      pending.append(presentation)
+    }
   }
 
-  /// Dismisses the active presentation, returning to `.idle`.
+  /// Dismisses the active presentation and promotes the highest-priority
+  /// queued one (earliest-queued wins ties), or returns to `.idle` when the
+  /// queue is empty.
   func dismiss() {
-    active = .idle
+    guard !pending.isEmpty else {
+      active = .idle
+      return
+    }
+    var bestIndex = pending.startIndex
+    for index in pending.indices
+      where Self.priority(of: pending[index]) > Self.priority(of: pending[bestIndex])
+    {
+      bestIndex = index
+    }
+    active = pending.remove(at: bestIndex)
   }
 
   /// A two-way `Bool` binding suitable for `.sheet(isPresented:)` /
   /// `.alert(isPresented:)`. Reads `true` while `presentation` is active;
-  /// writing `false` (a "Done" button or a swipe-dismiss) clears it,
-  /// preserving the self-dismiss behavior the migrated sheets relied on.
+  /// writing `true` requests it and writing `false` (a "Done" button or a
+  /// swipe-dismiss) dismisses it through the queue policy, preserving the
+  /// self-dismiss behavior the migrated sheets relied on.
   func isPresented(for presentation: ActivePresentation) -> Binding<Bool> {
     Binding(
       get: { self.active == presentation },
       set: { isPresented in
         if isPresented {
-          self.active = presentation
+          self.request(presentation)
         } else if self.active == presentation {
-          self.active = .idle
+          self.dismiss()
         }
       }
     )
   }
 
+  /// Relative display priority; higher wins. A data-loss `storageError`
+  /// outranks interactive surfaces, which outrank informational
+  /// `journalFeedback`.
+  private static func priority(of presentation: ActivePresentation) -> Int {
+    switch presentation {
+    case .idle: -1
+    case .journalFeedback: 0
+    case .menu, .onboarding, .logConfirmation, .flowReview: 1
+    case .storageError: 2
+    }
+  }
+
   /// The set of mutually exclusive root presentations the coordinator can
-  /// surface. Cases are added here as later issues fold their owners in.
+  /// surface.
   enum ActivePresentation: Equatable {
     /// Nothing is presented. Named `idle` rather than `none` to avoid
     /// visual collision with `Optional.none` at call sites.
@@ -69,5 +108,11 @@ final class PresentationCoordinator: ObservableObject {
     /// The "Would you like to log …?" journal confirmation, carrying the
     /// alert copy and the action to perform on "Yes".
     case logConfirmation(LogConfirmationRequest)
+    /// Journal-entry feedback (success / queued / failure …), routed here
+    /// so it queues behind interactive presentations instead of racing
+    /// them.
+    case journalFeedback(ContentViewModel.JournalFeedback)
+    /// The flow review sheet (`FlowCoordinator.currentStep == .review`).
+    case flowReview
   }
 }

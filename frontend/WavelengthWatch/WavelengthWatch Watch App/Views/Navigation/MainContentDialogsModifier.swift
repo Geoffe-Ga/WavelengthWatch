@@ -47,9 +47,6 @@ struct MainContentDialogsModifier: ViewModifier {
       }
       .sheet(isPresented: $showingMenu) { menuSheet }
       .sheet(isPresented: $showingOnboarding) { onboardingSheet }
-      .sheet(isPresented: Self.flowReviewPresenter(for: flowCoordinator)) {
-        FlowReviewSheet(flowCoordinator: flowCoordinator)
-      }
       .task {
         if !syncSettingsViewModel.hasCompletedOnboarding {
           showingOnboarding = true
@@ -83,27 +80,6 @@ struct MainContentDialogsModifier: ViewModifier {
       isPresented: $showingOnboarding
     )
     .interactiveDismissDisabled()
-  }
-
-  // MARK: - Bindings
-
-  /// Read-write binding for the flow-review sheet. Like
-  /// `FlowConfirmationAlertsModifier.presenter(for:)`, the write side
-  /// treats `isPresented = false` (system swipe-dismiss) as an
-  /// implicit cancel — the buttons inside `FlowReviewSheet` already
-  /// transition the coordinator off `.review` explicitly, so this only
-  /// fires when neither button was tapped and the user closed via the
-  /// swipe gesture. The step guard prevents a spurious cancel if the
-  /// coordinator has already moved on by the time SwiftUI writes false.
-  static func flowReviewPresenter(for flowCoordinator: FlowCoordinator) -> Binding<Bool> {
-    Binding(
-      get: { flowCoordinator.currentStep == .review },
-      set: { isPresented in
-        if !isPresented, flowCoordinator.currentStep == .review {
-          flowCoordinator.cancel()
-        }
-      }
-    )
   }
 
   // MARK: - Navigation

@@ -37,7 +37,10 @@ struct RootShellView: View {
   @State private var didSurfaceStorageWarning = false
 
   private var flowSubmissionPresenter: FlowSubmissionPresenter {
-    FlowSubmissionPresenter(flowCoordinator: flowCoordinator, viewModel: viewModel)
+    FlowSubmissionPresenter(
+      flowCoordinator: flowCoordinator,
+      presentationCoordinator: presentationCoordinator
+    )
   }
 
   var body: some View {
@@ -85,7 +88,6 @@ struct RootShellView: View {
   private var contentWithDialogs: some View {
     contentWithEvents
       .journalFlowAlerts(
-        viewModel: viewModel,
         flowCoordinator: flowCoordinator,
         flowSubmissionPresenter: flowSubmissionPresenter
       )

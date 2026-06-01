@@ -28,44 +28,66 @@ struct FlowSubmissionPresenterTests {
     return (viewModel, coordinator)
   }
 
-  @Test("successful submit resets the flow to idle")
+  /// Pulls the `JournalFeedback.Kind` off the coordinator's active
+  /// presentation, or nil if the active presentation isn't journal feedback.
+  private func feedbackKind(
+    _ presentation: PresentationCoordinator
+  ) -> ContentViewModel.JournalFeedback.Kind? {
+    if case let .journalFeedback(feedback) = presentation.active { return feedback.kind }
+    return nil
+  }
+
+  @Test("successful submit resets the flow and surfaces no feedback")
   func submit_success_resetsFlow() async {
-    let (viewModel, coordinator) = await makeSetup()
-    let presenter = FlowSubmissionPresenter(flowCoordinator: coordinator, viewModel: viewModel)
+    let (_, coordinator) = await makeSetup()
+    let presentation = PresentationCoordinator()
+    let presenter = FlowSubmissionPresenter(
+      flowCoordinator: coordinator,
+      presentationCoordinator: presentation
+    )
 
     await presenter.submit(failurePrefix: "Failed to log emotion")
 
     #expect(coordinator.currentStep == FlowCoordinator.FlowStep.idle)
     #expect(coordinator.selections.primary == nil)
+    #expect(presentation.active == .idle)
   }
 
-  @Test("queued submit shows queued feedback and resets the flow")
+  @Test("queued submit routes queued feedback to the coordinator and resets the flow")
   func submit_queued_showsQueuedFeedbackAndResets() async {
-    let (viewModel, coordinator) = await makeSetup(shouldQueue: true)
-    let presenter = FlowSubmissionPresenter(flowCoordinator: coordinator, viewModel: viewModel)
+    let (_, coordinator) = await makeSetup(shouldQueue: true)
+    let presentation = PresentationCoordinator()
+    let presenter = FlowSubmissionPresenter(
+      flowCoordinator: coordinator,
+      presentationCoordinator: presentation
+    )
 
     await presenter.submit(failurePrefix: "Failed to log emotion")
 
-    if case .queued = viewModel.journalFeedback?.kind {
+    if case .queued = feedbackKind(presentation) {
       // Reaching this branch is the assertion.
     } else {
-      Issue.record("Expected queued feedback, got \(String(describing: viewModel.journalFeedback?.kind))")
+      Issue.record("Expected queued feedback, got \(String(describing: feedbackKind(presentation)))")
     }
     #expect(coordinator.currentStep == FlowCoordinator.FlowStep.idle)
     #expect(coordinator.selections.primary == nil)
   }
 
-  @Test("failed submit shows prefixed failure feedback and preserves state for retry")
+  @Test("failed submit routes prefixed failure feedback and preserves state for retry")
   func submit_failure_showsFailureAndPreservesState() async {
-    let (viewModel, coordinator) = await makeSetup(shouldFail: true)
-    let presenter = FlowSubmissionPresenter(flowCoordinator: coordinator, viewModel: viewModel)
+    let (_, coordinator) = await makeSetup(shouldFail: true)
+    let presentation = PresentationCoordinator()
+    let presenter = FlowSubmissionPresenter(
+      flowCoordinator: coordinator,
+      presentationCoordinator: presentation
+    )
 
     await presenter.submit(failurePrefix: "Failed to log emotion")
 
-    if case let .failure(message) = viewModel.journalFeedback?.kind {
+    if case let .failure(message) = feedbackKind(presentation) {
       #expect(message.contains("Failed to log emotion"))
     } else {
-      Issue.record("Expected failure feedback, got \(String(describing: viewModel.journalFeedback?.kind))")
+      Issue.record("Expected failure feedback, got \(String(describing: feedbackKind(presentation)))")
     }
     // On unrecoverable failure the flow is NOT reset, so the user can retry.
     #expect(coordinator.currentStep != FlowCoordinator.FlowStep.idle)
