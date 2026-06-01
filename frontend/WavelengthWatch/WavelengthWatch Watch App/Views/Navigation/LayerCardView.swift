@@ -1,29 +1,21 @@
 import SwiftUI
 
+/// A single full-screen layer page in the vertical scroller.
+///
+/// Sized to exactly one scroll-container page via `containerRelativeFrame`
+/// and laid out with an identity transform — no `scaleEffect`,
+/// `rotation3DEffect`, or `offset`. The hand-stacked depth transforms that
+/// used to live here (a perspective x-axis rotation over a negative-spacing
+/// `LazyVStack`) re-projected the card's optical center as it animated and
+/// were the source of the "leftward bump" on vertical scroll (B3 in
+/// `prompts/claude-comm/spec-primary-selector-rebuild.md`). Depth returns in
+/// #409 as a single offset-derived `scrollTransition` that resolves to an
+/// exact identity at rest.
 struct LayerCardView: View {
   let layer: CatalogLayerModel
   let phaseCount: Int
   @Binding var selection: Int
-  let layerIndex: Int
-  let selectedLayerIndex: Int
-  let geometry: GeometryProxy
   let screenWidth: CGFloat // Stable width from parent GeometryReader
-  @EnvironmentObject private var viewModel: ContentViewModel
-
-  private var transformEffect: (scale: CGFloat, rotation: Double, offset: CGFloat, opacity: Double) {
-    let distance = layerIndex - selectedLayerIndex
-
-    switch distance {
-    case 0:
-      return (scale: 1.0, rotation: 0, offset: 0, opacity: 1.0)
-    case 1:
-      return (scale: 0.95, rotation: -5, offset: 15, opacity: 0.3)
-    case -1:
-      return (scale: 0.95, rotation: 5, offset: -15, opacity: 0.3)
-    default:
-      return (scale: 0.85, rotation: 0, offset: 0, opacity: 0.0)
-    }
-  }
 
   var body: some View {
     LayerView(
@@ -32,16 +24,6 @@ struct LayerCardView: View {
       selection: $selection,
       screenWidth: screenWidth
     )
-    .frame(width: geometry.size.width, height: geometry.size.height)
-    .scaleEffect(transformEffect.scale)
-    .rotation3DEffect(
-      .degrees(transformEffect.rotation),
-      axis: (x: 1, y: 0, z: 0),
-      perspective: 0.8
-    )
-    .offset(y: transformEffect.offset)
-    .opacity(transformEffect.opacity)
-    .zIndex(layerIndex == selectedLayerIndex ? 10 : Double(10 - abs(layerIndex - selectedLayerIndex)))
-    .wlAnimation(.interactiveSpring(response: 0.4, dampingFraction: 0.8), value: selectedLayerIndex)
+    .containerRelativeFrame([.horizontal, .vertical])
   }
 }
