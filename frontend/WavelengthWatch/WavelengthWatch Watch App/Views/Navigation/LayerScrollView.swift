@@ -17,6 +17,10 @@ struct LayerScrollView: View {
 
   @State private var showIndicator = false
   @State private var hideIndicatorTask: Task<Void, Never>?
+  /// Edge-availability model backing the directional chevrons. Currently
+  /// gated at parity with the existing indicator (via `showIndicator`);
+  /// chevron visibility will later be driven by its `isInteracting` flag.
+  @StateObject private var affordanceModel = ScrollAffordanceModel()
 
   /// Clamps `layerSelection` to the current filtered range so bindings
   /// can never read an out-of-range index — important during filter-mode
@@ -65,12 +69,20 @@ struct LayerScrollView: View {
               proxy.scrollTo(newValue, anchor: .center)
             }
             flashIndicator()
+            updateAffordances()
+          }
+          .onChange(of: viewModel.filteredLayers.count) { _, _ in
+            updateAffordances()
+          }
+          .onChange(of: viewModel.phaseOrder.count) { _, _ in
+            updateAffordances()
           }
           .onAppear {
             guard !viewModel.filteredLayers.isEmpty,
                   layerSelection < viewModel.filteredLayers.count else { return }
             proxy.scrollTo(layerSelection, anchor: .center)
             flashIndicator()
+            updateAffordances()
           }
           .onDisappear {
             // Mirror the LayerView pattern: any pending hide task that
@@ -80,6 +92,12 @@ struct LayerScrollView: View {
           }
           .overlay(alignment: .trailing) {
             sideIndicator(in: geometry.size)
+          }
+          // Directional chevrons, gated at parity with the side indicator
+          // for now; visibility will later track live scroll state + edges.
+          .overlay {
+            ScrollAffordanceView(affordances: affordanceModel.affordances)
+              .opacity(showIndicator ? 1 : 0)
           }
           // DragGesture writes raw `layerSelection`; the bounds check uses
           // `filteredLayers.count` since reads downstream are clamped via
@@ -137,6 +155,16 @@ struct LayerScrollView: View {
       size: size
     )
     .opacity(showIndicator ? 1 : 0)
+  }
+
+  // MARK: - Affordances
+
+  private func updateAffordances() {
+    affordanceModel.update(
+      layerSelection: clampedSelection,
+      layerCount: viewModel.filteredLayers.count,
+      phaseCount: viewModel.phaseOrder.count
+    )
   }
 
   // MARK: - Indicator lifecycle
