@@ -23,18 +23,18 @@ struct RootShellView: View {
   @EnvironmentObject private var syncService: JournalSyncService
   @EnvironmentObject private var navigationViewModel: NavigationViewModel
   @EnvironmentObject private var notificationDelegate: NotificationDelegate
+  @EnvironmentObject private var presentationCoordinator: PresentationCoordinator
 
   let journalClient: JournalClientProtocol
   let journalRepository: JournalRepositoryProtocol
   let catalogRepository: CatalogRepositoryProtocol
 
-  @State private var showingMenu = false
-  @State private var showingOnboarding = false
   @State private var isShowingDetailView = false
   @State private var navigationPath = NavigationPath()
-  /// True when this session has surfaced the journal-storage warning to the
-  /// user. Reset on relaunch so the warning re-fires until storage recovers.
-  @State private var showingStorageWarning = false
+  /// Ensures the journal-storage warning is surfaced at most once per
+  /// session, so dismissing it doesn't let a re-running `.task` re-present
+  /// it. Resets on relaunch, matching the prior inline-`@State` behavior.
+  @State private var didSurfaceStorageWarning = false
 
   private var flowSubmissionPresenter: FlowSubmissionPresenter {
     FlowSubmissionPresenter(flowCoordinator: flowCoordinator, viewModel: viewModel)
@@ -54,17 +54,14 @@ struct RootShellView: View {
     .environment(\.isShowingDetailView, $isShowingDetailView)
     // Warn the user immediately if journal storage couldn't open and the app
     // is running on the in-memory fallback — otherwise entries silently vanish
-    // on the next termination.
+    // on the next termination. The warning copy lives in RootPresentationHost.
     .task {
-      if viewModel.journalStorageIsEphemeral, !showingStorageWarning {
-        showingStorageWarning = true
+      if viewModel.journalStorageIsEphemeral, !didSurfaceStorageWarning {
+        didSurfaceStorageWarning = true
+        presentationCoordinator.request(.storageError)
       }
     }
-    .alert("Storage Error", isPresented: $showingStorageWarning) {
-      Button("OK", role: .cancel) {}
-    } message: {
-      Text("Your journal couldn't be opened, so entries logged this session won't be saved. Please reopen the app; if the problem continues, contact support.")
-    }
+    .rootPresentationHost(coordinator: presentationCoordinator)
   }
 
   // MARK: - Body decomposition
@@ -101,8 +98,8 @@ struct RootShellView: View {
         journalQueue: journalQueue,
         syncService: syncService,
         networkMonitor: networkMonitor,
-        showingMenu: $showingMenu,
-        showingOnboarding: $showingOnboarding,
+        showingMenu: presentationCoordinator.isPresented(for: .menu),
+        showingOnboarding: presentationCoordinator.isPresented(for: .onboarding),
         navigationPath: $navigationPath
       )
   }
@@ -112,7 +109,7 @@ struct RootShellView: View {
       isShowingDetailView: isShowingDetailView,
       isInFlow: flowCoordinator.currentStep != .idle,
       onBack: { flowCoordinator.cancel() },
-      onMenu: { showingMenu = true }
+      onMenu: { presentationCoordinator.request(.menu) }
     )
   }
 }
