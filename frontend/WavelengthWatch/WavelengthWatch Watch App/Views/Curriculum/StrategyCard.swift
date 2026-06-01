@@ -4,9 +4,8 @@ struct StrategyCard: View {
   let strategy: CatalogStrategyModel
   let color: Color
   let phase: CatalogPhaseModel
-  @EnvironmentObject private var viewModel: ContentViewModel
   @EnvironmentObject private var flowCoordinator: FlowCoordinator
-  @State private var showingJournalConfirmation = false
+  @EnvironmentObject private var presentationCoordinator: PresentationCoordinator
 
   private var primaryID: Int? {
     phase.medicinal.first?.id ?? phase.toxic.first?.id
@@ -38,7 +37,7 @@ struct StrategyCard: View {
       )
       .onTapGesture {
         if isActionable {
-          showingJournalConfirmation = true
+          presentationCoordinator.request(logRequest)
         }
       }
 
@@ -47,17 +46,9 @@ struct StrategyCard: View {
           .padding(.top, 6)
           .padding(.trailing, 8)
           .onTapGesture {
-            showingJournalConfirmation = true
+            presentationCoordinator.request(logRequest)
           }
       }
-    }
-    .alert("Log Strategy", isPresented: $showingJournalConfirmation) {
-      Button("Yes") {
-        handleLogAction()
-      }
-      Button("Cancel", role: .cancel) {}
-    } message: {
-      Text("Would you like to log \"\(strategy.strategy)\"?")
     }
     // Tapped via onTapGesture; expose as one labeled VoiceOver element. Only
     // advertise the button trait / action when a tap would actually log
@@ -68,22 +59,18 @@ struct StrategyCard: View {
     .accessibilityHint(isActionable ? "Logs this strategy" : "")
     .accessibilityAction {
       guard isActionable else { return }
-      showingJournalConfirmation = true
+      presentationCoordinator.request(logRequest)
     }
   }
 
-  private func handleLogAction() {
-    if flowCoordinator.currentStep == .selectingStrategy {
-      flowCoordinator.captureStrategy(strategy)
-    } else {
-      if let primaryID {
-        Task {
-          await viewModel.journal(
-            curriculumID: primaryID,
-            strategyID: strategy.id
-          )
-        }
-      }
-    }
+  /// The confirmation request this card surfaces; the root host renders it
+  /// and `LogConfirmationHandler` performs the same branching the card's
+  /// former `handleLogAction` did.
+  private var logRequest: PresentationCoordinator.ActivePresentation {
+    .logConfirmation(LogConfirmationRequest(
+      alertTitle: "Log Strategy",
+      message: "Would you like to log \"\(strategy.strategy)\"?",
+      action: .strategy(strategy: strategy, curriculumID: primaryID)
+    ))
   }
 }

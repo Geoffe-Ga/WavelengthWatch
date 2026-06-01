@@ -6,9 +6,7 @@ struct CurriculumCard: View {
   let accent: Color
   let actionTitle: String
   let entry: CatalogCurriculumEntryModel
-  @EnvironmentObject private var viewModel: ContentViewModel
-  @EnvironmentObject private var flowCoordinator: FlowCoordinator
-  @State private var showingJournalConfirmation = false
+  @EnvironmentObject private var presentationCoordinator: PresentationCoordinator
 
   var body: some View {
     ZStack(alignment: .topTrailing) {
@@ -34,23 +32,15 @@ struct CurriculumCard: View {
         stroke: accent.opacity(0.5)
       )
       .onTapGesture {
-        showingJournalConfirmation = true
+        presentationCoordinator.request(logRequest)
       }
 
       MysticalJournalIcon(color: accent)
         .padding(.top, 8)
         .padding(.trailing, 12)
         .onTapGesture {
-          showingJournalConfirmation = true
+          presentationCoordinator.request(logRequest)
         }
-    }
-    .alert("Log \(title.capitalized)", isPresented: $showingJournalConfirmation) {
-      Button("Yes") {
-        handleLogAction()
-      }
-      Button("Cancel", role: .cancel) {}
-    } message: {
-      Text("Would you like to log \"\(expression)\"?")
     }
     // The card is tapped via onTapGesture, which SwiftUI does not expose as a
     // VoiceOver action; present it as one labeled button instead.
@@ -58,22 +48,17 @@ struct CurriculumCard: View {
     .accessibilityAddTraits(.isButton)
     .accessibilityLabel("\(title): \(expression)")
     .accessibilityHint("Logs this entry")
-    .accessibilityAction { showingJournalConfirmation = true }
+    .accessibilityAction { presentationCoordinator.request(logRequest) }
   }
 
-  private func handleLogAction() {
-    switch flowCoordinator.currentStep {
-    case .selectingPrimary:
-      flowCoordinator.capturePrimary(entry)
-    case .selectingSecondary:
-      flowCoordinator.captureSecondary(entry)
-    case .idle:
-      // Auto-start flow when logging from normal mode
-      flowCoordinator.startPrimarySelection()
-      flowCoordinator.capturePrimary(entry)
-    default:
-      // Other states (confirming, review, selectingStrategy): immediate logging
-      Task { await viewModel.journal(curriculumID: entry.id) }
-    }
+  /// The confirmation request this card surfaces; the root host renders it
+  /// and `LogConfirmationHandler` performs the same branching the card's
+  /// former `handleLogAction` did.
+  private var logRequest: PresentationCoordinator.ActivePresentation {
+    .logConfirmation(LogConfirmationRequest(
+      alertTitle: "Log \(title.capitalized)",
+      message: "Would you like to log \"\(expression)\"?",
+      action: .curriculum(entry: entry)
+    ))
   }
 }
