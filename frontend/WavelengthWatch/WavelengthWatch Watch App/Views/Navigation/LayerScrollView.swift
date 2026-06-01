@@ -3,23 +3,17 @@ import SwiftUI
 /// Vertical layer scroller — the outer axis of the dual-axis navigation.
 ///
 /// Renders the filtered layers from `ContentViewModel` as full-screen
-/// `LayerCardView` pages, hosts the digital-crown / drag-gesture / scroll
-/// position bindings, and owns the auto-hiding side indicator.
-///
-/// The indicator state (visibility + hide-after task) lives here rather
-/// than on `ContentView` because it's a property of the scroll surface
-/// itself: every interaction that nudges the layer selection on this
-/// view flashes the indicator and re-arms the auto-hide.
+/// `LayerCardView` pages and hosts the digital-crown / drag-gesture /
+/// scroll-position bindings. The directional chevrons and the position rail
+/// are always present — a missing chevron means "you're at that edge" — and
+/// their emphasis follows the live scroll phase rather than a timer, so they
+/// can never disappear mid-scroll.
 struct LayerScrollView: View {
   @ObservedObject var viewModel: ContentViewModel
   @Binding var layerSelection: Int
   @Binding var phaseSelection: Int
 
-  @State private var showIndicator = false
-  @State private var hideIndicatorTask: Task<Void, Never>?
-  /// Edge-availability model backing the directional chevrons. Currently
-  /// gated at parity with the existing indicator (via `showIndicator`);
-  /// chevron visibility will later be driven by its `isInteracting` flag.
+  /// Edge availability + interaction state backing the directional chevrons.
   @StateObject private var affordanceModel = ScrollAffordanceModel()
 
   /// Clamps `layerSelection` to the current filtered range so bindings
@@ -43,6 +37,12 @@ struct LayerScrollView: View {
               }
             }
           ))
+          // Live scroll phase drives chevron emphasis — true for the whole
+          // duration of a gesture (user drag, crown, or momentum), so the
+          // chevrons stay prominent until the scroll actually settles.
+          .onScrollPhaseChange { _, newPhase in
+            affordanceModel.setInteracting(newPhase.isScrolling)
+          }
           .digitalCrownRotation(
             Binding<Double>(
               get: { Double(clampedSelection) },
@@ -68,7 +68,6 @@ struct LayerScrollView: View {
             withAnimation(.easeInOut(duration: 0.3)) {
               proxy.scrollTo(newValue, anchor: .center)
             }
-            flashIndicator()
             updateAffordances()
           }
           .onChange(of: viewModel.filteredLayers.count) { _, _ in
@@ -81,23 +80,16 @@ struct LayerScrollView: View {
             guard !viewModel.filteredLayers.isEmpty,
                   layerSelection < viewModel.filteredLayers.count else { return }
             proxy.scrollTo(layerSelection, anchor: .center)
-            flashIndicator()
             updateAffordances()
-          }
-          .onDisappear {
-            // Mirror the LayerView pattern: any pending hide task that
-            // outlives the view would later try to mutate state on a
-            // detached view via `MainActor.run`.
-            hideIndicatorTask?.cancel()
           }
           .overlay(alignment: .trailing) {
             sideIndicator(in: geometry.size)
           }
-          // Directional chevrons, gated at parity with the side indicator
-          // for now; visibility will later track live scroll state + edges.
           .overlay {
-            ScrollAffordanceView(affordances: affordanceModel.affordances)
-              .opacity(showIndicator ? 1 : 0)
+            ScrollAffordanceView(
+              affordances: affordanceModel.affordances,
+              isInteracting: affordanceModel.isInteracting
+            )
           }
           // DragGesture writes raw `layerSelection`; the bounds check uses
           // `filteredLayers.count` since reads downstream are clamped via
@@ -113,7 +105,6 @@ struct LayerScrollView: View {
                 {
                   layerSelection += 1
                 }
-                flashIndicator()
               }
           )
       }
@@ -124,9 +115,7 @@ struct LayerScrollView: View {
 
   private func scrollView(geometry: GeometryProxy) -> some View {
     // Zero spacing + per-page `containerRelativeFrame` (in LayerCardView) +
-    // `.paging` give exact, non-overlapping pages. The previous negative
-    // spacing was half of the B3 bump; the depth transforms were the other
-    // half (both removed — depth returns in #409 via scrollTransition).
+    // `.paging` give exact, non-overlapping pages with no resting offset.
     ScrollView(.vertical, showsIndicators: false) {
       LazyVStack(spacing: 0) {
         ForEach(viewModel.filteredLayers.indices, id: \.self) { index in
@@ -144,17 +133,16 @@ struct LayerScrollView: View {
     }
   }
 
+  /// Minimal, always-visible position rail (which layer of how many). Held
+  /// at a low opacity so it reads as ambient context and never competes with
+  /// the content; it no longer hides on a timer.
   private func sideIndicator(in size: CGSize) -> some View {
-    // The indicator stays in the hierarchy at all times — visibility is
-    // driven by opacity, animated through the `withAnimation` blocks in
-    // `flashIndicator()` / `scheduleHide()`. No `.transition(.opacity)`
-    // since the view is never inserted/removed.
     LayerSideIndicator(
       layers: viewModel.filteredLayers,
       selection: clampedSelection,
       size: size
     )
-    .opacity(showIndicator ? 1 : 0)
+    .opacity(0.35)
   }
 
   // MARK: - Affordances
@@ -165,25 +153,5 @@ struct LayerScrollView: View {
       layerCount: viewModel.filteredLayers.count,
       phaseCount: viewModel.phaseOrder.count
     )
-  }
-
-  // MARK: - Indicator lifecycle
-
-  private func flashIndicator() {
-    showIndicator = true
-    scheduleHide()
-  }
-
-  private func scheduleHide() {
-    hideIndicatorTask?.cancel()
-    hideIndicatorTask = Task {
-      try? await Task.sleep(nanoseconds: 1_000_000_000)
-      guard !Task.isCancelled else { return }
-      await MainActor.run {
-        withAnimation(.easeOut(duration: 0.3)) {
-          showIndicator = false
-        }
-      }
-    }
   }
 }
