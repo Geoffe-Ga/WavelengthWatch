@@ -18,6 +18,9 @@ enum WLSpacingTokens {
   static let cardCornerRadius: CGFloat = 12
   static let cardCornerRadiusSmall: CGFloat = 8
   static let cardCornerRadiusCompact: CGFloat = 6
+  /// Larger radius for the hero phase "crystal" card, which is visually
+  /// bigger than the standard cards.
+  static let cardCornerRadiusLarge: CGFloat = 16
   static let cardBorderWidth: CGFloat = 0.5
   static let cardPaddingStandard: CGFloat = 12
   static let cardPaddingCompact: CGFloat = 8
