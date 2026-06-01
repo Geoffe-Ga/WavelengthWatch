@@ -20,10 +20,6 @@ struct ScrollAffordanceView: View {
   /// available-direction chevron is always at least faintly visible.
   private static let restingOpacity: Double = 0.35
 
-  /// Corner radius of the small glass chip behind each chevron; large enough
-  /// to read as a pill/circle at chip size.
-  private let chipCornerRadius: CGFloat = 99
-
   var body: some View {
     chevronLayer
       .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -32,9 +28,8 @@ struct ScrollAffordanceView: View {
       .allowsHitTesting(false)
   }
 
-  /// Groups the chevrons' glass effects so they blend correctly on
-  /// watchOS 26; older versions render the same chevrons with the `wlGlass`
-  /// fallback (no container needed).
+  /// `GlassEffectContainer` is required (not just nice-to-have) for multiple
+  /// glass elements to blend correctly on watchOS 26.
   @ViewBuilder
   private var chevronLayer: some View {
     if #available(watchOS 26, *) {
@@ -64,7 +59,7 @@ struct ScrollAffordanceView: View {
       .font(.system(size: 12, weight: .semibold))
       .foregroundStyle(.white)
       .padding(5)
-      .wlGlass(.regular, cornerRadius: chipCornerRadius)
+      .wlGlass(.regular, cornerRadius: WLSpacingTokens.pillCornerRadius)
       .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignment)
       .padding(4)
   }

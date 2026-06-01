@@ -53,9 +53,6 @@ struct PhaseCrystalCard: View {
     // Fixed: content is a fixed visual height; scaling this pad only pushes the orb out.
     .padding(.vertical, 16)
     .frame(minWidth: UIConstants.phaseCardMinWidth * scale)
-    // Liquid Glass surface (real `glassEffect` on watchOS 26, translucent
-    // fallback below, solid surface under Reduce Transparency — all handled
-    // by `wlGlass`). The crystal stroke and depth shadows stay as decoration.
     .wlGlass(.regular, tint: color, cornerRadius: WLSpacingTokens.cardCornerRadiusLarge)
     .overlay(crystalStroke)
     .shadow(color: color.opacity(0.2), radius: 8)
