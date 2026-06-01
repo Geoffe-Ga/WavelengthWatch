@@ -11,7 +11,6 @@ struct PhaseCrystalCard: View {
   let phase: CatalogPhaseModel
   let color: Color
   let scale: CGFloat
-  @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
   var body: some View {
     ZStack {
@@ -54,7 +53,13 @@ struct PhaseCrystalCard: View {
     // Fixed: content is a fixed visual height; scaling this pad only pushes the orb out.
     .padding(.vertical, 16)
     .frame(minWidth: UIConstants.phaseCardMinWidth * scale)
-    .background(cardBackground)
+    // Liquid Glass surface (real `glassEffect` on watchOS 26, translucent
+    // fallback below, solid surface under Reduce Transparency — all handled
+    // by `wlGlass`). The crystal stroke and depth shadows stay as decoration.
+    .wlGlass(.regular, tint: color, cornerRadius: WLSpacingTokens.cardCornerRadiusLarge)
+    .overlay(crystalStroke)
+    .shadow(color: color.opacity(0.2), radius: 8)
+    .shadow(color: .black.opacity(0.3), radius: 4)
   }
 
   private var layerContext: some View {
@@ -119,46 +124,22 @@ struct PhaseCrystalCard: View {
     }
   }
 
-  /// Translucent dark scrim normally; a solid opaque surface when "Reduce
-  /// Transparency" is on so the layer-tinted page can't bleed through and
-  /// reduce legibility. The gradient stroke and depth shadows are preserved
-  /// in both modes.
-  private var cardFill: AnyShapeStyle {
-    if reduceTransparency {
-      return AnyShapeStyle(WLColorTokens.opaqueSurface)
-    }
-    return AnyShapeStyle(
-      LinearGradient(
-        gradient: Gradient(colors: [
-          Color.black.opacity(0.4),
-          Color.black.opacity(0.6),
-        ]),
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-      )
-    )
-  }
-
-  private var cardBackground: some View {
+  /// The crystalline gradient edge that gives the card its identity, layered
+  /// over the glass surface.
+  private var crystalStroke: some View {
     RoundedRectangle(cornerRadius: WLSpacingTokens.cardCornerRadiusLarge)
-      .fill(cardFill)
-      .overlay(
-        RoundedRectangle(cornerRadius: WLSpacingTokens.cardCornerRadiusLarge)
-          .stroke(
-            LinearGradient(
-              gradient: Gradient(colors: [
-                color.opacity(0.3),
-                Color.white.opacity(0.1),
-                color.opacity(0.2),
-              ]),
-              startPoint: .topLeading,
-              endPoint: .bottomTrailing
-            ),
-            lineWidth: 1
-          )
+      .stroke(
+        LinearGradient(
+          gradient: Gradient(colors: [
+            color.opacity(0.3),
+            Color.white.opacity(0.1),
+            color.opacity(0.2),
+          ]),
+          startPoint: .topLeading,
+          endPoint: .bottomTrailing
+        ),
+        lineWidth: 1
       )
-      .shadow(color: color.opacity(0.2), radius: 8)
-      .shadow(color: .black.opacity(0.3), radius: 4)
   }
 }
 
