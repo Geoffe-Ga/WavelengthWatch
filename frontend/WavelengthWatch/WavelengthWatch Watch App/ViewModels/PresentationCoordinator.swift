@@ -22,8 +22,8 @@ import SwiftUI
 /// simple "replace" used here to the queue/priority rules in #407.
 @MainActor
 final class PresentationCoordinator: ObservableObject {
-  /// The presentation currently requested for display, or `.none`.
-  @Published private(set) var active: ActivePresentation = .none
+  /// The presentation currently requested for display, or `.idle`.
+  @Published private(set) var active: ActivePresentation = .idle
 
   /// Requests that `presentation` become the active presentation.
   ///
@@ -35,9 +35,9 @@ final class PresentationCoordinator: ObservableObject {
     active = presentation
   }
 
-  /// Dismisses the active presentation, returning to `.none`.
+  /// Dismisses the active presentation, returning to `.idle`.
   func dismiss() {
-    active = .none
+    active = .idle
   }
 
   /// A two-way `Bool` binding suitable for `.sheet(isPresented:)` /
@@ -51,7 +51,7 @@ final class PresentationCoordinator: ObservableObject {
         if isPresented {
           self.active = presentation
         } else if self.active == presentation {
-          self.active = .none
+          self.active = .idle
         }
       }
     )
@@ -60,7 +60,9 @@ final class PresentationCoordinator: ObservableObject {
   /// The set of mutually exclusive root presentations the coordinator can
   /// surface. Cases are added here as later issues fold their owners in.
   enum ActivePresentation: Equatable {
-    case none
+    /// Nothing is presented. Named `idle` rather than `none` to avoid
+    /// visual collision with `Optional.none` at call sites.
+    case idle
     case menu
     case onboarding
     case storageError

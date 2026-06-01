@@ -14,7 +14,7 @@ struct PresentationCoordinatorTests {
   func initialization_isNone() {
     let coordinator = PresentationCoordinator()
 
-    #expect(coordinator.active == .none)
+    #expect(coordinator.active == .idle)
   }
 
   // MARK: - request / dismiss
@@ -45,7 +45,16 @@ struct PresentationCoordinatorTests {
 
     coordinator.dismiss()
 
-    #expect(coordinator.active == .none)
+    #expect(coordinator.active == .idle)
+  }
+
+  @Test("dismiss while already idle is a no-op")
+  func dismiss_whenAlreadyIdle_isNoOp() {
+    let coordinator = PresentationCoordinator()
+
+    coordinator.dismiss()
+
+    #expect(coordinator.active == .idle)
   }
 
   // MARK: - isPresented(for:) binding
@@ -76,7 +85,7 @@ struct PresentationCoordinatorTests {
 
     coordinator.isPresented(for: .menu).wrappedValue = false
 
-    #expect(coordinator.active == .none)
+    #expect(coordinator.active == .idle)
   }
 
   @Test("writing false for a non-active presentation does not clobber the active one")

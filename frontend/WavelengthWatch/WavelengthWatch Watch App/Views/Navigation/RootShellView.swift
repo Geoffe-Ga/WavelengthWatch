@@ -31,6 +31,10 @@ struct RootShellView: View {
 
   @State private var isShowingDetailView = false
   @State private var navigationPath = NavigationPath()
+  /// Ensures the journal-storage warning is surfaced at most once per
+  /// session, so dismissing it doesn't let a re-running `.task` re-present
+  /// it. Resets on relaunch, matching the prior inline-`@State` behavior.
+  @State private var didSurfaceStorageWarning = false
 
   private var flowSubmissionPresenter: FlowSubmissionPresenter {
     FlowSubmissionPresenter(flowCoordinator: flowCoordinator, viewModel: viewModel)
@@ -52,7 +56,8 @@ struct RootShellView: View {
     // is running on the in-memory fallback — otherwise entries silently vanish
     // on the next termination. The warning copy lives in RootPresentationHost.
     .task {
-      if viewModel.journalStorageIsEphemeral {
+      if viewModel.journalStorageIsEphemeral, !didSurfaceStorageWarning {
+        didSurfaceStorageWarning = true
         presentationCoordinator.request(.storageError)
       }
     }
