@@ -6,8 +6,7 @@ import SwiftUI
 ///
 /// Purely an affordance hint — it never intercepts touches, so it can't
 /// interfere with the scroll/crown gestures underneath. Overall visibility
-/// is controlled by the caller (gated at parity with the existing indicator
-/// in #410; driven by live scroll state + edge availability in #411).
+/// is controlled by the caller.
 struct ScrollAffordanceView: View {
   let affordances: ScrollAffordances
 

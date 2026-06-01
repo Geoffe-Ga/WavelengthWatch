@@ -17,10 +17,9 @@ struct LayerScrollView: View {
 
   @State private var showIndicator = false
   @State private var hideIndicatorTask: Task<Void, Never>?
-  /// Edge-availability model backing the directional chevrons. Introduced
-  /// in #410 wired at parity with the existing indicator (gated by
-  /// `showIndicator`); #411 drives chevron visibility from its
-  /// `isInteracting` flag and retires the blind hide-timer.
+  /// Edge-availability model backing the directional chevrons. Currently
+  /// gated at parity with the existing indicator (via `showIndicator`);
+  /// chevron visibility will later be driven by its `isInteracting` flag.
   @StateObject private var affordanceModel = ScrollAffordanceModel()
 
   /// Clamps `layerSelection` to the current filtered range so bindings
@@ -75,6 +74,9 @@ struct LayerScrollView: View {
           .onChange(of: viewModel.filteredLayers.count) { _, _ in
             updateAffordances()
           }
+          .onChange(of: viewModel.phaseOrder.count) { _, _ in
+            updateAffordances()
+          }
           .onAppear {
             guard !viewModel.filteredLayers.isEmpty,
                   layerSelection < viewModel.filteredLayers.count else { return }
@@ -92,7 +94,7 @@ struct LayerScrollView: View {
             sideIndicator(in: geometry.size)
           }
           // Directional chevrons, gated at parity with the side indicator
-          // for now; #411 drives them from live scroll state + edges.
+          // for now; visibility will later track live scroll state + edges.
           .overlay {
             ScrollAffordanceView(affordances: affordanceModel.affordances)
               .opacity(showIndicator ? 1 : 0)

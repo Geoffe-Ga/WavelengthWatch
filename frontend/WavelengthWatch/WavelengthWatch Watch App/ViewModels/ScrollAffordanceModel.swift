@@ -15,9 +15,8 @@ struct ScrollAffordances: Equatable {
 
 /// Derives edge availability and tracks whether a scroll is in progress, so
 /// the affordance chevrons can be shown for exactly the directions that are
-/// possible — and (from #411) kept visible for the whole duration of a
-/// gesture rather than hidden by a blind timer (B1 in
-/// `prompts/claude-comm/spec-primary-selector-rebuild.md`).
+/// possible — and kept visible for the whole duration of a gesture rather
+/// than hidden by a timer.
 ///
 /// Pure state with no view dependency, so the edge math and interaction
 /// transitions are unit-testable without rendering anything.
@@ -25,9 +24,9 @@ struct ScrollAffordances: Equatable {
 final class ScrollAffordanceModel: ObservableObject {
   @Published private(set) var affordances = ScrollAffordances()
 
-  /// True while a scroll/crown/drag gesture is in progress. In this skeleton
-  /// (#410) nothing drives it yet; #411 feeds it from the live scroll phase
-  /// and gates chevron visibility on it.
+  /// True while a scroll/crown/drag gesture is in progress. Currently unset;
+  /// callers will drive it from the live scroll phase to gate chevron
+  /// visibility.
   @Published private(set) var isInteracting = false
 
   /// Recomputes edge availability from the current selection and counts.

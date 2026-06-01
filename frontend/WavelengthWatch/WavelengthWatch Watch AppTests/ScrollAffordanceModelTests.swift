@@ -61,6 +61,24 @@ struct ScrollAffordanceModelTests {
     #expect(model.affordances.canGoRight == false)
   }
 
+  @Test("zero layers suppresses both up and down")
+  func zeroLayers() {
+    let model = ScrollAffordanceModel()
+    model.update(layerSelection: 0, layerCount: 0, phaseCount: 3)
+
+    #expect(model.affordances.canGoUp == false)
+    #expect(model.affordances.canGoDown == false)
+  }
+
+  @Test("zero phases suppresses both left and right")
+  func zeroPhases() {
+    let model = ScrollAffordanceModel()
+    model.update(layerSelection: 2, layerCount: 5, phaseCount: 0)
+
+    #expect(model.affordances.canGoLeft == false)
+    #expect(model.affordances.canGoRight == false)
+  }
+
   @Test("isInteracting toggles and ignores redundant writes")
   func interactionTransitions() {
     let model = ScrollAffordanceModel()
