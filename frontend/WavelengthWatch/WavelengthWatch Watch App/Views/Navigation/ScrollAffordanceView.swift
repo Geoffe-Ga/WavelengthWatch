@@ -25,11 +25,16 @@ struct ScrollAffordanceView: View {
     .allowsHitTesting(false)
   }
 
-  /// Full while a scroll is in progress, de-emphasized at rest. Never zero —
-  /// an available-direction chevron is always at least faintly visible, which
-  /// is what keeps it from ever disappearing on a timer.
+  /// Emphasis while a scroll is in progress.
+  private static let interactingOpacity: Double = 0.9
+  /// Ambient emphasis at rest — quiet but never zero, so an
+  /// available-direction chevron is always at least faintly visible.
+  private static let restingOpacity: Double = 0.35
+
+  /// Full while a scroll is in progress, de-emphasized at rest. Never zero,
+  /// which is what keeps a chevron from ever disappearing on a timer.
   static func chevronOpacity(isInteracting: Bool) -> Double {
-    isInteracting ? 0.9 : 0.35
+    isInteracting ? interactingOpacity : restingOpacity
   }
 
   private func chevron(_ systemName: String, alignment: Alignment) -> some View {

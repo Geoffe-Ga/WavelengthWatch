@@ -16,6 +16,9 @@ struct LayerScrollView: View {
   /// Edge availability + interaction state backing the directional chevrons.
   @StateObject private var affordanceModel = ScrollAffordanceModel()
 
+  /// Ambient opacity for the always-visible layer position rail.
+  private let sideRailAmbientOpacity: Double = 0.35
+
   /// Clamps `layerSelection` to the current filtered range so bindings
   /// can never read an out-of-range index — important during filter-mode
   /// transitions where `layerSelection` may be stale for one render.
@@ -142,7 +145,7 @@ struct LayerScrollView: View {
       selection: clampedSelection,
       size: size
     )
-    .opacity(0.35)
+    .opacity(sideRailAmbientOpacity)
   }
 
   // MARK: - Affordances

@@ -7,6 +7,9 @@ struct LayerView: View {
   let screenWidth: CGFloat // Stable width from parent GeometryReader
   @EnvironmentObject private var viewModel: ContentViewModel
 
+  /// Ambient opacity for the always-visible phase position rail.
+  private let pageDotsAmbientOpacity: Double = 0.5
+
   var body: some View {
     TabView(selection: $selection) {
       ForEach(0 ..< (phaseCount + 2), id: \.self) { index in
@@ -65,6 +68,6 @@ struct LayerView: View {
         )
     )
     .padding(.bottom, 8)
-    .opacity(0.5)
+    .opacity(pageDotsAmbientOpacity)
   }
 }

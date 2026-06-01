@@ -19,4 +19,11 @@ struct ScrollAffordanceViewTests {
   func atRest_isNonZero() {
     #expect(ScrollAffordanceView.chevronOpacity(isInteracting: false) > 0)
   }
+
+  @Test("interacting opacity is a valid opacity value (never above 1.0)")
+  func interacting_isValidOpacity() {
+    let interacting = ScrollAffordanceView.chevronOpacity(isInteracting: true)
+    #expect(interacting > 0)
+    #expect(interacting <= 1.0)
+  }
 }
