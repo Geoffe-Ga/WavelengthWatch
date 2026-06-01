@@ -55,8 +55,7 @@ struct PhaseCrystalCard: View {
     .frame(minWidth: UIConstants.phaseCardMinWidth * scale)
     .wlGlass(.regular, tint: color, cornerRadius: WLSpacingTokens.cardCornerRadiusLarge)
     .overlay(crystalStroke)
-    .shadow(color: color.opacity(0.2), radius: 8)
-    .shadow(color: .black.opacity(0.3), radius: 4)
+    .modifier(CardDepthShadow(color: color))
   }
 
   private var layerContext: some View {
@@ -137,6 +136,25 @@ struct PhaseCrystalCard: View {
         ),
         lineWidth: 1
       )
+  }
+}
+
+/// Depth shadow for the crystal card, scoped by OS so the glass surface
+/// isn't double-shadowed. On watchOS 26 the `glassEffect` material renders
+/// its own depth, so only a single light separation shadow is added; the
+/// pre-26 fallback is a flat tinted surface and needs the fuller two-shadow
+/// stack to read as a floating card.
+private struct CardDepthShadow: ViewModifier {
+  let color: Color
+
+  func body(content: Content) -> some View {
+    if #available(watchOS 26, *) {
+      content.shadow(color: .black.opacity(0.25), radius: 4)
+    } else {
+      content
+        .shadow(color: color.opacity(0.2), radius: 8)
+        .shadow(color: .black.opacity(0.3), radius: 4)
+    }
   }
 }
 

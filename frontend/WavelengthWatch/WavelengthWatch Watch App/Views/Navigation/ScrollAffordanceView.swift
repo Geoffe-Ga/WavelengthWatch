@@ -54,6 +54,8 @@ struct ScrollAffordanceView: View {
     isInteracting ? interactingOpacity : restingOpacity
   }
 
+  /// Chips are intentionally untinted (neutral glass) so the chevrons stay
+  /// layer-agnostic, unlike the layer-tinted card.
   private func chevron(_ systemName: String, alignment: Alignment) -> some View {
     Image(systemName: systemName)
       .font(.system(size: 12, weight: .semibold))
