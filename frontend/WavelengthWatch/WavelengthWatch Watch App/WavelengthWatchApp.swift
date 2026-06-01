@@ -32,6 +32,12 @@ struct WavelengthWatch_Watch_AppApp: App {
   @StateObject private var journalQueue: JournalQueue
   @StateObject private var syncService: JournalSyncService
   @StateObject private var navigationViewModel: NavigationViewModel
+  /// Single source of truth for root-level transient presentations
+  /// (menu / onboarding / storage error today; journal feedback, flow
+  /// review, and log-confirmation fold in via #406 / #407). No
+  /// dependencies, so it is constructed inline rather than through
+  /// `ContentViewDependencies`.
+  @StateObject private var presentationCoordinator = PresentationCoordinator()
 
   private let journalClient: JournalClientProtocol
   private let journalRepository: JournalRepositoryProtocol
@@ -94,6 +100,7 @@ struct WavelengthWatch_Watch_AppApp: App {
       .environmentObject(syncService)
       .environmentObject(navigationViewModel)
       .environmentObject(notificationDelegate)
+      .environmentObject(presentationCoordinator)
     }
   }
 }
