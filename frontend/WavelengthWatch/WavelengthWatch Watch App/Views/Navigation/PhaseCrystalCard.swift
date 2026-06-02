@@ -12,6 +12,17 @@ struct PhaseCrystalCard: View {
   let color: Color
   let scale: CGFloat
 
+  /// Scales every color-bearing layer (orb, accent, stroke, glass tint).
+  /// `1.0` = current production look; lower = calmer / more translucent glass.
+  /// Defaulted so production call sites are unchanged; the audit `#Preview`
+  /// (issue #430 visual Phase 0) varies it to find a readable value for #433.
+  var colorIntensity: Double = 1.0
+
+  /// Layer color at `base` opacity, further scaled by `colorIntensity`.
+  private func tint(_ base: Double) -> Color {
+    color.opacity(base * colorIntensity)
+  }
+
   var body: some View {
     ZStack {
       backgroundOrb
@@ -27,8 +38,8 @@ struct PhaseCrystalCard: View {
       .fill(
         RadialGradient(
           gradient: Gradient(colors: [
-            color.opacity(0.3),
-            color.opacity(0.1),
+            tint(0.3),
+            tint(0.1),
             Color.clear,
           ]),
           center: .center,
@@ -53,7 +64,7 @@ struct PhaseCrystalCard: View {
     // Fixed: content is a fixed visual height; scaling this pad only pushes the orb out.
     .padding(.vertical, 16)
     .frame(minWidth: UIConstants.phaseCardMinWidth * scale)
-    .wlGlass(.regular, tint: color, cornerRadius: WLSpacingTokens.cardCornerRadiusLarge)
+    .wlGlass(.regular, tint: tint(1.0), cornerRadius: WLSpacingTokens.cardCornerRadiusLarge)
     .overlay(crystalStroke)
     .modifier(CardDepthShadow(color: color))
   }
@@ -93,7 +104,7 @@ struct PhaseCrystalCard: View {
   private var crystalAccent: some View {
     ZStack {
       Capsule()
-        .fill(color.opacity(0.3))
+        .fill(tint(0.3))
         .frame(
           width: UIConstants.phaseAccentOuterWidth * scale,
           height: UIConstants.phaseAccentOuterHeight * scale
@@ -104,9 +115,9 @@ struct PhaseCrystalCard: View {
         .fill(
           LinearGradient(
             gradient: Gradient(colors: [
-              color.opacity(0.6),
-              color,
-              color.opacity(0.6),
+              tint(0.6),
+              tint(1.0),
+              tint(0.6),
             ]),
             startPoint: .leading,
             endPoint: .trailing
@@ -116,7 +127,7 @@ struct PhaseCrystalCard: View {
           width: UIConstants.phaseAccentInnerWidth * scale,
           height: UIConstants.phaseAccentInnerHeight * scale
         )
-        .shadow(color: color.opacity(0.8), radius: 4 * scale)
+        .shadow(color: tint(0.8), radius: 4 * scale)
     }
   }
 
@@ -127,9 +138,9 @@ struct PhaseCrystalCard: View {
       .stroke(
         LinearGradient(
           gradient: Gradient(colors: [
-            color.opacity(0.3),
+            tint(0.3),
             Color.white.opacity(0.1),
-            color.opacity(0.2),
+            tint(0.2),
           ]),
           startPoint: .topLeading,
           endPoint: .bottomTrailing
@@ -176,6 +187,55 @@ private struct CardDepthShadow: ViewModifier {
   PhaseCrystalCard(layer: layer, phase: phase, color: .red, scale: 1.0)
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .background(Color.black)
+}
+
+// MARK: - Phase 0 visual-audit harness (#430)
+
+/// Renders the card at descending `colorIntensity` levels so the readable
+/// target can be chosen for #433. Preview-only; not used in production.
+private struct CardIntensityLadder: View {
+  let colorName: String
+  let color: Color
+  let title: String
+  let subtitle: String
+
+  private let levels: [Double] = [1.0, 0.6, 0.45, 0.3]
+  private var phase: CatalogPhaseModel {
+    CatalogPhaseModel(id: 2, name: "Peaking", medicinal: [], toxic: [], strategies: [])
+  }
+
+  var body: some View {
+    ScrollView {
+      VStack(spacing: 18) {
+        ForEach(levels, id: \.self) { level in
+          VStack(spacing: 4) {
+            Text("intensity \(level, specifier: "%.2f")\(level == 1.0 ? "  (current)" : "")")
+              .font(.caption2)
+              .foregroundColor(.white.opacity(0.65))
+            PhaseCrystalCard(
+              layer: CatalogLayerModel(
+                id: 3, color: colorName, title: title, subtitle: subtitle, phases: [phase]
+              ),
+              phase: phase,
+              color: color,
+              scale: 1.0,
+              colorIntensity: level
+            )
+          }
+        }
+      }
+      .padding(.vertical, 24)
+    }
+    .background(Color.black)
+  }
+}
+
+#Preview("§430 brightness ladder — Red") {
+  CardIntensityLadder(colorName: "Red", color: .red, title: "RED", subtitle: "(Power)")
+}
+
+#Preview("§430 brightness ladder — Yellow") {
+  CardIntensityLadder(colorName: "Yellow", color: .yellow, title: "YELLOW", subtitle: "(Achiever)")
 }
 
 #Preview("Edge case — Bottoming Out") {
