@@ -28,13 +28,20 @@ struct PresentationCoordinatorTests {
     #expect(coordinator.active == .menu)
   }
 
-  @Test("a second request replaces the active presentation (skeleton policy)")
-  func request_replacesActivePresentation() {
+  /// `.menu` and `.onboarding` share priority 1, so the second request does
+  /// not preempt the first — it queues behind it (the #407 priority policy;
+  /// the earlier "replace" skeleton policy this test asserted is gone).
+  /// Preemption/queue ordering across priorities lives in
+  /// `PresentationPolicyTests`.
+  @Test("an equal-priority request queues behind the active one")
+  func request_equalPriority_queuesBehindActive() {
     let coordinator = PresentationCoordinator()
 
     coordinator.request(.menu)
     coordinator.request(.onboarding)
 
+    #expect(coordinator.active == .menu)
+    coordinator.dismiss()
     #expect(coordinator.active == .onboarding)
   }
 

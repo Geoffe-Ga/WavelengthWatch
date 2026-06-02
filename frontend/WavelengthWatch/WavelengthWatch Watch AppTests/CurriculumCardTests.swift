@@ -128,6 +128,44 @@ struct CurriculumCardTests {
     #expect(card.dosageType == .toxic)
   }
 
+  /// B2: tapping a Clear Light emotion must emit a root-level
+  /// `logConfirmation` intent (carrying a `.curriculum` action) rather than a
+  /// leaf-local `.alert`, so the confirmation/log isn't deferred until the
+  /// user backs out of the pushed detail view.
+  @Test("ClearLightEmotionCard emits a curriculum log-confirmation intent (medicinal)")
+  func clearLightCard_emitsMedicinalLogRequest() {
+    let entry = makeMockMedicinalEntry(id: 20, expression: "Connected")
+    let emotion = LayeredEmotion(layerId: 3, entry: entry, layerTitle: "PURPLE", layerColor: "Purple")
+    let card = ClearLightEmotionCard(emotion: emotion, dosageType: .medicinal)
+
+    let expected = PresentationCoordinator.ActivePresentation.logConfirmation(
+      LogConfirmationRequest(
+        alertTitle: "Log Medicinal",
+        message: "Would you like to log \"Connected\"?",
+        action: .curriculum(entry: entry)
+      )
+    )
+
+    #expect(card.logRequest == expected)
+  }
+
+  @Test("ClearLightEmotionCard emits a curriculum log-confirmation intent (toxic)")
+  func clearLightCard_emitsToxicLogRequest() {
+    let entry = makeMockToxicEntry(id: 21, expression: "Dependent")
+    let emotion = LayeredEmotion(layerId: 3, entry: entry, layerTitle: "PURPLE", layerColor: "Purple")
+    let card = ClearLightEmotionCard(emotion: emotion, dosageType: .toxic)
+
+    let expected = PresentationCoordinator.ActivePresentation.logConfirmation(
+      LogConfirmationRequest(
+        alertTitle: "Log Toxic",
+        message: "Would you like to log \"Dependent\"?",
+        action: .curriculum(entry: entry)
+      )
+    )
+
+    #expect(card.logRequest == expected)
+  }
+
   // MARK: - LayeredEmotion derived logic
 
   @Test("LayeredEmotion composes a unique id from layer and entry")

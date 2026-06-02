@@ -20,6 +20,16 @@ struct ScrollAffordanceViewTests {
     #expect(ScrollAffordanceView.chevronOpacity(isInteracting: false) > 0)
   }
 
+  /// B1 follow-up: vertical navigation is programmatic (crown / drag →
+  /// `scrollTo`), so the scroll-phase `isInteracting` signal often never fires
+  /// for vertical moves. Baseline visibility therefore can't depend on it — an
+  /// available-direction chevron must be *clearly* visible at rest, not merely
+  /// non-zero. Pins resting opacity high enough to read on-device.
+  @Test("chevrons are clearly visible at rest, independent of the scroll-phase signal")
+  func atRest_isClearlyVisible() {
+    #expect(ScrollAffordanceView.chevronOpacity(isInteracting: false) >= 0.8)
+  }
+
   @Test("interacting opacity is a valid opacity value (never above 1.0)")
   func interacting_isValidOpacity() {
     let interacting = ScrollAffordanceView.chevronOpacity(isInteracting: true)

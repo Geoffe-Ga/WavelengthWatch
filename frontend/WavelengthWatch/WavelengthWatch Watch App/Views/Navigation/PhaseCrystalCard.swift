@@ -12,6 +12,12 @@ struct PhaseCrystalCard: View {
   let color: Color
   let scale: CGFloat
 
+  /// Alpha applied to the layer color before it tints the glass surface. A
+  /// full-saturation tint saturates the glass into a bright, opaque square and
+  /// kills the translucency; damping it lets the Liquid Glass material read as
+  /// a tinted *glass* card rather than a colored block.
+  private static let glassTintOpacity: Double = 0.45
+
   var body: some View {
     ZStack {
       backgroundOrb
@@ -53,7 +59,11 @@ struct PhaseCrystalCard: View {
     // Fixed: content is a fixed visual height; scaling this pad only pushes the orb out.
     .padding(.vertical, 16)
     .frame(minWidth: UIConstants.phaseCardMinWidth * scale)
-    .wlGlass(.regular, tint: color, cornerRadius: WLSpacingTokens.cardCornerRadiusLarge)
+    .wlGlass(
+      .regular,
+      tint: color.opacity(Self.glassTintOpacity),
+      cornerRadius: WLSpacingTokens.cardCornerRadiusLarge
+    )
     .overlay(crystalStroke)
     .modifier(CardDepthShadow(color: color))
   }

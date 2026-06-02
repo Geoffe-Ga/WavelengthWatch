@@ -4,9 +4,11 @@ import SwiftUI
 /// is rendered for a direction only when movement that way is possible, so
 /// the absence of a chevron is itself the "you're at the edge" signal.
 ///
-/// The chevrons are always present; their overall emphasis is full while a
-/// scroll is in progress and de-emphasized at rest, so the edge cue never
-/// disappears mid-gesture. Each sits on a Liquid Glass chip (grouped in a
+/// The chevrons are always clearly visible whenever their direction is
+/// available — full while a scroll is in progress and only slightly calmer at
+/// rest — so the edge cue can never read as "disappeared," including during
+/// the programmatic vertical scroll that doesn't emit a scroll-phase signal.
+/// Each sits on a Liquid Glass chip (grouped in a
 /// `GlassEffectContainer` so they blend correctly on watchOS 26). Purely an
 /// affordance hint — it never intercepts touches, so it can't interfere with
 /// the scroll/crown gestures underneath.
@@ -15,10 +17,15 @@ struct ScrollAffordanceView: View {
   let isInteracting: Bool
 
   /// Emphasis while a scroll is in progress.
-  private static let interactingOpacity: Double = 0.9
-  /// Ambient emphasis at rest — quiet but never zero, so an
-  /// available-direction chevron is always at least faintly visible.
-  private static let restingOpacity: Double = 0.35
+  private static let interactingOpacity: Double = 1.0
+  /// Emphasis at rest. Kept high (not faint) on purpose: vertical navigation
+  /// is programmatic (crown / drag → `scrollTo`), so the scroll-phase
+  /// `isInteracting` signal frequently never fires for vertical moves. If the
+  /// resting state were faint, an available-direction chevron would read as
+  /// "disappeared" on every vertical scroll and only brighten on the native
+  /// horizontal `TabView` swipe — the exact B1 regression. A clearly-visible
+  /// resting state makes the chevron's presence independent of that signal.
+  private static let restingOpacity: Double = 0.85
 
   var body: some View {
     chevronLayer

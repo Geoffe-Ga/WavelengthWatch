@@ -1,12 +1,18 @@
 import SwiftUI
 
-/// Card for displaying emotions in Clear Light view with source layer color coding
+/// Card for displaying emotions in Clear Light view with source layer color coding.
+///
+/// Like `CurriculumCard`/`StrategyCard`, this leaf emits a log-confirmation
+/// *intent* via `PresentationCoordinator` instead of owning a local `.alert`.
+/// The former leaf-local alert was rendered from inside the pushed
+/// `CurriculumDetailView`, so it (and its fire-and-forget journal `Task`) was
+/// deferred behind the navigation context until the user backed out — B2 in
+/// `prompts/claude-comm/spec-primary-selector-rebuild.md`. Routing through the
+/// root-anchored `RootPresentationHost` makes it present (and log) immediately.
 struct ClearLightEmotionCard: View {
   let emotion: LayeredEmotion
   let dosageType: CatalogDosage
-  @EnvironmentObject private var viewModel: ContentViewModel
-  @EnvironmentObject private var flowCoordinator: FlowCoordinator
-  @State private var showingJournalConfirmation = false
+  @EnvironmentObject private var presentationCoordinator: PresentationCoordinator
 
   var body: some View {
     ZStack(alignment: .topTrailing) {
@@ -46,45 +52,38 @@ struct ClearLightEmotionCard: View {
       )
       .padding(.horizontal, 8)
       .onTapGesture {
-        showingJournalConfirmation = true
+        presentationCoordinator.request(logRequest)
       }
 
       MysticalJournalIcon(color: emotion.sourceColor)
         .padding(.top, 8)
         .padding(.trailing, 20)
         .onTapGesture {
-          showingJournalConfirmation = true
+          presentationCoordinator.request(logRequest)
         }
-    }
-    .alert("Log \(dosageType == .medicinal ? "Medicinal" : "Toxic")", isPresented: $showingJournalConfirmation) {
-      Button("Yes") {
-        handleLogAction()
-      }
-      Button("Cancel", role: .cancel) {}
-    } message: {
-      Text("Would you like to log \"\(emotion.entry.expression)\"?")
     }
     // Tapped via onTapGesture; expose as one labeled VoiceOver button.
     .accessibilityElement(children: .ignore)
     .accessibilityAddTraits(.isButton)
-    .accessibilityLabel("\(dosageType == .medicinal ? "Medicinal" : "Toxic"): \(emotion.entry.expression), \(emotion.layerTitle)")
+    .accessibilityLabel("\(dosageLabel): \(emotion.entry.expression), \(emotion.layerTitle)")
     .accessibilityHint("Logs this entry")
-    .accessibilityAction { showingJournalConfirmation = true }
+    .accessibilityAction { presentationCoordinator.request(logRequest) }
   }
 
-  private func handleLogAction() {
-    switch flowCoordinator.currentStep {
-    case .selectingPrimary:
-      flowCoordinator.capturePrimary(emotion.entry)
-    case .selectingSecondary:
-      flowCoordinator.captureSecondary(emotion.entry)
-    case .idle:
-      // Auto-start flow when logging from normal mode
-      flowCoordinator.startPrimarySelection()
-      flowCoordinator.capturePrimary(emotion.entry)
-    default:
-      // Other states: immediate logging
-      Task { await viewModel.journal(curriculumID: emotion.entry.id) }
-    }
+  /// Human-readable dosage label used in the alert title and accessibility copy.
+  private var dosageLabel: String {
+    dosageType == .medicinal ? "Medicinal" : "Toxic"
+  }
+
+  /// The confirmation request this card surfaces; the root host renders it and
+  /// `LogConfirmationHandler` performs the same branching the card's former
+  /// `handleLogAction` did (capture into the flow when selecting, log directly
+  /// otherwise).
+  var logRequest: PresentationCoordinator.ActivePresentation {
+    .logConfirmation(LogConfirmationRequest(
+      alertTitle: "Log \(dosageLabel)",
+      message: "Would you like to log \"\(emotion.entry.expression)\"?",
+      action: .curriculum(entry: emotion.entry)
+    ))
   }
 }
