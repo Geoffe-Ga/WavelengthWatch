@@ -13,10 +13,10 @@ struct PhaseCrystalCard: View {
   let scale: CGFloat
 
   /// Scales every color-bearing layer (orb, accent, stroke, glass tint).
-  /// `1.0` = current production look; lower = calmer / more translucent glass.
-  /// Defaulted so production call sites are unchanged; the audit `#Preview`
-  /// (issue #430 visual Phase 0) varies it to find a readable value for #433.
-  var colorIntensity: Double = 1.0
+  /// `1.0` is the original (too-bright) look; the production default `0.2`
+  /// renders the card as calm, translucent glass with legible white text —
+  /// the value chosen on-device during the #430 visual audit (fixes #433).
+  var colorIntensity: Double = 0.2
 
   /// Layer color at `base` opacity, further scaled by `colorIntensity`.
   private func tint(_ base: Double) -> Color {
@@ -199,7 +199,7 @@ private struct CardIntensityLadder: View {
   let title: String
   let subtitle: String
 
-  private let levels: [Double] = [1.0, 0.6, 0.45, 0.3]
+  private let levels: [Double] = [1.0, 0.6, 0.45, 0.3, 0.2]
   private var phase: CatalogPhaseModel {
     CatalogPhaseModel(id: 2, name: "Peaking", medicinal: [], toxic: [], strategies: [])
   }
