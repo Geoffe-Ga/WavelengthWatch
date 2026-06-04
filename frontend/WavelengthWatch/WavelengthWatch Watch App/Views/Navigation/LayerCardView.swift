@@ -25,18 +25,10 @@ struct LayerCardView: View {
       screenWidth: screenWidth
     )
     .containerRelativeFrame([.horizontal, .vertical])
-    // Offset-derived depth (#409, SPEC §4.1): a single center-anchored
-    // scale + opacity + blur the scroll system drives from page geometry.
-    // At `phase.isIdentity` (the resting/centered page) every modifier is
-    // an exact identity (scale 1, opacity 1, blur 0), so the resting card's
-    // center cannot shift — the structural guarantee against B3. Started
-    // flat (no tilt) per SPEC §11 Q2; `scaleEffect`'s default `.center`
-    // anchor keeps the effect symmetric, never translating horizontally.
-    .scrollTransition(.interactive, axis: .vertical) { content, phase in
-      content
-        .opacity(phase.isIdentity ? 1 : 0.35)
-        .scaleEffect(phase.isIdentity ? 1 : 0.95)
-        .blur(radius: phase.isIdentity ? 0 : 1)
-    }
+    // The vertical-scroll depth effect now lives on `PhaseCrystalCard` (in
+    // `PhasePageView`) rather than the whole page, so the bottom-right logging
+    // chevron and the page background are never dimmed by it — the chevron
+    // stays visible on first load even before the centered card's scroll phase
+    // resolves to identity (#440).
   }
 }
