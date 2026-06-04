@@ -50,10 +50,13 @@ struct LayerScrollView: View {
           // Live scroll phase drives chevron emphasis — true for the whole
           // duration of a gesture (user drag, crown, or momentum), so the
           // chevrons stay prominent until the scroll actually settles.
-          .onScrollPhaseChange { _, newPhase in
+          .onScrollPhaseChange { oldPhase, newPhase in
             affordanceModel.setInteracting(newPhase.isScrolling)
-            // Native (horizontal) scroll settling drives the reveal window.
-            if !newPhase.isScrolling { visibilityModel.scrollEnded() }
+            // Only a real scroll->stop transition ends the reveal window, so the
+            // initial layout's idle phase can't cut the first-load sequence short.
+            if oldPhase.isScrolling, !newPhase.isScrolling {
+              visibilityModel.scrollEnded()
+            }
           }
           .digitalCrownRotation(
             Binding<Double>(
