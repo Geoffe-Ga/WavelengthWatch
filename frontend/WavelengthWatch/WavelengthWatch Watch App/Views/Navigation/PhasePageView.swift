@@ -18,6 +18,17 @@ struct PhasePageView: View {
         Spacer()
 
         PhaseCrystalCard(layer: layer, phase: phase, color: color, scale: scale)
+          // Offset-derived depth (#409, SPEC §4.1): center-anchored scale +
+          // opacity + blur driven from page geometry, an exact identity at the
+          // resting/centered card (the B3 no-shift guarantee). Scoped to the
+          // card so the logging chevron + background stay visible on first load
+          // (#440).
+          .scrollTransition(.interactive, axis: .vertical) { content, phase in
+            content
+              .opacity(phase.isIdentity ? 1 : 0.35)
+              .scaleEffect(phase.isIdentity ? 1 : 0.95)
+              .blur(radius: phase.isIdentity ? 0 : 1)
+          }
 
         Spacer()
           .frame(maxWidth: .infinity, maxHeight: .infinity)
