@@ -38,12 +38,17 @@ struct LogConfirmationRequest: Equatable {
 /// Performs the journal-logging action behind a `LogConfirmationRequest`.
 ///
 /// This is the single home for the branching the three leaf cards used to
-/// each duplicate in their private `handleLogAction`. The behavior is
-/// preserved exactly — flow-selection steps capture into `FlowCoordinator`,
-/// every other step logs directly via `ContentViewModel.journal`. `perform`
-/// is `async` so the direct-log path can `await` the journal call (the
-/// cards previously wrapped it in a fire-and-forget `Task`); the
-/// flow-capture paths are synchronous and complete before the first await.
+/// each duplicate in their private `handleLogAction`. While a guided-flow
+/// selection step is active (`selectingPrimary`/`selectingSecondary`/
+/// `selectingStrategy`) the confirmation captures into `FlowCoordinator`;
+/// every other step — including `idle` (a single tap from normal browsing) —
+/// quick-logs directly via `ContentViewModel.journal` (#427,
+/// `SPEC_journal_logging_pipeline.md` §6.1). A tap from idle therefore
+/// persists immediately and shows feedback rather than auto-starting the
+/// multi-step flow. `perform` is `async` so the direct-log path can `await`
+/// the journal call (the cards previously wrapped it in a fire-and-forget
+/// `Task`); the flow-capture paths are synchronous and complete before the
+/// first await.
 @MainActor
 struct LogConfirmationHandler {
   let flowCoordinator: FlowCoordinator
@@ -57,12 +62,11 @@ struct LogConfirmationHandler {
         flowCoordinator.capturePrimary(entry)
       case .selectingSecondary:
         flowCoordinator.captureSecondary(entry)
-      case .idle:
-        // Auto-start the flow when logging from normal browsing.
-        flowCoordinator.startPrimarySelection()
-        flowCoordinator.capturePrimary(entry)
       default:
-        // Confirming / review / selectingStrategy: immediate logging.
+        // Quick-log (#427): a single tap from idle — and confirming / review /
+        // selectingStrategy — persists immediately and renders feedback from
+        // the result via `journal`; it never auto-starts the guided flow or
+        // changes `layerFilterMode`. See SPEC_journal_logging_pipeline.md §6.1.
         await viewModel.journal(curriculumID: entry.id)
       }
     case let .strategy(strategy, curriculumID):
