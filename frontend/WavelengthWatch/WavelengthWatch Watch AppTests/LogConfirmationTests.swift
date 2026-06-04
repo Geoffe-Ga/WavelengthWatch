@@ -47,20 +47,20 @@ struct LogConfirmationTests {
 
   // MARK: - Handler: curriculum
 
-  @Test("curriculum action from idle quick-logs immediately without entering the flow")
-  func handler_curriculum_fromIdle_quickLogsImmediately() async {
+  @Test("curriculum action from idle starts the guided flow and captures primary")
+  func handler_curriculum_fromIdle_startsAndCaptures() async {
     let (viewModel, flow, journalClient, catalog) = await setup()
     let entry = catalog.layers[1].phases[0].medicinal[0]
     let handler = LogConfirmationHandler(flowCoordinator: flow, viewModel: viewModel)
 
     await handler.perform(.curriculum(entry: entry))
 
-    // Quick-log (#427): one confirm persists exactly one row right now,
-    // and must NOT auto-start the guided flow or change the layer filter.
-    #expect(journalClient.submissions.count == 1)
-    #expect(flow.currentStep == .idle)
-    #expect(flow.selections.primary == nil)
-    #expect(viewModel.layerFilterMode == .all)
+    // #445: a tap from idle ENTERS the guided flow so the secondary-emotion
+    // step (and strategy/review) are offered — it must not quick-log.
+    #expect(flow.currentStep == .confirmingPrimary)
+    #expect(flow.selections.primary == entry)
+    #expect(viewModel.layerFilterMode == .emotionsOnly)
+    #expect(journalClient.submissions.isEmpty)
   }
 
   @Test("curriculum action while selectingPrimary captures primary")
