@@ -42,10 +42,9 @@ struct LogConfirmationRequest: Equatable {
 /// selection step is active (`selectingPrimary`/`selectingSecondary`/
 /// `selectingStrategy`) the confirmation captures into `FlowCoordinator`;
 /// every other step — including `idle` (a single tap from normal browsing) —
-/// quick-logs directly via `ContentViewModel.journal` (#427,
-/// `SPEC_journal_logging_pipeline.md` §6.1). A tap from idle therefore
-/// persists immediately and shows feedback rather than auto-starting the
-/// multi-step flow. `perform` is `async` so the direct-log path can `await`
+/// quick-logs directly via `ContentViewModel.journal`. A tap from idle
+/// therefore persists immediately and shows feedback rather than auto-starting
+/// the multi-step flow. `perform` is `async` so the direct-log path can `await`
 /// the journal call (the cards previously wrapped it in a fire-and-forget
 /// `Task`); the flow-capture paths are synchronous and complete before the
 /// first await.
@@ -62,11 +61,10 @@ struct LogConfirmationHandler {
         flowCoordinator.capturePrimary(entry)
       case .selectingSecondary:
         flowCoordinator.captureSecondary(entry)
-      default:
-        // Quick-log (#427): a single tap from idle — and confirming / review /
-        // selectingStrategy — persists immediately and renders feedback from
-        // the result via `journal`; it never auto-starts the guided flow or
-        // changes `layerFilterMode`. See SPEC_journal_logging_pipeline.md §6.1.
+      case .idle, .confirmingPrimary, .confirmingSecondary,
+           .selectingStrategy, .confirmingStrategy, .review:
+        // Non-selecting steps persist immediately and render feedback from the
+        // result; they never enter the guided flow or change layerFilterMode.
         await viewModel.journal(curriculumID: entry.id)
       }
     case let .strategy(strategy, curriculumID):

@@ -78,10 +78,9 @@ struct ClearLightEmotionCard: View {
       flowCoordinator.capturePrimary(emotion.entry)
     case .selectingSecondary:
       flowCoordinator.captureSecondary(emotion.entry)
-    default:
-      // Quick-log (#427): a single tap from idle — like the other non-selecting
-      // states — persists immediately and never auto-starts the guided flow.
-      // Mirrors `LogConfirmationHandler`; see SPEC_journal_logging_pipeline.md §6.1.
+    case .idle, .confirmingPrimary, .confirmingSecondary,
+         .selectingStrategy, .confirmingStrategy, .review:
+      // Non-selecting steps log immediately; they never enter the guided flow.
       Task { await viewModel.journal(curriculumID: emotion.entry.id) }
     }
   }
