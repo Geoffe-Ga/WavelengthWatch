@@ -78,9 +78,14 @@ struct ClearLightEmotionCard: View {
       flowCoordinator.capturePrimary(emotion.entry)
     case .selectingSecondary:
       flowCoordinator.captureSecondary(emotion.entry)
-    case .idle, .confirmingPrimary, .confirmingSecondary,
+    case .idle:
+      // A tap from normal browsing starts the guided flow so the secondary /
+      // strategy / review steps are offered (#445).
+      flowCoordinator.startPrimarySelection()
+      flowCoordinator.capturePrimary(emotion.entry)
+    case .confirmingPrimary, .confirmingSecondary,
          .selectingStrategy, .confirmingStrategy, .review:
-      // Non-selecting steps log immediately; they never enter the guided flow.
+      // Already inside the flow on a non-selecting step: log immediately.
       Task { await viewModel.journal(curriculumID: emotion.entry.id) }
     }
   }
