@@ -11,9 +11,7 @@ struct ScrollAffordanceVisibilityModelTests {
   )
 
   private func model() -> ScrollAffordanceVisibilityModel {
-    ScrollAffordanceVisibilityModel(availability: ScrollAffordances(
-      canGoUp: true, canGoDown: true, canGoLeft: true, canGoRight: true
-    ))
+    ScrollAffordanceVisibilityModel(availability: allAvailable)
   }
 
   // MARK: - Resting / load

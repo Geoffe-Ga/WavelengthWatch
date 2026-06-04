@@ -87,7 +87,7 @@ struct LayerScrollView: View {
             updateAffordances()
           }
           .onChange(of: phaseSelection) { oldValue, newValue in
-            registerScroll(newValue >= oldValue ? .right : .left)
+            registerScroll(newValue > oldValue ? .right : .left)
           }
           .onChange(of: viewModel.filteredLayers.count) { _, _ in
             updateAffordances()
@@ -189,8 +189,9 @@ struct LayerScrollView: View {
     visibilityModel.scrollStarted(direction)
     scrollEndTask?.cancel()
     scrollEndTask = Task { @MainActor in
-      try? await Task.sleep(for: .milliseconds(350))
-      if Task.isCancelled { return }
+      // Catch cancellation directly so scrollEnded() only fires on a clean
+      // wakeup (a rapid follow-up move cancels and supersedes this one).
+      do { try await Task.sleep(for: .milliseconds(350)) } catch { return }
       visibilityModel.scrollEnded()
     }
   }

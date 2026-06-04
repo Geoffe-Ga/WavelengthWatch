@@ -97,8 +97,7 @@ final class ScrollAffordanceVisibilityModel: ObservableObject {
     case let .loadLit(remaining):
       if delta >= remaining {
         phase = .settle(remaining: Self.settleDuration)
-        recompute()
-        advance(by: delta - remaining)
+        advance(by: delta - remaining) // recursive call recomputes; no double publish
       } else {
         phase = .loadLit(remaining: remaining - delta)
         recompute()

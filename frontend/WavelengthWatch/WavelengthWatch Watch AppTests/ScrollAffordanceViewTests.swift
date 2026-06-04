@@ -16,5 +16,6 @@ struct ScrollAffordanceViewTests {
     #expect(view.state.up == .lit)
     #expect(view.state.down == .visibleUnlit)
     #expect(view.state.left == .hidden)
+    #expect(view.state.right == .visibleUnlit)
   }
 }
