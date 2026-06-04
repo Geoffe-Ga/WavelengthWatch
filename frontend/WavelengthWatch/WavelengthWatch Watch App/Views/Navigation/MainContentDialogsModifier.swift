@@ -7,9 +7,6 @@ import SwiftUI
 ///   notification fires while the app is foregrounded, the delegate's
 ///   `scheduledNotificationReceived` carries the `InitiatedBy` to
 ///   apply to the next entry.
-/// - **Flow-step navigation pop** — any transition into a flow
-///   selection step or back to idle pops the NavigationStack to root
-///   so the user isn't stuck in a detail view (fixes #157 / #162 / #164).
 /// - **Menu sheet** — wrapped in its own `NavigationStack` with a
 ///   "Done" cancellation button so it can present nested sheets.
 /// - **Onboarding sheet** — gated by `SyncSettingsViewModel`, modal,
@@ -32,7 +29,6 @@ struct MainContentDialogsModifier: ViewModifier {
 
   @Binding var showingMenu: Bool
   @Binding var showingOnboarding: Bool
-  @Binding var navigationPath: NavigationPath
 
   func body(content: Content) -> some View {
     content
@@ -41,9 +37,6 @@ struct MainContentDialogsModifier: ViewModifier {
           viewModel.setInitiatedBy(notification.initiatedBy)
           notificationDelegate.clearNotificationState()
         }
-      }
-      .onChange(of: flowCoordinator.currentStep) { _, newStep in
-        popNavigationPath(for: newStep)
       }
       .sheet(isPresented: $showingMenu) { menuSheet }
       .sheet(isPresented: $showingOnboarding) { onboardingSheet }
@@ -81,22 +74,6 @@ struct MainContentDialogsModifier: ViewModifier {
     )
     .interactiveDismissDisabled()
   }
-
-  // MARK: - Navigation
-
-  /// Pops the navigation stack to root on flow-step transitions that
-  /// should leave the user free to navigate again (fixes #157 / #162 / #164:
-  /// prevents being stuck in a detail view across flow boundaries).
-  private func popNavigationPath(for step: FlowCoordinator.FlowStep) {
-    switch step {
-    case .selectingPrimary, .selectingSecondary, .selectingStrategy, .idle:
-      if !navigationPath.isEmpty {
-        navigationPath.removeLast(navigationPath.count)
-      }
-    default:
-      break
-    }
-  }
 }
 
 extension View {
@@ -112,8 +89,7 @@ extension View {
     syncService: JournalSyncService,
     networkMonitor: NetworkMonitor,
     showingMenu: Binding<Bool>,
-    showingOnboarding: Binding<Bool>,
-    navigationPath: Binding<NavigationPath>
+    showingOnboarding: Binding<Bool>
   ) -> some View {
     modifier(MainContentDialogsModifier(
       viewModel: viewModel,
@@ -125,8 +101,7 @@ extension View {
       syncService: syncService,
       networkMonitor: networkMonitor,
       showingMenu: showingMenu,
-      showingOnboarding: showingOnboarding,
-      navigationPath: navigationPath
+      showingOnboarding: showingOnboarding
     ))
   }
 }

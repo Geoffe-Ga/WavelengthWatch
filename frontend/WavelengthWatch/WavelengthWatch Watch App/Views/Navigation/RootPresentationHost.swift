@@ -74,23 +74,16 @@ struct RootPresentationHost: ViewModifier {
 
   // MARK: - Coordinator bridges
 
-  /// Keeps the coordinator in sync with state that still lives on its
-  /// original owner: ContentViewModel's direct-log feedback (consumed
-  /// one-shot, since ContentViewModel must not depend on the coordinator)
-  /// and FlowCoordinator's review step.
+  /// Keeps the coordinator in sync with ContentViewModel's direct-log feedback
+  /// (consumed one-shot, since ContentViewModel must not depend on the
+  /// coordinator). The flow-review step is driven from RootShellView's single
+  /// flow-step observer (#428).
   private func bridges(_ view: some View) -> some View {
     view
       .onChange(of: viewModel.journalFeedback) { _, newValue in
         if let feedback = newValue {
           coordinator.request(.journalFeedback(feedback))
           viewModel.journalFeedback = nil
-        }
-      }
-      .onChange(of: flowCoordinator.currentStep) { _, newStep in
-        if newStep == .review {
-          coordinator.request(.flowReview)
-        } else if coordinator.active == .flowReview {
-          coordinator.dismiss()
         }
       }
   }

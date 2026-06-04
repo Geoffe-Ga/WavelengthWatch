@@ -1,0 +1,45 @@
+import Foundation
+
+/// What the review sheet should do in response to a flow-step transition.
+enum ReviewSheetAction: Equatable {
+  /// Present the flow-review sheet.
+  case present
+  /// Dismiss it, but only if it is the active presentation.
+  case dismissIfActive
+}
+
+/// The combined navigation + presentation response to a flow-step transition.
+struct FlowStepReaction: Equatable {
+  /// Pop the navigation stack to root so the user isn't stranded in a detail
+  /// view across a flow boundary (the #157 / #162 / #164 fix).
+  var popsToRoot: Bool
+  var reviewSheet: ReviewSheetAction
+}
+
+/// Single source of truth for how a `FlowCoordinator.FlowStep` transition maps
+/// to navigation pops and review-sheet presentation.
+///
+/// Previously these two reactions lived in two independent
+/// `onChange(currentStep)` observers (`MainContentDialogsModifier` for the pop,
+/// `RootPresentationHost` for the sheet), which both fired on every transition
+/// and could race on watchOS's single-presentation-per-scene constraint. This
+/// pure policy lets exactly one observer apply both in a defined order, and
+/// makes the decision unit-testable without rendering a view (#428).
+enum FlowStepReactionPolicy {
+  static func reaction(for step: FlowCoordinator.FlowStep) -> FlowStepReaction {
+    FlowStepReaction(popsToRoot: popsToRoot(step), reviewSheet: reviewSheet(step))
+  }
+
+  private static func popsToRoot(_ step: FlowCoordinator.FlowStep) -> Bool {
+    switch step {
+    case .selectingPrimary, .selectingSecondary, .selectingStrategy, .idle:
+      true
+    case .confirmingPrimary, .confirmingSecondary, .confirmingStrategy, .review:
+      false
+    }
+  }
+
+  private static func reviewSheet(_ step: FlowCoordinator.FlowStep) -> ReviewSheetAction {
+    step == .review ? .present : .dismissIfActive
+  }
+}

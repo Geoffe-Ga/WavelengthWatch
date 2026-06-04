@@ -65,6 +65,27 @@ struct RootShellView: View {
       }
     }
     .rootPresentationHost(coordinator: presentationCoordinator)
+    .onChange(of: flowCoordinator.currentStep) { _, newStep in
+      applyFlowStepReaction(FlowStepReactionPolicy.reaction(for: newStep))
+    }
+  }
+
+  /// The single owner of flow-step side-effects: pops navigation to root and
+  /// drives the review sheet from one place, in a defined order — replacing the
+  /// two independent `onChange(currentStep)` observers that previously raced
+  /// (#428).
+  private func applyFlowStepReaction(_ reaction: FlowStepReaction) {
+    if reaction.popsToRoot, !navigationPath.isEmpty {
+      navigationPath.removeLast(navigationPath.count)
+    }
+    switch reaction.reviewSheet {
+    case .present:
+      presentationCoordinator.request(.flowReview)
+    case .dismissIfActive:
+      if presentationCoordinator.active == .flowReview {
+        presentationCoordinator.dismiss()
+      }
+    }
   }
 
   // MARK: - Body decomposition
@@ -101,8 +122,7 @@ struct RootShellView: View {
         syncService: syncService,
         networkMonitor: networkMonitor,
         showingMenu: presentationCoordinator.isPresented(for: .menu),
-        showingOnboarding: presentationCoordinator.isPresented(for: .onboarding),
-        navigationPath: $navigationPath
+        showingOnboarding: presentationCoordinator.isPresented(for: .onboarding)
       )
   }
 
