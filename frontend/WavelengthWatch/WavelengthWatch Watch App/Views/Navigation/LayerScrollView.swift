@@ -13,8 +13,15 @@ struct LayerScrollView: View {
   @Binding var layerSelection: Int
   @Binding var phaseSelection: Int
 
-  /// Edge availability + interaction state backing the directional chevrons.
+  /// Edge availability backing the directional chevrons.
   @StateObject private var affordanceModel = ScrollAffordanceModel()
+
+  /// Timed reveal (lit / visible-unlit / hidden) for the directional chevrons.
+  @StateObject private var visibilityModel = ScrollAffordanceVisibilityModel()
+
+  /// Synthesises a scroll-end for programmatic moves that emit no reliable
+  /// scroll-phase signal; cancelled/restarted on each new move.
+  @State private var scrollEndTask: Task<Void, Never>?
 
   /// Ambient opacity for the always-visible layer position rail.
   private let sideRailAmbientOpacity: Double = 0.35
@@ -45,6 +52,8 @@ struct LayerScrollView: View {
           // chevrons stay prominent until the scroll actually settles.
           .onScrollPhaseChange { _, newPhase in
             affordanceModel.setInteracting(newPhase.isScrolling)
+            // Native (horizontal) scroll settling drives the reveal window.
+            if !newPhase.isScrolling { visibilityModel.scrollEnded() }
           }
           .digitalCrownRotation(
             Binding<Double>(
@@ -65,13 +74,17 @@ struct LayerScrollView: View {
             isContinuous: false,
             isHapticFeedbackEnabled: true
           )
-          .onChange(of: layerSelection) { _, newValue in
+          .onChange(of: layerSelection) { oldValue, newValue in
             guard !viewModel.filteredLayers.isEmpty,
                   newValue < viewModel.filteredLayers.count else { return }
             withAnimation(.easeInOut(duration: 0.3)) {
               proxy.scrollTo(newValue, anchor: .center)
             }
+            registerScroll(newValue > oldValue ? .down : .up)
             updateAffordances()
+          }
+          .onChange(of: phaseSelection) { oldValue, newValue in
+            registerScroll(newValue >= oldValue ? .right : .left)
           }
           .onChange(of: viewModel.filteredLayers.count) { _, _ in
             updateAffordances()
@@ -84,15 +97,22 @@ struct LayerScrollView: View {
                   layerSelection < viewModel.filteredLayers.count else { return }
             proxy.scrollTo(layerSelection, anchor: .center)
             updateAffordances()
+            visibilityModel.appeared()
+          }
+          .task(id: visibilityModel.version) {
+            // Live driver: sleep to each timed deadline, then advance the pure
+            // state machine. Restarts whenever an event bumps `version`.
+            while let deadline = visibilityModel.nextDeadline {
+              try? await Task.sleep(for: deadline)
+              if Task.isCancelled { return }
+              visibilityModel.advance(by: deadline)
+            }
           }
           .overlay(alignment: .trailing) {
             sideIndicator(in: geometry.size)
           }
           .overlay {
-            ScrollAffordanceView(
-              affordances: affordanceModel.affordances,
-              isInteracting: affordanceModel.isInteracting
-            )
+            ScrollAffordanceView(state: visibilityModel.state)
           }
           // DragGesture writes raw `layerSelection`; the bounds check uses
           // `filteredLayers.count` since reads downstream are clamped via
@@ -156,5 +176,19 @@ struct LayerScrollView: View {
       layerCount: viewModel.filteredLayers.count,
       phaseCount: viewModel.phaseOrder.count
     )
+    visibilityModel.updateAvailability(affordanceModel.affordances)
+  }
+
+  /// Lights the scrolled direction, then synthesises a scroll-end after a
+  /// short window so programmatic vertical moves (which emit no reliable
+  /// scroll-phase signal) still light up and settle. Rapid moves coalesce.
+  private func registerScroll(_ direction: ScrollDirection) {
+    visibilityModel.scrollStarted(direction)
+    scrollEndTask?.cancel()
+    scrollEndTask = Task { @MainActor in
+      try? await Task.sleep(for: .milliseconds(350))
+      if Task.isCancelled { return }
+      visibilityModel.scrollEnded()
+    }
   }
 }

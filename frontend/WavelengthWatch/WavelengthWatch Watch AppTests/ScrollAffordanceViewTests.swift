@@ -1,29 +1,20 @@
 import Testing
 @testable import WavelengthWatch_Watch_App
 
-/// Tests for `ScrollAffordanceView`'s emphasis policy. Visibility itself is
-/// edge-driven (covered by `ScrollAffordanceModelTests`); this pins the
-/// opacity contract that replaced the old timer — an available-direction
-/// chevron is emphasized while scrolling and merely de-emphasized at rest,
-/// never hidden (the structural guarantee against B1).
+/// `ScrollAffordanceView` is now a thin renderer of a `ChevronVisibilityState`;
+/// the lit / visible-unlit / hidden timing logic lives in
+/// `ScrollAffordanceVisibilityModel` (see `ScrollAffordanceVisibilityModelTests`).
+/// Per the project's view-test philosophy this is a shallow construction check.
+@MainActor
 struct ScrollAffordanceViewTests {
-  @Test("chevrons are more emphasized while interacting than at rest")
-  func interacting_isMoreEmphasizedThanRest() {
-    let interacting = ScrollAffordanceView.chevronOpacity(isInteracting: true)
-    let atRest = ScrollAffordanceView.chevronOpacity(isInteracting: false)
+  @Test("view constructs from a visibility state and exposes it")
+  func constructsFromState() {
+    let view = ScrollAffordanceView(state: ChevronVisibilityState(
+      up: .lit, down: .visibleUnlit, left: .hidden, right: .visibleUnlit
+    ))
 
-    #expect(interacting > atRest)
-  }
-
-  @Test("chevrons stay visible at rest — opacity is never zero")
-  func atRest_isNonZero() {
-    #expect(ScrollAffordanceView.chevronOpacity(isInteracting: false) > 0)
-  }
-
-  @Test("interacting opacity is a valid opacity value (never above 1.0)")
-  func interacting_isValidOpacity() {
-    let interacting = ScrollAffordanceView.chevronOpacity(isInteracting: true)
-    #expect(interacting > 0)
-    #expect(interacting <= 1.0)
+    #expect(view.state.up == .lit)
+    #expect(view.state.down == .visibleUnlit)
+    #expect(view.state.left == .hidden)
   }
 }

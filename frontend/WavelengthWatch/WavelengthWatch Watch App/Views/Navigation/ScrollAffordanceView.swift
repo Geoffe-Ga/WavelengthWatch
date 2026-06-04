@@ -1,30 +1,32 @@
 import SwiftUI
 
-/// Edge-aware directional chevrons for the dual-axis navigation. A chevron
-/// is rendered for a direction only when movement that way is possible, so
-/// the absence of a chevron is itself the "you're at the edge" signal.
+/// Edge-aware directional chevrons for the dual-axis navigation, drawn as a
+/// timed reveal: mostly hidden, **lit** on the scrolled direction, then a brief
+/// **visible-unlit** settle window after a scroll and on first load. Per-
+/// direction styling comes from `ScrollAffordanceVisibilityModel`; a `.hidden`
+/// chevron is removed from the hierarchy entirely (not merely transparent), so
+/// at rest the affordance renders nothing.
 ///
-/// The chevrons are always present; their overall emphasis is full while a
-/// scroll is in progress and de-emphasized at rest, so the edge cue never
-/// disappears mid-gesture. Each sits on a Liquid Glass chip (grouped in a
-/// `GlassEffectContainer` so they blend correctly on watchOS 26). Purely an
-/// affordance hint — it never intercepts touches, so it can't interfere with
-/// the scroll/crown gestures underneath.
+/// The four chevrons are anchored to the **card's center** as a symmetric
+/// cross — each the same fixed `centerOffset` from the center — so they never
+/// shift as the card's content width changes from phase to phase. Purely an
+/// affordance hint: it never intercepts touches.
 struct ScrollAffordanceView: View {
-  let affordances: ScrollAffordances
-  let isInteracting: Bool
+  let state: ChevronVisibilityState
 
-  /// Emphasis while a scroll is in progress.
-  private static let interactingOpacity: Double = 0.9
-  /// Ambient emphasis at rest — quiet but never zero, so an
-  /// available-direction chevron is always at least faintly visible.
-  private static let restingOpacity: Double = 0.35
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+  /// Distance of each chevron from the card center; the four form a symmetric
+  /// cross/diamond independent of the card's per-phase width. Tunable on-device.
+  private static let centerOffset: CGFloat = 86
+  /// Vertical nudge so the cross centers on the card, which sits slightly above
+  /// the overlay's center because of the bottom page-indicator gutter.
+  private static let cardCenterYAdjust: CGFloat = -10
+  private static let symbolSize: CGFloat = 16
 
   var body: some View {
     chevronLayer
       .frame(maxWidth: .infinity, maxHeight: .infinity)
-      .opacity(Self.chevronOpacity(isInteracting: isInteracting))
-      .animation(.easeInOut(duration: 0.2), value: isInteracting)
       .allowsHitTesting(false)
   }
 
@@ -41,28 +43,30 @@ struct ScrollAffordanceView: View {
 
   private var chevrons: some View {
     ZStack {
-      if affordances.canGoUp { chevron("chevron.up", alignment: .top) }
-      if affordances.canGoDown { chevron("chevron.down", alignment: .bottom) }
-      if affordances.canGoLeft { chevron("chevron.left", alignment: .leading) }
-      if affordances.canGoRight { chevron("chevron.right", alignment: .trailing) }
+      chevron("chevron.up", style: state.up, offset: CGSize(width: 0, height: -Self.centerOffset))
+      chevron("chevron.down", style: state.down, offset: CGSize(width: 0, height: Self.centerOffset))
+      chevron("chevron.left", style: state.left, offset: CGSize(width: -Self.centerOffset, height: 0))
+      chevron("chevron.right", style: state.right, offset: CGSize(width: Self.centerOffset, height: 0))
     }
+    .offset(y: Self.cardCenterYAdjust)
+    // Opacity-only cross-fade (no positional motion) so reveal/hide reads
+    // gently under Reduce Motion; shortened there to avoid a lingering flash.
+    .animation(.easeInOut(duration: reduceMotion ? 0.1 : 0.2), value: state)
   }
 
-  /// Full while a scroll is in progress, de-emphasized at rest. Never zero,
-  /// which is what keeps a chevron from ever disappearing on a timer.
-  static func chevronOpacity(isInteracting: Bool) -> Double {
-    isInteracting ? interactingOpacity : restingOpacity
-  }
-
-  /// Chips are intentionally untinted (neutral glass) so the chevrons stay
-  /// layer-agnostic, unlike the layer-tinted card.
-  private func chevron(_ systemName: String, alignment: Alignment) -> some View {
-    Image(systemName: systemName)
-      .font(.system(size: 12, weight: .semibold))
-      .foregroundStyle(.white)
-      .padding(5)
-      .wlGlass(.regular, cornerRadius: WLSpacingTokens.pillCornerRadius)
-      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignment)
-      .padding(4)
+  /// `lit` uses prominent glass at full strength; `visibleUnlit` uses the
+  /// subtler glass at reduced opacity; `hidden` removes the view entirely.
+  @ViewBuilder
+  private func chevron(_ systemName: String, style: ChevronStyle, offset: CGSize) -> some View {
+    if style != .hidden {
+      Image(systemName: systemName)
+        .font(.system(size: Self.symbolSize, weight: .bold))
+        .foregroundStyle(.white)
+        .padding(7)
+        .wlGlass(style == .lit ? .prominent : .regular, cornerRadius: WLSpacingTokens.pillCornerRadius)
+        .opacity(style == .lit ? 1.0 : 0.6)
+        .offset(offset)
+        .transition(.opacity)
+    }
   }
 }
