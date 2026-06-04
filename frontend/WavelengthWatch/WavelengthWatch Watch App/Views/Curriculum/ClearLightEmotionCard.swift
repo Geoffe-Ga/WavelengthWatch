@@ -78,12 +78,9 @@ struct ClearLightEmotionCard: View {
       flowCoordinator.capturePrimary(emotion.entry)
     case .selectingSecondary:
       flowCoordinator.captureSecondary(emotion.entry)
-    case .idle:
-      // Auto-start flow when logging from normal mode
-      flowCoordinator.startPrimarySelection()
-      flowCoordinator.capturePrimary(emotion.entry)
-    default:
-      // Other states: immediate logging
+    case .idle, .confirmingPrimary, .confirmingSecondary,
+         .selectingStrategy, .confirmingStrategy, .review:
+      // Non-selecting steps log immediately; they never enter the guided flow.
       Task { await viewModel.journal(curriculumID: emotion.entry.id) }
     }
   }
