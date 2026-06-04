@@ -4,17 +4,13 @@ import SwiftUI
 ///
 /// Renders the filtered layers from `ContentViewModel` as full-screen
 /// `LayerCardView` pages and hosts the digital-crown / drag-gesture /
-/// scroll-position bindings. The directional chevrons and the position rail
-/// are always present — a missing chevron means "you're at that edge" — and
-/// their emphasis follows the live scroll phase rather than a timer, so they
-/// can never disappear mid-scroll.
+/// scroll-position bindings. Position is shown by the always-visible side rail
+/// (`LayerSideIndicator`) and the per-phase page dots — there are no
+/// directional arrows.
 struct LayerScrollView: View {
   @ObservedObject var viewModel: ContentViewModel
   @Binding var layerSelection: Int
   @Binding var phaseSelection: Int
-
-  /// Edge availability + interaction state backing the directional chevrons.
-  @StateObject private var affordanceModel = ScrollAffordanceModel()
 
   /// Ambient opacity for the always-visible layer position rail.
   private let sideRailAmbientOpacity: Double = 0.35
@@ -40,12 +36,6 @@ struct LayerScrollView: View {
               }
             }
           ))
-          // Live scroll phase drives chevron emphasis — true for the whole
-          // duration of a gesture (user drag, crown, or momentum), so the
-          // chevrons stay prominent until the scroll actually settles.
-          .onScrollPhaseChange { _, newPhase in
-            affordanceModel.setInteracting(newPhase.isScrolling)
-          }
           .digitalCrownRotation(
             Binding<Double>(
               get: { Double(clampedSelection) },
@@ -71,28 +61,14 @@ struct LayerScrollView: View {
             withAnimation(.easeInOut(duration: 0.3)) {
               proxy.scrollTo(newValue, anchor: .center)
             }
-            updateAffordances()
-          }
-          .onChange(of: viewModel.filteredLayers.count) { _, _ in
-            updateAffordances()
-          }
-          .onChange(of: viewModel.phaseOrder.count) { _, _ in
-            updateAffordances()
           }
           .onAppear {
             guard !viewModel.filteredLayers.isEmpty,
                   layerSelection < viewModel.filteredLayers.count else { return }
             proxy.scrollTo(layerSelection, anchor: .center)
-            updateAffordances()
           }
           .overlay(alignment: .trailing) {
             sideIndicator(in: geometry.size)
-          }
-          .overlay {
-            ScrollAffordanceView(
-              affordances: affordanceModel.affordances,
-              isInteracting: affordanceModel.isInteracting
-            )
           }
           // DragGesture writes raw `layerSelection`; the bounds check uses
           // `filteredLayers.count` since reads downstream are clamped via
@@ -138,7 +114,7 @@ struct LayerScrollView: View {
 
   /// Minimal, always-visible position rail (which layer of how many). Held
   /// at a low opacity so it reads as ambient context and never competes with
-  /// the content; it no longer hides on a timer.
+  /// the content.
   private func sideIndicator(in size: CGSize) -> some View {
     LayerSideIndicator(
       layers: viewModel.filteredLayers,
@@ -146,15 +122,5 @@ struct LayerScrollView: View {
       size: size
     )
     .opacity(sideRailAmbientOpacity)
-  }
-
-  // MARK: - Affordances
-
-  private func updateAffordances() {
-    affordanceModel.update(
-      layerSelection: clampedSelection,
-      layerCount: viewModel.filteredLayers.count,
-      phaseCount: viewModel.phaseOrder.count
-    )
   }
 }
