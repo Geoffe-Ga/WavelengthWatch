@@ -84,17 +84,30 @@ struct MainContentDialogsModifier: ViewModifier {
 
   // MARK: - Navigation
 
-  /// Pops the navigation stack to root on flow-step transitions that
-  /// should leave the user free to navigate again (fixes #157 / #162 / #164:
-  /// prevents being stuck in a detail view across flow boundaries).
+  /// Pops the navigation stack to root on flow-step transitions that should
+  /// leave the user free to navigate again (fixes #157 / #162 / #164: prevents
+  /// being stuck in a detail view across flow boundaries).
   private func popNavigationPath(for step: FlowCoordinator.FlowStep) {
+    guard Self.popsToRoot(for: step), !navigationPath.isEmpty else { return }
+    navigationPath.removeLast(navigationPath.count)
+  }
+
+  /// Whether reaching `step` should pop the navigation stack to root.
+  ///
+  /// The **confirming** steps pop too (#450): the flow-confirmation alert
+  /// (`FlowConfirmationAlertsModifier`, e.g. "Add Secondary Emotion") is hosted
+  /// on the root content, so if the user tapped an emotion inside a pushed
+  /// detail view the alert would otherwise wait until they backed out. Only
+  /// `.review` doesn't pop — its sheet is presented above the push by
+  /// `RootPresentationHost`. `static` so the decision is unit-testable without
+  /// rendering the modifier.
+  static func popsToRoot(for step: FlowCoordinator.FlowStep) -> Bool {
     switch step {
-    case .selectingPrimary, .selectingSecondary, .selectingStrategy, .idle:
-      if !navigationPath.isEmpty {
-        navigationPath.removeLast(navigationPath.count)
-      }
-    default:
-      break
+    case .idle, .selectingPrimary, .selectingSecondary, .selectingStrategy,
+         .confirmingPrimary, .confirmingSecondary, .confirmingStrategy:
+      true
+    case .review:
+      false
     }
   }
 }
