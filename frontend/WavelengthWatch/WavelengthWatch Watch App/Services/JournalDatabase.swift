@@ -200,8 +200,15 @@ final class JournalDatabase {
       try migrateToV4()
     }
 
-    // Update schema version
-    let updateVersionSQL = "UPDATE schema_version SET version = \(Self.schemaVersion)"
+    // Set the schema version by collapsing `schema_version` to a single
+    // authoritative row. An older build's `INSERT OR IGNORE` could have left a
+    // second row; a plain `UPDATE … SET version = N` then violates the `version`
+    // PRIMARY KEY and the open fails (forcing the in-memory fallback, #451).
+    // Delete-then-insert is duplicate-safe.
+    let updateVersionSQL = """
+    DELETE FROM schema_version;
+    INSERT INTO schema_version (version) VALUES (\(Self.schemaVersion));
+    """
     var errorMessage: UnsafeMutablePointer<CChar>?
     if sqlite3_exec(db, updateVersionSQL, nil, nil, &errorMessage) != SQLITE_OK {
       let message = errorMessage.map { String(cString: $0) } ?? "Unknown error"

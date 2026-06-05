@@ -1,4 +1,5 @@
 import Foundation
+import SQLite3
 import Testing
 @testable import WavelengthWatch_Watch_App
 
@@ -167,6 +168,37 @@ struct JournalRepositoryTests {
   }
 
   // MARK: - SQLite Repository Tests
+
+  @Test func sqliteOpensDespiteDuplicateSchemaVersionRows() throws {
+    let tempPath = NSTemporaryDirectory() + UUID().uuidString + ".db"
+    defer { try? FileManager.default.removeItem(atPath: tempPath) }
+
+    // A valid v4 database has exactly one schema_version row.
+    let first = JournalDatabase(path: tempPath)
+    try first.open()
+    first.close()
+
+    // Reproduce the historical corruption: a second schema_version row (an
+    // older build's INSERT OR IGNORE could add one when reopening an older DB).
+    Self.insertSchemaVersionRow(at: tempPath, version: 3)
+
+    // Reopening must NOT throw. With two rows, `UPDATE schema_version SET
+    // version = 4` violates the version PRIMARY KEY → open() throws → the app
+    // falls back to in-memory storage (logging blocked, #451).
+    let reopened = JournalDatabase(path: tempPath)
+    #expect(throws: Never.self) { try reopened.open() }
+    reopened.close()
+  }
+
+  /// Inserts an extra `schema_version` row via a raw connection, to simulate the
+  /// historical duplicate-row corruption.
+  private static func insertSchemaVersionRow(at path: String, version: Int) {
+    var raw: OpaquePointer?
+    #expect(sqlite3_open(path, &raw) == SQLITE_OK)
+    defer { sqlite3_close(raw) }
+    let sql = "INSERT INTO schema_version (version) VALUES (\(version));"
+    #expect(sqlite3_exec(raw, sql, nil, nil, nil) == SQLITE_OK)
+  }
 
   @Test func sqliteSavesAndFetchesEntry() throws {
     let tempPath = NSTemporaryDirectory() + UUID().uuidString + ".db"
