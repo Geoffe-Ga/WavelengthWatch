@@ -1,3 +1,4 @@
+import os
 import SwiftUI
 
 struct PhasePageView: View {
@@ -5,6 +6,12 @@ struct PhasePageView: View {
   let phase: CatalogPhaseModel
   let color: Color
   let screenWidth: CGFloat // Stable width from parent GeometryReader
+
+  /// TEMPORARY (#457 Phase 0): cold-start chevron diagnostics. Remove after RCA.
+  private static let chevronLog = Logger(
+    subsystem: "com.wavelengthwatch.watch",
+    category: "chevron"
+  )
 
   var body: some View {
     // Use screenWidth from parent to avoid nested GeometryReader race conditions
@@ -68,9 +75,17 @@ struct PhasePageView: View {
           }
           .buttonStyle(.plain)
           .padding(.trailing, 12)
+          // TEMPORARY (#457 Phase 0): did the chevron view get created at all?
+          .onAppear {
+            Self.chevronLog.log("chevron onAppear layer=\(layer.id, privacy: .public) phase=\(phase.id, privacy: .public)")
+          }
         }
         .padding(.bottom, 20)
       }
+    }
+    // TEMPORARY (#457 Phase 0): page lazily created on first scroll to this card.
+    .onAppear {
+      Self.chevronLog.log("page onAppear layer=\(layer.id, privacy: .public) phase=\(phase.id, privacy: .public)")
     }
   }
 

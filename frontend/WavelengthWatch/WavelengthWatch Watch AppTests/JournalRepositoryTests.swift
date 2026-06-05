@@ -200,6 +200,14 @@ struct JournalRepositoryTests {
     #expect(sqlite3_exec(raw, sql, nil, nil, nil) == SQLITE_OK)
   }
 
+  @Test func journalDatabaseError_localizedDescription_surfacesReason() {
+    // TEMPORARY (#457 Phase 0): the journal-open failure log relies on
+    // `localizedDescription` carrying the real SQLite reason + failing step.
+    let error = JournalDatabaseError.failedToOpenDatabase("unable to open database file")
+    #expect(error.localizedDescription.contains("unable to open database file"))
+    #expect(error.localizedDescription.contains("open failed"))
+  }
+
   @Test func sqliteSavesAndFetchesEntry() throws {
     let tempPath = NSTemporaryDirectory() + UUID().uuidString + ".db"
     let db = JournalDatabase(path: tempPath)

@@ -13,6 +13,25 @@ enum JournalDatabaseError: Error, Equatable {
   case databaseNotOpen
 }
 
+/// TEMPORARY (#457 Phase 0): surface the real SQLite reason + failing step via
+/// `error.localizedDescription` (already logged in `makeJournalRepository`), so
+/// the journal-open failure is no longer diagnosed blind. Fold into a proper
+/// error-presentation pass after RCA.
+extension JournalDatabaseError: LocalizedError {
+  var errorDescription: String? {
+    switch self {
+    case let .failedToOpenDatabase(message): "open failed: \(message)"
+    case let .failedToCreateTable(message): "create-table failed: \(message)"
+    case let .failedToInsert(message): "insert failed: \(message)"
+    case let .failedToUpdate(message): "update failed: \(message)"
+    case let .failedToDelete(message): "delete failed: \(message)"
+    case let .failedToQuery(message): "query failed: \(message)"
+    case let .invalidData(message): "invalid data: \(message)"
+    case .databaseNotOpen: "database not open"
+    }
+  }
+}
+
 /// Low-level SQLite database wrapper for journal entry storage.
 ///
 /// This class provides direct SQLite operations using the C API via Foundation.
