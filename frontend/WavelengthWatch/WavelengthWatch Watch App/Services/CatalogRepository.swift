@@ -83,7 +83,6 @@ final class CatalogRepository: CatalogRepositoryProtocol {
   private let dateProvider: () -> Date
   private let decoder: JSONDecoder
   private let encoder: JSONEncoder
-  private let cacheTTL: TimeInterval
   private let logger: CatalogRepositoryLogging
 
   init(
@@ -92,7 +91,6 @@ final class CatalogRepository: CatalogRepositoryProtocol {
     dateProvider: @escaping () -> Date = Date.init,
     decoder: JSONDecoder = JSONDecoder(),
     encoder: JSONEncoder = JSONEncoder(),
-    cacheTTL: TimeInterval = 60 * 60 * 24,
     logger: CatalogRepositoryLogging = DefaultCatalogRepositoryLogger()
   ) {
     self.remote = remote
@@ -102,7 +100,6 @@ final class CatalogRepository: CatalogRepositoryProtocol {
     self.encoder = encoder
     self.decoder.dateDecodingStrategy = .iso8601
     self.encoder.dateEncodingStrategy = .iso8601
-    self.cacheTTL = cacheTTL
     self.logger = logger
   }
 
@@ -125,30 +122,24 @@ final class CatalogRepository: CatalogRepositoryProtocol {
     try cache.writeCatalogData(data)
   }
 
-  private func isFresh(_ envelope: CatalogCacheEnvelope) -> Bool {
-    dateProvider().timeIntervalSince(envelope.fetchedAt) < cacheTTL
-  }
-
   func cachedCatalog() -> CatalogResponseModel? {
     readEnvelope()?.catalog
   }
 
   func loadCatalog(forceRefresh: Bool = false) async throws -> CatalogResponseModel {
-    let envelope = readEnvelope()
-    if !forceRefresh, let envelope, isFresh(envelope) {
-      return envelope.catalog
-    }
+    // Always fetch from the backend when it's reachable, so freshly-published
+    // catalog changes (e.g. new self-care strategies) appear without waiting on
+    // a TTL. The on-disk cache is an OFFLINE fallback only (#452).
     do {
       let catalog = try await remote.fetchCatalog()
       try? writeEnvelope(catalog)
       return catalog
     } catch {
-      // Remote failed (offline / backend down). Rather than wiping the user's
-      // curriculum every 24h once the TTL expires, fall back to any cached
-      // envelope we have — even if it's stale. The user keeps browsing; the
-      // next successful load will refresh. Only `forceRefresh` callers (e.g.
-      // an explicit "refresh now" tap) propagate the error.
-      if !forceRefresh, let envelope {
+      // Offline / backend down: serve the last cached catalog (any age) so the
+      // user keeps browsing; the next reachable load refreshes it. A
+      // `forceRefresh` caller (an explicit "refresh now" tap) propagates the
+      // error instead of masking it with stale data.
+      if !forceRefresh, let envelope = readEnvelope() {
         logger.remoteFailedServingStaleCatalog(error)
         return envelope.catalog
       }
