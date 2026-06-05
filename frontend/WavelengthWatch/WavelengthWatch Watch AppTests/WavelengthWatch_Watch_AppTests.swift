@@ -9,19 +9,20 @@ struct CatalogRepositoryTests {
     remote: CatalogRemoteStub,
     cache: InMemoryCatalogCacheMock,
     now: @escaping () -> Date,
-    ttl: TimeInterval = 60 * 60 * 24,
     logger: CatalogRepositoryLogging = CatalogRepositoryLoggerSpy()
   ) -> CatalogRepository {
     CatalogRepository(
       remote: remote,
       cache: cache,
       dateProvider: now,
-      cacheTTL: ttl,
       logger: logger
     )
   }
 
-  @Test func returnsCachedCatalogWhenFresh() async throws {
+  @Test func fetchesFromBackendEvenWhenCachePresent() async throws {
+    // #452: when the backend is reachable, loadCatalog always fetches fresh data
+    // (so newly-published catalog changes — e.g. new strategies — appear)
+    // rather than returning a merely time-fresh cache without a round-trip.
     let remote = CatalogRemoteStub(response: SampleData.catalog)
     let cache = InMemoryCatalogCacheMock()
     let encoder = JSONEncoder()
@@ -30,10 +31,9 @@ struct CatalogRepositoryTests {
     cache.storedData = try encoder.encode(envelope)
     let repository = makeRepository(remote: remote, cache: cache, now: { Date(timeIntervalSince1970: 1500) })
 
-    #expect(repository.cachedCatalog() == SampleData.catalog)
     let catalog = try await repository.loadCatalog()
     #expect(catalog == SampleData.catalog)
-    #expect(remote.fetchCount == 0)
+    #expect(remote.fetchCount == 1) // fetched despite the recent cache
   }
 
   @Test func refreshesWhenCacheIsStale() async throws {
@@ -51,7 +51,10 @@ struct CatalogRepositoryTests {
     #expect(remote.fetchCount == 1)
   }
 
-  @Test func invalidatesCorruptCache() async throws {
+  @Test func corruptCacheReplacedByFreshFetch() async throws {
+    // With the backend reachable, loadCatalog fetches fresh and overwrites the
+    // (corrupt) cache — it never reads the cache on the happy path, so the
+    // corrupt data is simply replaced and the cache ends up valid (#452).
     let remote = CatalogRemoteStub(response: SampleData.catalog)
     let cache = InMemoryCatalogCacheMock()
     cache.storedData = Data("invalid".utf8)
@@ -62,8 +65,7 @@ struct CatalogRepositoryTests {
     #expect(catalog == SampleData.catalog)
     #expect(remote.fetchCount == 1)
     #expect(cache.storedData != nil)
-    #expect(cache.removeCount == 1)
-    #expect(logger.errors.count == 1)
+    #expect(repository.cachedCatalog() == SampleData.catalog) // corrupt data replaced
   }
 
   @Test func propagatesNetworkFailures() async {
