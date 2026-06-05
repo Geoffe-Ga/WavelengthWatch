@@ -8,9 +8,11 @@ import SwiftUI
 /// used to live here (a perspective x-axis rotation over a negative-spacing
 /// `LazyVStack`) re-projected the card's optical center as it animated and
 /// were the source of the "leftward bump" on vertical scroll (B3 in
-/// `prompts/claude-comm/spec-primary-selector-rebuild.md`). Depth is now a
-/// single offset-derived `scrollTransition` (#409) that resolves to an exact
-/// identity at the resting/centered page, so it can never shift the card.
+/// `prompts/claude-comm/spec-primary-selector-rebuild.md`). They are gone, and
+/// so is the later `scrollTransition` depth effect (#409/#440) — its sharp-at-
+/// rest state never resolved reliably and left cards permanently blurred (#449).
+/// Cards are now always crisp; the no-bump guarantee holds simply by having no
+/// vertical transform at all.
 struct LayerCardView: View {
   let layer: CatalogLayerModel
   let phaseCount: Int
@@ -25,10 +27,5 @@ struct LayerCardView: View {
       screenWidth: screenWidth
     )
     .containerRelativeFrame([.horizontal, .vertical])
-    // The vertical-scroll depth effect now lives on `PhaseCrystalCard` (in
-    // `PhasePageView`) rather than the whole page, so the bottom-right logging
-    // chevron and the page background are never dimmed by it — the chevron
-    // stays visible on first load even before the centered card's scroll phase
-    // resolves to identity (#440).
   }
 }
