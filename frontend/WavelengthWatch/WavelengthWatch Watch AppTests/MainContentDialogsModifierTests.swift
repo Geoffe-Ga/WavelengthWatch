@@ -83,4 +83,20 @@ struct MainContentDialogsModifierTests {
     #expect(flowCoordinator.currentStep == .confirmingPrimary)
     #expect(flowCoordinator.selections.primary == primary)
   }
+
+  // MARK: - popsToRoot (#450)
+
+  @Test("idle, selecting and confirming steps pop to root; review does not")
+  func popsToRoot_perStep() {
+    let popping: [FlowCoordinator.FlowStep] = [
+      .idle, .selectingPrimary, .selectingSecondary, .selectingStrategy,
+      .confirmingPrimary, .confirmingSecondary, .confirmingStrategy,
+    ]
+    for step in popping {
+      #expect(MainContentDialogsModifier.popsToRoot(for: step))
+    }
+    // The review sheet is presented above the navigation push, so reaching
+    // .review must not pop the user to root.
+    #expect(!MainContentDialogsModifier.popsToRoot(for: .review))
+  }
 }
