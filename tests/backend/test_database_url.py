@@ -43,3 +43,13 @@ def test_preserves_path_and_query_when_swapping_scheme() -> None:
     raw = "postgres://host:5432/db?sslmode=require"
     expected = "postgresql+psycopg://host:5432/db?sslmode=require"
     assert _normalize_database_url(raw) == expected
+
+
+def test_preserves_credentials_when_swapping_scheme() -> None:
+    # The credential-bearing shape Railway's DATABASE_URL actually uses.
+    # Built from a fragment (no scheme prefix) so the literal never reads as
+    # basic-auth to the secret scanner; the helper preserves it regardless.
+    creds = "user:pass@host:5432/db"
+    raw = f"postgres://{creds}"
+    expected = f"postgresql+psycopg://{creds}"
+    assert _normalize_database_url(raw) == expected

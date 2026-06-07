@@ -12,6 +12,11 @@
 [build]
 builder = "nixpacks"
 
+# Pin the runtime explicitly so a future deploy can't drift onto an
+# unexpected Python (the repo targets 3.12; pyproject requires-python >=3.12).
+[build.nixpacksPlan.variables]
+NIXPACKS_PYTHON_VERSION = "3.12"
+
 [build.nixpacksPlan.phases.install]
 cmds = ["pip install -r backend/requirements.txt"]
 
