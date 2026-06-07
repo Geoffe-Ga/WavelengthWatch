@@ -1,0 +1,23 @@
+# Railway build/deploy config for the WavelengthWatch FastAPI backend.
+#
+# The runtime dependencies live in backend/requirements.txt (not the repo
+# root), so Nixpacks autodetection cannot find them on its own — the install
+# command below points at the explicit path. Railway injects $PORT at runtime;
+# the start command must bind 0.0.0.0:$PORT (never a hardcoded port).
+#
+# Postgres is provisioned via the Railway Postgres plugin, which sets
+# DATABASE_URL automatically; backend/database.py normalizes the scheme to
+# postgresql+psycopg:// and seeds the schema idempotently on startup.
+
+[build]
+builder = "nixpacks"
+
+[build.nixpacksPlan.phases.install]
+cmds = ["pip install -r backend/requirements.txt"]
+
+[deploy]
+startCommand = "uvicorn backend.app:app --host 0.0.0.0 --port $PORT"
+healthcheckPath = "/health"
+healthcheckTimeout = 120
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

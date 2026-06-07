@@ -12,10 +12,29 @@ from sqlmodel import Session, SQLModel, create_engine
 
 _DATABASE_URL_ENV = "DATABASE_URL"
 _SQLITE_PREFIXES = ("sqlite:///", "sqlite:////")
+# Railway's Postgres plugin exposes a bare ``postgres://`` (or ``postgresql://``)
+# DATABASE_URL. SQLAlchemy needs the DBAPI driver pinned in the scheme, and the
+# driver installed in this project is psycopg 3 (``psycopg``).
+_PSYCOPG_SCHEME = "postgresql+psycopg://"
+_BARE_POSTGRES_PREFIXES = ("postgres://", "postgresql://")
 
 
 def _is_sqlite(url: str) -> bool:
     return url.startswith(_SQLITE_PREFIXES)
+
+
+def _normalize_database_url(url: str) -> str:
+    """Pin the psycopg driver on bare Postgres URLs; pass others through.
+
+    Schemes that already name a driver (``postgresql+psycopg``,
+    ``postgresql+psycopg2``) and non-Postgres URLs (e.g. sqlite) are returned
+    unchanged.
+    """
+
+    for prefix in _BARE_POSTGRES_PREFIXES:
+        if url.startswith(prefix):
+            return _PSYCOPG_SCHEME + url[len(prefix) :]
+    return url
 
 
 def _create_engine(url: str) -> Engine:
@@ -38,7 +57,9 @@ def _create_engine(url: str) -> Engine:
     return engine
 
 
-DATABASE_URL = os.getenv(_DATABASE_URL_ENV, "sqlite:///./app.db")
+DATABASE_URL = _normalize_database_url(
+    os.getenv(_DATABASE_URL_ENV, "sqlite:///./app.db")
+)
 engine: Engine = _create_engine(DATABASE_URL)
 
 
@@ -47,7 +68,7 @@ def configure_engine(url: str | None = None) -> Engine:
 
     global engine, DATABASE_URL
     env_url = os.getenv(_DATABASE_URL_ENV, "sqlite:///./app.db")
-    target_url = url if url is not None else env_url
+    target_url = _normalize_database_url(url if url is not None else env_url)
     if engine is not None:
         engine.dispose()
     engine = _create_engine(target_url)
