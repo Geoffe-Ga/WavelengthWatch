@@ -1,6 +1,32 @@
 import os
 import SwiftUI
 
+/// TEMPORARY (#457 Phase 0.1): where did the chevron's resolved frame land,
+/// relative to its own card? Distinguishes a *layout* failure (off-card or
+/// zero-size) from a *compositing* failure (a correct, on-card frame that
+/// still never paints) on lazily-realized cards. Both rects are read in the
+/// same `.global` space. Remove with the rest of the Phase 0 diagnostics once
+/// the RCA lands.
+enum ChevronFrameDiagnosis: String {
+  case onscreen
+  case zeroSize
+  case offscreenAbove
+  case offscreenBelow
+  case offscreenSide
+  case indeterminate
+
+  static func classify(chevron: CGRect, container: CGRect) -> ChevronFrameDiagnosis {
+    guard container.width > 0, container.height > 0 else { return .indeterminate }
+    guard chevron.width > 0, chevron.height > 0 else { return .zeroSize }
+    if chevron.maxY <= container.minY { return .offscreenAbove }
+    if chevron.minY >= container.maxY { return .offscreenBelow }
+    if chevron.maxX <= container.minX || chevron.minX >= container.maxX {
+      return .offscreenSide
+    }
+    return .onscreen
+  }
+}
+
 struct PhasePageView: View {
   let layer: CatalogLayerModel
   let phase: CatalogPhaseModel
@@ -12,6 +38,10 @@ struct PhasePageView: View {
     subsystem: "com.wavelengthwatch.watch",
     category: "chevron"
   )
+
+  /// TEMPORARY (#457 Phase 0.1): the card's resolved global frame, captured so
+  /// the chevron's frame can be judged against its own container.
+  @State private var cardFrame: CGRect = .zero
 
   var body: some View {
     // Use screenWidth from parent to avoid nested GeometryReader race conditions
@@ -79,6 +109,15 @@ struct PhasePageView: View {
           .onAppear {
             Self.chevronLog.log("chevron onAppear layer=\(layer.id, privacy: .public) phase=\(phase.id, privacy: .public)")
           }
+          // TEMPORARY (#457 Phase 0.1): where did the chevron actually land?
+          // Off-screen / zero-size => layout failure; an on-screen frame that
+          // still doesn't paint => compositing failure. Fires on settle.
+          .onGeometryChange(for: CGRect.self) { proxy in
+            proxy.frame(in: .global)
+          } action: { frame in
+            let verdict = ChevronFrameDiagnosis.classify(chevron: frame, container: cardFrame)
+            Self.chevronLog.log("chevron frame layer=\(layer.id, privacy: .public) phase=\(phase.id, privacy: .public) x=\(Int(frame.minX), privacy: .public) y=\(Int(frame.minY), privacy: .public) w=\(Int(frame.width), privacy: .public) h=\(Int(frame.height), privacy: .public) cardY=\(Int(cardFrame.minY), privacy: .public) cardH=\(Int(cardFrame.height), privacy: .public) verdict=\(verdict.rawValue, privacy: .public)")
+          }
         }
         .padding(.bottom, 20)
       }
@@ -86,6 +125,13 @@ struct PhasePageView: View {
     // TEMPORARY (#457 Phase 0): page lazily created on first scroll to this card.
     .onAppear {
       Self.chevronLog.log("page onAppear layer=\(layer.id, privacy: .public) phase=\(phase.id, privacy: .public)")
+    }
+    // TEMPORARY (#457 Phase 0.1): the card's own frame, used as the chevron's
+    // container reference in the same `.global` coordinate space.
+    .onGeometryChange(for: CGRect.self) { proxy in
+      proxy.frame(in: .global)
+    } action: { frame in
+      cardFrame = frame
     }
   }
 
