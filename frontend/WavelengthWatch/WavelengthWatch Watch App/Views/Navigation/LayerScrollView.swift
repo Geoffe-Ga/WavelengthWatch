@@ -70,6 +70,9 @@ struct LayerScrollView: View {
           .overlay(alignment: .trailing) {
             sideIndicator(in: geometry.size)
           }
+          .overlay(alignment: .bottomTrailing) {
+            navigationChevron
+          }
           // DragGesture writes raw `layerSelection`; the bounds check uses
           // `filteredLayers.count` since reads downstream are clamped via
           // `clampedSelection`.
@@ -87,6 +90,49 @@ struct LayerScrollView: View {
               }
           )
       }
+    }
+  }
+
+  // MARK: - Navigation chevron
+
+  /// The layer currently centered in the vertical scroller.
+  private var currentLayer: CatalogLayerModel? {
+    let layers = viewModel.filteredLayers
+    guard !layers.isEmpty else { return nil }
+    return layers[clampedSelection]
+  }
+
+  /// The detail destination for the currently centered layer + phase, used by
+  /// the single hoisted navigation chevron. `selectedPhaseIndex` is the
+  /// normalized phase index the inner `TabView` keeps in sync.
+  private var currentDestination: DetailDestination? {
+    guard let layer = currentLayer, !layer.phases.isEmpty else { return nil }
+    let phaseIndex = min(max(viewModel.selectedPhaseIndex, 0), layer.phases.count - 1)
+    return DetailDestination.forPhase(in: layer, phase: layer.phases[phaseIndex])
+  }
+
+  /// Single navigation chevron, pinned to the viewport's bottom-trailing
+  /// corner, navigating to the currently centered layer/phase. Replaces the
+  /// former per-page chevron (one per `PhasePageView`), which a viewport-
+  /// overflowing card could push out of sight and which lazily realized pages
+  /// left intermittently uncomposited (#457). One always-present chevron at a
+  /// fixed viewport position sidesteps both.
+  @ViewBuilder
+  private var navigationChevron: some View {
+    if let destination = currentDestination, let layer = currentLayer {
+      NavigationLink(value: destination) {
+        Image(systemName: "chevron.right.circle.fill")
+          .foregroundColor(.white.opacity(0.8))
+          .font(.title2)
+          .background(
+            Circle()
+              .fill(Color(stage: layer.color).opacity(0.3))
+              .frame(width: 32, height: 32)
+          )
+      }
+      .buttonStyle(.plain)
+      .padding(.trailing, 12)
+      .padding(.bottom, 20)
     }
   }
 
