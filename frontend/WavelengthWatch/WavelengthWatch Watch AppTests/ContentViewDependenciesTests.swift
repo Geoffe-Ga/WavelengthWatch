@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import WavelengthWatch_Watch_App
 
@@ -5,6 +6,12 @@ import Testing
 @MainActor
 struct ContentViewDependenciesTests {
   private struct FactoryFailure: Error {}
+
+  /// A failure whose `localizedDescription` is a known string, so the test
+  /// can assert the open-failure reason is threaded through verbatim.
+  private struct ReasonedFailure: LocalizedError {
+    let errorDescription: String?
+  }
 
   // MARK: - makeJournalRepository
 
@@ -14,6 +21,8 @@ struct ContentViewDependenciesTests {
     let result = ContentViewDependencies.makeJournalRepository(openPersistent: { persistent })
     #expect(result.repository as AnyObject === persistent)
     #expect(result.isInMemoryFallback == false)
+    // No failure => no reason to surface.
+    #expect(result.failureReason == nil)
   }
 
   @Test("makeJournalRepository falls back to in-memory and signals isInMemoryFallback when the open fails")
@@ -23,6 +32,16 @@ struct ContentViewDependenciesTests {
     })
     #expect(result.repository is InMemoryJournalRepository)
     #expect(result.isInMemoryFallback == true)
+  }
+
+  @Test("makeJournalRepository surfaces the open-failure reason for on-device diagnostics")
+  func makeJournalRepository_surfacesFailureReason() {
+    let result = ContentViewDependencies.makeJournalRepository(openPersistent: {
+      throw ReasonedFailure(errorDescription: "open failed: unable to open database file")
+    })
+    // The reason must reach the UI verbatim so a watch screenshot reveals the
+    // exact SQLite step that failed (#457 storage RCA).
+    #expect(result.failureReason == "open failed: unable to open database file")
   }
 
   // MARK: - makeJournalQueue

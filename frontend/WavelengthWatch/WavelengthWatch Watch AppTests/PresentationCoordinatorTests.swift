@@ -28,20 +28,25 @@ struct PresentationCoordinatorTests {
     #expect(coordinator.active == .menu)
   }
 
-  @Test("a second request replaces the active presentation (skeleton policy)")
-  func request_replacesActivePresentation() {
+  @Test("an equal-priority second request queues behind the active one")
+  func request_equalPriorityQueuesBehindActive() {
     let coordinator = PresentationCoordinator()
 
     coordinator.request(.menu)
+    // `.onboarding` shares `.menu`'s priority (1), so under the #407
+    // priority/queue policy it queues rather than replacing the active
+    // presentation. (This supersedes the old "skeleton" replace policy.)
     coordinator.request(.onboarding)
 
-    #expect(coordinator.active == .onboarding)
+    #expect(coordinator.active == .menu)
+    coordinator.dismiss()
+    #expect(coordinator.active == .onboarding) // queued request surfaces on dismiss
   }
 
   @Test("dismiss returns to none")
   func dismiss_returnsToNone() {
     let coordinator = PresentationCoordinator()
-    coordinator.request(.storageError)
+    coordinator.request(.storageError(reason: nil))
 
     coordinator.dismiss()
 
@@ -66,7 +71,7 @@ struct PresentationCoordinatorTests {
 
     #expect(coordinator.isPresented(for: .menu).wrappedValue == true)
     #expect(coordinator.isPresented(for: .onboarding).wrappedValue == false)
-    #expect(coordinator.isPresented(for: .storageError).wrappedValue == false)
+    #expect(coordinator.isPresented(for: .storageError(reason: nil)).wrappedValue == false)
   }
 
   @Test("writing true through the binding activates that presentation")

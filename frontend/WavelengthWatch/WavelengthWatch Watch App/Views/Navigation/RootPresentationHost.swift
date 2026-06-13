@@ -31,12 +31,45 @@ struct RootPresentationHost: ViewModifier {
   private func storageErrorAlert(_ view: some View) -> some View {
     view.alert(
       "Storage Error",
-      isPresented: coordinator.isPresented(for: .storageError)
+      isPresented: storageErrorPresented
     ) {
       Button("OK", role: .cancel) {}
     } message: {
-      Text("Your journal couldn't be opened, so entries logged this session won't be saved. Please reopen the app; if the problem continues, contact support.")
+      Text(Self.storageErrorMessage(reason: storageErrorReason))
     }
+  }
+
+  /// The active storage-error's open-failure reason, if one is presented.
+  private var storageErrorReason: String? {
+    if case let .storageError(reason) = coordinator.active { return reason }
+    return nil
+  }
+
+  /// Presentation binding for the storage-error alert. The `.storageError`
+  /// case carries an associated reason, so a plain `isPresented(for:)` can't
+  /// match it reason-agnostically — this binding reads `true` for any
+  /// storage error and dismisses on write-`false`.
+  private var storageErrorPresented: Binding<Bool> {
+    Binding(
+      get: {
+        if case .storageError = coordinator.active { return true }
+        return false
+      },
+      set: { isPresented in
+        if !isPresented { coordinator.dismiss() }
+      }
+    )
+  }
+
+  /// Builds the storage-error alert copy. The user guidance is always shown;
+  /// when an open-failure `reason` is known it is appended verbatim so the
+  /// exact failing SQLite step is legible straight off the watch screen
+  /// (#457 storage RCA). `static` and pure so it's unit-testable without
+  /// rendering the host.
+  static func storageErrorMessage(reason: String?) -> String {
+    let guidance = "Your journal couldn't be opened, so entries logged this session won't be saved. Please reopen the app; if the problem continues, contact support."
+    guard let reason, !reason.isEmpty else { return guidance }
+    return guidance + "\n\nDetails: \(reason)"
   }
 
   /// The journal log-confirmation, hoisted above the navigation push so it

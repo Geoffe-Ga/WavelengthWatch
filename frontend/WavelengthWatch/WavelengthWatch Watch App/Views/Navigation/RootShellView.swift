@@ -61,7 +61,9 @@ struct RootShellView: View {
     .task {
       if viewModel.journalStorageIsEphemeral, !didSurfaceStorageWarning {
         didSurfaceStorageWarning = true
-        presentationCoordinator.request(.storageError)
+        presentationCoordinator.request(
+          .storageError(reason: viewModel.journalStorageFailureReason)
+        )
       }
     }
     .rootPresentationHost(coordinator: presentationCoordinator)
