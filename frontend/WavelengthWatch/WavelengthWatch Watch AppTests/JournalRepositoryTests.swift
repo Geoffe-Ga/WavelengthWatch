@@ -200,6 +200,63 @@ struct JournalRepositoryTests {
     #expect(sqlite3_exec(raw, sql, nil, nil, nil) == SQLITE_OK)
   }
 
+  @Test func sqliteOpensWhenUpgradingDatabasePredatingEntryTypeColumn() throws {
+    let tempPath = NSTemporaryDirectory() + UUID().uuidString + ".db"
+    defer { try? FileManager.default.removeItem(atPath: tempPath) }
+
+    // Simulate an on-device database carried across builds: a journal_entry
+    // table that exists but predates the `entry_type` column (added in v3),
+    // with the schema version pinned below 3 so the migration must add it.
+    Self.seedPreEntryTypeDatabase(at: tempPath)
+
+    // open() must NOT throw. The bug: createTables() ran *before* migrate() and
+    // tried `CREATE INDEX idx_journal_entry_type ON journal_entry(entry_type)`
+    // on the old table whose entry_type column didn't exist yet → "no such
+    // column: entry_type" → open() throws → in-memory fallback (#451).
+    let db = JournalDatabase(path: tempPath)
+    #expect(throws: Never.self) { try db.open() }
+
+    // The migration added the column and the dependent index now exists, so a
+    // modern entry round-trips.
+    #expect(try db.listIndexes().contains("idx_journal_entry_type"))
+    let entry = LocalJournalEntry(
+      createdAt: Date(),
+      userID: 1,
+      curriculumID: 1,
+      initiatedBy: .self_initiated,
+      entryType: .emotion
+    )
+    #expect(throws: Never.self) { try db.insert(entry) }
+    db.close()
+  }
+
+  /// Seeds a `journal_entry` table that predates the `entry_type` column (the
+  /// pre-v3 shape) plus a `schema_version` row below 3, via a raw connection —
+  /// reproducing a database upgraded across builds on a physical watch.
+  private static func seedPreEntryTypeDatabase(at path: String) {
+    var raw: OpaquePointer?
+    #expect(sqlite3_open(path, &raw) == SQLITE_OK)
+    defer { sqlite3_close(raw) }
+    let sql = """
+      CREATE TABLE journal_entry (
+        id TEXT PRIMARY KEY,
+        server_id INTEGER,
+        created_at REAL NOT NULL,
+        user_id INTEGER NOT NULL,
+        curriculum_id INTEGER,
+        secondary_curriculum_id INTEGER,
+        strategy_id INTEGER,
+        initiated_by TEXT NOT NULL,
+        sync_status TEXT NOT NULL DEFAULT 'pending',
+        last_sync_attempt REAL,
+        retry_count INTEGER NOT NULL DEFAULT 0
+      );
+      CREATE TABLE schema_version (version INTEGER PRIMARY KEY);
+      INSERT INTO schema_version (version) VALUES (2);
+    """
+    #expect(sqlite3_exec(raw, sql, nil, nil, nil) == SQLITE_OK)
+  }
+
   @Test func journalDatabaseError_localizedDescription_surfacesReason() {
     // TEMPORARY (#457 Phase 0): the journal-open failure log relies on
     // `localizedDescription` carrying the real SQLite reason + failing step.
