@@ -55,6 +55,9 @@ struct PhasePageView: View {
         )
       )
     )
+    // Card fills the screen edge-to-edge by design. This used to inflate the
+    // card past the viewport and clip the chevron, but the chevron now lives in
+    // LayerScrollView's overlay, so the bleed is purely cosmetic here (#457).
     .ignoresSafeArea(.all)
   }
 }

@@ -9,7 +9,7 @@ enum DetailDestination: Hashable {
   /// the single hoisted navigation chevron (see `LayerScrollView`) and any
   /// other caller route identically.
   static func forPhase(in layer: CatalogLayerModel, phase: CatalogPhaseModel) -> DetailDestination {
-    if layer.id == 0 {
+    if layer.id == CatalogLayerModel.strategiesLayerID {
       .strategy(phase: phase, colorName: layer.color)
     } else {
       .curriculum(layer: layer, phase: phase, colorName: layer.color)

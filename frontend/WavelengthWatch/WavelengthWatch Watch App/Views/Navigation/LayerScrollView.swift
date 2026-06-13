@@ -102,27 +102,28 @@ struct LayerScrollView: View {
     return layers[clampedSelection]
   }
 
-  /// The detail destination for the currently centered layer + phase, used by
-  /// the single hoisted navigation chevron. `selectedPhaseIndex` is the
-  /// normalized phase index the inner `TabView` keeps in sync.
-  private var currentDestination: DetailDestination? {
-    guard let layer = currentLayer, !layer.phases.isEmpty else { return nil }
-    let phaseIndex = min(max(viewModel.selectedPhaseIndex, 0), layer.phases.count - 1)
-    return DetailDestination.forPhase(in: layer, phase: layer.phases[phaseIndex])
-  }
-
   /// Single navigation chevron, pinned to the viewport's bottom-trailing
   /// corner, navigating to the currently centered layer/phase. Replaces the
   /// former per-page chevron (one per `PhasePageView`), which a viewport-
   /// overflowing card could push out of sight and which lazily realized pages
   /// left intermittently uncomposited (#457). One always-present chevron at a
   /// fixed viewport position sidesteps both.
+  ///
+  /// The phase is read straight from `phaseSelection` — the same binding the
+  /// inner `TabView` is driven by — and normalized with the same
+  /// `PhaseNavigator` math the pages use, so the destination always matches the
+  /// page actually on screen, even mid-scroll (no reliance on the separately
+  /// derived `selectedPhaseIndex`, which can lag a render behind).
   @ViewBuilder
   private var navigationChevron: some View {
-    if let destination = currentDestination, let layer = currentLayer {
-      NavigationLink(value: destination) {
+    if let layer = currentLayer, !layer.phases.isEmpty {
+      let normalized = PhaseNavigator.normalizedIndex(
+        phaseSelection, phaseCount: layer.phases.count
+      )
+      let phase = layer.phases[normalized.clamped(to: 0 ... (layer.phases.count - 1))]
+      NavigationLink(value: DetailDestination.forPhase(in: layer, phase: phase)) {
         Image(systemName: "chevron.right.circle.fill")
-          .foregroundColor(.white.opacity(0.8))
+          .foregroundStyle(.white.opacity(0.8))
           .font(.title2)
           .background(
             Circle()
