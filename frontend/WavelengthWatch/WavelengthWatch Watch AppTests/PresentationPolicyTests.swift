@@ -44,9 +44,9 @@ struct PresentationPolicyTests {
     let feedback = sampleFeedback()
 
     coordinator.request(.journalFeedback(feedback))
-    coordinator.request(.storageError)
+    coordinator.request(.storageError(reason: nil))
 
-    #expect(coordinator.active == .storageError) // higher priority shown immediately
+    #expect(coordinator.active == .storageError(reason: nil)) // higher priority shown immediately
     coordinator.dismiss()
     #expect(coordinator.active == .journalFeedback(feedback)) // displaced feedback resurfaces
   }
@@ -58,9 +58,9 @@ struct PresentationPolicyTests {
 
     coordinator.request(.menu) // active (priority 1)
     coordinator.request(.journalFeedback(feedback)) // queued (priority 0)
-    coordinator.request(.storageError) // preempts menu (priority 2); menu queued
+    coordinator.request(.storageError(reason: nil)) // preempts menu (priority 2); menu queued
 
-    #expect(coordinator.active == .storageError)
+    #expect(coordinator.active == .storageError(reason: nil))
     coordinator.dismiss()
     #expect(coordinator.active == .menu) // priority 1 beats queued feedback (0)
     coordinator.dismiss()

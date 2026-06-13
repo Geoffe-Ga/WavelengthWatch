@@ -104,7 +104,11 @@ final class PresentationCoordinator: ObservableObject {
     case idle
     case menu
     case onboarding
-    case storageError
+    /// The journal-storage failure warning. Carries the open-failure
+    /// `reason` (an `error.localizedDescription`, e.g. the failing SQLite
+    /// step) so the on-screen alert can surface it for diagnostics — a
+    /// watch screenshot then reveals the exact cause (#457 storage RCA).
+    case storageError(reason: String?)
     /// The "Would you like to log …?" journal confirmation, carrying the
     /// alert copy and the action to perform on "Yes".
     case logConfirmation(LogConfirmationRequest)

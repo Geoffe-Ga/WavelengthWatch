@@ -37,6 +37,10 @@ struct ContentViewDependencies {
   /// this session will not persist past app termination; the App layer should
   /// surface this to the user.
   let journalStorageIsEphemeral: Bool
+  /// The on-disk-open failure reason (an `error.localizedDescription`) when
+  /// `journalStorageIsEphemeral` is true, else `nil`. Surfaced in the Storage
+  /// Error alert so the cause is legible on-device (#457 RCA).
+  let journalStorageFailureReason: String?
   let catalogRepository: CatalogRepositoryProtocol
   /// Owns the dual-axis navigation selection and its reconciliation with
   /// `viewModel`; `ContentView` holds it as its single navigation state.
@@ -75,7 +79,7 @@ struct ContentViewDependencies {
       cache: FileCatalogCacheStore()
     )
     coldStart.log("live(): opening journal repository")
-    let (journalRepository, journalStorageIsEphemeral) = Self.makeJournalRepository()
+    let (journalRepository, journalStorageIsEphemeral, journalStorageFailureReason) = Self.makeJournalRepository()
     coldStart.log("live(): journal open done, ephemeral=\(journalStorageIsEphemeral, privacy: .public)")
     let syncSettings = SyncSettings()
     let journalQueue = Self.makeJournalQueue()
@@ -99,7 +103,8 @@ struct ContentViewDependencies {
       journalClient: journalClient,
       initialLayerIndex: initialLayer,
       initialPhaseIndex: storedPhase,
-      journalStorageIsEphemeral: journalStorageIsEphemeral
+      journalStorageIsEphemeral: journalStorageIsEphemeral,
+      journalStorageFailureReason: journalStorageFailureReason
     )
     coldStart.log("live(): viewModel built (initialLayer=\(initialLayer, privacy: .public) initialPhase=\(storedPhase, privacy: .public))")
     let flowCoordinator = FlowCoordinator(contentViewModel: viewModel)
@@ -122,6 +127,7 @@ struct ContentViewDependencies {
       journalClient: journalClient,
       journalRepository: journalRepository,
       journalStorageIsEphemeral: journalStorageIsEphemeral,
+      journalStorageFailureReason: journalStorageFailureReason,
       catalogRepository: catalogRepository,
       navigationViewModel: navigationViewModel
     )
@@ -147,14 +153,18 @@ struct ContentViewDependencies {
       try repository.open()
       return repository
     }
-  ) -> (repository: JournalRepositoryProtocol, isInMemoryFallback: Bool) {
+  ) -> (repository: JournalRepositoryProtocol, isInMemoryFallback: Bool, failureReason: String?) {
     do {
-      return try (openPersistent(), false)
+      return try (openPersistent(), false, nil)
     } catch {
+      // Carry the reason out, not just into the log: on-device Console capture
+      // is unreliable, so the App layer surfaces it in the Storage Error alert
+      // where a watch screenshot reveals the exact failing step (#457 RCA).
+      let reason = error.localizedDescription
       logger.warning(
-        "Journal database open failed: \(error.localizedDescription, privacy: .public). Falling back to in-memory storage."
+        "Journal database open failed: \(reason, privacy: .public). Falling back to in-memory storage."
       )
-      return (InMemoryJournalRepository(), true)
+      return (InMemoryJournalRepository(), true, reason)
     }
   }
 
