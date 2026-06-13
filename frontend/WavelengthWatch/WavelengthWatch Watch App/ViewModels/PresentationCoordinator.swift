@@ -71,6 +71,13 @@ final class PresentationCoordinator: ObservableObject {
   /// writing `true` requests it and writing `false` (a "Done" button or a
   /// swipe-dismiss) dismisses it through the queue policy, preserving the
   /// self-dismiss behavior the migrated sheets relied on.
+  ///
+  /// - Important: matching is by full `Equatable` value, so for cases that
+  ///   carry an associated value (e.g. `.storageError(reason:)`) the argument
+  ///   must equal the *active* value exactly — `isPresented(for:
+  ///   .storageError(reason: nil))` reads `false` while
+  ///   `.storageError(reason: "…")` is active. For those cases bind with a
+  ///   case-pattern-matching binding instead (see `RootPresentationHost`).
   func isPresented(for presentation: ActivePresentation) -> Binding<Bool> {
     Binding(
       get: { self.active == presentation },

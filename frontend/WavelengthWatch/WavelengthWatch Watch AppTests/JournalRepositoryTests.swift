@@ -200,7 +200,8 @@ struct JournalRepositoryTests {
     #expect(sqlite3_exec(raw, sql, nil, nil, nil) == SQLITE_OK)
   }
 
-  @Test func sqliteOpensWhenUpgradingDatabasePredatingEntryTypeColumn() throws {
+  @Test("open() recovers a database that predates the entry_type column")
+  func sqliteOpensWhenUpgradingDatabasePredatingEntryTypeColumn() throws {
     let tempPath = NSTemporaryDirectory() + UUID().uuidString + ".db"
     defer { try? FileManager.default.removeItem(atPath: tempPath) }
 
