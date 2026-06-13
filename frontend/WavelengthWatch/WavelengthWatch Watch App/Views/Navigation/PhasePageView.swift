@@ -39,9 +39,15 @@ struct PhasePageView: View {
     category: "chevron"
   )
 
-  /// TEMPORARY (#457 Phase 0.1): the card's resolved global frame, captured so
-  /// the chevron's frame can be judged against its own container.
+  /// TEMPORARY (#457 Phase 0.1): the card's resolved global frame. No longer
+  /// the verdict reference (Phase 0.2 uses the viewport) but still logged: a
+  /// card taller than the viewport is the overflow signal we're chasing.
   @State private var cardFrame: CGRect = .zero
+
+  /// TEMPORARY (#457 Phase 0.2): the scroll viewport's global frame, published
+  /// by `LayerScrollView`. The chevron is judged visible against this, not the
+  /// card — a card can overflow the viewport and hide a bottom-anchored chevron.
+  @Environment(\.chevronDiagnosticViewportFrame) private var viewportFrame
 
   var body: some View {
     // Use screenWidth from parent to avoid nested GeometryReader race conditions
@@ -109,14 +115,16 @@ struct PhasePageView: View {
           .onAppear {
             Self.chevronLog.log("chevron onAppear layer=\(layer.id, privacy: .public) phase=\(phase.id, privacy: .public)")
           }
-          // TEMPORARY (#457 Phase 0.1): where did the chevron actually land?
-          // Off-screen / zero-size => layout failure; an on-screen frame that
-          // still doesn't paint => compositing failure. Fires on settle.
+          // TEMPORARY (#457 Phase 0.2): where did the chevron land relative to
+          // the *viewport*? `offscreenBelow` => the card overflowed and pushed
+          // the chevron below the visible area (a layout bug); `onscreen` yet
+          // reported invisible => a compositing miss. `cardH` is logged too: a
+          // value above the settled viewport height is the overflow signal.
           .onGeometryChange(for: CGRect.self) { proxy in
             proxy.frame(in: .global)
           } action: { frame in
-            let verdict = ChevronFrameDiagnosis.classify(chevron: frame, container: cardFrame)
-            Self.chevronLog.log("chevron frame layer=\(layer.id, privacy: .public) phase=\(phase.id, privacy: .public) x=\(Int(frame.minX), privacy: .public) y=\(Int(frame.minY), privacy: .public) w=\(Int(frame.width), privacy: .public) h=\(Int(frame.height), privacy: .public) cardY=\(Int(cardFrame.minY), privacy: .public) cardH=\(Int(cardFrame.height), privacy: .public) verdict=\(verdict.rawValue, privacy: .public)")
+            let verdict = ChevronFrameDiagnosis.classify(chevron: frame, container: viewportFrame)
+            Self.chevronLog.log("chevron frame layer=\(layer.id, privacy: .public) phase=\(phase.id, privacy: .public) x=\(Int(frame.minX), privacy: .public) y=\(Int(frame.minY), privacy: .public) w=\(Int(frame.width), privacy: .public) h=\(Int(frame.height), privacy: .public) vpY=\(Int(viewportFrame.minY), privacy: .public) vpH=\(Int(viewportFrame.height), privacy: .public) cardH=\(Int(cardFrame.height), privacy: .public) verdict=\(verdict.rawValue, privacy: .public)")
           }
         }
         .padding(.bottom, 20)

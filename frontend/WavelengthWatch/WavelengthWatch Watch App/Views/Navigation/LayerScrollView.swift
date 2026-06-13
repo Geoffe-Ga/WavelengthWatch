@@ -70,6 +70,11 @@ struct LayerScrollView: View {
           .overlay(alignment: .trailing) {
             sideIndicator(in: geometry.size)
           }
+          // TEMPORARY (#457 Phase 0.2): publish the viewport's global frame so
+          // PhasePageView's chevron diagnostic can judge the chevron against the
+          // actually-visible area rather than its own (possibly overflowing)
+          // card. Remove with the rest of the Phase 0 diagnostics.
+          .environment(\.chevronDiagnosticViewportFrame, geometry.frame(in: .global))
           // DragGesture writes raw `layerSelection`; the bounds check uses
           // `filteredLayers.count` since reads downstream are clamped via
           // `clampedSelection`.
