@@ -46,6 +46,11 @@ extension JournalDatabaseError: LocalizedError {
 /// The database includes a version table for future migrations.
 final class JournalDatabase {
   /// Current schema version for migration tracking.
+  ///
+  /// There are only three column-changing migrations (`migrateToV2`/`V3`); the
+  /// former v4 step added analytics indexes only, which are now ensured on every
+  /// open by `createIndexes()`. The version still advances to 4 so databases
+  /// already at 4 aren't seen as stale — hence 4 with no `migrateToV4`.
   static let schemaVersion = 4
 
   /// SQLite database pointer.
