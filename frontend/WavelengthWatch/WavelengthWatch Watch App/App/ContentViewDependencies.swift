@@ -51,12 +51,6 @@ struct ContentViewDependencies {
     category: "ContentViewDependencies"
   )
 
-  /// TEMPORARY (#457 Phase 0): cold-start sequence diagnostics. Remove after RCA.
-  private static let coldStart = Logger(
-    subsystem: "com.wavelengthwatch.watch",
-    category: "coldstart"
-  )
-
   /// Filesystem path for the temp-directory journal-queue fallback,
   /// composed via `URL` so it stays correct even if `NSTemporaryDirectory`
   /// ever stops returning a trailing-slash path.
@@ -71,16 +65,13 @@ struct ContentViewDependencies {
   /// real network monitor. Used by the app's runtime entry point.
   @MainActor
   static func live() -> ContentViewDependencies {
-    coldStart.log("live(): start")
     let configuration = AppConfiguration()
     let apiClient = APIClient(baseURL: configuration.apiBaseURL)
     let catalogRepository = CatalogRepository(
       remote: CatalogAPIService(apiClient: apiClient),
       cache: FileCatalogCacheStore()
     )
-    coldStart.log("live(): opening journal repository")
     let (journalRepository, journalStorageIsEphemeral, journalStorageFailureReason) = Self.makeJournalRepository()
-    coldStart.log("live(): journal open done, ephemeral=\(journalStorageIsEphemeral, privacy: .public)")
     let syncSettings = SyncSettings()
     let journalQueue = Self.makeJournalQueue()
     let networkMonitor = NetworkMonitor()
@@ -106,7 +97,6 @@ struct ContentViewDependencies {
       journalStorageIsEphemeral: journalStorageIsEphemeral,
       journalStorageFailureReason: journalStorageFailureReason
     )
-    coldStart.log("live(): viewModel built (initialLayer=\(initialLayer, privacy: .public) initialPhase=\(storedPhase, privacy: .public))")
     let flowCoordinator = FlowCoordinator(contentViewModel: viewModel)
     let syncSettingsViewModel = SyncSettingsViewModel(syncSettings: syncSettings)
     let navigationViewModel = NavigationViewModel(
