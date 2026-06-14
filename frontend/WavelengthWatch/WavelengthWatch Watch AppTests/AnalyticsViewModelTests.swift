@@ -470,6 +470,34 @@ struct AnalyticsViewModelTests {
     }
   }
 
+  @Test("a local fetch failure surfaces its reason in the error message (#470)")
+  @MainActor
+  func viewModel_localFetchFailure_surfacesReason() async {
+    let mockService = MockAnalyticsService()
+    let mockCalculator = MockLocalAnalyticsCalculator()
+    let mockRepository = MockJournalRepository()
+    mockRepository.errorToThrow = NSError(
+      domain: "db", code: 7,
+      userInfo: [NSLocalizedDescriptionKey: "query failed: no such table"]
+    )
+
+    let viewModel = AnalyticsViewModel(
+      analyticsService: mockService,
+      localCalculator: mockCalculator,
+      journalRepository: mockRepository,
+      syncSettings: cloudSyncOff()
+    )
+
+    await viewModel.loadAnalytics()
+
+    if case let .error(message) = viewModel.state {
+      #expect(message.contains("couldn't read journal entries"))
+      #expect(message.contains("query failed: no such table"))
+    } else {
+      Issue.record("Expected error surfacing the fetch reason, got \(viewModel.state)")
+    }
+  }
+
   @Test("viewModel uses backend successfully without trying local")
   @MainActor
   func viewModel_usesBackendWithoutTryingLocal() async {
