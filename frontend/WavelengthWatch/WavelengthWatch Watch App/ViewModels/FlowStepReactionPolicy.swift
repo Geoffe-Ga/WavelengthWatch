@@ -9,11 +9,13 @@ enum ReviewSheetAction: Equatable {
 }
 
 /// The combined navigation + presentation response to a flow-step transition.
+/// A read-only value object computed once per transition and consumed
+/// immediately, so its fields are immutable.
 struct FlowStepReaction: Equatable {
   /// Pop the navigation stack to root so the user isn't stranded in a detail
   /// view across a flow boundary (the #157 / #162 / #164 fix).
-  var popsToRoot: Bool
-  var reviewSheet: ReviewSheetAction
+  let popsToRoot: Bool
+  let reviewSheet: ReviewSheetAction
 }
 
 /// Single source of truth for how a `FlowCoordinator.FlowStep` transition maps
@@ -26,6 +28,7 @@ struct FlowStepReaction: Equatable {
 /// pure policy lets exactly one observer apply both in a defined order, and
 /// makes the decision unit-testable without rendering a view (#428).
 enum FlowStepReactionPolicy {
+  /// The navigation + review-sheet reaction for a given flow step.
   static func reaction(for step: FlowCoordinator.FlowStep) -> FlowStepReaction {
     FlowStepReaction(popsToRoot: popsToRoot(step), reviewSheet: reviewSheet(step))
   }

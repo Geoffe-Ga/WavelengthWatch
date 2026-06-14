@@ -7,53 +7,24 @@ import Testing
 struct FlowStepReactionPolicyTests {
   // MARK: - Pop-to-root
 
-  @Test("selecting steps and idle pop the navigation stack to root")
-  func selectingAndIdle_popToRoot() {
-    for step in [
-      FlowCoordinator.FlowStep.selectingPrimary,
-      .selectingSecondary,
-      .selectingStrategy,
-      .idle,
-    ] {
-      #expect(FlowStepReactionPolicy.reaction(for: step).popsToRoot)
-    }
-  }
+  // Iterating `allCases` (not a hand-listed subset) means a newly added
+  // FlowStep is automatically held to the rule, closing the coverage gap.
 
-  @Test("confirming steps pop too, so the root-hosted confirmation alert shows (#450)")
-  func confirmingSteps_popToRoot() {
-    for step in [
-      FlowCoordinator.FlowStep.confirmingPrimary,
-      .confirmingSecondary,
-      .confirmingStrategy,
-    ] {
-      #expect(FlowStepReactionPolicy.reaction(for: step).popsToRoot)
+  @Test("every step pops to root except .review, whose sheet sits above the push")
+  func popToRoot_coversEveryStep() {
+    for step in FlowCoordinator.FlowStep.allCases {
+      let expected = step != .review // confirming steps pop too (#450)
+      #expect(FlowStepReactionPolicy.reaction(for: step).popsToRoot == expected)
     }
-  }
-
-  @Test("only the review step stays put, since its sheet sits above the push")
-  func reviewStep_doesNotPop() {
-    #expect(!FlowStepReactionPolicy.reaction(for: .review).popsToRoot)
   }
 
   // MARK: - Review sheet
 
-  @Test("the review step presents the review sheet")
-  func reviewStep_presentsSheet() {
-    #expect(FlowStepReactionPolicy.reaction(for: .review).reviewSheet == .present)
-  }
-
-  @Test("every non-review step dismisses the review sheet only if active")
-  func nonReviewSteps_dismissIfActive() {
-    for step in [
-      FlowCoordinator.FlowStep.idle,
-      .selectingPrimary,
-      .confirmingPrimary,
-      .selectingSecondary,
-      .confirmingSecondary,
-      .selectingStrategy,
-      .confirmingStrategy,
-    ] {
-      #expect(FlowStepReactionPolicy.reaction(for: step).reviewSheet == .dismissIfActive)
+  @Test("only .review presents the sheet; every other step dismisses it if active")
+  func reviewSheet_coversEveryStep() {
+    for step in FlowCoordinator.FlowStep.allCases {
+      let expected: ReviewSheetAction = step == .review ? .present : .dismissIfActive
+      #expect(FlowStepReactionPolicy.reaction(for: step).reviewSheet == expected)
     }
   }
 

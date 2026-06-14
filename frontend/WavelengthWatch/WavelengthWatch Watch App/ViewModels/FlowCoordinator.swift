@@ -143,8 +143,10 @@ final class FlowCoordinator: ObservableObject {
 
   // MARK: - Nested Types
 
-  /// Flow state machine steps
-  enum FlowStep: Equatable {
+  /// Flow state machine steps. `CaseIterable` lets the flow-step policy tests
+  /// assert over every case, so a newly added step can't silently slip past
+  /// the coverage (#428).
+  enum FlowStep: Equatable, CaseIterable {
     case idle // Not in flow
     case selectingPrimary // User navigating ContentView for primary
     case confirmingPrimary // Show confirmation sheet
