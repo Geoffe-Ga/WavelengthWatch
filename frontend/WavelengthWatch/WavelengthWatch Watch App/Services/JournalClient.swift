@@ -1,8 +1,11 @@
 import Foundation
 
+/// The kind of journal entry. Only `emotion` remains — the rest-period feature
+/// was removed (#435) — but the type is kept (rather than inlined) because
+/// `entry_type` is a persisted SQLite column and an API field, so the wire and
+/// storage formats stay stable.
 enum EntryType: String, Codable {
   case emotion
-  case rest
 }
 
 enum InitiatedBy: String, Codable {
@@ -72,11 +75,6 @@ protocol JournalClientProtocol {
     curriculumID: Int,
     secondaryCurriculumID: Int?,
     strategyID: Int?,
-    initiatedBy: InitiatedBy
-  ) async throws -> LocalJournalEntry
-
-  @discardableResult
-  func submitRestPeriod(
     initiatedBy: InitiatedBy
   ) async throws -> LocalJournalEntry
 }
@@ -170,33 +168,6 @@ final class JournalClient: JournalClientProtocol {
       strategyID: entry.strategyID,
       initiatedBy: entry.initiatedBy,
       entryType: .emotion
-    )
-
-    return try await persistAndSync(entry: entry, payload: payload)
-  }
-
-  @discardableResult
-  func submitRestPeriod(
-    initiatedBy: InitiatedBy = .self_initiated
-  ) async throws -> LocalJournalEntry {
-    let entry = LocalJournalEntry(
-      createdAt: dateProvider(),
-      userID: numericUserIdentifier(),
-      curriculumID: nil,
-      secondaryCurriculumID: nil,
-      strategyID: nil,
-      initiatedBy: initiatedBy,
-      entryType: .rest
-    )
-
-    let payload = JournalPayload(
-      createdAt: entry.createdAt,
-      userID: entry.userID,
-      curriculumID: nil,
-      secondaryCurriculumID: nil,
-      strategyID: nil,
-      initiatedBy: entry.initiatedBy,
-      entryType: .rest
     )
 
     return try await persistAndSync(entry: entry, payload: payload)

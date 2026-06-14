@@ -44,10 +44,6 @@ enum WLColorTokens {
 
   // MARK: - Semantic Accents
 
-  /// Accent for rest-period UI (calm/contraction). Distinct from the
-  /// "Purple" layer color even though both currently resolve to `.purple`.
-  static let restAccent: Color = .purple
-
   /// Accent for cloud-sync / backup affordances.
   static let syncAccent: Color = .blue
 
@@ -113,7 +109,7 @@ enum WLColorTokens {
     LinearGradient(
       colors: isSubmitting
         ? [Color.gray.opacity(0.6), Color.gray.opacity(0.4)]
-        : [Color.blue.opacity(0.8), restAccent.opacity(0.6), Color.indigo.opacity(0.7)],
+        : [Color.blue.opacity(0.8), Color.purple.opacity(0.6), Color.indigo.opacity(0.7)],
       startPoint: .topLeading,
       endPoint: .bottomTrailing
     )
