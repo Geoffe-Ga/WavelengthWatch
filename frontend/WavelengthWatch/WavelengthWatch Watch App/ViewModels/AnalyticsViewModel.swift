@@ -66,12 +66,14 @@ final class AnalyticsViewModel: ObservableObject {
 
   /// Why a local analytics calculation couldn't be produced. Surfaced in the
   /// user-facing error so a blind "unavailable" no longer hides the cause (#470).
-  private enum LocalCalculationError: Error {
+  /// Conforms to `LocalizedError` so `localizedDescription` yields the reason
+  /// directly — no helper to forget at a call site.
+  private enum LocalCalculationError: LocalizedError {
     case noCalculator // no in-memory or cached catalog to build the calculator
     case noRepository // journal storage not wired
     case fetchFailed(String) // reading journal entries threw
 
-    var reason: String {
+    var errorDescription: String? {
       switch self {
       case .noCalculator: "no catalog is loaded yet"
       case .noRepository: "journal storage is unavailable"
@@ -86,13 +88,13 @@ final class AnalyticsViewModel: ObservableObject {
       let userId = numericUserIdentifier()
       let overview = try await analyticsService.getOverview(userId: userId)
       state = .loaded(overview)
-    } catch {
+    } catch let backendError {
       do {
         state = try .loaded(calculateLocally())
       } catch {
         state = .error(
-          "Failed to load analytics: \(error.localizedDescription) "
-            + "(local: \(localReason(error)))"
+          "Failed to load analytics: \(backendError.localizedDescription) "
+            + "(local: \(error.localizedDescription))"
         )
       }
     }
@@ -105,7 +107,7 @@ final class AnalyticsViewModel: ObservableObject {
     } catch {
       state = .error(
         "Analytics are temporarily unavailable. Please try again later. "
-          + "(\(localReason(error)))"
+          + "(\(error.localizedDescription))"
       )
     }
   }
@@ -130,11 +132,6 @@ final class AnalyticsViewModel: ObservableObject {
       startDate: startDate,
       endDate: endDate
     )
-  }
-
-  /// Human-readable reason for a local-calculation failure.
-  private func localReason(_ error: Error) -> String {
-    (error as? LocalCalculationError)?.reason ?? error.localizedDescription
   }
 
   /// Retries loading analytics after an error.

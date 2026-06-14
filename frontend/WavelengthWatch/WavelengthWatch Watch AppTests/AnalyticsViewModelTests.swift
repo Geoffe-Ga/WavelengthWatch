@@ -448,14 +448,17 @@ struct AnalyticsViewModelTests {
   @MainActor
   func viewModel_reportsErrorWhenBothFail() async {
     let mockService = MockAnalyticsService()
-    mockService.errorToThrow = NSError(domain: "test", code: -1)
+    mockService.errorToThrow = NSError(
+      domain: "net", code: -1009,
+      userInfo: [NSLocalizedDescriptionKey: "The Internet connection appears to be offline."]
+    )
 
     let mockRepository = MockJournalRepository()
     mockRepository.errorToThrow = NSError(domain: "test", code: -2)
 
     let viewModel = AnalyticsViewModel(
       analyticsService: mockService,
-      localCalculator: nil,
+      localCalculator: nil, // no catalog → the local fallback reports noCalculator
       journalRepository: mockRepository,
       syncSettings: cloudSyncOn()
     )
@@ -464,6 +467,10 @@ struct AnalyticsViewModelTests {
 
     if case let .error(message) = viewModel.state {
       #expect(message.contains("Failed to load analytics"))
+      // The backend error must survive into the message (regression: the inner
+      // catch used to shadow it), and the local reason must be named.
+      #expect(message.contains("The Internet connection appears to be offline."))
+      #expect(message.contains("no catalog is loaded yet"))
       #expect(mockService.getOverviewCallCount == 1)
     } else {
       Issue.record("Expected error state, got \(viewModel.state)")
@@ -495,6 +502,25 @@ struct AnalyticsViewModelTests {
       #expect(message.contains("query failed: no such table"))
     } else {
       Issue.record("Expected error surfacing the fetch reason, got \(viewModel.state)")
+    }
+  }
+
+  @Test("a missing journal repository surfaces 'journal storage is unavailable' (#470)")
+  @MainActor
+  func viewModel_noRepository_surfacesReason() async {
+    let viewModel = AnalyticsViewModel(
+      analyticsService: MockAnalyticsService(),
+      localCalculator: MockLocalAnalyticsCalculator(),
+      journalRepository: nil,
+      syncSettings: cloudSyncOff()
+    )
+
+    await viewModel.loadAnalytics()
+
+    if case let .error(message) = viewModel.state {
+      #expect(message.contains("journal storage is unavailable"))
+    } else {
+      Issue.record("Expected error naming the missing repository, got \(viewModel.state)")
     }
   }
 
