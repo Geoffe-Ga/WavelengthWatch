@@ -27,7 +27,6 @@ final class AnalyticsViewModel: ObservableObject {
   private let analyticsService: AnalyticsServiceProtocol
   private let localCalculator: LocalAnalyticsCalculatorProtocol?
   private let journalRepository: JournalRepositoryProtocol?
-  private let catalogRepository: CatalogRepositoryProtocol?
   private let syncSettings: SyncSettings
   private let userDefaults: UserDefaults
   private let userDefaultsKey = "com.wavelengthwatch.userIdentifier"
@@ -36,14 +35,12 @@ final class AnalyticsViewModel: ObservableObject {
     analyticsService: AnalyticsServiceProtocol,
     localCalculator: LocalAnalyticsCalculatorProtocol? = nil,
     journalRepository: JournalRepositoryProtocol? = nil,
-    catalogRepository: CatalogRepositoryProtocol? = nil,
     syncSettings: SyncSettings = SyncSettings(),
     userDefaults: UserDefaults = .standard
   ) {
     self.analyticsService = analyticsService
     self.localCalculator = localCalculator
     self.journalRepository = journalRepository
-    self.catalogRepository = catalogRepository
     self.syncSettings = syncSettings
     self.userDefaults = userDefaults
   }
@@ -99,11 +96,13 @@ final class AnalyticsViewModel: ObservableObject {
   ///
   /// - Returns: Locally calculated overview if all components available, nil otherwise
   private func tryLocalCalculation() async -> AnalyticsOverview? {
+    // The calculator already holds the catalog it was built with, so require
+    // only it and the journal repository. The previous extra
+    // `catalogRepository.cachedCatalog()` guard was unused yet could veto a
+    // perfectly good calculation whenever the on-disk cache was empty (#468).
     guard
       let calculator = localCalculator,
-      let repository = journalRepository,
-      let catalogRepo = catalogRepository,
-      let catalog = catalogRepo.cachedCatalog()
+      let repository = journalRepository
     else {
       return nil
     }

@@ -7,6 +7,12 @@ final class ContentViewModel: ObservableObject {
   @Published var loadErrorMessage: String?
   @Published var journalFeedback: JournalFeedback?
 
+  /// The catalog currently applied, kept whole so consumers that need a full
+  /// `CatalogResponseModel` (e.g. offline analytics) can use the in-memory copy
+  /// instead of re-reading the on-disk cache, which may be empty if the backend
+  /// fetch succeeded but the cache write didn't persist (#468).
+  @Published private(set) var loadedCatalog: CatalogResponseModel?
+
   /// Index in the full (unfiltered) layers array. Derived from selectedLayerId.
   @Published var selectedLayerIndex: Int {
     didSet {
@@ -223,6 +229,7 @@ final class ContentViewModel: ObservableObject {
 
   @MainActor
   private func applyCatalog(_ catalog: CatalogResponseModel) {
+    loadedCatalog = catalog
     layers = catalog.layers.reversed()
     phaseOrder = catalog.phaseOrder
 

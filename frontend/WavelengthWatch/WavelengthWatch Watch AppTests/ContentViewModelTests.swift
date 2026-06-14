@@ -15,6 +15,23 @@ struct ContentViewModelTests {
     #expect(viewModel.isLoading == false)
   }
 
+  @Test("loadCatalog keeps the whole catalog in memory for offline analytics (#468)")
+  func loadCatalog_retainsLoadedCatalog() async {
+    let repository = CatalogRepositoryMock(cached: nil, result: .success(SampleData.catalog))
+    let viewModel = ContentViewModel(
+      catalogRepository: repository,
+      journalRepository: InMemoryJournalRepository(),
+      journalClient: JournalClientMock()
+    )
+
+    #expect(viewModel.loadedCatalog == nil)
+    await viewModel.loadCatalog()
+
+    // Even though the mock has no on-disk cache, the fetched catalog is retained
+    // in memory so analytics can build its local calculator from it.
+    #expect(viewModel.loadedCatalog == SampleData.catalog)
+  }
+
   @Test func surfacesErrorWhenLoadingFails() async {
     enum TestError: Error { case failure }
     let repository = CatalogRepositoryMock(result: .failure(TestError.failure))

@@ -161,18 +161,14 @@ struct AnalyticsViewIntegrationTests {
     let mockRepository = MockJournalRepository()
     mockRepository.entries = createTestEntries()
 
-    let mockCatalog = MockCatalogRepository()
     let catalog = createTestCatalog()
-    mockCatalog.catalog = catalog
-
     let calculator = LocalAnalyticsCalculator(catalog: catalog)
 
     // Create ViewModel with all dependencies (this is what AnalyticsView should do)
     let viewModel = AnalyticsViewModel(
       analyticsService: mockService,
       localCalculator: calculator,
-      journalRepository: mockRepository,
-      catalogRepository: mockCatalog
+      journalRepository: mockRepository
     )
 
     // Act: Load analytics
@@ -201,8 +197,7 @@ struct AnalyticsViewIntegrationTests {
     let viewModel = AnalyticsViewModel(
       analyticsService: mockService,
       localCalculator: nil, // Missing!
-      journalRepository: nil, // Missing!
-      catalogRepository: nil // Missing!
+      journalRepository: nil // Missing!
     )
 
     // Act: Load analytics

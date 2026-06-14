@@ -425,14 +425,10 @@ struct AnalyticsViewModelTests {
       LocalJournalEntry(createdAt: Date(), userID: 1, curriculumID: 1, entryType: .emotion),
     ]
 
-    let mockCatalog = MockCatalogRepository()
-    mockCatalog.catalogToReturn = testCatalog()
-
     let viewModel = AnalyticsViewModel(
       analyticsService: mockService,
       localCalculator: mockCalculator,
       journalRepository: mockRepository,
-      catalogRepository: mockCatalog,
       syncSettings: cloudSyncOn()
     )
 
@@ -457,13 +453,10 @@ struct AnalyticsViewModelTests {
     let mockRepository = MockJournalRepository()
     mockRepository.errorToThrow = NSError(domain: "test", code: -2)
 
-    let mockCatalog = MockCatalogRepository()
-
     let viewModel = AnalyticsViewModel(
       analyticsService: mockService,
       localCalculator: nil,
       journalRepository: mockRepository,
-      catalogRepository: mockCatalog,
       syncSettings: cloudSyncOn()
     )
 
@@ -499,13 +492,11 @@ struct AnalyticsViewModelTests {
 
     let mockCalculator = MockLocalAnalyticsCalculator()
     let mockRepository = MockJournalRepository()
-    let mockCatalog = MockCatalogRepository()
 
     let viewModel = AnalyticsViewModel(
       analyticsService: mockService,
       localCalculator: mockCalculator,
       journalRepository: mockRepository,
-      catalogRepository: mockCatalog,
       syncSettings: cloudSyncOn()
     )
 
@@ -577,14 +568,10 @@ struct AnalyticsViewModelTests {
     mockRepository.entriesToReturn = [
       LocalJournalEntry(createdAt: Date(), userID: 1, curriculumID: 1, entryType: .emotion),
     ]
-    let mockCatalog = MockCatalogRepository()
-    mockCatalog.catalogToReturn = testCatalog()
-
     let viewModel = AnalyticsViewModel(
       analyticsService: mockService,
       localCalculator: mockCalculator,
       journalRepository: mockRepository,
-      catalogRepository: mockCatalog,
       syncSettings: cloudSyncOff()
     )
 
