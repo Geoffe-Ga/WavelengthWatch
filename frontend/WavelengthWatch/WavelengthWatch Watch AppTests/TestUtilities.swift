@@ -151,7 +151,6 @@ final class JournalClientMock: JournalClientProtocol {
   struct ErrorStub: Error {}
 
   var submissions: [(Int, Int?, Int?)] = []
-  var restSubmissions: [InitiatedBy] = []
   var submittedInitiatedBy: InitiatedBy?
   var shouldFail = false
   /// When true, submit() throws `JournalError.queuedForRetry` to simulate
@@ -180,26 +179,6 @@ final class JournalClientMock: JournalClientProtocol {
       strategyID: strategyID,
       initiatedBy: initiatedBy,
       entryType: .emotion
-    )
-  }
-
-  func submitRestPeriod(
-    initiatedBy: InitiatedBy
-  ) async throws -> LocalJournalEntry {
-    restSubmissions.append(initiatedBy)
-    submittedInitiatedBy = initiatedBy
-    if shouldQueue {
-      throw JournalError.queuedForRetry(entryID: UUID())
-    }
-    if shouldFail {
-      throw ErrorStub()
-    }
-    return LocalJournalEntry(
-      createdAt: Date(),
-      userID: 123,
-      curriculumID: nil,
-      initiatedBy: initiatedBy,
-      entryType: .rest
     )
   }
 }

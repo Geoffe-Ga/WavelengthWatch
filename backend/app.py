@@ -61,6 +61,7 @@ def create_application() -> FastAPI:
     ) -> AsyncIterator[None]:  # pragma: no cover - exercised via startup events
         database.create_db_and_tables()
         with Session(database.engine) as session:
+            database.rewrite_legacy_rest_entries(session)
             seed_database(session)
             # Cleanup expired idempotency records on startup
             from .routers.journal import cleanup_expired_idempotency_records

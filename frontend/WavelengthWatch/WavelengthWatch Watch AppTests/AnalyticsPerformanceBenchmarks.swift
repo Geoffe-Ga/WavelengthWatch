@@ -130,14 +130,13 @@ struct AnalyticsPerformanceBenchmarks {
       let strategy = hasStrategy
         ? strategyIds[Int(next() % UInt64(strategyIds.count))]
         : nil
-      let isRest = (next() % 20) == 0
       entries.append(LocalJournalEntry(
         createdAt: created,
         userID: 1,
-        curriculumID: isRest ? nil : primary,
-        secondaryCurriculumID: isRest ? nil : secondary,
+        curriculumID: primary,
+        secondaryCurriculumID: secondary,
         strategyID: strategy,
-        entryType: isRest ? .rest : .emotion
+        entryType: .emotion
       ))
     }
     return entries

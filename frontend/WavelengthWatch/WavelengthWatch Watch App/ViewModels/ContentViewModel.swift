@@ -54,6 +54,11 @@ final class ContentViewModel: ObservableObject {
   /// the App layer surfaces this to the user as a "Storage Error" alert.
   let journalStorageIsEphemeral: Bool
 
+  /// The on-disk-open failure reason when `journalStorageIsEphemeral` is true,
+  /// else `nil`. Passed to the Storage Error alert so the cause is legible
+  /// on-device (#457 RCA).
+  let journalStorageFailureReason: String?
+
   /// Returns layers filtered according to the current filter mode.
   ///
   /// The filtered layers change based on `layerFilterMode`:
@@ -83,7 +88,8 @@ final class ContentViewModel: ObservableObject {
     journalClient: JournalClientProtocol,
     initialLayerIndex: Int = 0,
     initialPhaseIndex: Int = 0,
-    journalStorageIsEphemeral: Bool = false
+    journalStorageIsEphemeral: Bool = false,
+    journalStorageFailureReason: String? = nil
   ) {
     self.catalogRepository = catalogRepository
     self.journalRepository = journalRepository
@@ -91,6 +97,7 @@ final class ContentViewModel: ObservableObject {
     self.selectedLayerIndex = initialLayerIndex
     self.selectedPhaseIndex = initialPhaseIndex
     self.journalStorageIsEphemeral = journalStorageIsEphemeral
+    self.journalStorageFailureReason = journalStorageFailureReason
   }
 
   @MainActor
@@ -162,18 +169,6 @@ final class ContentViewModel: ObservableObject {
       strategyID: strategyID,
       initiatedBy: effectiveInitiatedBy
     )
-    // Reset to self-initiated after successful submission
-    currentInitiatedBy = .self_initiated
-  }
-
-  /// Throwing rest-period submission for use by FlowCoordinator.
-  ///
-  /// Mirrors `journalThrowing` but logs a rest period (no curriculum/strategy),
-  /// propagating errors so callers can preserve state for retry.
-  @MainActor
-  func journalRestThrowing(initiatedBy: InitiatedBy? = nil) async throws {
-    let effectiveInitiatedBy = initiatedBy ?? currentInitiatedBy
-    _ = try await journalClient.submitRestPeriod(initiatedBy: effectiveInitiatedBy)
     // Reset to self-initiated after successful submission
     currentInitiatedBy = .self_initiated
   }

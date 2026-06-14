@@ -13,6 +13,25 @@ enum JournalDatabaseError: Error, Equatable {
   case databaseNotOpen
 }
 
+/// TEMPORARY (#457 Phase 0): surface the real SQLite reason + failing step via
+/// `error.localizedDescription` (already logged in `makeJournalRepository`), so
+/// the journal-open failure is no longer diagnosed blind. Fold into a proper
+/// error-presentation pass after RCA.
+extension JournalDatabaseError: LocalizedError {
+  var errorDescription: String? {
+    switch self {
+    case let .failedToOpenDatabase(message): "open failed: \(message)"
+    case let .failedToCreateTable(message): "create-table failed: \(message)"
+    case let .failedToInsert(message): "insert failed: \(message)"
+    case let .failedToUpdate(message): "update failed: \(message)"
+    case let .failedToDelete(message): "delete failed: \(message)"
+    case let .failedToQuery(message): "query failed: \(message)"
+    case let .invalidData(message): "invalid data: \(message)"
+    case .databaseNotOpen: "database not open"
+    }
+  }
+}
+
 /// Low-level SQLite database wrapper for journal entry storage.
 ///
 /// This class provides direct SQLite operations using the C API via Foundation.
@@ -27,7 +46,12 @@ enum JournalDatabaseError: Error, Equatable {
 /// The database includes a version table for future migrations.
 final class JournalDatabase {
   /// Current schema version for migration tracking.
-  static let schemaVersion = 4
+  ///
+  /// `migrateToV2`/`V3` are column-changing migrations. The former v4 step added
+  /// analytics indexes only, now ensured on every open by `createIndexes()`
+  /// (hence no `migrateToV4`). v5 is a data migration that rewrites the removed
+  /// `entry_type = 'rest'` value to `'emotion'` (#435).
+  static let schemaVersion = 5
 
   /// SQLite database pointer.
   private var db: OpaquePointer?
@@ -86,6 +110,13 @@ final class JournalDatabase {
     db = dbPointer
     try createTables()
     try migrate()
+    // Indexes are created last, AFTER migrations have added every column they
+    // reference (e.g. `entry_type`, added in v3). Creating them inside
+    // `createTables()` — before `migrate()` — fails with "no such column:
+    // entry_type" on a database carried across builds, because `CREATE TABLE
+    // IF NOT EXISTS` is a no-op on the pre-existing old table and the column
+    // isn't there yet. That threw, forcing the in-memory fallback (#451).
+    try createIndexes()
   }
 
   /// Closes the database connection.
@@ -116,7 +147,8 @@ final class JournalDatabase {
         WHERE NOT EXISTS (SELECT 1 FROM schema_version);
     """
 
-    // Journal entries table with indexes for common queries
+    // Journal entries table. Indexes are created separately, in
+    // `createIndexes()`, AFTER migrations run — see `open()` for why.
     let journalSQL = """
       CREATE TABLE IF NOT EXISTS journal_entry (
         id TEXT PRIMARY KEY,
@@ -132,7 +164,36 @@ final class JournalDatabase {
         last_sync_attempt REAL,
         retry_count INTEGER NOT NULL DEFAULT 0
       );
+    """
 
+    var errorMessage: UnsafeMutablePointer<CChar>?
+
+    if sqlite3_exec(db, versionSQL, nil, nil, &errorMessage) != SQLITE_OK {
+      let message = errorMessage.map { String(cString: $0) } ?? "Unknown error"
+      sqlite3_free(errorMessage)
+      throw JournalDatabaseError.failedToCreateTable(message)
+    }
+
+    if sqlite3_exec(db, journalSQL, nil, nil, &errorMessage) != SQLITE_OK {
+      let message = errorMessage.map { String(cString: $0) } ?? "Unknown error"
+      sqlite3_free(errorMessage)
+      throw JournalDatabaseError.failedToCreateTable(message)
+    }
+  }
+
+  /// Creates every `journal_entry` index, idempotently.
+  ///
+  /// Called from `open()` AFTER `migrate()`, so every column these indexes
+  /// reference is guaranteed to exist — including ones added by migrations on
+  /// an upgraded database (`entry_type` in v3). The two analytics indexes
+  /// (`idx_journal_strategy`, `idx_journal_created_curriculum`) were formerly
+  /// created in `migrateToV4`; centralizing them here means they're ensured on
+  /// every open regardless of the stored schema version, which is strictly
+  /// more robust than version-gating them.
+  private func createIndexes() throws {
+    guard let db else { throw JournalDatabaseError.databaseNotOpen }
+
+    let sql = """
       CREATE INDEX IF NOT EXISTS idx_journal_user_created
         ON journal_entry(user_id, created_at DESC);
 
@@ -156,14 +217,7 @@ final class JournalDatabase {
     """
 
     var errorMessage: UnsafeMutablePointer<CChar>?
-
-    if sqlite3_exec(db, versionSQL, nil, nil, &errorMessage) != SQLITE_OK {
-      let message = errorMessage.map { String(cString: $0) } ?? "Unknown error"
-      sqlite3_free(errorMessage)
-      throw JournalDatabaseError.failedToCreateTable(message)
-    }
-
-    if sqlite3_exec(db, journalSQL, nil, nil, &errorMessage) != SQLITE_OK {
+    if sqlite3_exec(db, sql, nil, nil, &errorMessage) != SQLITE_OK {
       let message = errorMessage.map { String(cString: $0) } ?? "Unknown error"
       sqlite3_free(errorMessage)
       throw JournalDatabaseError.failedToCreateTable(message)
@@ -196,12 +250,21 @@ final class JournalDatabase {
     if currentVersion < 3 {
       try migrateToV3()
     }
-    if currentVersion < 4 {
-      try migrateToV4()
+    // The former v4 step only added analytics indexes; those are now ensured on
+    // every open by `createIndexes()`, so there is no v4 column migration.
+    if currentVersion < 5 {
+      try migrateRestEntriesToEmotion()
     }
 
-    // Update schema version
-    let updateVersionSQL = "UPDATE schema_version SET version = \(Self.schemaVersion)"
+    // Set the schema version by collapsing `schema_version` to a single
+    // authoritative row. An older build's `INSERT OR IGNORE` could have left a
+    // second row; a plain `UPDATE … SET version = N` then violates the `version`
+    // PRIMARY KEY and the open fails (forcing the in-memory fallback, #451).
+    // Delete-then-insert is duplicate-safe.
+    let updateVersionSQL = """
+    DELETE FROM schema_version;
+    INSERT INTO schema_version (version) VALUES (\(Self.schemaVersion));
+    """
     var errorMessage: UnsafeMutablePointer<CChar>?
     if sqlite3_exec(db, updateVersionSQL, nil, nil, &errorMessage) != SQLITE_OK {
       let message = errorMessage.map { String(cString: $0) } ?? "Unknown error"
@@ -287,23 +350,13 @@ final class JournalDatabase {
     }
   }
 
-  /// Migrates from schema v3 to v4 by adding analytics-critical indexes.
-  ///
-  /// Adds `idx_journal_strategy` on `strategy_id` for quick per-strategy
-  /// lookups and `idx_journal_created_curriculum` on `(created_at,
-  /// curriculum_id)` so date-range analytics queries can be answered
-  /// directly from the index without scanning the full table.
-  private func migrateToV4() throws {
+  /// Migrates to v5: rewrites the removed `entry_type = 'rest'` value to
+  /// `'emotion'`. The rest-period feature was removed (#435); any rows it left
+  /// behind would otherwise carry a value the app no longer understands.
+  private func migrateRestEntriesToEmotion() throws {
     guard let db else { throw JournalDatabaseError.databaseNotOpen }
 
-    let sql = """
-      CREATE INDEX IF NOT EXISTS idx_journal_strategy
-        ON journal_entry(strategy_id);
-
-      CREATE INDEX IF NOT EXISTS idx_journal_created_curriculum
-        ON journal_entry(created_at, curriculum_id);
-    """
-
+    let sql = "UPDATE journal_entry SET entry_type = 'emotion' WHERE entry_type = 'rest'"
     var errorMessage: UnsafeMutablePointer<CChar>?
     if sqlite3_exec(db, sql, nil, nil, &errorMessage) != SQLITE_OK {
       let message = errorMessage.map { String(cString: $0) } ?? "Unknown error"
@@ -662,11 +715,13 @@ final class JournalDatabase {
       throw JournalDatabaseError.invalidData("Invalid initiated_by value")
     }
 
-    // entry_type defaults to "emotion" for backwards compatibility with v2 databases
+    // entry_type defaults to "emotion" for v2 databases without the column, and
+    // any unrecognized value (e.g. a legacy "rest" row predating the v5
+    // migration, #435) also reads as "emotion" rather than failing the whole
+    // fetch — losing the journal to one stray value would be worse than the
+    // benign reclassification.
     let entryTypeString = sqlite3_column_text(statement, Int32(entryTypeCol)).map { String(cString: $0) } ?? "emotion"
-    guard let entryType = EntryType(rawValue: entryTypeString) else {
-      throw JournalDatabaseError.invalidData("Invalid entry_type value")
-    }
+    let entryType = EntryType(rawValue: entryTypeString) ?? .emotion
 
     guard let syncStatusString = sqlite3_column_text(statement, Int32(syncStatusCol)).map({ String(cString: $0) }),
           let syncStatus = SyncStatus(rawValue: syncStatusString)

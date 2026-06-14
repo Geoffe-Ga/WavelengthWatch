@@ -19,16 +19,20 @@ struct FlowStepReactionPolicyTests {
     }
   }
 
-  @Test("confirming and review steps do not pop")
-  func confirmingAndReview_doNotPop() {
+  @Test("confirming steps pop too, so the root-hosted confirmation alert shows (#450)")
+  func confirmingSteps_popToRoot() {
     for step in [
       FlowCoordinator.FlowStep.confirmingPrimary,
       .confirmingSecondary,
       .confirmingStrategy,
-      .review,
     ] {
-      #expect(!FlowStepReactionPolicy.reaction(for: step).popsToRoot)
+      #expect(FlowStepReactionPolicy.reaction(for: step).popsToRoot)
     }
+  }
+
+  @Test("only the review step stays put, since its sheet sits above the push")
+  func reviewStep_doesNotPop() {
+    #expect(!FlowStepReactionPolicy.reaction(for: .review).popsToRoot)
   }
 
   // MARK: - Review sheet

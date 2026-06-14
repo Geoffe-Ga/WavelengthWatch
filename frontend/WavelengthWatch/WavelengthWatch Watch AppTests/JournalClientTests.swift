@@ -194,65 +194,6 @@ struct JournalClientLocalFirstTests {
     let storedEntry = try repository.fetch(id: entry.id)
     #expect(storedEntry?.serverId == 999)
   }
-
-  // MARK: - REST Entry Tests
-
-  @Test func submitRestPeriod_createsRestEntryWithoutCurriculum() async throws {
-    let repository = InMemoryJournalRepository()
-    let syncSettings = SyncSettings(persistence: MockSyncSettingsPersistence())
-    syncSettings.cloudSyncEnabled = false
-    let apiClient = SuccessfulAPIClientSpy()
-    let client = JournalClient(
-      apiClient: apiClient,
-      repository: repository,
-      syncSettings: syncSettings
-    )
-
-    let entry = try await client.submitRestPeriod(initiatedBy: .self_initiated)
-
-    #expect(entry.entryType == .rest)
-    #expect(entry.curriculumID == nil)
-    #expect(entry.isRestEntry == true)
-    #expect(entry.syncStatus == .pending)
-    #expect(try repository.count() == 1)
-  }
-
-  @Test func submitRestPeriod_syncsWhenCloudSyncEnabled() async throws {
-    let repository = InMemoryJournalRepository()
-    let syncSettings = SyncSettings(persistence: MockSyncSettingsPersistence())
-    syncSettings.cloudSyncEnabled = true
-    let apiClient = RestAPIClientSpy()
-    let client = JournalClient(
-      apiClient: apiClient,
-      repository: repository,
-      syncSettings: syncSettings
-    )
-
-    let entry = try await client.submitRestPeriod(initiatedBy: .self_initiated)
-
-    #expect(entry.entryType == .rest)
-    #expect(entry.syncStatus == .synced)
-    #expect(entry.serverId == 888)
-    #expect(apiClient.postCalls.count == 1)
-  }
-
-  @Test func submitRestPeriod_savesLocallyEvenWhenSyncFails() async throws {
-    let repository = InMemoryJournalRepository()
-    let syncSettings = SyncSettings(persistence: MockSyncSettingsPersistence())
-    syncSettings.cloudSyncEnabled = true
-    let apiClient = FailingAPIClientSpy()
-    let client = JournalClient(
-      apiClient: apiClient,
-      repository: repository,
-      syncSettings: syncSettings
-    )
-
-    let entry = try await client.submitRestPeriod(initiatedBy: .self_initiated)
-
-    #expect(entry.entryType == .rest)
-    #expect(entry.syncStatus == .failed)
-    #expect(try repository.count() == 1)
-  }
 }
 
 /// Tests that verify JournalClient's integration with the offline journal
@@ -425,29 +366,6 @@ struct JournalClientQueueIntegrationTests {
     // The key is derived deterministically from the local entry ID, so retry
     // attempts from the sync service can reuse it and trigger backend dedup.
     #expect(apiClient.capturedHeaders?[JournalRequestHeader.idempotencyKey] == entry.id.uuidString)
-  }
-
-  // MARK: - REST Entries
-
-  @Test func submitRestPeriod_retryableError_enqueuesRestEntry() async throws {
-    let repository = InMemoryJournalRepository()
-    let queue = InMemoryJournalQueueSpy()
-    let syncSettings = SyncSettings(persistence: MockSyncSettingsPersistence())
-    syncSettings.cloudSyncEnabled = true
-    let apiClient = StubAPIClientSpy(postResult: .failure(APIClientError.badResponse(502)))
-    let client = JournalClient(
-      apiClient: apiClient,
-      repository: repository,
-      syncSettings: syncSettings,
-      queue: queue
-    )
-
-    await #expect(throws: JournalError.self) {
-      _ = try await client.submitRestPeriod(initiatedBy: .self_initiated)
-    }
-
-    #expect(queue.enqueuedEntries.count == 1)
-    #expect(queue.enqueuedEntries.first?.entryType == .rest)
   }
 }
 
@@ -645,31 +563,6 @@ final class TrackingAPIClientSpy: APIClientProtocol {
       strategyID: 5,
       initiatedBy: .self_initiated,
       entryType: .emotion
-    )
-    guard let typed = response as? T else {
-      throw URLError(.badServerResponse)
-    }
-    return typed
-  }
-}
-
-/// API client that simulates successful REST entry sync.
-final class RestAPIClientSpy: APIClientProtocol {
-  var postCalls: [(path: String, body: Any)] = []
-
-  func get<T: Decodable>(_ path: String) async throws -> T {
-    throw URLError(.badURL)
-  }
-
-  func post<T: Decodable>(_ path: String, body: some Encodable) async throws -> T {
-    postCalls.append((path, body))
-    let response = JournalResponseModel(
-      id: 888,
-      curriculumID: nil,
-      secondaryCurriculumID: nil,
-      strategyID: nil,
-      initiatedBy: .self_initiated,
-      entryType: .rest
     )
     guard let typed = response as? T else {
       throw URLError(.badServerResponse)

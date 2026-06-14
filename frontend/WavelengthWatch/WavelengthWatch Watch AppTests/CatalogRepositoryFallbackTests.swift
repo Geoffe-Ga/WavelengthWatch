@@ -31,14 +31,12 @@ struct CatalogRepositoryFallbackTests {
   private func makeRepository(
     remote: CatalogRemoteServicing,
     cache: CatalogCachePersisting,
-    now: Date,
-    ttl: TimeInterval = 60 * 60 * 24
+    now: Date
   ) -> CatalogRepository {
     CatalogRepository(
       remote: remote,
       cache: cache,
-      dateProvider: { now },
-      cacheTTL: ttl
+      dateProvider: { now }
     )
   }
 

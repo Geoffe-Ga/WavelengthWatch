@@ -71,6 +71,13 @@ final class PresentationCoordinator: ObservableObject {
   /// writing `true` requests it and writing `false` (a "Done" button or a
   /// swipe-dismiss) dismisses it through the queue policy, preserving the
   /// self-dismiss behavior the migrated sheets relied on.
+  ///
+  /// - Important: matching is by full `Equatable` value, so for cases that
+  ///   carry an associated value (e.g. `.storageError(reason:)`) the argument
+  ///   must equal the *active* value exactly — `isPresented(for:
+  ///   .storageError(reason: nil))` reads `false` while
+  ///   `.storageError(reason: "…")` is active. For those cases bind with a
+  ///   case-pattern-matching binding instead (see `RootPresentationHost`).
   func isPresented(for presentation: ActivePresentation) -> Binding<Bool> {
     Binding(
       get: { self.active == presentation },
@@ -104,7 +111,11 @@ final class PresentationCoordinator: ObservableObject {
     case idle
     case menu
     case onboarding
-    case storageError
+    /// The journal-storage failure warning. Carries the open-failure
+    /// `reason` (an `error.localizedDescription`, e.g. the failing SQLite
+    /// step) so the on-screen alert can surface it for diagnostics — a
+    /// watch screenshot then reveals the exact cause (#457 storage RCA).
+    case storageError(reason: String?)
     /// The "Would you like to log …?" journal confirmation, carrying the
     /// alert copy and the action to perform on "Yes".
     case logConfirmation(LogConfirmationRequest)

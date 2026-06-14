@@ -3,15 +3,16 @@
 <plist version="1.0">
 <dict>
     <key>API_BASE_URL</key>
-    <string>https://api.not-configured.local</string>
+    <string>https://wavelengthwatch-production.up.railway.app</string>
     <!--
     PRODUCTION CONFIGURATION
-    This file should contain production API URLs when shipping.
+    Points at the Railway-hosted backend (managed Postgres, auto-deploy on
+    merge to main). See backend/README.md "Deployment (Railway)".
 
     For local development:
     1. Copy APIConfiguration-Template.plist to APIConfiguration-Local.plist
-    2. Update with your local development URL
-    3. APIConfiguration-Local.plist will be loaded first if it exists
+    2. Update with your local development URL (e.g. http://<mac-ip>:8000)
+    3. APIConfiguration-Local.plist is loaded first if it exists (gitignored)
     -->
 </dict>
 </plist>

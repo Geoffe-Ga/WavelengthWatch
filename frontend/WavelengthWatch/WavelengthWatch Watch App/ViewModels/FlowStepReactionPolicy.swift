@@ -30,11 +30,18 @@ enum FlowStepReactionPolicy {
     FlowStepReaction(popsToRoot: popsToRoot(step), reviewSheet: reviewSheet(step))
   }
 
+  /// Every step except `.review` pops to root. The **confirming** steps pop
+  /// too (#450): the flow-confirmation alert (e.g. "Add Secondary Emotion") is
+  /// hosted on the root content, so if the user tapped an emotion inside a
+  /// pushed detail view the alert would otherwise wait until they backed out.
+  /// Only `.review` stays put — its sheet is presented above the push by
+  /// `RootPresentationHost`.
   private static func popsToRoot(_ step: FlowCoordinator.FlowStep) -> Bool {
     switch step {
-    case .selectingPrimary, .selectingSecondary, .selectingStrategy, .idle:
+    case .idle, .selectingPrimary, .selectingSecondary, .selectingStrategy,
+         .confirmingPrimary, .confirmingSecondary, .confirmingStrategy:
       true
-    case .confirmingPrimary, .confirmingSecondary, .confirmingStrategy, .review:
+    case .review:
       false
     }
   }

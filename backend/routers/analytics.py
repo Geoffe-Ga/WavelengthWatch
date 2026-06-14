@@ -110,7 +110,7 @@ def _calculate_medicinal_ratio(
 ) -> float:
     """Calculate ratio of medicinal entries (returns 0.0-1.0, not 0-100).
 
-    Only includes EMOTION entries (excludes REST entries).
+    Restricted to EMOTION entries (the only entry type).
     """
     statement = (
         select(Curriculum.dosage, func.count())
@@ -176,7 +176,7 @@ def _get_dominant_layer_and_phase(
 ) -> tuple[int | None, int | None]:
     """Get most frequent layer and phase from last 7 days.
 
-    Only includes EMOTION entries (excludes REST entries).
+    Restricted to EMOTION entries (the only entry type).
 
     Args:
         session: Database session
@@ -425,7 +425,7 @@ def get_emotional_landscape(
         start_date = end_date - timedelta(days=30)
 
     # Check if user has any EMOTION entries in the date range (efficient COUNT query)
-    # Excludes REST entries as they don't have emotional context
+    # Restricted to EMOTION entries (the only entry type)
     count_stmt = (
         select(func.count())
         .select_from(Journal)
@@ -951,7 +951,7 @@ def get_growth_indicators(
 
     # Use SQL aggregation to get unique layers and phases directly
     # This avoids loading all journal entries and N+1 curriculum lookups
-    # Only includes EMOTION entries (excludes REST entries)
+    # Restricted to EMOTION entries (the only entry type)
     layer_stmt = (
         select(func.count(func.distinct(Curriculum.layer_id)))
         .select_from(Journal)

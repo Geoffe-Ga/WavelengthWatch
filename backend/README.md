@@ -43,6 +43,24 @@ python -m backend.tools.seed_data
 - `APP_ENV` controls environment-specific behavior and defaults to `development`.
 - `CORS_ALLOWED_ORIGINS` should be a comma-separated list of allowed origins. It is required when `APP_ENV=production`; otherwise the API falls back to localhost defaults for development.
 
+## Deployment (Railway)
+
+The backend deploys to [Railway](https://railway.app) from `railway.toml` at the repo root, with managed Railway **Postgres** and auto-deploy on merge to `main`.
+
+- **Build/start**: Nixpacks installs from `backend/requirements.txt` and starts `uvicorn backend.app:app --host 0.0.0.0 --port $PORT`. Railway injects `$PORT`; never hardcode it.
+- **Health check**: Railway is configured to probe `/health` (returns `{"status":"ok"}`).
+- **Database**: the Railway Postgres plugin sets `DATABASE_URL`. The bare `postgres://` / `postgresql://` scheme is normalized to `postgresql+psycopg://` in `database.py` (psycopg 3 is the installed driver). Tables are created and CSV fixtures seeded idempotently on startup.
+- **CORS**: `APP_ENV` is left unset (development default). The watch is a native `URLSession` client, so CORS does not apply; setting `APP_ENV=production` without `CORS_ALLOWED_ORIGINS` would crash the app on boot. Set both only when a browser client is added.
+- **Required env vars on Railway**: `DATABASE_URL` (from the Postgres plugin). No secrets are committed to git.
+- **Redeploys**: triggered automatically on push to `main`; can also be redeployed manually from the Railway dashboard.
+
+To run against Postgres locally before deploying:
+
+```bash
+export DATABASE_URL='postgresql://localhost:5432/wavelength'  # add credentials as needed
+python -m uvicorn backend.app:app --reload
+```
+
 ## Privacy & Telemetry Guardrails
 
 - Logging is configured via `backend.logging_config.configure_logging()` (invoked during app startup) to redact sensitive identifiers such as `user_id`, `created_at`, and `secondary_curriculum_id` before any message is emitted. The filter also heuristically scrubs formatted strings and warns contributors to prefer structured payloads over f-strings for future proofing. See `tests/backend/test_logging_privacy.py` for coverage.

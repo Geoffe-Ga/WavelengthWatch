@@ -38,16 +38,16 @@ struct LogConfirmationRequest: Equatable {
 /// Performs the journal-logging action behind a `LogConfirmationRequest`.
 ///
 /// This is the single home for the branching the three leaf cards used to
-/// each duplicate in their private `handleLogAction`. While a guided-flow
-/// selection step is active (`selectingPrimary`/`selectingSecondary`/
-/// `selectingStrategy`) the confirmation captures into `FlowCoordinator`;
-/// every other step — including `idle` (a single tap from normal browsing) —
-/// quick-logs directly via `ContentViewModel.journal`. A tap from idle
-/// therefore persists immediately and shows feedback rather than auto-starting
-/// the multi-step flow. `perform` is `async` so the direct-log path can `await`
-/// the journal call (the cards previously wrapped it in a fire-and-forget
-/// `Task`); the flow-capture paths are synchronous and complete before the
-/// first await.
+/// each duplicate in their private `handleLogAction`. A tap from `idle`
+/// (normal browsing) starts the guided flow (`startPrimarySelection` +
+/// `capturePrimary`) so the secondary-emotion / strategy / review steps are
+/// offered (#445). While a selection step is active
+/// (`selectingPrimary`/`selectingSecondary`/`selectingStrategy`) the
+/// confirmation captures into `FlowCoordinator`; the remaining non-selecting
+/// steps (already inside the flow) log directly via `ContentViewModel.journal`.
+/// `perform` is `async` so the direct-log path can `await` the journal call
+/// (the cards previously wrapped it in a fire-and-forget `Task`); the
+/// flow-capture paths are synchronous and complete before the first await.
 @MainActor
 struct LogConfirmationHandler {
   let flowCoordinator: FlowCoordinator
@@ -61,10 +61,15 @@ struct LogConfirmationHandler {
         flowCoordinator.capturePrimary(entry)
       case .selectingSecondary:
         flowCoordinator.captureSecondary(entry)
-      case .idle, .confirmingPrimary, .confirmingSecondary,
+      case .idle:
+        // A tap from normal browsing starts the guided flow so the
+        // "Add Secondary Emotion" / strategy / review steps are offered (#445).
+        flowCoordinator.startPrimarySelection()
+        flowCoordinator.capturePrimary(entry)
+      case .confirmingPrimary, .confirmingSecondary,
            .selectingStrategy, .confirmingStrategy, .review:
-        // Non-selecting steps persist immediately and render feedback from the
-        // result; they never enter the guided flow or change layerFilterMode.
+        // Already inside the flow on a non-selecting step: persist immediately
+        // and render feedback from the result.
         await viewModel.journal(curriculumID: entry.id)
       }
     case let .strategy(strategy, curriculumID):

@@ -98,11 +98,6 @@ struct LocalJournalEntry: Codable, Identifiable, Equatable {
     self.retryCount = 0
   }
 
-  /// Whether this is a REST entry (for filtering in analytics).
-  var isRestEntry: Bool {
-    entryType == .rest
-  }
-
   /// Creates an entry from a backend response after successful sync.
   ///
   /// - Parameters:
