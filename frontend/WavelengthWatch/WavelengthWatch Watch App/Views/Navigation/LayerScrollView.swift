@@ -25,70 +25,77 @@ struct LayerScrollView: View {
 
   var body: some View {
     GeometryReader { geometry in
-      ScrollViewReader { proxy in
-        scrollView(geometry: geometry)
-          .scrollTargetBehavior(.paging)
-          .scrollPosition(id: Binding<Int?>(
-            get: { clampedSelection },
-            set: { newId in
-              if let newId, newId != layerSelection {
-                layerSelection = newId
-              }
-            }
-          ))
-          .digitalCrownRotation(
-            Binding<Double>(
-              get: { Double(clampedSelection) },
-              set: { newValue in
-                guard !viewModel.filteredLayers.isEmpty else { return }
-                let clampedValue = Int(round(newValue))
-                  .clamped(to: 0 ... (viewModel.filteredLayers.count - 1))
-                if clampedValue != layerSelection {
-                  layerSelection = clampedValue
+      // The chevron is a ZStack *sibling* of the scroll view, not an `.overlay`
+      // on it. As an overlay it shared the scroll view's gesture context — the
+      // paging scroll, `.digitalCrownRotation`, and `.simultaneousGesture` drag
+      // all competed for the touch and the `NavigationLink` never won, so the
+      // chevron rendered but couldn't be tapped (#466). As a sibling its taps
+      // are isolated from those gestures.
+      ZStack(alignment: .bottomTrailing) {
+        ScrollViewReader { proxy in
+          scrollView(geometry: geometry)
+            .scrollTargetBehavior(.paging)
+            .scrollPosition(id: Binding<Int?>(
+              get: { clampedSelection },
+              set: { newId in
+                if let newId, newId != layerSelection {
+                  layerSelection = newId
                 }
               }
-            ),
-            from: 0,
-            through: Double(max(viewModel.filteredLayers.count - 1, 0)),
-            by: 1.0,
-            sensitivity: .medium,
-            isContinuous: false,
-            isHapticFeedbackEnabled: true
-          )
-          .onChange(of: layerSelection) { _, newValue in
-            guard !viewModel.filteredLayers.isEmpty,
-                  newValue < viewModel.filteredLayers.count else { return }
-            withAnimation(.easeInOut(duration: 0.3)) {
-              proxy.scrollTo(newValue, anchor: .center)
-            }
-          }
-          .onAppear {
-            guard !viewModel.filteredLayers.isEmpty,
-                  layerSelection < viewModel.filteredLayers.count else { return }
-            proxy.scrollTo(layerSelection, anchor: .center)
-          }
-          .overlay(alignment: .trailing) {
-            sideIndicator(in: geometry.size)
-          }
-          .overlay(alignment: .bottomTrailing) {
-            navigationChevron
-          }
-          // DragGesture writes raw `layerSelection`; the bounds check uses
-          // `filteredLayers.count` since reads downstream are clamped via
-          // `clampedSelection`.
-          .simultaneousGesture(
-            DragGesture()
-              .onEnded { value in
-                let threshold: CGFloat = 30
-                if value.translation.height > threshold, layerSelection > 0 {
-                  layerSelection -= 1
-                } else if value.translation.height < -threshold,
-                          layerSelection < viewModel.filteredLayers.count - 1
-                {
-                  layerSelection += 1
+            ))
+            .digitalCrownRotation(
+              Binding<Double>(
+                get: { Double(clampedSelection) },
+                set: { newValue in
+                  guard !viewModel.filteredLayers.isEmpty else { return }
+                  let clampedValue = Int(round(newValue))
+                    .clamped(to: 0 ... (viewModel.filteredLayers.count - 1))
+                  if clampedValue != layerSelection {
+                    layerSelection = clampedValue
+                  }
                 }
+              ),
+              from: 0,
+              through: Double(max(viewModel.filteredLayers.count - 1, 0)),
+              by: 1.0,
+              sensitivity: .medium,
+              isContinuous: false,
+              isHapticFeedbackEnabled: true
+            )
+            .onChange(of: layerSelection) { _, newValue in
+              guard !viewModel.filteredLayers.isEmpty,
+                    newValue < viewModel.filteredLayers.count else { return }
+              withAnimation(.easeInOut(duration: 0.3)) {
+                proxy.scrollTo(newValue, anchor: .center)
               }
-          )
+            }
+            .onAppear {
+              guard !viewModel.filteredLayers.isEmpty,
+                    layerSelection < viewModel.filteredLayers.count else { return }
+              proxy.scrollTo(layerSelection, anchor: .center)
+            }
+            .overlay(alignment: .trailing) {
+              sideIndicator(in: geometry.size)
+            }
+            // DragGesture writes raw `layerSelection`; the bounds check uses
+            // `filteredLayers.count` since reads downstream are clamped via
+            // `clampedSelection`.
+            .simultaneousGesture(
+              DragGesture()
+                .onEnded { value in
+                  let threshold: CGFloat = 30
+                  if value.translation.height > threshold, layerSelection > 0 {
+                    layerSelection -= 1
+                  } else if value.translation.height < -threshold,
+                            layerSelection < viewModel.filteredLayers.count - 1
+                  {
+                    layerSelection += 1
+                  }
+                }
+            )
+        }
+
+        navigationChevron
       }
     }
   }
@@ -129,10 +136,14 @@ struct LayerScrollView: View {
               .fill(Color(stage: layer.color).opacity(0.3))
               .frame(width: 32, height: 32)
           )
+          // A generous, fully-hit-testable tap target (the bare SF Symbol is
+          // only ~22pt) so the tap lands without pixel precision (#466).
+          .frame(width: 44, height: 44)
+          .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
-      .padding(.trailing, 12)
-      .padding(.bottom, 20)
+      .padding(.trailing, 8)
+      .padding(.bottom, 16)
     }
   }
 
