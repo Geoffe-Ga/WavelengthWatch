@@ -99,7 +99,10 @@ struct LayerScrollView: View {
   private var currentLayer: CatalogLayerModel? {
     let layers = viewModel.filteredLayers
     guard !layers.isEmpty else { return nil }
-    return layers[clampedSelection]
+    // Re-clamp against this exact snapshot: `clampedSelection` reads
+    // `filteredLayers.count` in a separate access, so a filter change between
+    // the two could momentarily push it past this `layers`' bounds.
+    return layers[min(clampedSelection, layers.count - 1)]
   }
 
   /// Single navigation chevron, pinned to the viewport's bottom-trailing
@@ -117,10 +120,13 @@ struct LayerScrollView: View {
   @ViewBuilder
   private var navigationChevron: some View {
     if let layer = currentLayer, !layer.phases.isEmpty {
+      // `normalizedIndex` is `(selection - 1 + n) % n`, which for any phaseCount
+      // n > 0 (guaranteed by the `!isEmpty` check) returns a value in 0..<n — so
+      // it indexes `phases` safely without a further clamp.
       let normalized = PhaseNavigator.normalizedIndex(
         phaseSelection, phaseCount: layer.phases.count
       )
-      let phase = layer.phases[normalized.clamped(to: 0 ... (layer.phases.count - 1))]
+      let phase = layer.phases[normalized]
       NavigationLink(value: DetailDestination.forPhase(in: layer, phase: phase)) {
         Image(systemName: "chevron.right.circle.fill")
           .foregroundStyle(.white.opacity(0.8))
