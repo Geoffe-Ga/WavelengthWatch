@@ -21,6 +21,7 @@ struct AnalyticsView: View {
   init(
     journalRepository: JournalRepositoryProtocol,
     catalogRepository: CatalogRepositoryProtocol,
+    catalog: CatalogResponseModel? = nil,
     syncSettings: SyncSettings = SyncSettings()
   ) {
     self.journalRepository = journalRepository
@@ -30,20 +31,19 @@ struct AnalyticsView: View {
     let apiClient = APIClient(baseURL: configuration.apiBaseURL)
     let analyticsService = AnalyticsService(apiClient: apiClient)
 
-    // Create local calculator with cached catalog for offline support
-    let localCalculator: LocalAnalyticsCalculatorProtocol? = {
-      guard let catalog = catalogRepository.cachedCatalog() else {
-        return nil
-      }
-      return LocalAnalyticsCalculator(catalog: catalog)
-    }()
+    // Prefer the in-memory catalog the app already loaded; fall back to the
+    // on-disk cache. The disk cache can be empty even when the catalog is loaded
+    // (the backend fetch succeeded but the cache write didn't persist), which
+    // used to leave offline analytics permanently "unavailable" (#468).
+    let resolvedCatalog = catalog ?? catalogRepository.cachedCatalog()
+    let localCalculator: LocalAnalyticsCalculatorProtocol? =
+      resolvedCatalog.map { LocalAnalyticsCalculator(catalog: $0) }
 
     _viewModel = StateObject(
       wrappedValue: AnalyticsViewModel(
         analyticsService: analyticsService,
         localCalculator: localCalculator,
         journalRepository: journalRepository,
-        catalogRepository: catalogRepository,
         syncSettings: syncSettings
       )
     )

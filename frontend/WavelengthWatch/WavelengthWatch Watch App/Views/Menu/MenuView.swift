@@ -33,7 +33,8 @@ struct MenuView: View {
 
       NavigationLink(destination: AnalyticsView(
         journalRepository: viewModel.journalRepository,
-        catalogRepository: viewModel.catalogRepository
+        catalogRepository: viewModel.catalogRepository,
+        catalog: viewModel.loadedCatalog
       )) {
         Label("Analytics", systemImage: "chart.bar")
       }
