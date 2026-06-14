@@ -13,10 +13,10 @@ enum JournalDatabaseError: Error, Equatable {
   case databaseNotOpen
 }
 
-/// TEMPORARY (#457 Phase 0): surface the real SQLite reason + failing step via
-/// `error.localizedDescription` (already logged in `makeJournalRepository`), so
-/// the journal-open failure is no longer diagnosed blind. Fold into a proper
-/// error-presentation pass after RCA.
+/// Surfaces the real SQLite reason + failing step via `localizedDescription`,
+/// so a journal-open failure isn't diagnosed blind. This reason is both logged
+/// in `makeJournalRepository` and shown in the on-device "Storage Error" alert
+/// (#462), so it's a load-bearing part of the error-presentation path.
 extension JournalDatabaseError: LocalizedError {
   var errorDescription: String? {
     switch self {
