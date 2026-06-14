@@ -25,10 +25,15 @@ class InitiatedBy(StrEnum):
 
 
 class EntryType(StrEnum):
-    """Type of journal entry."""
+    """Type of journal entry.
+
+    Only ``EMOTION`` remains; the rest-period feature was removed (#435).
+    Legacy ``"rest"`` rows are rewritten to ``"emotion"`` on startup
+    (see ``rewrite_legacy_rest_entries``) so this enum can drop the value
+    without breaking reads of pre-existing data.
+    """
 
     EMOTION = "emotion"
-    REST = "rest"
 
 
 class Layer(SQLModel, table=True):

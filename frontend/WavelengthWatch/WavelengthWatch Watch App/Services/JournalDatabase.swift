@@ -47,11 +47,11 @@ extension JournalDatabaseError: LocalizedError {
 final class JournalDatabase {
   /// Current schema version for migration tracking.
   ///
-  /// There are only three column-changing migrations (`migrateToV2`/`V3`); the
-  /// former v4 step added analytics indexes only, which are now ensured on every
-  /// open by `createIndexes()`. The version still advances to 4 so databases
-  /// already at 4 aren't seen as stale — hence 4 with no `migrateToV4`.
-  static let schemaVersion = 4
+  /// `migrateToV2`/`V3` are column-changing migrations. The former v4 step added
+  /// analytics indexes only, now ensured on every open by `createIndexes()`
+  /// (hence no `migrateToV4`). v5 is a data migration that rewrites the removed
+  /// `entry_type = 'rest'` value to `'emotion'` (#435).
+  static let schemaVersion = 5
 
   /// SQLite database pointer.
   private var db: OpaquePointer?
@@ -251,8 +251,10 @@ final class JournalDatabase {
       try migrateToV3()
     }
     // The former v4 step only added analytics indexes; those are now ensured on
-    // every open by `createIndexes()`, so there is no column-changing migration
-    // past v3. The version is still advanced to `schemaVersion` below.
+    // every open by `createIndexes()`, so there is no v4 column migration.
+    if currentVersion < 5 {
+      try migrateRestEntriesToEmotion()
+    }
 
     // Set the schema version by collapsing `schema_version` to a single
     // authoritative row. An older build's `INSERT OR IGNORE` could have left a
@@ -345,6 +347,21 @@ final class JournalDatabase {
         sqlite3_free(errorMessage)
         throw JournalDatabaseError.failedToUpdate(message)
       }
+    }
+  }
+
+  /// Migrates to v5: rewrites the removed `entry_type = 'rest'` value to
+  /// `'emotion'`. The rest-period feature was removed (#435); any rows it left
+  /// behind would otherwise carry a value the app no longer understands.
+  private func migrateRestEntriesToEmotion() throws {
+    guard let db else { throw JournalDatabaseError.databaseNotOpen }
+
+    let sql = "UPDATE journal_entry SET entry_type = 'emotion' WHERE entry_type = 'rest'"
+    var errorMessage: UnsafeMutablePointer<CChar>?
+    if sqlite3_exec(db, sql, nil, nil, &errorMessage) != SQLITE_OK {
+      let message = errorMessage.map { String(cString: $0) } ?? "Unknown error"
+      sqlite3_free(errorMessage)
+      throw JournalDatabaseError.failedToUpdate(message)
     }
   }
 
@@ -698,11 +715,13 @@ final class JournalDatabase {
       throw JournalDatabaseError.invalidData("Invalid initiated_by value")
     }
 
-    // entry_type defaults to "emotion" for backwards compatibility with v2 databases
+    // entry_type defaults to "emotion" for v2 databases without the column, and
+    // any unrecognized value (e.g. a legacy "rest" row predating the v5
+    // migration, #435) also reads as "emotion" rather than failing the whole
+    // fetch — losing the journal to one stray value would be worse than the
+    // benign reclassification.
     let entryTypeString = sqlite3_column_text(statement, Int32(entryTypeCol)).map { String(cString: $0) } ?? "emotion"
-    guard let entryType = EntryType(rawValue: entryTypeString) else {
-      throw JournalDatabaseError.invalidData("Invalid entry_type value")
-    }
+    let entryType = EntryType(rawValue: entryTypeString) ?? .emotion
 
     guard let syncStatusString = sqlite3_column_text(statement, Int32(syncStatusCol)).map({ String(cString: $0) }),
           let syncStatus = SyncStatus(rawValue: syncStatusString)

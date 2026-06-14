@@ -127,43 +127,4 @@ struct LocalJournalEntryTests {
     #expect(decoded.initiatedBy == entry.initiatedBy)
     #expect(decoded.syncStatus == entry.syncStatus)
   }
-
-  @Test func createsRestEntryWithNilCurriculum() {
-    let entry = LocalJournalEntry(
-      createdAt: Date(),
-      userID: 123,
-      curriculumID: nil,
-      initiatedBy: .self_initiated,
-      entryType: .rest
-    )
-
-    #expect(entry.entryType == .rest)
-    #expect(entry.curriculumID == nil)
-    #expect(entry.isRestEntry == true)
-    #expect(entry.syncStatus == .pending)
-  }
-
-  @Test func isRestEntry_returnsFalse_forEmotionEntries() {
-    let entry = LocalJournalEntry(
-      createdAt: Date(),
-      userID: 123,
-      curriculumID: 1,
-      initiatedBy: .self_initiated,
-      entryType: .emotion
-    )
-
-    #expect(entry.isRestEntry == false)
-  }
-
-  @Test func isRestEntry_returnsTrue_forRestEntries() {
-    let entry = LocalJournalEntry(
-      createdAt: Date(),
-      userID: 123,
-      curriculumID: nil,
-      initiatedBy: .self_initiated,
-      entryType: .rest
-    )
-
-    #expect(entry.isRestEntry == true)
-  }
 }
