@@ -26,6 +26,11 @@ struct CatalogPhaseModel: Codable, Identifiable, Equatable, Hashable {
 }
 
 struct CatalogLayerModel: Codable, Identifiable, Equatable, Hashable {
+  /// The strategies layer's id. It routes to the strategy list rather than a
+  /// curriculum (see `DetailDestination.forPhase`); naming it survives a future
+  /// data change that the bare literal `0` would not.
+  static let strategiesLayerID = 0
+
   let id: Int
   let color: String
   let title: String

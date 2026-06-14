@@ -70,6 +70,9 @@ struct LayerScrollView: View {
           .overlay(alignment: .trailing) {
             sideIndicator(in: geometry.size)
           }
+          .overlay(alignment: .bottomTrailing) {
+            navigationChevron
+          }
           // DragGesture writes raw `layerSelection`; the bounds check uses
           // `filteredLayers.count` since reads downstream are clamped via
           // `clampedSelection`.
@@ -87,6 +90,49 @@ struct LayerScrollView: View {
               }
           )
       }
+    }
+  }
+
+  // MARK: - Navigation chevron
+
+  /// The layer currently centered in the vertical scroller. Clamps the raw
+  /// `layerSelection` against this single `filteredLayers` snapshot, so it can't
+  /// read out of bounds if the filter changes mid-render.
+  private var currentLayer: CatalogLayerModel? {
+    let layers = viewModel.filteredLayers
+    guard !layers.isEmpty else { return nil }
+    return layers[min(max(layerSelection, 0), layers.count - 1)]
+  }
+
+  /// The single navigation chevron, pinned to the viewport's bottom-trailing
+  /// corner — one always-present chevron rather than one per page, which a
+  /// viewport-overflowing card could clip out of sight (#457). Its phase is read
+  /// from `phaseSelection` (the `TabView`'s own binding) so the destination
+  /// tracks the page on screen even mid-scroll.
+  @ViewBuilder
+  private var navigationChevron: some View {
+    if let layer = currentLayer, !layer.phases.isEmpty {
+      // `phaseSelection` is the TabView's 1-based tag (tag 0 is the infinite-
+      // scroll lead-in page). `normalizedIndex` maps it back with
+      // `(tag - 1 + n) % n`, always in 0..<n for n > 0 (guaranteed by
+      // `!phases.isEmpty`) — so it indexes `phases` safely without a clamp.
+      let normalized = PhaseNavigator.normalizedIndex(
+        phaseSelection, phaseCount: layer.phases.count
+      )
+      let phase = layer.phases[normalized]
+      NavigationLink(value: DetailDestination.forPhase(in: layer, phase: phase)) {
+        Image(systemName: "chevron.right.circle.fill")
+          .foregroundStyle(.white.opacity(0.8))
+          .font(.title2)
+          .background(
+            Circle()
+              .fill(Color(stage: layer.color).opacity(0.3))
+              .frame(width: 32, height: 32)
+          )
+      }
+      .buttonStyle(.plain)
+      .padding(.trailing, 12)
+      .padding(.bottom, 20)
     }
   }
 
