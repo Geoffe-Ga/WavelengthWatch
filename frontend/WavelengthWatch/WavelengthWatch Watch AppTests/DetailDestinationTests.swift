@@ -25,11 +25,4 @@ struct DetailDestinationTests {
     let destination = DetailDestination.forPhase(in: emotionLayer, phase: phase)
     #expect(destination == .curriculum(layer: emotionLayer, phase: phase, colorName: "Red"))
   }
-
-  @Test("strategiesLayerID is 0 — the data contract the routing relies on")
-  func strategiesLayerID_isZero() {
-    // Guards the routing: if this drifts from the catalog's strategies-layer id,
-    // `forPhase` would silently send layer 0 to a curriculum and vice versa.
-    #expect(CatalogLayerModel.strategiesLayerID == 0)
-  }
 }

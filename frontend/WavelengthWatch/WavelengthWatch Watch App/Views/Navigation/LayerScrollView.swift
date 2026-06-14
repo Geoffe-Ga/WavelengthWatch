@@ -95,34 +95,27 @@ struct LayerScrollView: View {
 
   // MARK: - Navigation chevron
 
-  /// The layer currently centered in the vertical scroller.
+  /// The layer currently centered in the vertical scroller. Clamps the raw
+  /// `layerSelection` against this single `filteredLayers` snapshot, so it can't
+  /// read out of bounds if the filter changes mid-render.
   private var currentLayer: CatalogLayerModel? {
     let layers = viewModel.filteredLayers
     guard !layers.isEmpty else { return nil }
-    // Re-clamp against this exact snapshot: `clampedSelection` reads
-    // `filteredLayers.count` in a separate access, so a filter change between
-    // the two could momentarily push it past this `layers`' bounds.
-    return layers[min(clampedSelection, layers.count - 1)]
+    return layers[min(max(layerSelection, 0), layers.count - 1)]
   }
 
-  /// Single navigation chevron, pinned to the viewport's bottom-trailing
-  /// corner, navigating to the currently centered layer/phase. Replaces the
-  /// former per-page chevron (one per `PhasePageView`), which a viewport-
-  /// overflowing card could push out of sight and which lazily realized pages
-  /// left intermittently uncomposited (#457). One always-present chevron at a
-  /// fixed viewport position sidesteps both.
-  ///
-  /// The phase is read straight from `phaseSelection` — the same binding the
-  /// inner `TabView` is driven by — and normalized with the same
-  /// `PhaseNavigator` math the pages use, so the destination always matches the
-  /// page actually on screen, even mid-scroll (no reliance on the separately
-  /// derived `selectedPhaseIndex`, which can lag a render behind).
+  /// The single navigation chevron, pinned to the viewport's bottom-trailing
+  /// corner — one always-present chevron rather than one per page, which a
+  /// viewport-overflowing card could clip out of sight (#457). Its phase is read
+  /// from `phaseSelection` (the `TabView`'s own binding) so the destination
+  /// tracks the page on screen even mid-scroll.
   @ViewBuilder
   private var navigationChevron: some View {
     if let layer = currentLayer, !layer.phases.isEmpty {
-      // `normalizedIndex` is `(selection - 1 + n) % n`, which for any phaseCount
-      // n > 0 (guaranteed by the `!isEmpty` check) returns a value in 0..<n — so
-      // it indexes `phases` safely without a further clamp.
+      // `phaseSelection` is the TabView's 1-based tag (tag 0 is the infinite-
+      // scroll lead-in page). `normalizedIndex` maps it back with
+      // `(tag - 1 + n) % n`, always in 0..<n for n > 0 (guaranteed by
+      // `!phases.isEmpty`) — so it indexes `phases` safely without a clamp.
       let normalized = PhaseNavigator.normalizedIndex(
         phaseSelection, phaseCount: layer.phases.count
       )
