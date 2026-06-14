@@ -49,6 +49,10 @@ enum FlowStepReactionPolicy {
     }
   }
 
+  /// Only `.review` presents the sheet. Every other step requests
+  /// `.dismissIfActive` — a deliberate no-op when the review sheet isn't the
+  /// active presentation (e.g. `.idle`), so a transition can clear a lingering
+  /// review sheet without disturbing any other active presentation.
   private static func reviewSheet(_ step: FlowCoordinator.FlowStep) -> ReviewSheetAction {
     step == .review ? .present : .dismissIfActive
   }
