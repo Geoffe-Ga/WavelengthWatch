@@ -64,63 +64,74 @@ final class AnalyticsViewModel: ObservableObject {
     }
   }
 
+  /// Why a local analytics calculation couldn't be produced. Surfaced in the
+  /// user-facing error so a blind "unavailable" no longer hides the cause (#470).
+  /// Conforms to `LocalizedError` so `localizedDescription` yields the reason
+  /// directly — no helper to forget at a call site.
+  private enum LocalCalculationError: LocalizedError {
+    case noCalculator // no in-memory or cached catalog to build the calculator
+    case noRepository // journal storage not wired
+    case fetchFailed(String) // reading journal entries threw
+
+    var errorDescription: String? {
+      switch self {
+      case .noCalculator: "no catalog is loaded yet"
+      case .noRepository: "journal storage is unavailable"
+      case let .fetchFailed(message): "couldn't read journal entries — \(message)"
+      }
+    }
+  }
+
   /// Loads from backend with fallback to local calculator on backend error.
   private func loadWithBackendFallback() async {
     do {
       let userId = numericUserIdentifier()
       let overview = try await analyticsService.getOverview(userId: userId)
       state = .loaded(overview)
-    } catch {
-      // Try local fallback if available
-      if let localOverview = await tryLocalCalculation() {
-        state = .loaded(localOverview)
-      } else {
-        state = .error("Failed to load analytics: \(error.localizedDescription)")
+    } catch let backendError {
+      do {
+        state = try .loaded(calculateLocally())
+      } catch {
+        state = .error(
+          "Failed to load analytics: \(backendError.localizedDescription) "
+            + "(local: \(error.localizedDescription))"
+        )
       }
     }
   }
 
   /// Loads exclusively from the local calculator (cloud sync disabled mode).
   private func loadFromLocalOnly() async {
-    if let localOverview = await tryLocalCalculation() {
-      state = .loaded(localOverview)
-    } else {
-      // Reached only when the view is constructed without local components
-      // (a wiring bug, not user-facing). Avoid telling a user who deliberately
-      // disabled cloud sync to "enable cloud sync".
-      state = .error("Analytics are temporarily unavailable. Please try again later.")
+    do {
+      state = try .loaded(calculateLocally())
+    } catch {
+      state = .error(
+        "Analytics are temporarily unavailable. Please try again later. "
+          + "(\(error.localizedDescription))"
+      )
     }
   }
 
-  /// Attempts to calculate analytics from local storage.
-  ///
-  /// - Returns: Locally calculated overview if all components available, nil otherwise
-  private func tryLocalCalculation() async -> AnalyticsOverview? {
-    // The calculator already holds the catalog it was built with, so require
-    // only it and the journal repository. The previous extra
-    // `catalogRepository.cachedCatalog()` guard was unused yet could veto a
-    // perfectly good calculation whenever the on-disk cache was empty (#468).
-    guard
-      let calculator = localCalculator,
-      let repository = journalRepository
-    else {
-      return nil
-    }
+  /// Calculates analytics from local storage, throwing a `LocalCalculationError`
+  /// that names the failing step so the cause is never silently swallowed.
+  private func calculateLocally() throws -> AnalyticsOverview {
+    guard let calculator = localCalculator else { throw LocalCalculationError.noCalculator }
+    guard let repository = journalRepository else { throw LocalCalculationError.noRepository }
 
+    let entries: [LocalJournalEntry]
     do {
-      let entries = try repository.fetchAll()
-      let endDate = Date()
-      let startDate = Calendar.current.date(byAdding: .day, value: -30, to: endDate) ?? endDate
-
-      return calculator.calculateOverview(
-        entries: entries,
-        startDate: startDate,
-        endDate: endDate
-      )
+      entries = try repository.fetchAll()
     } catch {
-      print("⚠️ Local analytics calculation failed: \(error.localizedDescription)")
-      return nil
+      throw LocalCalculationError.fetchFailed(error.localizedDescription)
     }
+
+    let endDate = Date()
+    let startDate = Calendar.current.date(byAdding: .day, value: -30, to: endDate) ?? endDate
+    return calculator.calculateOverview(
+      entries: entries,
+      startDate: startDate,
+      endDate: endDate
+    )
   }
 
   /// Retries loading analytics after an error.
