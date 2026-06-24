@@ -289,6 +289,85 @@ struct JournalRepositoryTests {
     return false
   }
 
+  @Test("fetchAll tolerates a row with an unrecognized sync_status (#472)")
+  func fetchAll_tolerantOfInvalidSyncStatus() throws {
+    let tempPath = NSTemporaryDirectory() + UUID().uuidString + ".db"
+    defer { try? FileManager.default.removeItem(atPath: tempPath) }
+
+    let db = JournalDatabase(path: tempPath)
+    try db.open()
+    let entry = LocalJournalEntry(
+      createdAt: Date(), userID: 1, curriculumID: 1,
+      initiatedBy: .self_initiated, entryType: .emotion
+    )
+    try db.insert(entry)
+
+    // Corrupt sync_status AFTER open so the v6 migration can't normalize it —
+    // this exercises parseEntry's tolerance directly. An older build could have
+    // written a value the current `SyncStatus` enum no longer recognizes.
+    #expect(Self.execRaw(
+      "UPDATE journal_entry SET sync_status = 'syncing' WHERE id = '\(entry.id.uuidString)'",
+      at: tempPath
+    ))
+
+    // fetchAll must NOT throw; the stray value reads as pending. Previously one
+    // such row broke every full-table read (history, analytics, sync).
+    let all = try db.fetchAll()
+    #expect(all.count == 1)
+    #expect(all.first?.syncStatus == .pending)
+    db.close()
+  }
+
+  @Test("open() normalizes an out-of-range sync_status to pending on disk (#472 v6)")
+  func open_v6NormalizesInvalidSyncStatus() throws {
+    let tempPath = NSTemporaryDirectory() + UUID().uuidString + ".db"
+    defer { try? FileManager.default.removeItem(atPath: tempPath) }
+
+    let first = JournalDatabase(path: tempPath)
+    try first.open()
+    let entry = LocalJournalEntry(
+      createdAt: Date(), userID: 1, curriculumID: 1,
+      initiatedBy: .self_initiated, entryType: .emotion
+    )
+    try first.insert(entry)
+    first.close()
+
+    // Corrupt the row and roll the stored schema version below 6 so v6 runs.
+    #expect(Self.execRaw(
+      "UPDATE journal_entry SET sync_status = 'syncing' WHERE id = '\(entry.id.uuidString)'",
+      at: tempPath
+    ))
+    #expect(Self.execRaw("UPDATE schema_version SET version = 5", at: tempPath))
+
+    let reopened = JournalDatabase(path: tempPath)
+    #expect(throws: Never.self) { try reopened.open() }
+    reopened.close()
+
+    #expect(Self.rawSyncStatus(forID: entry.id, at: tempPath) == "pending")
+  }
+
+  /// Runs raw SQL via a separate connection (test seeding / corruption).
+  @discardableResult
+  private static func execRaw(_ sql: String, at path: String) -> Bool {
+    var raw: OpaquePointer?
+    guard sqlite3_open(path, &raw) == SQLITE_OK else { return false }
+    defer { sqlite3_close(raw) }
+    return sqlite3_exec(raw, sql, nil, nil, nil) == SQLITE_OK
+  }
+
+  /// Reads one entry's `sync_status` via a raw connection.
+  private static func rawSyncStatus(forID id: UUID, at path: String) -> String? {
+    var raw: OpaquePointer?
+    guard sqlite3_open(path, &raw) == SQLITE_OK else { return nil }
+    defer { sqlite3_close(raw) }
+    var statement: OpaquePointer?
+    let sql = "SELECT sync_status FROM journal_entry WHERE id = '\(id.uuidString)'"
+    guard sqlite3_prepare_v2(raw, sql, -1, &statement, nil) == SQLITE_OK else { return nil }
+    defer { sqlite3_finalize(statement) }
+    guard sqlite3_step(statement) == SQLITE_ROW else { return nil }
+    return sqlite3_column_text(statement, 0).map { String(cString: $0) }
+  }
+
   @Test func journalDatabaseError_localizedDescription_surfacesReason() {
     // The journal-open failure log and the on-device Storage Error alert (#462)
     // both rely on `localizedDescription` carrying the real SQLite reason +

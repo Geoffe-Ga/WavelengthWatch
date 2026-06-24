@@ -50,8 +50,9 @@ final class JournalDatabase {
   /// `migrateToV2`/`V3` are column-changing migrations. The former v4 step added
   /// analytics indexes only, now ensured on every open by `createIndexes()`
   /// (hence no `migrateToV4`). v5 is a data migration that rewrites the removed
-  /// `entry_type = 'rest'` value to `'emotion'` (#435).
-  static let schemaVersion = 5
+  /// `entry_type = 'rest'` value to `'emotion'` (#435). v6 normalizes any
+  /// out-of-range `sync_status` value back to `'pending'` (#472).
+  static let schemaVersion = 6
 
   /// SQLite database pointer.
   private var db: OpaquePointer?
@@ -255,6 +256,9 @@ final class JournalDatabase {
     if currentVersion < 5 {
       try migrateRestEntriesToEmotion()
     }
+    if currentVersion < 6 {
+      try migrateInvalidSyncStatusToPending()
+    }
 
     // Set the schema version by collapsing `schema_version` to a single
     // authoritative row. An older build's `INSERT OR IGNORE` could have left a
@@ -357,6 +361,27 @@ final class JournalDatabase {
     guard let db else { throw JournalDatabaseError.databaseNotOpen }
 
     let sql = "UPDATE journal_entry SET entry_type = 'emotion' WHERE entry_type = 'rest'"
+    var errorMessage: UnsafeMutablePointer<CChar>?
+    if sqlite3_exec(db, sql, nil, nil, &errorMessage) != SQLITE_OK {
+      let message = errorMessage.map { String(cString: $0) } ?? "Unknown error"
+      sqlite3_free(errorMessage)
+      throw JournalDatabaseError.failedToUpdate(message)
+    }
+  }
+
+  /// Migrates to v6: normalizes any `sync_status` value outside the current
+  /// `SyncStatus` set (`pending`/`synced`/`failed`) back to `'pending'`. Older
+  /// builds wrote values the enum no longer recognizes; left as-is, a single
+  /// such row makes `parseEntry` throw and breaks every full-table read —
+  /// journal history, analytics, and sync (#472). Rewriting to `'pending'` is
+  /// safe: the entry simply re-syncs on the next cycle.
+  private func migrateInvalidSyncStatusToPending() throws {
+    guard let db else { throw JournalDatabaseError.databaseNotOpen }
+
+    let sql = """
+      UPDATE journal_entry SET sync_status = 'pending'
+      WHERE sync_status NOT IN ('pending', 'synced', 'failed')
+    """
     var errorMessage: UnsafeMutablePointer<CChar>?
     if sqlite3_exec(db, sql, nil, nil, &errorMessage) != SQLITE_OK {
       let message = errorMessage.map { String(cString: $0) } ?? "Unknown error"
@@ -694,11 +719,13 @@ final class JournalDatabase {
     let lastSyncAttemptCol = 10
     let retryCountCol = 11
 
-    // Parse required fields
+    // A row whose primary key can't be parsed is unusable, so skip it (return
+    // nil) rather than throwing — one corrupt row must not fail the entire
+    // fetch and break every reader (journal history, analytics, sync) (#472).
     guard let idString = sqlite3_column_text(statement, Int32(idCol)).map({ String(cString: $0) }),
           let id = UUID(uuidString: idString)
     else {
-      throw JournalDatabaseError.invalidData("Invalid or missing ID")
+      return nil
     }
 
     let createdAt = Date(timeIntervalSince1970: sqlite3_column_double(statement, Int32(createdAtCol)))
@@ -709,11 +736,11 @@ final class JournalDatabase {
       ? Int(sqlite3_column_int64(statement, Int32(curriculumIdCol)))
       : nil
 
-    guard let initiatedByString = sqlite3_column_text(statement, Int32(initiatedByCol)).map({ String(cString: $0) }),
-          let initiatedBy = InitiatedBy(rawValue: initiatedByString)
-    else {
-      throw JournalDatabaseError.invalidData("Invalid initiated_by value")
-    }
+    // Unrecognized initiated_by reads as self-initiated rather than failing the
+    // whole fetch (#472), mirroring entry_type / sync_status resilience.
+    let initiatedByString = sqlite3_column_text(statement, Int32(initiatedByCol))
+      .map { String(cString: $0) } ?? ""
+    let initiatedBy = InitiatedBy(rawValue: initiatedByString) ?? .self_initiated
 
     // entry_type defaults to "emotion" for v2 databases without the column, and
     // any unrecognized value (e.g. a legacy "rest" row predating the v5
@@ -723,11 +750,13 @@ final class JournalDatabase {
     let entryTypeString = sqlite3_column_text(statement, Int32(entryTypeCol)).map { String(cString: $0) } ?? "emotion"
     let entryType = EntryType(rawValue: entryTypeString) ?? .emotion
 
-    guard let syncStatusString = sqlite3_column_text(statement, Int32(syncStatusCol)).map({ String(cString: $0) }),
-          let syncStatus = SyncStatus(rawValue: syncStatusString)
-    else {
-      throw JournalDatabaseError.invalidData("Invalid sync_status value")
-    }
+    // Unrecognized sync_status (e.g. a value written by an older build) reads as
+    // pending rather than throwing — losing the whole journal to one stray value
+    // is far worse, and a pending entry simply re-syncs (#472). The v6 migration
+    // also normalizes such values on disk.
+    let syncStatusString = sqlite3_column_text(statement, Int32(syncStatusCol))
+      .map { String(cString: $0) } ?? ""
+    let syncStatus = SyncStatus(rawValue: syncStatusString) ?? .pending
 
     // Parse optional fields
     var entry = LocalJournalEntry(
