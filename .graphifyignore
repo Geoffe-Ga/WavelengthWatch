@@ -1,0 +1,13 @@
+# Paths excluded from graphify knowledge-graph extraction.
+# Skill/agent scaffolding and store assets are process noise, not domain knowledge.
+.claude/
+.github/
+store-assets/
+prompts/
+plan/
+node_modules/
+build/
+DerivedData/
+*.xcassets/
+graphify-out/
+*.log

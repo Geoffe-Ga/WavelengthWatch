@@ -88,3 +88,18 @@ cd frontend/WavelengthWatch
 ```
 
 After fixing the `@StateObject` initialization bug (commit 3945b6a), all test suites can run together on a single simulator. The optimized mode is ~12x faster than individual execution. See `CLAUDE.md` for more testing details.
+
+## Knowledge graph
+
+This repo maintains a [graphify](https://github.com/Graphify-Labs/graphify)
+knowledge graph in `graphify-out/` (committed) so the
+[adepthood](https://github.com/Geoffe-Ga/adepthood) hub can merge it into the
+ecosystem pan-graph. CI keeps it fresh on every push (AST-only, free) and
+refreshes the semantic layer weekly when an `ANTHROPIC_API_KEY` secret is
+configured — see `.github/workflows/graph-update.yml`.
+
+```bash
+pip install graphifyy==0.9.17
+graphify query "which router serves curriculum entries"
+graphify update .   # after code changes; no API key needed
+```
