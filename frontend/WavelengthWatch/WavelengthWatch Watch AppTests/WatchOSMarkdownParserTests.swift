@@ -110,8 +110,7 @@ struct WatchOSMarkdownParserTests {
   @Test("Parses multiple paragraphs separated by blank lines")
   func parseMultipleParagraphs() {
     let markdown = """
-    First paragraph.
-    
+    First paragraph.\n
     Second paragraph.
     """
     let blocks = parser.parse(markdown)
@@ -172,19 +171,13 @@ struct WatchOSMarkdownParserTests {
   @Test("Parses complex document structure")
   func parseComplexDocument() {
     let markdown = """
-    # Title
-    
-    Introduction paragraph.
-    
-    ## Section
-    
+    # Title\n
+    Introduction paragraph.\n
+    ## Section\n
     - Item 1
-    - Item 2
-    
-    Another paragraph.
-    
-    > A quote
-    
+    - Item 2\n
+    Another paragraph.\n
+    > A quote\n
     Final paragraph.
     """
     let blocks = parser.parse(markdown)
