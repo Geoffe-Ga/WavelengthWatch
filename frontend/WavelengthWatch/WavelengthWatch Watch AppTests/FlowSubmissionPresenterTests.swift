@@ -33,7 +33,9 @@ struct FlowSubmissionPresenterTests {
   private func feedbackKind(
     _ presentation: PresentationCoordinator
   ) -> ContentViewModel.JournalFeedback.Kind? {
-    if case let .journalFeedback(feedback) = presentation.active { return feedback.kind }
+    if case let .journalFeedback(feedback) = presentation.active {
+      return feedback.kind
+    }
     return nil
   }
 

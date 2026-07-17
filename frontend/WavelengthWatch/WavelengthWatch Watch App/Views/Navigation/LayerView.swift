@@ -13,8 +13,9 @@ struct LayerView: View {
   var body: some View {
     TabView(selection: $selection) {
       ForEach(0 ..< (phaseCount + 2), id: \.self) { index in
-        if phaseCount == 0 { EmptyView() }
-        else {
+        if phaseCount == 0 {
+          EmptyView()
+        } else {
           let normalized = (index + phaseCount - 1) % phaseCount
           let phase = layer.phases[normalized]
           PhasePageView(
