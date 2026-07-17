@@ -41,7 +41,9 @@ struct RootPresentationHost: ViewModifier {
 
   /// The active storage-error's open-failure reason, if one is presented.
   private var storageErrorReason: String? {
-    if case let .storageError(reason) = coordinator.active { return reason }
+    if case let .storageError(reason) = coordinator.active {
+      return reason
+    }
     return nil
   }
 
@@ -52,11 +54,15 @@ struct RootPresentationHost: ViewModifier {
   private var storageErrorPresented: Binding<Bool> {
     Binding(
       get: {
-        if case .storageError = coordinator.active { return true }
+        if case .storageError = coordinator.active {
+          return true
+        }
         return false
       },
       set: { isPresented in
-        if !isPresented { coordinator.dismiss() }
+        if !isPresented {
+          coordinator.dismiss()
+        }
       }
     )
   }
@@ -123,7 +129,9 @@ struct RootPresentationHost: ViewModifier {
 
   /// The active log-confirmation request, if one is presented.
   private var logConfirmation: LogConfirmationRequest? {
-    if case let .logConfirmation(request) = coordinator.active { return request }
+    if case let .logConfirmation(request) = coordinator.active {
+      return request
+    }
     return nil
   }
 
@@ -133,7 +141,9 @@ struct RootPresentationHost: ViewModifier {
     Binding(
       get: { logConfirmation != nil },
       set: { isPresented in
-        if !isPresented { coordinator.dismiss() }
+        if !isPresented {
+          coordinator.dismiss()
+        }
       }
     )
   }
@@ -143,7 +153,9 @@ struct RootPresentationHost: ViewModifier {
   private var journalFeedbackItem: Binding<ContentViewModel.JournalFeedback?> {
     Binding(
       get: {
-        if case let .journalFeedback(feedback) = coordinator.active { return feedback }
+        if case let .journalFeedback(feedback) = coordinator.active {
+          return feedback
+        }
         return nil
       },
       set: { newValue in

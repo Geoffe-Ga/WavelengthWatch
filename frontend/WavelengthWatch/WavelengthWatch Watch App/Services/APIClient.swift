@@ -59,8 +59,12 @@ extension APIClientError {
     case .transport:
       return true
     case let .badResponse(status):
-      if status >= 500 { return true }
-      if status == 408 || status == 429 { return true }
+      if status >= 500 {
+        return true
+      }
+      if status == 408 || status == 429 {
+        return true
+      }
       return false
     }
   }

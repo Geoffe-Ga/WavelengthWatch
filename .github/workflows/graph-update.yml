@@ -41,6 +41,7 @@ jobs:
     name: AST update (keyless)
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       DISPATCH_TOKEN: ${{ secrets.ADEPTHOOD_DISPATCH_TOKEN }}
     steps:
@@ -76,6 +77,7 @@ jobs:
     name: Semantic refresh (weekly, key-guarded)
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     env:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       HAS_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}

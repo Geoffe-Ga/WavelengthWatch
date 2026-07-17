@@ -111,7 +111,7 @@ struct WatchOSMarkdownParserTests {
   func parseMultipleParagraphs() {
     let markdown = """
     First paragraph.
-
+    
     Second paragraph.
     """
     let blocks = parser.parse(markdown)
@@ -173,18 +173,18 @@ struct WatchOSMarkdownParserTests {
   func parseComplexDocument() {
     let markdown = """
     # Title
-
+    
     Introduction paragraph.
-
+    
     ## Section
-
+    
     - Item 1
     - Item 2
-
+    
     Another paragraph.
-
+    
     > A quote
-
+    
     Final paragraph.
     """
     let blocks = parser.parse(markdown)
@@ -242,22 +242,30 @@ struct WatchOSMarkdownParserTests {
 
     // Verify we have headers
     let headers = content.blocks.filter {
-      if case .header1 = $0 { return true }
-      if case .header2 = $0 { return true }
+      if case .header1 = $0 {
+        return true
+      }
+      if case .header2 = $0 {
+        return true
+      }
       return false
     }
     #expect(headers.count >= 4, "Should have at least 4 headers (title + sections)")
 
     // Verify we have list items
     let listItems = content.blocks.filter {
-      if case .listItem = $0 { return true }
+      if case .listItem = $0 {
+        return true
+      }
       return false
     }
     #expect(listItems.count >= 10, "Should have at least 10 list items (frequencies + dosages)")
 
     // Verify we have paragraphs
     let paragraphs = content.blocks.filter {
-      if case .paragraph = $0 { return true }
+      if case .paragraph = $0 {
+        return true
+      }
       return false
     }
     #expect(paragraphs.count >= 3, "Should have at least 3 paragraphs")

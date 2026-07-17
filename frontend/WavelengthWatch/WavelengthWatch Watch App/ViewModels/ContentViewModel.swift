@@ -108,7 +108,9 @@ final class ContentViewModel: ObservableObject {
 
   @MainActor
   func loadCatalog(forceRefresh: Bool = false) async {
-    if isLoading { return }
+    if isLoading {
+      return
+    }
     isLoading = true
     loadErrorMessage = nil
 
