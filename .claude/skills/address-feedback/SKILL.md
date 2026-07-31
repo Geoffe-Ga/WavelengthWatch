@@ -114,7 +114,7 @@ For each item, after the fix lands locally:
 
 ### Step 5: Push Once and Await the Next Verdict
 
-Push the branch (single push, not one per fix). Then delegate the wait to `await-claude-review` — it pins the new HEAD, calls `mcp__github__subscribe_pr_activity`, and ends the turn so the session wakes on the bot's verdict comment via `<github-webhook-activity>`. **Do not poll** with `sleep` or repeated `get_comments` calls, and do not wait on CI passes — the webhook does not deliver them; only the comment event is the wake signal.
+Push the branch (single push, not one per fix). Then delegate the wait to `await-claude-review` — it pins the new HEAD, calls `mcp__github__subscribe_pr_activity`, and ends the turn so the session wakes on the bot's verdict comment via `<github-webhook-activity>`. **Do not poll** with `sleep` or repeated `get_comments` calls, and do not wait on CI passes — the webhook does not deliver them; only the comment event is the wake signal. In a local terminal session (no `subscribe_pr_activity` MCP tool), `await-claude-review` instead arms background watchers — `gh pr checks <N> --watch` plus a verdict poll loop launched with `run_in_background: true` — whose exit wakes the session the same way; never a foreground `sleep` or foreground `--watch`.
 
 When the helper wakes the session:
 
