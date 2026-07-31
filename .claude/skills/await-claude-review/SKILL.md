@@ -90,14 +90,14 @@ Then **stop**. Do not poll. Do not `sleep`. Do not call `pull_request_read get_c
 Launch both with `run_in_background: true`:
 
 1. **CI watcher** — `gh pr checks <N> --watch`. Blocks until every check completes (pass *or* fail), then exits. Unlike the webhook, this signal does include CI success.
-2. **Verdict watcher** — a poll loop that exits the moment a fresh verdict comment appears:
+2. **Verdict watcher** — a poll loop that exits the moment a fresh verdict comment appears (the regex here is intentionally looser than the canonical anchored pattern above — it is only a wake pre-filter; Step 4 re-validates with the canonical one):
 
    ```bash
    # HEAD_TS = headPushedAt from Step 1 (ISO 8601)
    while :; do
      n=$(gh api "repos/<owner>/<repo>/issues/<N>/comments" \
        --jq "[.[] | select(.created_at > \"$HEAD_TS\")
-              | select(.body | test(\"(?i)Verdict[:* ]+(LGTM|CHANGES_REQUESTED|COMMENTS)\"))] | length")
+              | select(.body | test(\"Verdict[:* ]+(LGTM|CHANGES_REQUESTED|COMMENTS)\"; \"i\"))] | length")
      [ "${n:-0}" -gt 0 ] && exit 0
      sleep 30
    done
@@ -108,6 +108,7 @@ Rules:
 - **Never** foreground `sleep`, and **never** run `gh pr checks --watch` in the foreground — a foreground block wedges the session exactly like the missing webhook would.
 - The `sleep 30` inside the loop is fine: it runs in the background task, not the session's foreground turn.
 - When either watcher exits and wakes the session, run Step 4 identically — re-fetch comments, apply the currency check, parse the verdict. Only the wake mechanism differs; the validation does not.
+- **CI watcher wakes you but no verdict exists yet** (the common ordering — checks finish before the review bot posts): that is not a failure. End the turn again; the verdict watcher is still running and will wake you when the comment lands. Re-launching it is harmless if it has exited.
 
 ### Step 3: On Wake — Classify the Event
 
