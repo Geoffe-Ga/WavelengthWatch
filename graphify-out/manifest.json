@@ -1,1251 +1,1251 @@
 {
   "backend/__init__.py": {
-    "mtime": 1784269094.300945,
+    "mtime": 1785458495.7776299,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "backend/app.py": {
-    "mtime": 1784269094.300945,
+    "mtime": 1785458495.7776299,
     "ast_hash": "cf2fbb79571e113da9ea41307cb04866",
     "semantic_hash": "cf2fbb79571e113da9ea41307cb04866"
   },
   "backend/cache.py": {
-    "mtime": 1784269094.300945,
+    "mtime": 1785458495.7776299,
     "ast_hash": "90ad51de45dad30c6e92652585d68c4c",
     "semantic_hash": "90ad51de45dad30c6e92652585d68c4c"
   },
   "backend/database.py": {
-    "mtime": 1784269094.3012104,
+    "mtime": 1785458495.7778714,
     "ast_hash": "8f237ed3995d2ed6d5727658460506c9",
     "semantic_hash": "8f237ed3995d2ed6d5727658460506c9"
   },
   "backend/logging_config.py": {
-    "mtime": 1784269094.3012104,
+    "mtime": 1785458495.7778714,
     "ast_hash": "ceb65f134ab30f9bc981441b7a7c9fff",
     "semantic_hash": "ceb65f134ab30f9bc981441b7a7c9fff"
   },
   "backend/models.py": {
-    "mtime": 1784269094.3012104,
+    "mtime": 1785458495.7778714,
     "ast_hash": "798e4e3a29d0234c9834f46aea2eec1f",
     "semantic_hash": "798e4e3a29d0234c9834f46aea2eec1f"
   },
   "backend/routers/__init__.py": {
-    "mtime": 1784269094.3012104,
+    "mtime": 1785458495.7778714,
     "ast_hash": "31478ec5542d27e2cbb0946092a9e54d",
     "semantic_hash": "31478ec5542d27e2cbb0946092a9e54d"
   },
   "backend/routers/analytics.py": {
-    "mtime": 1784269094.3016055,
+    "mtime": 1785458495.7782729,
     "ast_hash": "0a5456c9f17a60e7e766fe7e4d2be67c",
     "semantic_hash": "0a5456c9f17a60e7e766fe7e4d2be67c"
   },
   "backend/routers/catalog.py": {
-    "mtime": 1784269094.3016055,
+    "mtime": 1785458495.7782729,
     "ast_hash": "e9406f5313c67bb5946cc9de0a15ed36",
     "semantic_hash": "e9406f5313c67bb5946cc9de0a15ed36"
   },
   "backend/routers/curriculum.py": {
-    "mtime": 1784269094.3016055,
+    "mtime": 1785458495.7782729,
     "ast_hash": "d68eb13db4f43ae5802b5114598b8b6f",
     "semantic_hash": "d68eb13db4f43ae5802b5114598b8b6f"
   },
   "backend/routers/journal.py": {
-    "mtime": 1784269094.3016055,
+    "mtime": 1785458495.7782729,
     "ast_hash": "d866767ecf565fcd5e6d2aec1bb2e1ce",
     "semantic_hash": "d866767ecf565fcd5e6d2aec1bb2e1ce"
   },
   "backend/routers/layer.py": {
-    "mtime": 1784269094.3016055,
+    "mtime": 1785458495.7782729,
     "ast_hash": "53395ea14ef3e995104875f61b919b80",
     "semantic_hash": "53395ea14ef3e995104875f61b919b80"
   },
   "backend/routers/phase.py": {
-    "mtime": 1784269094.3016055,
+    "mtime": 1785458495.7782729,
     "ast_hash": "ed17080ebdf2743950a29c65bcbe60f9",
     "semantic_hash": "ed17080ebdf2743950a29c65bcbe60f9"
   },
   "backend/routers/strategy.py": {
-    "mtime": 1784269094.3016055,
+    "mtime": 1785458495.7782729,
     "ast_hash": "30f838645495c8c1c42d00bd19867b1d",
     "semantic_hash": "30f838645495c8c1c42d00bd19867b1d"
   },
   "backend/schemas.py": {
-    "mtime": 1784269094.3016055,
+    "mtime": 1785458495.7782729,
     "ast_hash": "f68081ea3061fafa345e227a72f09d0a",
     "semantic_hash": "f68081ea3061fafa345e227a72f09d0a"
   },
   "backend/schemas_catalog.py": {
-    "mtime": 1784269094.3016055,
+    "mtime": 1785458495.7782729,
     "ast_hash": "8c8b2b65493095ea0dbb5b95f341f30f",
     "semantic_hash": "8c8b2b65493095ea0dbb5b95f341f30f"
   },
   "backend/services/__init__.py": {
-    "mtime": 1784269094.3016055,
+    "mtime": 1785458495.7782729,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "backend/services/catalog.py": {
-    "mtime": 1784269094.3021832,
+    "mtime": 1785458495.7788405,
     "ast_hash": "e5baf6913241246e9eaf8166d6e35855",
     "semantic_hash": "e5baf6913241246e9eaf8166d6e35855"
   },
   "backend/tools/csv_to_json.py": {
-    "mtime": 1784269094.3021832,
+    "mtime": 1785458495.7788405,
     "ast_hash": "a8d83ffdc878e2ebf339f53c8dbf2bd1",
     "semantic_hash": "a8d83ffdc878e2ebf339f53c8dbf2bd1"
   },
   "backend/tools/seed_data.py": {
-    "mtime": 1784269094.3024209,
+    "mtime": 1785458495.7790549,
     "ast_hash": "71072a30d9551607736e99abf371f1f6",
     "semantic_hash": "71072a30d9551607736e99abf371f1f6"
   },
   "dev-setup.sh": {
-    "mtime": 1784269094.3024209,
+    "mtime": 1785458495.7790549,
     "ast_hash": "d578d001497176d34dbefb1a4959886a",
     "semantic_hash": "d578d001497176d34dbefb1a4959886a"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/App/AppConfiguration.swift": {
-    "mtime": 1784269094.3027673,
+    "mtime": 1785458495.779471,
     "ast_hash": "303f7450c75f2875dbed9ce31e53fb4e",
     "semantic_hash": "303f7450c75f2875dbed9ce31e53fb4e"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/App/AppStorageKeys.swift": {
-    "mtime": 1784269094.3028703,
+    "mtime": 1785458495.7795615,
     "ast_hash": "5dee92124938bb76156fa73efc10a92d",
     "semantic_hash": "5dee92124938bb76156fa73efc10a92d"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/App/ContentViewDependencies.swift": {
-    "mtime": 1784269094.3028703,
+    "mtime": 1785458495.7795615,
     "ast_hash": "be7f734857cf16a8d1c78c61a7f34a20",
     "semantic_hash": "be7f734857cf16a8d1c78c61a7f34a20"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Constants/UIConstants.swift": {
-    "mtime": 1784269094.3039975,
+    "mtime": 1785458495.780715,
     "ast_hash": "20514d2909385a46092c5dc5c8b7f90f",
     "semantic_hash": "20514d2909385a46092c5dc5c8b7f90f"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/ContentView.swift": {
-    "mtime": 1784269094.3039975,
+    "mtime": 1785458495.780715,
     "ast_hash": "13128ce622245dd9483db0efa7a9e02b",
     "semantic_hash": "13128ce622245dd9483db0efa7a9e02b"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/DesignSystem/Modifiers/WLButtonStyle.swift": {
-    "mtime": 1784269094.304904,
+    "mtime": 1785458495.7814894,
     "ast_hash": "0d70d12128991bdf6a047bba4913142a",
     "semantic_hash": "0d70d12128991bdf6a047bba4913142a"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/DesignSystem/Modifiers/WLCardModifier.swift": {
-    "mtime": 1784269094.3049724,
+    "mtime": 1785458495.7815623,
     "ast_hash": "d2867edc399bea64f68913808d50547e",
     "semantic_hash": "d2867edc399bea64f68913808d50547e"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/DesignSystem/Modifiers/WLGlassModifier.swift": {
-    "mtime": 1784269094.3049724,
+    "mtime": 1785458495.7815623,
     "ast_hash": "c9d0f1c254b9790b23076f3234e3bb7f",
     "semantic_hash": "c9d0f1c254b9790b23076f3234e3bb7f"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/DesignSystem/Modifiers/WLMotionModifier.swift": {
-    "mtime": 1784269094.3049724,
+    "mtime": 1785458495.7815623,
     "ast_hash": "3a08b014be08dc51734cdc513e116e4e",
     "semantic_hash": "3a08b014be08dc51734cdc513e116e4e"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/DesignSystem/Modifiers/WLNavigationBarModifier.swift": {
-    "mtime": 1784269094.3049724,
+    "mtime": 1785458495.7815623,
     "ast_hash": "9f3e723c170de06039f802063e1a5a23",
     "semantic_hash": "9f3e723c170de06039f802063e1a5a23"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/DesignSystem/Modifiers/WLSurfaceModifier.swift": {
-    "mtime": 1784269094.3049724,
+    "mtime": 1785458495.7815623,
     "ast_hash": "6be2477a7c89da7f4871146236f88ce9",
     "semantic_hash": "6be2477a7c89da7f4871146236f88ce9"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/DesignSystem/Preview/DesignSystemPreview.swift": {
-    "mtime": 1784269094.3049724,
+    "mtime": 1785458495.7815623,
     "ast_hash": "74ecdf1d1da05da31cc8ff2920d7bd07",
     "semantic_hash": "74ecdf1d1da05da31cc8ff2920d7bd07"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/DesignSystem/Theme/WLColorTokens.swift": {
-    "mtime": 1784269094.3049724,
+    "mtime": 1785458495.7815623,
     "ast_hash": "2d2ee9b093f847ed3d1624c23eebd053",
     "semantic_hash": "2d2ee9b093f847ed3d1624c23eebd053"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/DesignSystem/Theme/WLSpacingTokens.swift": {
-    "mtime": 1784269094.3053155,
+    "mtime": 1785458495.7819068,
     "ast_hash": "6662655e538467d9eb64863b0e286376",
     "semantic_hash": "6662655e538467d9eb64863b0e286376"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/DesignSystem/Theme/WLTheme.swift": {
-    "mtime": 1784269094.3053155,
+    "mtime": 1785458495.7819068,
     "ast_hash": "e7cba3f963ae8d9cf41d451f1a77544f",
     "semantic_hash": "e7cba3f963ae8d9cf41d451f1a77544f"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/DesignSystem/Theme/WLTypographyTokens.swift": {
-    "mtime": 1784269094.3053155,
+    "mtime": 1785458495.7819068,
     "ast_hash": "6f82cee6708e2e33112b38c59b598e30",
     "semantic_hash": "6f82cee6708e2e33112b38c59b598e30"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Extensions/Color+Stage.swift": {
-    "mtime": 1784269094.3053155,
+    "mtime": 1785458495.7819068,
     "ast_hash": "ad8196305d8dc8361a4201063e044e7a",
     "semantic_hash": "ad8196305d8dc8361a4201063e044e7a"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Extensions/Comparable+Clamped.swift": {
-    "mtime": 1784269094.3055243,
+    "mtime": 1785458495.7820766,
     "ast_hash": "b39f77810f048666387b5955af078cfa",
     "semantic_hash": "b39f77810f048666387b5955af078cfa"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Extensions/EnvironmentValues+DetailView.swift": {
-    "mtime": 1784269094.3055243,
+    "mtime": 1785458495.7820766,
     "ast_hash": "5b11cffb498d08dc6d7b66e973e0836d",
     "semantic_hash": "5b11cffb498d08dc6d7b66e973e0836d"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Models/AnalyticsModels.swift": {
-    "mtime": 1784269094.3055243,
+    "mtime": 1785458495.7820766,
     "ast_hash": "9acc3c823d2c3f87ecbeba03ef3b4109",
     "semantic_hash": "9acc3c823d2c3f87ecbeba03ef3b4109"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Models/CatalogModels.swift": {
-    "mtime": 1784269094.305689,
+    "mtime": 1785458495.7822773,
     "ast_hash": "dc318354ed8042cf21418987f4088ad4",
     "semantic_hash": "dc318354ed8042cf21418987f4088ad4"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Models/DetailDestination.swift": {
-    "mtime": 1784269094.305689,
+    "mtime": 1785458495.7822773,
     "ast_hash": "9f4131802f7086f32e5c45a0330e47b3",
     "semantic_hash": "9f4131802f7086f32e5c45a0330e47b3"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Models/HourFormatter.swift": {
-    "mtime": 1784269094.305689,
+    "mtime": 1785458495.7822773,
     "ast_hash": "1bf0d20069e55783c043f1285ff9f903",
     "semantic_hash": "1bf0d20069e55783c043f1285ff9f903"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Models/JournalDrilldownContext.swift": {
-    "mtime": 1784269094.305689,
+    "mtime": 1785458495.7822773,
     "ast_hash": "87fc78f980d0df9289d4eba04e863567",
     "semantic_hash": "87fc78f980d0df9289d4eba04e863567"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Models/JournalEntryDrilldownFilter.swift": {
-    "mtime": 1784269094.305689,
+    "mtime": 1785458495.7822773,
     "ast_hash": "8cb33f79a1abc0106441e12ba1125c22",
     "semantic_hash": "8cb33f79a1abc0106441e12ba1125c22"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Models/JournalQueueModels.swift": {
-    "mtime": 1784269094.305689,
+    "mtime": 1785458495.7822773,
     "ast_hash": "fd2038364472b64e708db3d8d2cbb775",
     "semantic_hash": "fd2038364472b64e708db3d8d2cbb775"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Models/JournalSchedule.swift": {
-    "mtime": 1784269094.305689,
+    "mtime": 1785458495.7822773,
     "ast_hash": "6fb47508b0b013c6b97889f71383a1c3",
     "semantic_hash": "6fb47508b0b013c6b97889f71383a1c3"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Models/LayerFilterMode.swift": {
-    "mtime": 1784269094.305689,
+    "mtime": 1785458495.7822773,
     "ast_hash": "e43bd693b46cf06aa76b6b37c3ace15d",
     "semantic_hash": "e43bd693b46cf06aa76b6b37c3ace15d"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Models/LocalJournalEntry.swift": {
-    "mtime": 1784269094.305689,
+    "mtime": 1785458495.7822773,
     "ast_hash": "17206491912cbb5d7941ab4f20ae8fb4",
     "semantic_hash": "17206491912cbb5d7941ab4f20ae8fb4"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Models/SyncSettings.swift": {
-    "mtime": 1784269094.305689,
+    "mtime": 1785458495.7822773,
     "ast_hash": "1e821e18f270587d0502dbceef486a14",
     "semantic_hash": "1e821e18f270587d0502dbceef486a14"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/PhaseNavigator.swift": {
-    "mtime": 1784269094.305689,
+    "mtime": 1785458495.7822773,
     "ast_hash": "911c6d16b8c17f785c5c991153bcb069",
     "semantic_hash": "911c6d16b8c17f785c5c991153bcb069"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Services/APIClient.swift": {
-    "mtime": 1784269094.3061838,
+    "mtime": 1785458495.7827725,
     "ast_hash": "331bacbba0b5358685b5e779d89ae30c",
     "semantic_hash": ""
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Services/AnalyticsService.swift": {
-    "mtime": 1784269094.3063657,
+    "mtime": 1785458495.7829385,
     "ast_hash": "f8b9a2a2d584acc0a65485e053194f4a",
     "semantic_hash": "f8b9a2a2d584acc0a65485e053194f4a"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Services/CatalogRepository.swift": {
-    "mtime": 1784269094.3063657,
+    "mtime": 1785458495.7829385,
     "ast_hash": "b4e083aa5f3151644698bc66502dd269",
     "semantic_hash": "b4e083aa5f3151644698bc66502dd269"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Services/JournalClient.swift": {
-    "mtime": 1784269094.3063657,
+    "mtime": 1785458495.7829385,
     "ast_hash": "02afcbc826064065a40034b0f16c1331",
     "semantic_hash": "02afcbc826064065a40034b0f16c1331"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Services/JournalDatabase.swift": {
-    "mtime": 1784269094.3063657,
+    "mtime": 1785458495.7829385,
     "ast_hash": "0cd06a3964ab14644d6605ae568f3115",
     "semantic_hash": "0cd06a3964ab14644d6605ae568f3115"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Services/JournalQueue.swift": {
-    "mtime": 1784269094.3063657,
+    "mtime": 1785458495.7829385,
     "ast_hash": "cd2de7abf1b27fff5fe83f98187c3c72",
     "semantic_hash": "cd2de7abf1b27fff5fe83f98187c3c72"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Services/JournalRepository.swift": {
-    "mtime": 1784269094.3063657,
+    "mtime": 1785458495.7829385,
     "ast_hash": "ecca9b309eae86bc9d081d45a932478c",
     "semantic_hash": "ecca9b309eae86bc9d081d45a932478c"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Services/JournalSyncService.swift": {
-    "mtime": 1784269094.3063657,
+    "mtime": 1785458495.7829385,
     "ast_hash": "407819ea19bd1d6d179fd2301361ac30",
     "semantic_hash": "407819ea19bd1d6d179fd2301361ac30"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Services/LocalAnalyticsCalculator.swift": {
-    "mtime": 1784269094.3063657,
+    "mtime": 1785458495.7829385,
     "ast_hash": "6deb2e6a9ad2e5095eefd7859f0e9257",
     "semantic_hash": "6deb2e6a9ad2e5095eefd7859f0e9257"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Services/MarkdownContentLoader.swift": {
-    "mtime": 1784269094.3063657,
+    "mtime": 1785458495.7829385,
     "ast_hash": "549408cc3b8b0a77d4a0ac612c34275f",
     "semantic_hash": "549408cc3b8b0a77d4a0ac612c34275f"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Services/NetworkMonitor.swift": {
-    "mtime": 1784269094.3063657,
+    "mtime": 1785458495.7829385,
     "ast_hash": "db561e2aa3e4b4511479a3b217cb6af8",
     "semantic_hash": "db561e2aa3e4b4511479a3b217cb6af8"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Services/NotificationCenterProtocol.swift": {
-    "mtime": 1784269094.3063657,
+    "mtime": 1785458495.7829385,
     "ast_hash": "4cee618a7b8ccc2f932865202df569bc",
     "semantic_hash": "4cee618a7b8ccc2f932865202df569bc"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Services/NotificationScheduler.swift": {
-    "mtime": 1784269094.3063657,
+    "mtime": 1785458495.7829385,
     "ast_hash": "1364be579050174b96de4246cf29b7ac",
     "semantic_hash": "1364be579050174b96de4246cf29b7ac"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Services/WatchOSMarkdownParser.swift": {
-    "mtime": 1784269094.3063657,
+    "mtime": 1785458495.7829385,
     "ast_hash": "70509d664c892122b893616f14b83a5c",
     "semantic_hash": "70509d664c892122b893616f14b83a5c"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/ViewModels/AnalyticsViewModel.swift": {
-    "mtime": 1784269094.3063657,
+    "mtime": 1785458495.7829385,
     "ast_hash": "d2fe573e75edad237894fb2fe3662eb6",
     "semantic_hash": "d2fe573e75edad237894fb2fe3662eb6"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/ViewModels/ContentViewModel.swift": {
-    "mtime": 1784269094.3072839,
+    "mtime": 1785458495.78387,
     "ast_hash": "c2082d6e72a61b2b0f8c2645bee2fae9",
     "semantic_hash": ""
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/ViewModels/EmotionalLandscapeViewModel.swift": {
-    "mtime": 1784269094.3072839,
+    "mtime": 1785458495.78387,
     "ast_hash": "44685849b9ece29ec29a98846ef08a9a",
     "semantic_hash": "44685849b9ece29ec29a98846ef08a9a"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/ViewModels/FlowCoordinator.swift": {
-    "mtime": 1784269094.3072839,
+    "mtime": 1785458495.78387,
     "ast_hash": "2f6bfa4f0fa09fcc183c7c88fca11d84",
     "semantic_hash": "2f6bfa4f0fa09fcc183c7c88fca11d84"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/ViewModels/FlowStepReactionPolicy.swift": {
-    "mtime": 1784269094.3072839,
+    "mtime": 1785458495.78387,
     "ast_hash": "4c963727f4fb25c881a586b187834644",
     "semantic_hash": "4c963727f4fb25c881a586b187834644"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/ViewModels/FlowSubmissionPresenter.swift": {
-    "mtime": 1784269094.3072839,
+    "mtime": 1785458495.78387,
     "ast_hash": "90d5c672d43b0af94b4a6a2280f4b8c8",
     "semantic_hash": "90d5c672d43b0af94b4a6a2280f4b8c8"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/ViewModels/GrowthIndicatorsViewModel.swift": {
-    "mtime": 1784269094.3072839,
+    "mtime": 1785458495.78387,
     "ast_hash": "021ab14e4002bf4b04fb98730cfe399b",
     "semantic_hash": "021ab14e4002bf4b04fb98730cfe399b"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/ViewModels/LogConfirmation.swift": {
-    "mtime": 1784269094.3072839,
+    "mtime": 1785458495.78387,
     "ast_hash": "1b514e5d5f034d46ee4b7a5cddf60850",
     "semantic_hash": "1b514e5d5f034d46ee4b7a5cddf60850"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/ViewModels/NavigationViewModel.swift": {
-    "mtime": 1784269094.3072839,
+    "mtime": 1785458495.78387,
     "ast_hash": "fd93fe3b5568aa2914a4f78d27b8abf8",
     "semantic_hash": "fd93fe3b5568aa2914a4f78d27b8abf8"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/ViewModels/PresentationCoordinator.swift": {
-    "mtime": 1784269094.3072839,
+    "mtime": 1785458495.78387,
     "ast_hash": "48659c17f4fbaca4cbaf5569b9d614b7",
     "semantic_hash": "48659c17f4fbaca4cbaf5569b9d614b7"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/ViewModels/ScheduleViewModel.swift": {
-    "mtime": 1784269094.3072839,
+    "mtime": 1785458495.78387,
     "ast_hash": "5eab9248db8b111d118eb756222fe088",
     "semantic_hash": "5eab9248db8b111d118eb756222fe088"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/ViewModels/SelfCareViewModel.swift": {
-    "mtime": 1784269094.3072839,
+    "mtime": 1785458495.78387,
     "ast_hash": "0c208d5110b2160daf4a757adb3c16a4",
     "semantic_hash": "0c208d5110b2160daf4a757adb3c16a4"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/ViewModels/SyncSettingsViewModel.swift": {
-    "mtime": 1784269094.3072839,
+    "mtime": 1785458495.78387,
     "ast_hash": "42b39f20abca881ec2b7936527d16a71",
     "semantic_hash": "42b39f20abca881ec2b7936527d16a71"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/ViewModels/TemporalPatternsViewModel.swift": {
-    "mtime": 1784269094.3072839,
+    "mtime": 1785458495.78387,
     "ast_hash": "0bd2a6f8aaf161e4ac9ba37b394387bc",
     "semantic_hash": "0bd2a6f8aaf161e4ac9ba37b394387bc"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/About/ConceptExplainerView.swift": {
-    "mtime": 1784269094.3079777,
+    "mtime": 1785458495.784558,
     "ast_hash": "7296f1e732a585c021edb199a33b8a93",
     "semantic_hash": "7296f1e732a585c021edb199a33b8a93"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Analytics/AnalyticsDetailHubView.swift": {
-    "mtime": 1784269094.3079777,
+    "mtime": 1785458495.784558,
     "ast_hash": "b9b719e596d4a0341dee12880f3807a6",
     "semantic_hash": "b9b719e596d4a0341dee12880f3807a6"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Analytics/AnalyticsView.swift": {
-    "mtime": 1784269094.308145,
+    "mtime": 1785458495.784723,
     "ast_hash": "b5e89ca0e29861ea5f01820ef7938728",
     "semantic_hash": "b5e89ca0e29861ea5f01820ef7938728"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Analytics/AnalyticsViewSections.swift": {
-    "mtime": 1784269094.308145,
+    "mtime": 1785458495.784723,
     "ast_hash": "072da77ff5c3c06c8b1449c9a0912604",
     "semantic_hash": "072da77ff5c3c06c8b1449c9a0912604"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Analytics/DosageDeepDiveView.swift": {
-    "mtime": 1784269094.308145,
+    "mtime": 1785458495.784723,
     "ast_hash": "2161280d54728b66836be4784d27a3ea",
     "semantic_hash": "2161280d54728b66836be4784d27a3ea"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Analytics/GrowthIndicatorsView.swift": {
-    "mtime": 1784269094.308145,
+    "mtime": 1785458495.784723,
     "ast_hash": "7c5c907c2e7ef57091bfa64ec360ce97",
     "semantic_hash": "7c5c907c2e7ef57091bfa64ec360ce97"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Analytics/JournalEntryListView.swift": {
-    "mtime": 1784269094.308145,
+    "mtime": 1785458495.784723,
     "ast_hash": "4cb4b5afa4e49c1209d61b8d4159efb2",
     "semantic_hash": "4cb4b5afa4e49c1209d61b8d4159efb2"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Analytics/JournalEntryRowView.swift": {
-    "mtime": 1784269094.308145,
+    "mtime": 1785458495.784723,
     "ast_hash": "ea01c8a3ff2cc7a879b296ab301f0a74",
     "semantic_hash": "ea01c8a3ff2cc7a879b296ab301f0a74"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Analytics/ModeDistributionView.swift": {
-    "mtime": 1784269094.308145,
+    "mtime": 1785458495.784723,
     "ast_hash": "662db0ea9be0f7dd979cb953e3b51ce0",
     "semantic_hash": "662db0ea9be0f7dd979cb953e3b51ce0"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Analytics/PhaseJourneyView.swift": {
-    "mtime": 1784269094.308145,
+    "mtime": 1785458495.784723,
     "ast_hash": "e56cd05e9e97544bf752904f108b1dce",
     "semantic_hash": "e56cd05e9e97544bf752904f108b1dce"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Analytics/StrategyUsageView.swift": {
-    "mtime": 1784269094.308145,
+    "mtime": 1785458495.784723,
     "ast_hash": "aba176d10f809fb118725874ff0dc3f6",
     "semantic_hash": "aba176d10f809fb118725874ff0dc3f6"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Analytics/TemporalPatternsView.swift": {
-    "mtime": 1784269094.308145,
+    "mtime": 1785458495.784723,
     "ast_hash": "2db07d838ccd5922a4ad17185ab34f06",
     "semantic_hash": "2db07d838ccd5922a4ad17185ab34f06"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Components/AnalyticsEmptyView.swift": {
-    "mtime": 1784269094.308145,
+    "mtime": 1785458495.784723,
     "ast_hash": "3bcf21dae508ad067247ddcfde0f544c",
     "semantic_hash": "3bcf21dae508ad067247ddcfde0f544c"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Components/AnalyticsErrorView.swift": {
-    "mtime": 1784269094.3087,
+    "mtime": 1785458495.7852843,
     "ast_hash": "f00623bc5bee3f478942aa86abf92b39",
     "semantic_hash": "f00623bc5bee3f478942aa86abf92b39"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Components/AnalyticsLoadingView.swift": {
-    "mtime": 1784269094.3087,
+    "mtime": 1785458495.7852843,
     "ast_hash": "3a919c0f0e399f67de4c489c5ecf5989",
     "semantic_hash": "3a919c0f0e399f67de4c489c5ecf5989"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Components/CircularProgressView.swift": {
-    "mtime": 1784269094.3087,
+    "mtime": 1785458495.7852843,
     "ast_hash": "ca1131d8bd10b41a6c7be897c9082713",
     "semantic_hash": "ca1131d8bd10b41a6c7be897c9082713"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Components/EmotionExpressionCard.swift": {
-    "mtime": 1784269094.3087,
+    "mtime": 1785458495.7852843,
     "ast_hash": "d8169491eb3cb428fa2499a296f62b9a",
     "semantic_hash": "d8169491eb3cb428fa2499a296f62b9a"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Components/EmotionSummaryCard.swift": {
-    "mtime": 1784269094.3087,
+    "mtime": 1785458495.7852843,
     "ast_hash": "57938269da3ee5ac3227e6df44c30756",
     "semantic_hash": "57938269da3ee5ac3227e6df44c30756"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Components/HorizontalBarChart.swift": {
-    "mtime": 1784269094.3087,
+    "mtime": 1785458495.7852843,
     "ast_hash": "af478220e2e8e9adb58eaacb732f1628",
     "semantic_hash": "af478220e2e8e9adb58eaacb732f1628"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Components/MysticalJournalIcon.swift": {
-    "mtime": 1784269094.3087,
+    "mtime": 1785458495.7852843,
     "ast_hash": "39035a002583c90d2027ec6ccd961684",
     "semantic_hash": "39035a002583c90d2027ec6ccd961684"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Components/StrategyExpressionCard.swift": {
-    "mtime": 1784269094.3087,
+    "mtime": 1785458495.7852843,
     "ast_hash": "f5ea3745b78fb481a7bd0276964c69b0",
     "semantic_hash": "f5ea3745b78fb481a7bd0276964c69b0"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Components/StrategySummaryCard.swift": {
-    "mtime": 1784269094.3087,
+    "mtime": 1785458495.7852843,
     "ast_hash": "9e06cf9fbb132719f5efcbfcbd2f1fea",
     "semantic_hash": "9e06cf9fbb132719f5efcbfcbd2f1fea"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Components/StreakDisplayView.swift": {
-    "mtime": 1784269094.3087,
+    "mtime": 1785458495.7852843,
     "ast_hash": "259f34f2339e27d091a714496bacea08",
     "semantic_hash": "259f34f2339e27d091a714496bacea08"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Curriculum/ClearLightEmotionCard.swift": {
-    "mtime": 1784269094.3087,
+    "mtime": 1785458495.7852843,
     "ast_hash": "c29b26f3cf5de637fcb2b633c3078611",
     "semantic_hash": "c29b26f3cf5de637fcb2b633c3078611"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Curriculum/CurriculumCard.swift": {
-    "mtime": 1784269094.3092206,
+    "mtime": 1785458495.785799,
     "ast_hash": "e1ffac5471e1ac19d9149eef512da5e1",
     "semantic_hash": "e1ffac5471e1ac19d9149eef512da5e1"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Curriculum/CurriculumDetailView.swift": {
-    "mtime": 1784269094.3092206,
+    "mtime": 1785458495.785799,
     "ast_hash": "a21e567616eecf721265543cf44395ff",
     "semantic_hash": "a21e567616eecf721265543cf44395ff"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Curriculum/LayeredEmotion.swift": {
-    "mtime": 1784269094.3092206,
+    "mtime": 1785458495.785799,
     "ast_hash": "745a74331707e8ce58a48f8c9c01ed8e",
     "semantic_hash": "745a74331707e8ce58a48f8c9c01ed8e"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Curriculum/StrategyCard.swift": {
-    "mtime": 1784269094.3092206,
+    "mtime": 1785458495.785799,
     "ast_hash": "71b51c88ce5422ef5e4e3aaf411fff01",
     "semantic_hash": "71b51c88ce5422ef5e4e3aaf411fff01"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Curriculum/StrategyListView.swift": {
-    "mtime": 1784269094.3092206,
+    "mtime": 1785458495.785799,
     "ast_hash": "f29471851615c41cdec7e4b174814f9b",
     "semantic_hash": "f29471851615c41cdec7e4b174814f9b"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Journal/FlowConfirmationAlertsModifier.swift": {
-    "mtime": 1784269094.3092206,
+    "mtime": 1785458495.785799,
     "ast_hash": "ef8a6ec8bebde72d762d2f1d8c974e42",
     "semantic_hash": "ef8a6ec8bebde72d762d2f1d8c974e42"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Journal/FlowReviewSheet.swift": {
-    "mtime": 1784269094.3095496,
+    "mtime": 1785458495.7861154,
     "ast_hash": "e1dbc512a30c6c1ab0238c223acd1d87",
     "semantic_hash": "e1dbc512a30c6c1ab0238c223acd1d87"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Journal/JournalFeedbackAlert.swift": {
-    "mtime": 1784269094.3095496,
+    "mtime": 1785458495.7861154,
     "ast_hash": "9e2c18471cd8edc07b82f8f363de4e9c",
     "semantic_hash": "9e2c18471cd8edc07b82f8f363de4e9c"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Journal/SubmitTimeout.swift": {
-    "mtime": 1784269094.3095496,
+    "mtime": 1785458495.7861154,
     "ast_hash": "acffdb5dadd953d2a52073ac0e880acc",
     "semantic_hash": "acffdb5dadd953d2a52073ac0e880acc"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/MarkdownContentView.swift": {
-    "mtime": 1784269094.3095496,
+    "mtime": 1785458495.7861154,
     "ast_hash": "048299efae23e1ca6a2a216f130128e3",
     "semantic_hash": "048299efae23e1ca6a2a216f130128e3"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Menu/MenuView.swift": {
-    "mtime": 1784269094.3095496,
+    "mtime": 1785458495.7861154,
     "ast_hash": "59747b7ca9b6457b536ea9e6f596becb",
     "semantic_hash": "59747b7ca9b6457b536ea9e6f596becb"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Navigation/DetailDestinationView.swift": {
-    "mtime": 1784269094.3095496,
+    "mtime": 1785458495.7861154,
     "ast_hash": "61b23ffe159d16fc4de05df67721264c",
     "semantic_hash": "61b23ffe159d16fc4de05df67721264c"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Navigation/JournalFlowAlertsModifier.swift": {
-    "mtime": 1784269094.3098564,
+    "mtime": 1785458495.7864294,
     "ast_hash": "e406edffaaf81d584ea0f6b07a98371f",
     "semantic_hash": "e406edffaaf81d584ea0f6b07a98371f"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Navigation/LayerCardView.swift": {
-    "mtime": 1784269094.3098564,
+    "mtime": 1785458495.7864294,
     "ast_hash": "dfd2506b72518531d3b6b4272ac1f693",
     "semantic_hash": "dfd2506b72518531d3b6b4272ac1f693"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Navigation/LayerScrollView.swift": {
-    "mtime": 1784269094.3098564,
+    "mtime": 1785458495.7864294,
     "ast_hash": "01d19957c439175974763357f471003b",
     "semantic_hash": "01d19957c439175974763357f471003b"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Navigation/LayerSideIndicator.swift": {
-    "mtime": 1784269094.3098564,
+    "mtime": 1785458495.7864294,
     "ast_hash": "f73b745c3a00a6d8fd2c698c1695ce37",
     "semantic_hash": "f73b745c3a00a6d8fd2c698c1695ce37"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Navigation/LayerView.swift": {
-    "mtime": 1784269094.3098564,
+    "mtime": 1785458495.7864294,
     "ast_hash": "1d8adfb95281e4562e82346b54569dc7",
     "semantic_hash": ""
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Navigation/MainContentDialogsModifier.swift": {
-    "mtime": 1784269094.3098564,
+    "mtime": 1785458495.7864294,
     "ast_hash": "e326807d9ce0b9cec5d6d2927f52536b",
     "semantic_hash": "e326807d9ce0b9cec5d6d2927f52536b"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Navigation/MainContentLifecycleModifier.swift": {
-    "mtime": 1784269094.3098564,
+    "mtime": 1785458495.7864294,
     "ast_hash": "3e673755f3ed2c55dec5ab6f8d6e8a78",
     "semantic_hash": "3e673755f3ed2c55dec5ab6f8d6e8a78"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Navigation/MainContentStates.swift": {
-    "mtime": 1784269094.3098564,
+    "mtime": 1785458495.7864294,
     "ast_hash": "5be460e6f391f12c442d5ce9bd1b4535",
     "semantic_hash": "5be460e6f391f12c442d5ce9bd1b4535"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Navigation/MainNavigationToolbar.swift": {
-    "mtime": 1784269094.3098564,
+    "mtime": 1785458495.7864294,
     "ast_hash": "537df9f563d2c024987c5fb65ec07a8e",
     "semantic_hash": "537df9f563d2c024987c5fb65ec07a8e"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Navigation/PhaseCrystalCard.swift": {
-    "mtime": 1784269094.3098564,
+    "mtime": 1785458495.7864294,
     "ast_hash": "2dfc018c6c508770f0761ebbe25fb609",
     "semantic_hash": "2dfc018c6c508770f0761ebbe25fb609"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Navigation/PhasePageView.swift": {
-    "mtime": 1784269094.3098564,
+    "mtime": 1785458495.7864294,
     "ast_hash": "a633ed13b5fee0863628acd4767137b2",
     "semantic_hash": "a633ed13b5fee0863628acd4767137b2"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Navigation/RootPresentationHost.swift": {
-    "mtime": 1784269094.3098564,
+    "mtime": 1785458495.7864294,
     "ast_hash": "85799be65af38c9c3eb3f977a56a47fc",
     "semantic_hash": ""
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Navigation/RootShellView.swift": {
-    "mtime": 1784269094.3098564,
+    "mtime": 1785458495.7864294,
     "ast_hash": "595eb97897d398c1f6362bfa7588b1f9",
     "semantic_hash": "595eb97897d398c1f6362bfa7588b1f9"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/OnboardingView.swift": {
-    "mtime": 1784269094.3098564,
+    "mtime": 1785458495.7864294,
     "ast_hash": "99ab016d09cd3700973599479252ee42",
     "semantic_hash": "99ab016d09cd3700973599479252ee42"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Schedule/ScheduleEditView.swift": {
-    "mtime": 1784269094.3098564,
+    "mtime": 1785458495.7867155,
     "ast_hash": "11c8813336d82a7d1447331353d6aaba",
     "semantic_hash": "11c8813336d82a7d1447331353d6aaba"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Schedule/ScheduleRow.swift": {
-    "mtime": 1784269094.3106205,
+    "mtime": 1785458495.7871783,
     "ast_hash": "2135f8cd823a3c04d863908d5f3f347a",
     "semantic_hash": "2135f8cd823a3c04d863908d5f3f347a"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/Schedule/TimePickerView.swift": {
-    "mtime": 1784269094.3106205,
+    "mtime": 1785458495.7871783,
     "ast_hash": "ecd2bcd2f9aa8b7871d7dbe2a396468c",
     "semantic_hash": "ecd2bcd2f9aa8b7871d7dbe2a396468c"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/ScheduleSettingsView.swift": {
-    "mtime": 1784269094.3106205,
+    "mtime": 1785458495.7871783,
     "ast_hash": "d0a45a78d374de73c8574346f9c14c2e",
     "semantic_hash": "d0a45a78d374de73c8574346f9c14c2e"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/SyncSettingsView.swift": {
-    "mtime": 1784269094.3106205,
+    "mtime": 1785458495.7871783,
     "ast_hash": "5513e65581ef5e069e5af4c9f4918581",
     "semantic_hash": "5513e65581ef5e069e5af4c9f4918581"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Views/SyncStatusView.swift": {
-    "mtime": 1784269094.3106205,
+    "mtime": 1785458495.7871783,
     "ast_hash": "ec87230209eb03a8e87d740333990a64",
     "semantic_hash": "ec87230209eb03a8e87d740333990a64"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/WavelengthWatchApp.swift": {
-    "mtime": 1784269094.3106205,
+    "mtime": 1785458495.7871783,
     "ast_hash": "492c5770c06bd3b33436d88357a45a3d",
     "semantic_hash": "492c5770c06bd3b33436d88357a45a3d"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/AnalyticsEmptyViewTests.swift": {
-    "mtime": 1784269094.3106205,
+    "mtime": 1785458495.7871783,
     "ast_hash": "ea4f2125585f0f95355e200e01053ac8",
     "semantic_hash": "ea4f2125585f0f95355e200e01053ac8"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/AnalyticsErrorViewTests.swift": {
-    "mtime": 1784269094.3109467,
+    "mtime": 1785458495.7875001,
     "ast_hash": "49ee77291864ab457632cb715759718d",
     "semantic_hash": "49ee77291864ab457632cb715759718d"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/AnalyticsPerformanceBenchmarks.swift": {
-    "mtime": 1784269094.3109467,
+    "mtime": 1785458495.7875001,
     "ast_hash": "ca027b488f834abbe812741946a7e005",
     "semantic_hash": "ca027b488f834abbe812741946a7e005"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/AnalyticsViewIntegrationTests.swift": {
-    "mtime": 1784269094.3109467,
+    "mtime": 1785458495.7875001,
     "ast_hash": "11a46f7afcf5b069399bcba08cb9e74f",
     "semantic_hash": "11a46f7afcf5b069399bcba08cb9e74f"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/AnalyticsViewModelTests.swift": {
-    "mtime": 1784269094.3109467,
+    "mtime": 1785458495.7875001,
     "ast_hash": "3a3abdb5e3a64c89ca5e7ab2d8f77162",
     "semantic_hash": ""
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/CatalogRepositoryFallbackTests.swift": {
-    "mtime": 1784269094.3109467,
+    "mtime": 1785458495.7875001,
     "ast_hash": "7a31af0107298120c373385bcfec57ed",
     "semantic_hash": "7a31af0107298120c373385bcfec57ed"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/CircularProgressViewTests.swift": {
-    "mtime": 1784269094.3109467,
+    "mtime": 1785458495.7875001,
     "ast_hash": "fc5738185ac14f2b6983e2ada1cfbf1d",
     "semantic_hash": "fc5738185ac14f2b6983e2ada1cfbf1d"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/ClearLightAggregationTests.swift": {
-    "mtime": 1784269094.3109467,
+    "mtime": 1785458495.7875001,
     "ast_hash": "c0eebbee6c6544d05edecfa5d464ffa6",
     "semantic_hash": "c0eebbee6c6544d05edecfa5d464ffa6"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/ConceptExplainerViewTests.swift": {
-    "mtime": 1784269094.3109467,
+    "mtime": 1785458495.7875001,
     "ast_hash": "c689de7850d68a64483221b645c0f5d8",
     "semantic_hash": "c689de7850d68a64483221b645c0f5d8"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/ConfigurationTests.swift": {
-    "mtime": 1784269094.3109467,
+    "mtime": 1785458495.7875001,
     "ast_hash": "8f4216c5c09792b3b50dd4998a955561",
     "semantic_hash": "8f4216c5c09792b3b50dd4998a955561"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/ContentViewDependenciesTests.swift": {
-    "mtime": 1784269094.3109467,
+    "mtime": 1785458495.7875001,
     "ast_hash": "9610885087aee037653afc5b422fc180",
     "semantic_hash": "9610885087aee037653afc5b422fc180"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/ContentViewFilteringTests.swift": {
-    "mtime": 1784269094.3109467,
+    "mtime": 1785458495.7875001,
     "ast_hash": "00ef34909c347eff34e0cc1ce7128323",
     "semantic_hash": "00ef34909c347eff34e0cc1ce7128323"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/ContentViewFlowIntegrationTests.swift": {
-    "mtime": 1784269094.3109467,
+    "mtime": 1785458495.7877154,
     "ast_hash": "cb09ad1b4140285c76a29196455d54a4",
     "semantic_hash": "cb09ad1b4140285c76a29196455d54a4"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/ContentViewModelTests.swift": {
-    "mtime": 1784269094.3109467,
+    "mtime": 1785458495.7877154,
     "ast_hash": "0b77002190252ab11299e4977757af72",
     "semantic_hash": "0b77002190252ab11299e4977757af72"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/CurriculumCardTests.swift": {
-    "mtime": 1784269094.3109467,
+    "mtime": 1785458495.7877154,
     "ast_hash": "d7933e91ead765551e866701cc2417e5",
     "semantic_hash": "d7933e91ead765551e866701cc2417e5"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/DetailDestinationTests.swift": {
-    "mtime": 1784269094.3109467,
+    "mtime": 1785458495.7877154,
     "ast_hash": "b3f03a71b9831fc03454ddfe5946a26c",
     "semantic_hash": "b3f03a71b9831fc03454ddfe5946a26c"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/DosageDeepDiveViewTests.swift": {
-    "mtime": 1784269094.3109467,
+    "mtime": 1785458495.7877154,
     "ast_hash": "8db3e326091dd5821c9048267027a9f1",
     "semantic_hash": "8db3e326091dd5821c9048267027a9f1"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/EmotionExpressionCardTests.swift": {
-    "mtime": 1784269094.3109467,
+    "mtime": 1785458495.7877154,
     "ast_hash": "74cb5f895b81e8a02136fbcc1ff6c420",
     "semantic_hash": "74cb5f895b81e8a02136fbcc1ff6c420"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/EmotionSummaryCardTests.swift": {
-    "mtime": 1784269094.3109467,
+    "mtime": 1785458495.7877154,
     "ast_hash": "cd89cb07dc76c6383e16c92f64aa3e54",
     "semantic_hash": "cd89cb07dc76c6383e16c92f64aa3e54"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/EmotionalLandscapeModelsTests.swift": {
-    "mtime": 1784269094.3109467,
+    "mtime": 1785458495.7877154,
     "ast_hash": "609dbc49b1ab0b6ccba942fba09aa11b",
     "semantic_hash": "609dbc49b1ab0b6ccba942fba09aa11b"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/EmotionalLandscapeViewModelTests.swift": {
-    "mtime": 1784269094.3109467,
+    "mtime": 1785458495.7877154,
     "ast_hash": "a740b251855654cb24c1959e1a83af1a",
     "semantic_hash": "a740b251855654cb24c1959e1a83af1a"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/FlowConfirmationAlertsModifierTests.swift": {
-    "mtime": 1784269094.3109467,
+    "mtime": 1785458495.7877154,
     "ast_hash": "f4447e4a11a7341d01a631030fd72cff",
     "semantic_hash": "f4447e4a11a7341d01a631030fd72cff"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/FlowCoordinatorTests.swift": {
-    "mtime": 1784269094.3109467,
+    "mtime": 1785458495.7877154,
     "ast_hash": "45a3028a6818a4506d279bd1d335fb4f",
     "semantic_hash": "45a3028a6818a4506d279bd1d335fb4f"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/FlowStepReactionPolicyTests.swift": {
-    "mtime": 1784269094.3109467,
+    "mtime": 1785458495.7877154,
     "ast_hash": "3d4299472f56521fb15ee53d16d6830a",
     "semantic_hash": "3d4299472f56521fb15ee53d16d6830a"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/FlowSubmissionPresenterTests.swift": {
-    "mtime": 1784269094.3109467,
+    "mtime": 1785458495.7877154,
     "ast_hash": "02ae1186d7c7145e98aefbef0a6cee4e",
     "semantic_hash": ""
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/GrowthIndicatorsViewModelTests.swift": {
-    "mtime": 1784269094.3109467,
+    "mtime": 1785458495.7877154,
     "ast_hash": "4bd7de6fe6a8786d2df92e7bf8890f42",
     "semantic_hash": ""
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/GrowthIndicatorsViewTests.swift": {
-    "mtime": 1784269094.311817,
+    "mtime": 1785458495.7877154,
     "ast_hash": "83621657e8e94538dd1787e1c5d47a60",
     "semantic_hash": "83621657e8e94538dd1787e1c5d47a60"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/HorizontalBarChartTests.swift": {
-    "mtime": 1784269094.311817,
+    "mtime": 1785458495.7877154,
     "ast_hash": "7407464e2f6fc48dc3904bf9496dcc2d",
     "semantic_hash": "7407464e2f6fc48dc3904bf9496dcc2d"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/JournalClientTests.swift": {
-    "mtime": 1784269094.311817,
+    "mtime": 1785458495.7877154,
     "ast_hash": "b65055ed17c899fc2a0e095355dade47",
     "semantic_hash": "b65055ed17c899fc2a0e095355dade47"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/JournalEntryDrilldownFilterTests.swift": {
-    "mtime": 1784269094.311817,
+    "mtime": 1785458495.7887156,
     "ast_hash": "851f234641f26d67c8615aed6c7b197d",
     "semantic_hash": "851f234641f26d67c8615aed6c7b197d"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/JournalFeedbackAlertTests.swift": {
-    "mtime": 1784269094.311817,
+    "mtime": 1785458495.7887156,
     "ast_hash": "cb384b32859e1c63fea5b6e6c1879b80",
     "semantic_hash": "cb384b32859e1c63fea5b6e6c1879b80"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/JournalQueueTests.swift": {
-    "mtime": 1784269094.311817,
+    "mtime": 1785458495.7887156,
     "ast_hash": "9d8276be37300a2d4462b26875e77aca",
     "semantic_hash": "9d8276be37300a2d4462b26875e77aca"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/JournalRepositoryTests.swift": {
-    "mtime": 1784269094.311817,
+    "mtime": 1785458495.7887156,
     "ast_hash": "838ae11981493b7bd7abde9fad99a8a6",
     "semantic_hash": "838ae11981493b7bd7abde9fad99a8a6"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/JournalScheduleTests.swift": {
-    "mtime": 1784269094.311817,
+    "mtime": 1785458495.7887156,
     "ast_hash": "a15de6b211ea3085b8e1b557873bc870",
     "semantic_hash": "a15de6b211ea3085b8e1b557873bc870"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/JournalSyncServiceTests.swift": {
-    "mtime": 1784269094.311817,
+    "mtime": 1785458495.7887156,
     "ast_hash": "738f5aa7dad7536ce20d5a791a7d0b48",
     "semantic_hash": "738f5aa7dad7536ce20d5a791a7d0b48"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/LayerCardViewTests.swift": {
-    "mtime": 1784269094.311817,
+    "mtime": 1785458495.7887156,
     "ast_hash": "94efcefc7867cb89fb78f6895b654ca8",
     "semantic_hash": "94efcefc7867cb89fb78f6895b654ca8"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/LayerFilterModeTests.swift": {
-    "mtime": 1784269094.311817,
+    "mtime": 1785458495.7887156,
     "ast_hash": "bce2f57e20efe7453e4a4b71148779fd",
     "semantic_hash": "bce2f57e20efe7453e4a4b71148779fd"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/LocalAnalyticsCalculatorTests.swift": {
-    "mtime": 1784269094.311817,
+    "mtime": 1785458495.7887156,
     "ast_hash": "d648c777709407e405737df26b84bce2",
     "semantic_hash": "d648c777709407e405737df26b84bce2"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/LocalJournalEntryTests.swift": {
-    "mtime": 1784269094.311817,
+    "mtime": 1785458495.7887156,
     "ast_hash": "32a73715de0e80d9daf29c2a8c92f8ce",
     "semantic_hash": "32a73715de0e80d9daf29c2a8c92f8ce"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/LogConfirmationTests.swift": {
-    "mtime": 1784269094.311817,
+    "mtime": 1785458495.7887156,
     "ast_hash": "d298880c9dfc3cc4931f028860375e9a",
     "semantic_hash": "d298880c9dfc3cc4931f028860375e9a"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/MainContentDialogsModifierTests.swift": {
-    "mtime": 1784269094.311817,
+    "mtime": 1785458495.7887156,
     "ast_hash": "d1fd516b99e55dda4160df7fd585f456",
     "semantic_hash": "d1fd516b99e55dda4160df7fd585f456"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/MarkdownContentLoaderTests.swift": {
-    "mtime": 1784269094.3128169,
+    "mtime": 1785458495.7887156,
     "ast_hash": "7cb4d082b342f45b58b20d1e67412eab",
     "semantic_hash": "7cb4d082b342f45b58b20d1e67412eab"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/MenuViewTests.swift": {
-    "mtime": 1784269094.3128169,
+    "mtime": 1785458495.7887156,
     "ast_hash": "d97886fe3110462d3dcb3d8c38dbc987",
     "semantic_hash": "d97886fe3110462d3dcb3d8c38dbc987"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/ModeDistributionViewTests.swift": {
-    "mtime": 1784269094.3128169,
+    "mtime": 1785458495.7887156,
     "ast_hash": "8f354158a6608eb407ff04358b122103",
     "semantic_hash": "8f354158a6608eb407ff04358b122103"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/MysticalJournalIconTests.swift": {
-    "mtime": 1784269094.3128169,
+    "mtime": 1785458495.7887156,
     "ast_hash": "5b0871e1805fb7f2612874925a45e757",
     "semantic_hash": "5b0871e1805fb7f2612874925a45e757"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/NavigationViewModelTests.swift": {
-    "mtime": 1784269094.3128169,
+    "mtime": 1785458495.7887156,
     "ast_hash": "ee27757d778fb09424cd6162a13f2be5",
     "semantic_hash": "ee27757d778fb09424cd6162a13f2be5"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/NetworkMonitorTests.swift": {
-    "mtime": 1784269094.3128169,
+    "mtime": 1785458495.7897155,
     "ast_hash": "808810504bc1bcaabb784a1960c66fc1",
     "semantic_hash": "808810504bc1bcaabb784a1960c66fc1"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/NotificationDelegateTests.swift": {
-    "mtime": 1784269094.3128169,
+    "mtime": 1785458495.7897155,
     "ast_hash": "47c4d2c7ef32756ae6b613802e744c93",
     "semantic_hash": "47c4d2c7ef32756ae6b613802e744c93"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/OfflineQueueIntegrationTests.swift": {
-    "mtime": 1784269094.3128169,
+    "mtime": 1785458495.7897155,
     "ast_hash": "6775be57a7a4c18303b43e16d0a4141a",
     "semantic_hash": "6775be57a7a4c18303b43e16d0a4141a"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/PhaseJourneyViewTests.swift": {
-    "mtime": 1784269094.3128169,
+    "mtime": 1785458495.7897155,
     "ast_hash": "f3b4119f3f6bde86dcb513c38de9c0bf",
     "semantic_hash": "f3b4119f3f6bde86dcb513c38de9c0bf"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/PhaseNavigatorTests.swift": {
-    "mtime": 1784269094.3128169,
+    "mtime": 1785458495.7897155,
     "ast_hash": "8bf828ea6046bafc06414e87f902537c",
     "semantic_hash": "8bf828ea6046bafc06414e87f902537c"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/PresentationCoordinatorTests.swift": {
-    "mtime": 1784269094.3128169,
+    "mtime": 1785458495.7897155,
     "ast_hash": "8dad1b6fbc4445a6ffa9de9349c7fe8e",
     "semantic_hash": "8dad1b6fbc4445a6ffa9de9349c7fe8e"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/PresentationPolicyTests.swift": {
-    "mtime": 1784269094.3128169,
+    "mtime": 1785458495.7897155,
     "ast_hash": "1e568cf8fbc772c385fb11e042bdf67a",
     "semantic_hash": "1e568cf8fbc772c385fb11e042bdf67a"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/RootPresentationHostTests.swift": {
-    "mtime": 1784269094.3128169,
+    "mtime": 1785458495.7897155,
     "ast_hash": "e281b56e9ee0afb173c2637a30c3cbee",
     "semantic_hash": "e281b56e9ee0afb173c2637a30c3cbee"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/ScheduleViewModelTests.swift": {
-    "mtime": 1784269094.3128169,
+    "mtime": 1785458495.7897155,
     "ast_hash": "7ac4c25b12dc832b451b5540c556094e",
     "semantic_hash": "7ac4c25b12dc832b451b5540c556094e"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/SelfCareViewModelTests.swift": {
-    "mtime": 1784269094.3128169,
+    "mtime": 1785458495.7897155,
     "ast_hash": "3b30e3b305d702d6d3e75875d1a3367c",
     "semantic_hash": ""
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/StrategyExpressionCardTests.swift": {
-    "mtime": 1784269094.3128169,
+    "mtime": 1785458495.7897155,
     "ast_hash": "9d942e758fe09a537bf2d0f7417204f6",
     "semantic_hash": "9d942e758fe09a537bf2d0f7417204f6"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/StrategySummaryCardTests.swift": {
-    "mtime": 1784269094.3128169,
+    "mtime": 1785458495.7897155,
     "ast_hash": "76e5d81d61746a5c3efef1089d79e8f6",
     "semantic_hash": "76e5d81d61746a5c3efef1089d79e8f6"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/StrategyUsageViewTests.swift": {
-    "mtime": 1784269094.3128169,
+    "mtime": 1785458495.7897155,
     "ast_hash": "ab3a42688b77e6c1f25a4eea7cd8f17e",
     "semantic_hash": "ab3a42688b77e6c1f25a4eea7cd8f17e"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/StreakDisplayViewTests.swift": {
-    "mtime": 1784269094.3128169,
+    "mtime": 1785458495.7897155,
     "ast_hash": "d938d2f931e2480d83186ef88e4c4b4d",
     "semantic_hash": "d938d2f931e2480d83186ef88e4c4b4d"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/SubmitTimeoutTests.swift": {
-    "mtime": 1784269094.3128169,
+    "mtime": 1785458495.7897155,
     "ast_hash": "561f3bd2feda460d8ecd588b99344346",
     "semantic_hash": "561f3bd2feda460d8ecd588b99344346"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/SyncSettingsTests.swift": {
-    "mtime": 1784269094.3138168,
+    "mtime": 1785458495.7897155,
     "ast_hash": "8d6d867dabecc6ca87663ff189b25210",
     "semantic_hash": "8d6d867dabecc6ca87663ff189b25210"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/TemporalPatternsViewModelTests.swift": {
-    "mtime": 1784269094.3138168,
+    "mtime": 1785458495.7897155,
     "ast_hash": "27e6b6292e3f21ffde3f41262e23f939",
     "semantic_hash": ""
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/TemporalPatternsViewTests.swift": {
-    "mtime": 1784269094.3138168,
+    "mtime": 1785458495.7897155,
     "ast_hash": "fa7f4f5b0c3ad32cceb2a5eb4dfd8fd9",
     "semantic_hash": "fa7f4f5b0c3ad32cceb2a5eb4dfd8fd9"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/TestUtilities.swift": {
-    "mtime": 1784269094.3138168,
+    "mtime": 1785458495.7897155,
     "ast_hash": "a4ba655d38ddcd3e9ee72d2599a6eeb3",
     "semantic_hash": "a4ba655d38ddcd3e9ee72d2599a6eeb3"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/WLButtonStyleTests.swift": {
-    "mtime": 1784269094.3138168,
+    "mtime": 1785458495.7897155,
     "ast_hash": "65916a773de6ac88911d6b3e6010b91e",
     "semantic_hash": "65916a773de6ac88911d6b3e6010b91e"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/WLCardModifierTests.swift": {
-    "mtime": 1784269094.3138168,
+    "mtime": 1785458495.7907157,
     "ast_hash": "49bd98bb995d95a88be0b545d189f1c4",
     "semantic_hash": "49bd98bb995d95a88be0b545d189f1c4"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/WLColorTokensTests.swift": {
-    "mtime": 1784269094.3138168,
+    "mtime": 1785458495.7907157,
     "ast_hash": "c5682a771b2f0bf0bd7bcd208c2016da",
     "semantic_hash": "c5682a771b2f0bf0bd7bcd208c2016da"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/WLGlassModifierTests.swift": {
-    "mtime": 1784269094.3138168,
+    "mtime": 1785458495.7907157,
     "ast_hash": "c2811670ff265b32f29999ab8c6ddd90",
     "semantic_hash": "c2811670ff265b32f29999ab8c6ddd90"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/WLNavigationBarModifierTests.swift": {
-    "mtime": 1784269094.3138168,
+    "mtime": 1785458495.7907157,
     "ast_hash": "edb7cd1df8013966dcd1d958c37bec22",
     "semantic_hash": "edb7cd1df8013966dcd1d958c37bec22"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/WLSpacingTokensTests.swift": {
-    "mtime": 1784269094.3138168,
+    "mtime": 1785458495.7907157,
     "ast_hash": "5d1911e1bcc67eda04a8ab516f9214da",
     "semantic_hash": "5d1911e1bcc67eda04a8ab516f9214da"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/WLSurfaceModifierTests.swift": {
-    "mtime": 1784269094.3138168,
+    "mtime": 1785458495.7907157,
     "ast_hash": "fe8ce28e1602fc0fb8053cff0dcb07b0",
     "semantic_hash": "fe8ce28e1602fc0fb8053cff0dcb07b0"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/WLTypographyTokensTests.swift": {
-    "mtime": 1784269094.3138168,
+    "mtime": 1785458495.7907157,
     "ast_hash": "bb982c9da824cd22cb2a06b3da8f9c90",
     "semantic_hash": "bb982c9da824cd22cb2a06b3da8f9c90"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/WatchOSMarkdownParserTests.swift": {
-    "mtime": 1784269094.3138168,
+    "mtime": 1785458495.7907157,
     "ast_hash": "0704b2af40db9f198aa2bb123c225587",
     "semantic_hash": ""
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppTests/WavelengthWatch_Watch_AppTests.swift": {
-    "mtime": 1784269094.3138168,
+    "mtime": 1785458495.7907157,
     "ast_hash": "0a753c7da9dec691a2b9fb9641cadecc",
     "semantic_hash": "0a753c7da9dec691a2b9fb9641cadecc"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppUITests/OnboardingViewUITests.swift": {
-    "mtime": 1784269094.3138168,
+    "mtime": 1785458495.7907157,
     "ast_hash": "9186ae01fdd70860f316906d57c08e75",
     "semantic_hash": "9186ae01fdd70860f316906d57c08e75"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppUITests/WavelengthWatch_Watch_AppUITests.swift": {
-    "mtime": 1784269094.3151045,
+    "mtime": 1785458495.7916052,
     "ast_hash": "e38b15a6895d2c878ff4557b630d1daa",
     "semantic_hash": "e38b15a6895d2c878ff4557b630d1daa"
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch AppUITests/WavelengthWatch_Watch_AppUITestsLaunchTests.swift": {
-    "mtime": 1784269094.3151045,
+    "mtime": 1785458495.7916052,
     "ast_hash": "3ac9664e6dc2754fa4706a886388f58c",
     "semantic_hash": "3ac9664e6dc2754fa4706a886388f58c"
   },
   "frontend/WavelengthWatch/run-tests-individually.sh": {
-    "mtime": 1784269094.315423,
+    "mtime": 1785458495.7919073,
     "ast_hash": "1034bf2738649d571555b9e9d4439234",
     "semantic_hash": "1034bf2738649d571555b9e9d4439234"
   },
   "pyproject.toml": {
-    "mtime": 1784269094.3519595,
+    "mtime": 1785458495.8327188,
     "ast_hash": "b1d8a070a8f7139a82794af3ddd558d1",
     "semantic_hash": "b1d8a070a8f7139a82794af3ddd558d1"
   },
   "scripts/add_files_to_xcode.py": {
-    "mtime": 1784269094.352817,
+    "mtime": 1785458495.8327188,
     "ast_hash": "db36f513e03f0b4f6deabee16ffe3bec",
     "semantic_hash": "db36f513e03f0b4f6deabee16ffe3bec"
   },
   "scripts/check-backend.sh": {
-    "mtime": 1784269094.3533814,
+    "mtime": 1785458495.833657,
     "ast_hash": "85ffb914570c39c7c88b8c09697a6c35",
     "semantic_hash": "85ffb914570c39c7c88b8c09697a6c35"
   },
   "scripts/convert_csv_to_json.sh": {
-    "mtime": 1784269094.3533814,
+    "mtime": 1785458495.833657,
     "ast_hash": "3b0e43b3260a97927de815d31d070869",
     "semantic_hash": "3b0e43b3260a97927de815d31d070869"
   },
   "scripts/pr-status.sh": {
-    "mtime": 1784269094.3533814,
+    "mtime": 1785458495.833657,
     "ast_hash": "1390fa4ac37a8f8d5475561dad80b0da",
     "semantic_hash": "1390fa4ac37a8f8d5475561dad80b0da"
   },
   "scripts/setup-local-api.sh": {
-    "mtime": 1784269094.3533814,
+    "mtime": 1785458495.833657,
     "ast_hash": "6a0d73476cf5e81710edf559ecc00370",
     "semantic_hash": "6a0d73476cf5e81710edf559ecc00370"
   },
   "scripts/swiftformat_lint.sh": {
-    "mtime": 1784269094.3533814,
+    "mtime": 1785458495.833657,
     "ast_hash": "969e8691a2de3bd3b2ff433955c46b86",
     "semantic_hash": "969e8691a2de3bd3b2ff433955c46b86"
   },
   "tests/backend/conftest.py": {
-    "mtime": 1784269094.354353,
+    "mtime": 1785458495.8346868,
     "ast_hash": "e4014f83e0e5acc654c5da758ea22739",
     "semantic_hash": "e4014f83e0e5acc654c5da758ea22739"
   },
   "tests/backend/test_analytics.py": {
-    "mtime": 1784269094.3544128,
+    "mtime": 1785458495.8347511,
     "ast_hash": "c0f08973c09aee166c2687adf1e9bb29",
     "semantic_hash": "c0f08973c09aee166c2687adf1e9bb29"
   },
   "tests/backend/test_analytics_performance.py": {
-    "mtime": 1784269094.3544128,
+    "mtime": 1785458495.8347511,
     "ast_hash": "8f7baf79f5c8591cb45e51b255b085ac",
     "semantic_hash": "8f7baf79f5c8591cb45e51b255b085ac"
   },
   "tests/backend/test_app_config.py": {
-    "mtime": 1784269094.3544128,
+    "mtime": 1785458495.8347511,
     "ast_hash": "6aeac009d232bebfb48d9b0a2700a581",
     "semantic_hash": "6aeac009d232bebfb48d9b0a2700a581"
   },
   "tests/backend/test_catalog_api.py": {
-    "mtime": 1784269094.3544128,
+    "mtime": 1785458495.8347511,
     "ast_hash": "2d6f3dbecb3a82016891a5909b4cd61c",
     "semantic_hash": "2d6f3dbecb3a82016891a5909b4cd61c"
   },
   "tests/backend/test_curriculum_api.py": {
-    "mtime": 1784269094.3544128,
+    "mtime": 1785458495.8347511,
     "ast_hash": "c2b90acda4cc37660a97c03c4d53eb7e",
     "semantic_hash": "c2b90acda4cc37660a97c03c4d53eb7e"
   },
   "tests/backend/test_data_generator.py": {
-    "mtime": 1784269094.3544128,
+    "mtime": 1785458495.8347511,
     "ast_hash": "e7aca23a3e6860a8b3a17f9616e9e8d7",
     "semantic_hash": "e7aca23a3e6860a8b3a17f9616e9e8d7"
   },
   "tests/backend/test_database_startup.py": {
-    "mtime": 1784269094.3544128,
+    "mtime": 1785458495.8347511,
     "ast_hash": "b2607ea90db1e0b1189305d880971b66",
     "semantic_hash": "b2607ea90db1e0b1189305d880971b66"
   },
   "tests/backend/test_database_url.py": {
-    "mtime": 1784269094.3544128,
+    "mtime": 1785458495.8347511,
     "ast_hash": "113688a1f97f26b5afa62bed49e83231",
     "semantic_hash": "113688a1f97f26b5afa62bed49e83231"
   },
   "tests/backend/test_journal_api.py": {
-    "mtime": 1784269094.3544128,
+    "mtime": 1785458495.8347511,
     "ast_hash": "feab4178527d6002bcc6d2adb9b83c2f",
     "semantic_hash": "feab4178527d6002bcc6d2adb9b83c2f"
   },
   "tests/backend/test_journal_entry_type.py": {
-    "mtime": 1784269094.3544128,
+    "mtime": 1785458495.8347511,
     "ast_hash": "b7f10e985d3594524afd5c2670ba1408",
     "semantic_hash": "b7f10e985d3594524afd5c2670ba1408"
   },
   "tests/backend/test_layer_api.py": {
-    "mtime": 1784269094.3544128,
+    "mtime": 1785458495.8347511,
     "ast_hash": "8502c507819dd7604814b4bd807383d9",
     "semantic_hash": "8502c507819dd7604814b4bd807383d9"
   },
   "tests/backend/test_logging_privacy.py": {
-    "mtime": 1784269094.3544128,
+    "mtime": 1785458495.8347511,
     "ast_hash": "3163524b0871a2fd97ffe2f74ff788a3",
     "semantic_hash": "3163524b0871a2fd97ffe2f74ff788a3"
   },
   "tests/backend/test_phase_api.py": {
-    "mtime": 1784269094.3544128,
+    "mtime": 1785458495.8347511,
     "ast_hash": "a7d79f0ef472662f1dde3bd765b51618",
     "semantic_hash": "a7d79f0ef472662f1dde3bd765b51618"
   },
   "tests/backend/test_pr_status_script.py": {
-    "mtime": 1784269094.3544128,
+    "mtime": 1785458495.8347511,
     "ast_hash": "1528f601fe44f3b185551034fc106451",
     "semantic_hash": "1528f601fe44f3b185551034fc106451"
   },
   "tests/backend/test_strategy_api.py": {
-    "mtime": 1784269094.3544128,
+    "mtime": 1785458495.8347511,
     "ast_hash": "1564bcb8bc51127cf973aabe219a6c49",
     "semantic_hash": "1564bcb8bc51127cf973aabe219a6c49"
   },
   ".pre-commit-config.yaml": {
-    "mtime": 1784269094.30017,
+    "mtime": 1785458495.7768805,
     "ast_hash": "42a26d58980feda1393fbf91c5e8b7b7",
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1784269094.30017,
+    "mtime": 1785458495.7768805,
     "ast_hash": "92ab7c424920ed928cdc641f84b5b018",
     "semantic_hash": ""
   },
   "CLAUDE.md": {
-    "mtime": 1784269094.30017,
-    "ast_hash": "4e712d637cdabef8408bbae2035f251a",
+    "mtime": 1785458495.7768805,
+    "ast_hash": "dc6e5eae75357a44c07e7785804ec3ae",
     "semantic_hash": ""
   },
   "CONTRIBUTING.md": {
-    "mtime": 1784269094.30017,
+    "mtime": 1785458495.7768805,
     "ast_hash": "757c098616b1cba068f3676efc4e9683",
     "semantic_hash": ""
   },
   "LOCAL_DEVELOPMENT.md": {
-    "mtime": 1784269094.30017,
+    "mtime": 1785458495.7768805,
     "ast_hash": "94495c22d4fa691373d60c08190c3de2",
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1784269094.30017,
+    "mtime": 1785458495.7768805,
     "ast_hash": "e81a29bbc0734bd9f1b3cd00a382f163",
     "semantic_hash": ""
   },
   "backend/README.md": {
-    "mtime": 1784269094.300945,
+    "mtime": 1785458495.7776299,
     "ast_hash": "58c1f5bad33f95f1961d5f0b91c0b19c",
     "semantic_hash": ""
   },
   "backend/requirements-dev.txt": {
-    "mtime": 1784269094.3012104,
+    "mtime": 1785458495.7778714,
     "ast_hash": "f5cc021e784275106ca01bff0e964904",
     "semantic_hash": ""
   },
   "backend/requirements.txt": {
-    "mtime": 1784269094.3012104,
+    "mtime": 1785458495.7778714,
     "ast_hash": "0e9b076e4d2a8489432ce7ac1461cad4",
     "semantic_hash": ""
   },
   "frontend/WavelengthWatch/API_CONFIGURATION.md": {
-    "mtime": 1784269094.302694,
+    "mtime": 1785458495.7793965,
     "ast_hash": "92e0d8ffeeb268a0b5b0b00cde83edc4",
     "semantic_hash": ""
   },
   "frontend/WavelengthWatch/WavelengthWatch Watch App/Resources/about-content.md": {
-    "mtime": 1784269094.3061838,
+    "mtime": 1785458495.7827725,
     "ast_hash": "19ab8c4dbeaa05100c4c56b683099f40",
     "semantic_hash": ""
   }

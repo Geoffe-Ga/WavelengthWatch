@@ -1,16 +1,16 @@
-# Graph Report - WavelengthWatch  (2026-07-17)
+# Graph Report - WavelengthWatch  (2026-07-31)
 
 ## Corpus Check
-- 247 files · ~125,005 words
+- 247 files · ~125,207 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 3204 nodes · 6340 edges · 651 communities (119 shown, 532 thin omitted)
+- 3205 nodes · 6341 edges · 652 communities (112 shown, 540 thin omitted)
 - Extraction: 79% EXTRACTED · 21% INFERRED · 0% AMBIGUOUS · INFERRED: 1319 edges (avg confidence: 0.78)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `f8b3a1a1`
+- Built from commit: `31a59aab`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -663,6 +663,7 @@
 - datetime
 - MonkeyPatch
 - Path
+- MainContentLifecycleModifier
 
 ## God Nodes (most connected - your core abstractions)
 1. `LocalJournalEntry` - 143 edges
@@ -691,27 +692,15 @@
 ## Import Cycles
 - None detected.
 
-## Communities (651 total, 532 thin omitted)
-
-### Community 0 - "Community 0"
-Cohesion: 0.15
-Nodes (7): MockLocalAnalyticsCalculator, Date, EmotionalLandscape, GrowthIndicators, Int, SelfCareAnalytics, TemporalPatterns
+## Communities (652 total, 540 thin omitted)
 
 ### Community 1 - "Community 1"
-Cohesion: 0.15
+Cohesion: 0.14
 Nodes (7): UNAuthorizationOptions, UNNotificationCategory, UNUserNotificationCenter, NotificationCenterProtocol, NotificationScheduler, MockNotificationCenter, NotificationSchedulerTests
 
 ### Community 2 - "Community 2"
-Cohesion: 0.05
-Nodes (29): GrowthIndicatorsViewModelTests, MockAnalyticsService, MockJournalRepository, MockLocalAnalyticsCalculator, MockSyncSettingsPersistence, AnalyticsOverview, Bool, Date (+21 more)
-
-### Community 3 - "Community 3"
 Cohesion: 0.07
-Nodes (3): JournalDatabase, JournalRepository, JournalRepositoryTests
-
-### Community 4 - "Community 4"
-Cohesion: 0.25
-Nodes (3): MockJournalRepository, Error, UUID
+Nodes (27): GrowthIndicatorsViewModelTests, MockAnalyticsService, MockJournalRepository, MockLocalAnalyticsCalculator, MockSyncSettingsPersistence, AnalyticsOverview, Bool, Date (+19 more)
 
 ### Community 5 - "Community 5"
 Cohesion: 0.19
@@ -730,11 +719,11 @@ Cohesion: 0.12
 Nodes (30): alias, description, Header, get_session(), FastAPI dependency that yields a transactional session., IdempotencyRecord, Idempotency key tracking for journal creation.      Stores mapping of user-scope, _base_query() (+22 more)
 
 ### Community 9 - "Community 9"
-Cohesion: 0.26
-Nodes (6): MockAnalyticsService, MockLocalAnalyticsCalculator, TemporalPatterns, TemporalPatternsViewModelTests, HourlyDistributionItem, TemporalPatternsViewModel
+Cohesion: 0.08
+Nodes (24): MockAnalyticsService, MockJournalRepository, MockLocalAnalyticsCalculator, MockSyncSettingsPersistence, AnalyticsOverview, Bool, Date, Double (+16 more)
 
 ### Community 10 - "Community 10"
-Cohesion: 0.11
+Cohesion: 0.10
 Nodes (4): CustomStringConvertible, LocalJournalEntry, LocalAnalyticsCalculator, LocalAnalyticsCalculatorTests
 
 ### Community 11 - "Community 11"
@@ -750,40 +739,44 @@ Cohesion: 0.12
 Nodes (9): GrowthIndicators, DiversityCoverageView, GrowthIndicatorsView, MedicinalTrendView, TrendDirection, more, quieter, steady (+1 more)
 
 ### Community 14 - "Community 14"
-Cohesion: 0.09
-Nodes (13): CaseIterable, Bool, FlowCoordinator, FlowStep, confirmingPrimary, confirmingSecondary, confirmingStrategy, idle (+5 more)
+Cohesion: 0.12
+Nodes (4): Bool, Bool, layers, FlowCoordinator
 
 ### Community 15 - "Community 15"
-Cohesion: 0.16
-Nodes (6): InMemoryJournalRepository, ContentViewModelTests, CatalogTestHelper, CatalogRepositoryMock, JournalClientMock, ContentViewModelInitiationContextTests
+Cohesion: 0.19
+Nodes (7): ContentViewModel, InMemoryJournalRepository, ContentViewFilteringTests, ContentViewModelTests, CatalogRepositoryMock, JournalClientMock, ContentViewModelInitiationContextTests
 
 ### Community 16 - "Community 16"
-Cohesion: 0.17
-Nodes (8): ObservableObject, TimeInterval, JournalSyncService, NetworkMonitorProtocol, JournalSyncServiceTests, MockAPIClient, MockJournalQueue, MockNetworkMonitor
+Cohesion: 0.18
+Nodes (6): TimeInterval, JournalSyncService, JournalSyncServiceTests, MockAPIClient, MockJournalQueue, MockNetworkMonitor
 
 ### Community 17 - "Community 17"
-Cohesion: 0.04
-Nodes (44): CodingKey, CodingKeys, avgFrequency, count, currentStreak, curriculumId, diversityScore, dominantDosage (+36 more)
+Cohesion: 0.06
+Nodes (36): CodingKeys, avgFrequency, count, currentStreak, curriculumId, diversityScore, dominantDosage, dominantLayerId (+28 more)
 
 ### Community 18 - "Community 18"
 Cohesion: 0.09
 Nodes (32): make_cache_key(), Simple in-memory cache with TTL for analytics endpoints.  This module provides a, Generate a deterministic cache key for analytics queries.      The key format is, Curriculum, Journal, SQLModel table definitions for the WavelengthWatch backend., User journal entries representing runtime activity.      Performance note: The c, Curriculum entries that map layers to phases and expressions. (+24 more)
 
 ### Community 19 - "Community 19"
-Cohesion: 0.15
-Nodes (14): ContentViewModel, JournalFeedback, Kind, failure, queued, success, syncing, syncSuccess (+6 more)
+Cohesion: 0.16
+Nodes (10): JournalFeedback, Kind, failure, queued, success, syncing, syncSuccess, InitiatedBy (+2 more)
+
+### Community 20 - "Community 20"
+Cohesion: 0.08
+Nodes (16): JournalQueueError, databaseError, entryNotFound, insertFailed, invalidData, queryFailed, updateFailed, JournalQueueItem (+8 more)
 
 ### Community 21 - "Community 21"
 Cohesion: 0.08
 Nodes (23): MockAnalyticsService, MockJournalRepository, MockLocalAnalyticsCalculator, MockSyncSettingsPersistence, SelfCareViewModelTests, AnalyticsOverview, Bool, Date (+15 more)
 
 ### Community 22 - "Community 22"
-Cohesion: 0.21
+Cohesion: 0.19
 Nodes (6): APIClientError, Bool, Int, APIClientErrorRetryableTests, OfflineQueueIntegrationTests, ToggleableAPIClient
 
 ### Community 23 - "Community 23"
-Cohesion: 0.10
-Nodes (14): JournalQueueError, databaseError, entryNotFound, insertFailed, invalidData, queryFailed, updateFailed, JournalQueueItem (+6 more)
+Cohesion: 0.26
+Nodes (7): ContentView, JournalDrilldownContext, CatalogRepositoryProtocol, JournalClientProtocol, JournalRepositoryProtocol, AnalyticsDetailHubView, RootShellView
 
 ### Community 24 - "Community 24"
 Cohesion: 0.10
@@ -794,24 +787,24 @@ Cohesion: 0.22
 Nodes (30): CompletedProcess, env(), _failing_pr(), _passing_pr(), _pending_pr(), End-to-end tests for ``scripts/pr-status.sh``.  The script shells out to ``gh pr, Isolate cache dir and ensure the script exists before each test., Per-test bundle of the tmp dir and the active ``monkeypatch``. (+22 more)
 
 ### Community 26 - "Community 26"
-Cohesion: 0.12
-Nodes (11): ContentView, JournalDrilldownContext, AnalyticsService, AnalyticsServiceProtocol, CatalogRepositoryProtocol, JournalRepositoryProtocol, LocalAnalyticsCalculatorProtocol, AnalyticsDetailHubView (+3 more)
+Cohesion: 0.16
+Nodes (4): AnalyticsService, GrowthIndicatorsDetailView, SelfCareDetailView, TemporalPatternsDetailView
 
 ### Community 27 - "Community 27"
 Cohesion: 0.09
 Nodes (24): LogRecord, create_application(), Configure and return the FastAPI application., configure_logging(), _is_sensitive_field(), Logging configuration utilities that scrub PII before emission., Install the sensitive-data filter on known loggers., Apply lightweight regex scrubbing to formatted string messages. (+16 more)
 
 ### Community 28 - "Community 28"
-Cohesion: 0.10
-Nodes (15): Error, JournalError, queuedForRetry, JournalSyncStatus, error, idle, success, syncing (+7 more)
+Cohesion: 0.12
+Nodes (14): Error, JournalError, queuedForRetry, JournalSyncStatus, error, idle, success, syncing (+6 more)
 
 ### Community 29 - "Community 29"
 Cohesion: 0.17
 Nodes (11): LogCaptureFixture, Sequence, Privacy-focused logging tests., Ensure each test starts with a clean root logger., reset_logging_filters(), _SequenceRequiringMarker, test_log_record_factory_invokes_filter(), test_logging_filter_handles_sequence_constructor_fallback() (+3 more)
 
 ### Community 30 - "Community 30"
-Cohesion: 0.27
-Nodes (4): AnalyticsViewModelTests, MockAnalyticsService, AnalyticsOverview, AnalyticsViewModel
+Cohesion: 0.08
+Nodes (23): AnalyticsViewModelTests, MockAnalyticsService, MockJournalRepository, MockLocalAnalyticsCalculator, AnalyticsOverview, Date, EmotionalLandscape, Error (+15 more)
 
 ### Community 31 - "Community 31"
 Cohesion: 0.16
@@ -822,8 +815,8 @@ Cohesion: 0.10
 Nodes (4): HeaderCapturingAPIClientSpy, InMemoryJournalQueueSpy, JournalClientQueueIntegrationTests, StubAPIClientSpy
 
 ### Community 33 - "Community 33"
-Cohesion: 0.11
-Nodes (21): get_catalog(), Router exposing the aggregated catalog endpoint., Return the cached catalog payload for clients.      The payload nests medicinal/, CatalogCurriculumEntry, CatalogLayer, CatalogPhase, CatalogResponse, CatalogStrategy (+13 more)
+Cohesion: 0.09
+Nodes (25): RuntimeError, _determine_allowed_origins(), FastAPI application entrypoint., Return CORS origins based on the current environment configuration., get_catalog(), Router exposing the aggregated catalog endpoint., Return the cached catalog payload for clients.      The payload nests medicinal/, CatalogCurriculumEntry (+17 more)
 
 ### Community 34 - "Community 34"
 Cohesion: 0.15
@@ -838,20 +831,20 @@ Cohesion: 0.18
 Nodes (10): NSObject, UNNotification, UNNotificationPresentationOptions, UNNotificationRequest, UNNotificationResponse, UNUserNotificationCenterDelegate, NotificationDelegate, NotificationDelegateShim (+2 more)
 
 ### Community 37 - "Community 37"
-Cohesion: 0.33
-Nodes (4): RuntimeError, _determine_allowed_origins(), FastAPI application entrypoint., Return CORS origins based on the current environment configuration.
+Cohesion: 0.24
+Nodes (9): Hashable, Identifiable, CatalogCurriculumEntryModel, CatalogDosage, medicinal, toxic, CatalogLayerModel, BarChartItem (+1 more)
 
 ### Community 38 - "Community 38"
-Cohesion: 0.12
-Nodes (12): DispatchQueue, Network, NWPath, NWPathMonitor, ConnectionType, cellular, none, unknown (+4 more)
+Cohesion: 0.11
+Nodes (14): DispatchQueue, Network, NWPath, NWPathMonitor, ObservableObject, ConnectionType, cellular, none (+6 more)
 
 ### Community 39 - "Community 39"
 Cohesion: 0.09
-Nodes (20): Always Use Test Scripts, Not Direct Tool Invocation, Architecture Overview, Backend (FastAPI), CI Requirements, Code Quality Standards, Command Execution Guidelines, Data Flow, Development Commands (+12 more)
+Nodes (21): Always Use Test Scripts, Not Direct Tool Invocation, Architecture Overview, Backend (FastAPI), CI Requirements, Code Quality Standards, Command Execution Guidelines, Data Flow, Development Commands (+13 more)
 
 ### Community 40 - "Community 40"
-Cohesion: 0.19
-Nodes (12): Hashable, Identifiable, CatalogCurriculumEntryModel, CatalogDosage, medicinal, toxic, CatalogLayerModel, CatalogPhaseModel (+4 more)
+Cohesion: 0.23
+Nodes (4): CatalogStrategyModel, StrategyExpressionCard, StrategyListView, StrategyExpressionCardTests
 
 ### Community 41 - "Community 41"
 Cohesion: 0.16
@@ -862,36 +855,32 @@ Cohesion: 0.16
 Nodes (18): Self-care strategies associated with specific layers and phases., Strategy, _iter_rows(), _load_curriculum(), _load_journal(), _load_layers(), _load_phases(), _load_strategies() (+10 more)
 
 ### Community 43 - "Community 43"
-Cohesion: 0.08
-Nodes (5): String, Color, ScheduleEditView, TrackingAPIClientSpy, APIClientSpy
+Cohesion: 0.11
+Nodes (6): String, Color, ScheduleEditView, FailingAPIClientSpy, TrackingAPIClientSpy, APIClientSpy
 
 ### Community 44 - "Community 44"
-Cohesion: 0.13
-Nodes (5): MockCatalogRepository, Bool, CatalogResponseModel, ClearLightAggregationTests, MenuViewTests
+Cohesion: 0.17
+Nodes (4): MockCatalogRepository, Bool, CatalogResponseModel, ClearLightAggregationTests
 
 ### Community 45 - "Community 45"
 Cohesion: 0.23
 Nodes (9): PhaseStrategyGroup, SelfCareAnalytics, TopStrategyItem, OverallDiversityView, PhaseStrategyCardView, ResolvedPhaseGroup, StrategyCardView, StrategyUsageView (+1 more)
 
 ### Community 46 - "Community 46"
-Cohesion: 0.13
-Nodes (4): FailingAPIClientSpy, FailingJournalRepository, JournalClientLocalFirstTests, SuccessfulAPIClientSpy
-
-### Community 47 - "Community 47"
-Cohesion: 0.12
-Nodes (3): AnalyticsViewIntegrationTests, MockAnalyticsService, MockJournalRepository
+Cohesion: 0.10
+Nodes (12): EntryType, emotion, InitiatedBy, scheduled, self_initiated, JournalClient, JournalPayload, JournalRequestHeader (+4 more)
 
 ### Community 48 - "Community 48"
-Cohesion: 0.22
-Nodes (9): Codable, Equatable, AnalyticsOverview, EmotionalLandscape, LayerDistributionItem, PhaseDistributionItem, PhaseMedicinalRatioItem, TopEmotionItem (+1 more)
+Cohesion: 0.53
+Nodes (8): Codable, Equatable, AnalyticsOverview, EmotionalLandscape, LayerDistributionItem, PhaseDistributionItem, PhaseMedicinalRatioItem, TopEmotionItem
 
 ### Community 49 - "Community 49"
 Cohesion: 0.19
 Nodes (6): LocalizedError, os, ContentViewDependencies, ContentViewDependenciesTests, FactoryFailure, ReasonedFailure
 
 ### Community 50 - "Community 50"
-Cohesion: 0.09
-Nodes (12): View, colorSwatch(), AnalyticsView, EmotionRow, EmotionSection, JournalEntryRowView, MarkdownContentView, MainContentStates (+4 more)
+Cohesion: 0.08
+Nodes (15): View, colorSwatch(), AnalyticsView, EmotionRow, EmotionSection, JournalEntryRowView, MarkdownContentView, MenuView (+7 more)
 
 ### Community 52 - "Community 52"
 Cohesion: 0.10
@@ -902,24 +891,24 @@ Cohesion: 0.15
 Nodes (17): Engine, configure_engine(), create_db_and_tables(), _create_engine(), _is_sqlite(), _normalize_database_url(), Database configuration and session utilities., Pin the psycopg driver on bare Postgres URLs; pass others through.      Schemes (+9 more)
 
 ### Community 54 - "Community 54"
-Cohesion: 0.15
-Nodes (6): AnalyticsOverview, Date, EmotionalLandscape, GrowthIndicators, Int, SelfCareAnalytics
+Cohesion: 0.17
+Nodes (11): CaseIterable, FlowStep, confirmingPrimary, confirmingSecondary, confirmingStrategy, idle, review, selectingPrimary (+3 more)
 
 ### Community 55 - "Community 55"
-Cohesion: 0.19
-Nodes (4): BarChartItem, BarRow, HorizontalBarChart, HorizontalBarChartTests
+Cohesion: 0.22
+Nodes (3): BarRow, HorizontalBarChart, HorizontalBarChartTests
 
 ### Community 57 - "Community 57"
-Cohesion: 0.14
-Nodes (17): APIClient, badResponse, invalidURL, transport, APIClientProtocol, APIPath, Data, Encodable (+9 more)
+Cohesion: 0.18
+Nodes (14): APIClient, badResponse, invalidURL, transport, Data, Encodable, JSONDecoder, JSONEncoder (+6 more)
 
 ### Community 58 - "Community 58"
 Cohesion: 0.17
 Nodes (6): ButtonStyle, Configuration, View, WLPrimaryButtonStyle, WLSecondaryButtonStyle, WLButtonStyleTests
 
 ### Community 59 - "Community 59"
-Cohesion: 0.27
-Nodes (6): DateComponents, Encoder, JournalSchedule, UserDefaults, JournalScheduleTests, ScheduleViewModelTests
+Cohesion: 0.18
+Nodes (7): DateComponents, Encoder, JournalSchedule, UserDefaults, JournalScheduleTests, ScheduleViewModelTests, JournalClientTests
 
 ### Community 60 - "Community 60"
 Cohesion: 0.12
@@ -928,6 +917,10 @@ Nodes (10): AnalyticsCache, CacheEntry, Clear all cache entries.          Useful
 ### Community 61 - "Community 61"
 Cohesion: 0.22
 Nodes (6): Bundle, OSLog, AppConfiguration, BundleProtocol, AppConfigurationTests, MockBundle
+
+### Community 62 - "Community 62"
+Cohesion: 0.12
+Nodes (10): JournalDatabase, JournalDatabaseError, databaseNotOpen, failedToCreateTable, failedToDelete, failedToInsert, failedToOpenDatabase, failedToQuery (+2 more)
 
 ### Community 64 - "Community 64"
 Cohesion: 0.12
@@ -938,19 +931,23 @@ Cohesion: 0.13
 Nodes (14): Configuration, Curriculum, Deployment (Railway), Example Requests, Health Check, Installation, Journal Entries, Layers (+6 more)
 
 ### Community 66 - "Community 66"
-Cohesion: 0.22
+Cohesion: 0.18
 Nodes (6): View, WLGlassIntensity, prominent, regular, WLGlassModifier, WLGlassModifierTests
 
 ### Community 68 - "Community 68"
 Cohesion: 0.33
 Nodes (4): RootPresentationHost, Content, View, View
 
+### Community 69 - "Community 69"
+Cohesion: 0.23
+Nodes (3): CatalogPhaseModel, PhaseJourneyView, PhaseJourneyViewTests
+
 ### Community 70 - "Community 70"
-Cohesion: 0.26
-Nodes (4): CatalogCacheEnvelope, CatalogRemoteStub, InMemoryCatalogCacheMock, CatalogRepositoryTests
+Cohesion: 0.42
+Nodes (3): CatalogCacheEnvelope, CatalogRemoteStub, CatalogRepositoryTests
 
 ### Community 71 - "Community 71"
-Cohesion: 0.18
+Cohesion: 0.19
 Nodes (4): Color, ModeDistributionView, LayerSideIndicator, ModeDistributionViewTests
 
 ### Community 72 - "Community 72"
@@ -958,8 +955,8 @@ Cohesion: 0.15
 Nodes (12): 1. **Run the Setup Script**, 2. **Start the Backend Server**, 3. **Build and Run the Watch App**, Configuration Priority, Local Development Setup, Manual Setup, Quick Setup, Reset Configuration (+4 more)
 
 ### Community 73 - "Community 73"
-Cohesion: 0.18
-Nodes (8): PreviewProvider, OnboardingView, OnboardingView_Previews, StorageMode, cloudSynced, localOnly, SyncSettingsView, SyncSettingsView_Previews
+Cohesion: 0.28
+Nodes (6): PreviewProvider, OnboardingView, OnboardingView_Previews, StorageMode, cloudSynced, localOnly
 
 ### Community 75 - "Community 75"
 Cohesion: 0.31
@@ -990,15 +987,15 @@ Cohesion: 0.38
 Nodes (12): _base_query(), create_strategy(), delete_strategy(), _ensure_strategy_id(), get_strategy(), _get_strategy_or_404(), list_strategies(), _serialize_strategy() (+4 more)
 
 ### Community 82 - "Community 82"
-Cohesion: 0.18
-Nodes (7): JournalDatabaseError, databaseNotOpen, failedToCreateTable, failedToDelete, failedToInsert, failedToOpenDatabase, invalidData
+Cohesion: 0.22
+Nodes (8): CodingKey, CodingKeys, phaseOrder, CodingKeys, enabled, id, repeatDays, time
 
 ### Community 83 - "Community 83"
-Cohesion: 0.26
+Cohesion: 0.23
 Nodes (6): FlowStepReaction, FlowStepReactionPolicy, ReviewSheetAction, dismissIfActive, present, FlowStepReactionPolicyTests
 
 ### Community 84 - "Community 84"
-Cohesion: 0.19
+Cohesion: 0.18
 Nodes (8): ActivePresentation, flowReview, idle, journalFeedback, logConfirmation, menu, onboarding, storageError
 
 ### Community 85 - "Community 85"
@@ -1018,7 +1015,7 @@ Cohesion: 0.35
 Nodes (11): Phase, Reference table of user energy phases., create_phase(), delete_phase(), get_phase(), _get_phase_or_404(), list_phases(), Phase CRUD endpoints. (+3 more)
 
 ### Community 89 - "Community 89"
-Cohesion: 0.21
+Cohesion: 0.24
 Nodes (5): DetailDestination, curriculum, strategy, DetailDestinationView, DetailDestinationTests
 
 ### Community 91 - "Community 91"
@@ -1030,7 +1027,7 @@ Cohesion: 0.18
 Nodes (10): Backend (FastAPI), Configuring the Watch API Base URL, Frontend (watchOS), Getting Started, Implementation Snapshot, Knowledge graph, Overview, Repository Structure (+2 more)
 
 ### Community 93 - "Community 93"
-Cohesion: 0.25
+Cohesion: 0.24
 Nodes (5): Sendable, SubmitTimeout, SubmitTimeoutError, ProbeError, SubmitTimeoutTests
 
 ### Community 94 - "Community 94"
@@ -1042,36 +1039,28 @@ Cohesion: 0.25
 Nodes (3): View, WLCardModifier, WLCardModifierTests
 
 ### Community 97 - "Community 97"
-Cohesion: 0.27
+Cohesion: 0.24
 Nodes (5): AnalyticsEmptyView, Prominence, compact, prominent, AnalyticsEmptyViewTests
 
 ### Community 98 - "Community 98"
 Cohesion: 0.38
 Nodes (4): Animation, V, View, WLConditionalAnimation
 
-### Community 99 - "Community 99"
-Cohesion: 0.20
-Nodes (9): LoadingState, error, idle, loaded, loading, LocalCalculationError, fetchFailed, noCalculator (+1 more)
-
 ### Community 100 - "Community 100"
-Cohesion: 0.22
-Nodes (5): Action, curriculum, strategy, LogConfirmationRequest, StrategyListView
+Cohesion: 0.33
+Nodes (4): Action, curriculum, strategy, LogConfirmationRequest
 
 ### Community 104 - "Community 104"
-Cohesion: 0.10
-Nodes (10): ViewModifier, FlowConfirmationAlertsModifier, View, JournalFlowAlertsModifier, View, MainContentLifecycleModifier, View, CardDepthShadow (+2 more)
+Cohesion: 0.13
+Nodes (8): ViewModifier, FlowConfirmationAlertsModifier, View, JournalFlowAlertsModifier, View, CardDepthShadow, CardIntensityLadder, PhaseCrystalCard
 
 ### Community 107 - "Community 107"
-Cohesion: 0.47
-Nodes (3): CatalogRepositoryFallbackTests, NetworkDown, FailingRemoteStub
+Cohesion: 0.26
+Nodes (4): CatalogRepositoryFallbackTests, NetworkDown, FailingRemoteStub, InMemoryCatalogCacheMock
 
 ### Community 109 - "Community 109"
 Cohesion: 0.20
 Nodes (9): Tests for journal entry_type behavior in the journal API., EMOTION entries work normally with curriculum_id., If entry_type is not specified, it defaults to EMOTION., The removed 'rest' entry_type is no longer accepted (#435)., EMOTION entries must have curriculum_id., test_create_emotion_entry_requires_curriculum(), test_create_emotion_entry_with_curriculum(), test_entry_type_defaults_to_emotion() (+1 more)
-
-### Community 110 - "Community 110"
-Cohesion: 0.25
-Nodes (3): MockJournalRepository, Error, UUID
 
 ### Community 111 - "Community 111"
 Cohesion: 0.28
@@ -1085,20 +1074,8 @@ Nodes (9): CodingKeys, createdAt, curriculumID, entryType, id, initiatedBy, seco
 Cohesion: 0.38
 Nodes (3): Binding, Bool, MainContentDialogsModifierTests
 
-### Community 114 - "Community 114"
-Cohesion: 0.17
-Nodes (11): UInt64, EntryType, emotion, InitiatedBy, scheduled, self_initiated, JournalClient, JournalPayload (+3 more)
-
-### Community 115 - "Community 115"
-Cohesion: 0.32
-Nodes (3): MenuView, MainContentDialogsModifier, View
-
-### Community 116 - "Community 116"
-Cohesion: 0.54
-Nodes (4): MockSyncSettingsPersistence, Bool, Double, String
-
 ### Community 117 - "Community 117"
-Cohesion: 0.07
+Cohesion: 0.08
 Nodes (4): Combine, Foundation, SQLite3, AppStorageKeys
 
 ### Community 121 - "Community 121"
@@ -1117,12 +1094,8 @@ Nodes (3): Never, Task, FlowReviewSheet
 Cohesion: 0.40
 Nodes (4): LayerView, CGFloat, Double, Int
 
-### Community 127 - "Community 127"
-Cohesion: 0.33
-Nodes (3): ToolbarContent, MainNavigationToolbar, RootShellView
-
 ### Community 131 - "Community 131"
-Cohesion: 0.47
+Cohesion: 0.50
 Nodes (3): App, Scene, WavelengthWatch_Watch_AppApp
 
 ### Community 132 - "Community 132"
@@ -1134,12 +1107,12 @@ Cohesion: 0.60
 Nodes (5): _convert_curriculum(), _convert_headers(), _convert_strategies(), _detect(), main()
 
 ### Community 135 - "Community 135"
-Cohesion: 0.33
+Cohesion: 0.25
 Nodes (4): LayerFilterMode, all, emotionsOnly, strategiesOnly
 
 ### Community 136 - "Community 136"
-Cohesion: 0.33
-Nodes (5): LoadingState, error, idle, loaded, loading
+Cohesion: 0.40
+Nodes (3): APIClientProtocol, APIPath, JournalQueueProtocol
 
 ### Community 137 - "Community 137"
 Cohesion: 0.40
@@ -1158,24 +1131,24 @@ Cohesion: 0.50
 Nodes (3): ⚙️ Agent Behavior and Development Philosophy, Journal Implementation Snapshot, Repository Directory Overview
 
 ## Knowledge Gaps
-- **226 isolated node(s):** `dev-setup.sh script`, `AppStorageKeys`, `os`, `regular`, `prominent` (+221 more)
+- **227 isolated node(s):** `dev-setup.sh script`, `AppStorageKeys`, `os`, `regular`, `prominent` (+222 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **532 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **540 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Foundation` connect `Community 117` to `Community 0`, `Community 1`, `Community 2`, `Community 5`, `Community 7`, `Community 135`, `Community 9`, `Community 136`, `Community 11`, `Community 12`, `Community 141`, `Community 14`, `Community 16`, `Community 17`, `Community 145`, `Community 21`, `Community 23`, `Community 26`, `Community 35`, `Community 38`, `Community 40`, `Community 48`, `Community 49`, `Community 57`, `Community 61`, `Community 74`, `Community 83`, `Community 93`, `Community 99`, `Community 100`, `Community 106`, `Community 114`, `Community 115`, `Community 122`?**
+- **Why does `Foundation` connect `Community 117` to `Community 1`, `Community 2`, `Community 3`, `Community 5`, `Community 7`, `Community 136`, `Community 9`, `Community 135`, `Community 11`, `Community 12`, `Community 141`, `Community 16`, `Community 145`, `Community 20`, `Community 21`, `Community 23`, `Community 30`, `Community 35`, `Community 37`, `Community 38`, `Community 46`, `Community 48`, `Community 49`, `Community 51`, `Community 54`, `Community 61`, `Community 74`, `Community 82`, `Community 83`, `Community 93`, `Community 100`, `Community 106`, `Community 116`, `Community 122`?**
   _High betweenness centrality (0.051) - this node is a cross-community bridge._
-- **Why does `SwiftUI` connect `Community 11` to `Community 128`, `Community 7`, `Community 137`, `Community 139`, `Community 13`, `Community 142`, `Community 143`, `Community 146`, `Community 26`, `Community 31`, `Community 34`, `Community 36`, `Community 40`, `Community 41`, `Community 43`, `Community 45`, `Community 50`, `Community 55`, `Community 58`, `Community 63`, `Community 66`, `Community 67`, `Community 68`, `Community 69`, `Community 71`, `Community 73`, `Community 76`, `Community 77`, `Community 78`, `Community 79`, `Community 84`, `Community 86`, `Community 89`, `Community 90`, `Community 94`, `Community 95`, `Community 97`, `Community 98`, `Community 100`, `Community 103`, `Community 104`, `Community 106`, `Community 111`, `Community 115`, `Community 117`, `Community 119`, `Community 124`, `Community 126`, `Community 127`?**
+- **Why does `SwiftUI` connect `Community 11` to `Community 128`, `Community 7`, `Community 137`, `MainContentLifecycleModifier`, `Community 139`, `Community 13`, `Community 142`, `Community 143`, `Community 146`, `Community 23`, `Community 26`, `Community 31`, `Community 34`, `Community 36`, `Community 40`, `Community 41`, `Community 43`, `Community 45`, `Community 50`, `Community 55`, `Community 58`, `Community 63`, `Community 66`, `Community 67`, `Community 68`, `Community 69`, `Community 71`, `Community 73`, `Community 76`, `Community 77`, `Community 78`, `Community 79`, `Community 84`, `Community 86`, `Community 89`, `Community 90`, `Community 94`, `Community 95`, `Community 97`, `Community 98`, `Community 103`, `Community 104`, `Community 106`, `Community 111`, `Community 115`, `Community 117`, `Community 119`, `Community 124`, `Community 126`, `Community 127`?**
   _High betweenness centrality (0.049) - this node is a cross-community bridge._
-- **Why does `LocalJournalEntry` connect `Community 10` to `Community 0`, `Community 2`, `Community 3`, `Community 4`, `Community 40`, `Community 9`, `Community 43`, `Community 141`, `Community 110`, `Community 48`, `Community 21`, `Community 54`, `Community 118`, `Community 22`, `Community 153`, `Community 30`?**
+- **Why does `LocalJournalEntry` connect `Community 10` to `Community 0`, `Community 2`, `Community 3`, `Community 37`, `Community 9`, `Community 43`, `Community 141`, `Community 48`, `Community 21`, `Community 118`, `Community 22`, `Community 153`, `Community 30`?**
   _High betweenness centrality (0.044) - this node is a cross-community bridge._
 - **Are the 71 inferred relationships involving `LocalJournalEntry` (e.g. with `.fetchAll_tolerantOfInvalidSyncStatus()` and `.inMemoryClearRemovesAllEntries()`) actually correct?**
   _`LocalJournalEntry` has 71 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `dev-setup.sh script`, `AppStorageKeys`, `os` to the rest of the system?**
-  _226 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `Community 2` be split into smaller, more focused modules?**
-  _Cohesion score 0.05407111298127498 - nodes in this community are weakly interconnected._
-- **Should `Community 3` be split into smaller, more focused modules?**
-  _Cohesion score 0.06787330316742081 - nodes in this community are weakly interconnected._
+  _227 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `Community 0` be split into smaller, more focused modules?**
+  _Cohesion score 0.10869565217391304 - nodes in this community are weakly interconnected._
+- **Should `Community 1` be split into smaller, more focused modules?**
+  _Cohesion score 0.14492753623188406 - nodes in this community are weakly interconnected._
