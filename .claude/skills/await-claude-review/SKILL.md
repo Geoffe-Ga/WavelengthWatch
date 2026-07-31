@@ -17,9 +17,11 @@ description: >-
   the webhook), general PR babysitting unrelated to the verdict gate,
   debugging CI failures themselves (use `ci-debugging`), or one-off
   status polling (use `pull_request_read` directly).
+  In local terminal sessions the webhook MCP tool does not exist —
+  fall back to background `gh` watchers (see "Local Sessions").
 metadata:
   author: Geoff
-  version: 1.0.0
+  version: 1.1.0
 ---
 
 # Await Claude Review
@@ -80,6 +82,33 @@ mcp__github__subscribe_pr_activity
 ```
 
 Then **stop**. Do not poll. Do not `sleep`. Do not call `pull_request_read get_comments` in a loop. Webhook events arrive as `<github-webhook-activity>` messages and resume the session on their own.
+
+### Local Sessions (No Webhook MCP)
+
+`mcp__github__subscribe_pr_activity` exists only in remote/mobile sessions. In a local terminal session the tool is absent — no `<github-webhook-activity>` events will ever arrive, and a session that "subscribes and waits" sleeps until some long fallback timer. When the tool is unavailable, replace Step 2 with **background watchers**: a background Bash task's exit re-invokes the session, so arm tasks that exit on state change, then end the turn.
+
+Launch both with `run_in_background: true`:
+
+1. **CI watcher** — `gh pr checks <N> --watch`. Blocks until every check completes (pass *or* fail), then exits. Unlike the webhook, this signal does include CI success.
+2. **Verdict watcher** — a poll loop that exits the moment a fresh verdict comment appears (the regex here is intentionally looser than the canonical anchored pattern above — it is only a wake pre-filter; Step 4 re-validates with the canonical one):
+
+   ```bash
+   # HEAD_TS = headPushedAt from Step 1 (ISO 8601)
+   while :; do
+     n=$(gh api "repos/<owner>/<repo>/issues/<N>/comments" \
+       --jq "[.[] | select(.created_at > \"$HEAD_TS\")
+              | select(.body | test(\"Verdict[:* ]+(LGTM|CHANGES_REQUESTED|COMMENTS)\"; \"i\"))] | length")
+     [ "${n:-0}" -gt 0 ] && exit 0
+     sleep 30
+   done
+   ```
+
+Rules:
+
+- **Never** foreground `sleep`, and **never** run `gh pr checks --watch` in the foreground — a foreground block wedges the session exactly like the missing webhook would.
+- The `sleep 30` inside the loop is fine: it runs in the background task, not the session's foreground turn.
+- When either watcher exits and wakes the session, run Step 4 identically — re-fetch comments, apply the currency check, parse the verdict. Only the wake mechanism differs; the validation does not.
+- **CI watcher wakes you but no verdict exists yet** (the common ordering — checks finish before the review bot posts): that is not a failure. End the turn again; the verdict watcher is still running and will wake you when the comment lands. Re-launching it is harmless if it has exited.
 
 ### Step 3: On Wake — Classify the Event
 
@@ -154,9 +183,13 @@ The caller should call `mcp__github__unsubscribe_pr_activity` once the PR merges
 
 Don't. The subscription does not deliver CI passes. Wait on the comment event directly — that *is* the delivered signal.
 
-### Error: Tempted to poll with `sleep` or `Bash run_in_background`
+### Error: Tempted to poll with a foreground `sleep`
 
-Don't. The session is woken by `<github-webhook-activity>`. Polling burns time and conflicts with the harness's wake mechanism. Subscribe and end the turn.
+Don't. In a remote session the wake is `<github-webhook-activity>` — subscribe and end the turn; extra polling burns time and conflicts with the harness's wake mechanism. In a local session (no webhook MCP) the wake is a **background** watcher's exit — see "Local Sessions (No Webhook MCP)". On neither platform does a foreground `sleep` or a foreground `--watch` help: it just wedges the turn.
+
+### Error: Subscribed, but no event ever arrives (dropped webhook)
+
+Webhook delivery is not guaranteed. While a verdict is outstanding, bound this failure mode with a short `ScheduleWakeup` (~180 s): if the wakeup fires before any event, re-fetch comments and run Step 4 manually — the verdict may have posted without a delivery — then re-arm the wakeup if it hasn't. This turns "wait forever" into "verify every ~3 minutes at worst".
 
 ### Error: Webhook arrives but `get_comments` shows no matching verdict
 
