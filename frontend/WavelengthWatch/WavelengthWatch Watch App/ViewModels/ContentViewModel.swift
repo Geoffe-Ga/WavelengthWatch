@@ -257,9 +257,11 @@ final class ContentViewModel: ObservableObject {
   ///
   /// Note: selectedLayerIndex will be synced separately by ContentView's onChange handlers.
   private func handleFilterModeChange(from oldMode: LayerFilterMode, to newMode: LayerFilterMode) {
-    guard oldMode != newMode else { return }
-    guard layers.count > 0 else { return } // Only process if layers are loaded
-    guard let currentLayerId = selectedLayerId else { return }
+    // Only process a real mode change, once layers are loaded and one is selected.
+    guard oldMode != newMode,
+          layers.count > 0,
+          let currentLayerId = selectedLayerId
+    else { return }
 
     // Check if current layer exists in new filtered set
     if layerIdToFilteredIndex(currentLayerId) != nil {
